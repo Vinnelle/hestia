@@ -1,0 +1,57 @@
+{
+  "Stuns": [
+    { "Proto": "udp", "URI": "stun:stun.netbird.io:3478", "Username": "", "Password": null }
+  ],
+  "Relay": {
+    "Addresses": ["rels://proxy.vinnel.cloud/relay"],
+    "CredentialsTTL": "24h",
+    "Secret": ${jsonencode(relay_auth_secret)}
+  },
+  "Signal": {
+    "Proto": "https",
+    "URI": "proxy.vinnel.cloud:443",
+    "Username": "",
+    "Password": null
+  },
+  "ReverseProxy": {
+    "TrustedHTTPProxies": [],
+    "TrustedHTTPProxiesCount": 0,
+    "TrustedPeers": ["0.0.0.0/0"]
+  },
+  "Datadir": "/var/lib/netbird",
+  "DataStoreEncryptionKey": ${jsonencode(datastore_enc_key)},
+  "StoreConfig": {
+    "Engine": "sqlite"
+  },
+  "HttpConfig": {
+    "Address": "0.0.0.0:80",
+    "AuthIssuer": "https://auth.vinnel.cloud",
+    "AuthAudience": "netbird-dashboard",
+    "OIDCConfigEndpoint": "https://auth.vinnel.cloud/.well-known/openid-configuration"
+  },
+  "IdpManagerConfig": {
+    "ManagerType": "none"
+  },
+  "DeviceAuthorizationFlow": {
+    "Provider": "hosted",
+    "ProviderConfig": {
+      "Audience": "netbird-cli",
+      "ClientID": "netbird-cli",
+      "Scope": "openid profile email offline_access",
+      "DeviceAuthEndpoint": "https://auth.vinnel.cloud/api/oidc/device-authorization",
+      "TokenEndpoint": "https://auth.vinnel.cloud/api/oidc/token",
+      "UseIDToken": true
+    }
+  },
+  "PKCEAuthorizationFlow": {
+    "ProviderConfig": {
+      "Audience": "netbird-cli",
+      "ClientID": "netbird-cli",
+      "Scope": "openid profile email offline_access",
+      "AuthorizationEndpoint": "https://auth.vinnel.cloud/api/oidc/authorization",
+      "TokenEndpoint": "https://auth.vinnel.cloud/api/oidc/token",
+      "RedirectURLs": ["http://localhost:53000", "http://localhost:54000"],
+      "UseIDToken": true
+    }
+  }
+}

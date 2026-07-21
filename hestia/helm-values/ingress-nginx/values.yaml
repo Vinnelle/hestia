@@ -1,0 +1,15 @@
+controller:
+  kind: DaemonSet
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
+  # snippet annotations stay at their safe defaults (disabled / risk-level High):
+  # nothing in this repo uses them, and they are the vector for the ingress-nginx
+  # config-injection CVEs (CVE-2023-5044, CVE-2025-1974 family)
+  service:
+    type: ClusterIP
+  metrics:
+    enabled: true
+    service:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "10254"

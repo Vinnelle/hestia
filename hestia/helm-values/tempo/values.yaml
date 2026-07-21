@@ -1,0 +1,6 @@
+persistence:
+  enabled: true
+  size: 10Gi
+storage:
+  trace:
+    backend: local

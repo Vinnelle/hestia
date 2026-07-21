@@ -1,0 +1,23 @@
+externalURL: https://registry.vinnel.cloud
+harborAdminPassword: ${jsonencode(admin_password)}
+
+expose:
+  type: ingress
+  tls:
+    enabled: true
+    certSource: secret
+    secret:
+      secretName: registry-tls
+  ingress:
+    hosts:
+      core: registry.vinnel.cloud
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: "${cluster_issuer}"
+      nginx.ingress.kubernetes.io/proxy-body-size: "0"
+
+persistence:
+  enabled: true
+  persistentVolumeClaim:
+    registry:
+      size: 20Gi

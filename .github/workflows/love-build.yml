@@ -1,0 +1,60 @@
+name: Build love
+
+on:
+  push:
+    branches: [prd]
+    paths:
+      - "love/love.c"
+      - ".github/workflows/love-build.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  # compile check only — the released binary is built in the mirror job, and
+  # momus compiles from source at pod start, so no binary is committed to git
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compile
+        run: cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
+
+  mirror:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: hestia
+
+      - uses: actions/checkout@v5
+        with:
+          repository: Vinnelle/love
+          token: ${{ secrets.GH_API_TOKEN }}
+          path: love
+
+      - name: Mirror source
+        run: |
+          cp hestia/love/love.c love/love.c
+          cd love
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && exit 0
+          git commit -m "sync: mirror love.c from hestia@${{ github.sha }}"
+          git push
+
+      - name: Release binary
+        env:
+          GH_TOKEN: ${{ secrets.GH_API_TOKEN }}
+        run: |
+          cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o hestia/love/love hestia/love/love.c
+          tag="v${{ github.run_number }}"
+          gh release view "$tag" --repo Vinnelle/love >/dev/null 2>&1 && exit 0
+          gh release create "$tag" hestia/love/love \
+            --repo Vinnelle/love \
+            --title "$tag" \
+            --notes "compiled from hestia@${{ github.sha }}"

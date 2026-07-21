@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <link rel="icon" type="image/png" href="imageRecourses/favicon.png"/>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css"/>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    <meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
+
+    <meta name="viewport" content="width=device-width" />
+
+    <title>Monkè</title>
+
+    <style>
+        * {
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        html {
+            color: #888;
+            display: table;
+            font-family: sans-serif;
+            height: 100%;
+            text-align: center;
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            display: table-cell;
+            vertical-align: auto;
+            margin: 2em auto;
+            background-image: url('/imageRecourses/backgroundmobile.jpg');
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: unset;
+            overflow-x: hidden;
+            position: relative;
+            transition: 0.2s;
+        }
+
+        @media only screen and (min-width: 601Px) {
+            body {
+                background-image: url('/imageRecourses/background1.jpg');
+                background-repeat: no-repeat;
+                background-size: cover;
+                background-attachment: unset;
+                transition: 0.2s;
+            }
+        }
+        #Monke {
+            text-align: center;
+            font-family: sans-serif;
+        }
+        #mLanding {
+            text-align: center;
+            font-family: sans-serif;
+        }
+
+        #mistake {
+            align-content: center;
+            filter: invert(1) brightness(50%);
+            transition: all 0.5s;
+            position: static;
+            margin-right: auto;
+        }
+
+        #mistake:hover {
+            filter: invert(0) brightness(100%);
+            transition: all 0.2s;
+        }
+
+        /* The side navigation menu */
+        .sidenav {
+            height: 100%; /* 100% Full-height */
+            width: 0; /* 0 width - change this with JavaScript */
+            position: fixed; /* Stay in place */
+            z-index: 1; /* Stay on top */
+            top: 0; /* Stay at the top */
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.9); /* Black*/
+            overflow-x: hidden; /* Disable horizontal scroll */
+            padding-top: 60px; /* Place content 60px from the top */
+            transition: 0.5s; /* 0.5 second transition effect to slide in the sidenav */
+        }
+
+        /* The navigation menu links */
+        .sidenav a {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        .sidenav span {
+            padding: 8px 8px 8px 32px;
+            text-decoration: none;
+            font-size: 25px;
+            color: #818181;
+            display: block;
+            transition: 0.3s;
+            text-align: center;
+        }
+
+        /* When you mouse over the navigation links, change their color */
+        .sidenav a:hover {
+            color: #f1f1f1;
+        }
+
+        #sImg onclick {
+            color: #f1f1f1;
+            transition: 0.3s
+        }
+
+        .sidenav span:hover {
+            color: #f1f1f1;
+        }
+
+        /* Position and style the close button (top right corner) */
+        .sidenav .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+
+        .hamBurger {
+            position: absolute;
+            top: 15px;
+            left: 2px;
+            margin-left: 10px;
+            width: 2em;
+            size: 4em;
+        }
+
+        /* On smaller screens, where height is less than 450px, change the style of the sidenav (less padding and a smaller font size) */
+        @media screen and (max-height: 450px) {
+            .sidenav {padding-top: 15px;}
+            .sidenav a {font-size: 18px;}
+            .sidenav span {font-size: 18px;}
+        }
+    </style>
+
+</head>
+
+<body>
+
+<br>
+
+<br><strong><h1 style="font-size: 6em; text-underline: #4d4d4d; text-underline-position: under; font-weight: bold" id="Monke">MONKÈ</h1>
+<p style="font-size: 2em; line-height: 75%" id="mLanding">HOME PAGE</p></strong>
+<br class="mbr" id="monkebr"><br>
+
+<div id="sideNav" class="sidenav" style="z-index: 1">
+    <a href="javascript:void(0)" class="closebtn" onclick=" closeNav(); closeSNav(); closeJNav(); showHam();">&times;</a>
+    <a href="javascript:void(0)" onclick=" openPNav(); closeNav();">User</a>
+    <a href="/Vinnel/">Vinnel</a>
+    <a href="javascript:void(0)" onclick=" openJNav(); closeNav()">Josh</a>
+    <a href="/FORTIGUARDWEBFILTERVIOLATION.html">Fortiguard</a>
+    <a href="javascript:void(0)" onclick=" openSNav(); closeNav()"><img src="/imageRecourses/SettingsIcon.png" id="sImg" ></a>
+</div>
+
+<div id="settingsNav" class="sidenav" style="z-index: 2">
+    <a href="javascript:void(0)" class="closebtn" onclick=" closeSNav(); openNav()">&times;</a>
+    <a onclick=console.error("Yes")>Yes</a>
+</div>
+
+<div id="joshNav" class="sidenav" style="z-index: 2">
+    <a href="javascript:void(0)" class="closebtn" onclick=" closeJNav(); openNav()">&times;</a>
+    <a href="/Josh/index.html">Home</a>
+    <a href="javascript:void(0)" onclick=" closeJNav(); openGNav()" >Games</a>
+    <a href="javascript:void(0)" onclick=" closeJNav(); openLBNav()">Leaderboards</a>
+</div>
+
+<div id="profileNav" class="sidenav" style="z-index: 2">
+    <a href="javascript:void(0)" class="closebtn" onclick=" closePNav(); openNav();">&times;</a>
+    <a href="#">Profile</a>
+    <a href="/main.html">Dashboard</a>
+    <a href="#">Account</a>
+</div>
+
+<div id="gamesNav" class="sidenav" style="z-index: 2">
+    <a href="javascript:void(0)" class="closebtn" onclick=" closeGNav(); openJNav();">&times;</a>
+</div>
+
+<div id="leaderNav" class="sidenav" style="z-index: 2">
+    <a href="javascript:void(0)" class="closebtn" onclick=" closeLBNav(); openJNav();">&times;</a>
+    <a href="#" style="text-underline: rgba(0,0,0,1)">All Games</a>
+    <a href="#">Picturama</a>
+</div>
+
+<span class="hamBurger" id="hamburger" onclick="openNav()"><img src="/imageRecourses/MistakeButMenu.png" id="mistake" alt="death"></span>
+
+<script>
+    function openNav() {
+        document.getElementById("sideNav").style.width = "250px";
+        document.body.style.backgroundColor = "rgba(0,0,0,0.5)";
+        document.getElementById("hamburger").style.display = "none";
+    }
+    function closeNav() {
+        document.getElementById("sideNav").style.width = "0";
+        document.body.style.backgroundColor = "white";
+    }
+    function showHam() {
+        document.getElementById("hamburger").style.display = "initial";
+    }
+    function openSNav() {
+        document.getElementById("settingsNav").style.width = "250px";
+        document.body.style.backgroundColor = "rgba(0,0,0,0.5)";
+    }
+    function closeSNav() {
+        document.getElementById("settingsNav").style.width = "0";
+        document.body.style.backgroundColor = "white";
+    }
+    function openJNav() {
+        document.getElementById("joshNav").style.width = "250px";
+        document.body.style.backgroundColor = "rgba(0,0,0,0.5)";
+    }
+    function closeJNav() {
+        document.getElementById("joshNav").style.width = "0";
+        document.body.style.backgroundColor = "white";
+    }
+    function openPNav() {
+        document.getElementById("profileNav").style.width = "250px";
+        document.body.style.backgroundColor = "rgba(0,0,0,0.5)";
+    }
+    function closePNav() {
+        document.getElementById("profileNav").style.width = "0";
+        document.body.style.backgroundColor = "white";
+    }
+    function openGNav() {
+        document.getElementById("gamesNav").style.width = "250px";
+        document.body.style.backgroundColor = "rgba(0,0,0,0.5)";
+    }
+    function closeGNav() {
+        document.getElementById("gamesNav").style.width = "0";
+        document.body.style.backgroundColor = "white";
+    }
+    function openLBNav() {
+        document.getElementById("leaderNav").style.width = "250px";
+        document.body.style.backgroundColor = "rgba(0,0,0,0.5)";
+    }
+    function closeLBNav() {
+        document.getElementById("leaderNav").style.width = "0";
+        document.body.style.backgroundColor = "white";
+    }
+</script>
+
+<br><img src="/imageRecourses/aforeverlastingsignofmymistake.png" id="mistake" alt="death"><br>
+
+</body>
+

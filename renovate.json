@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 1,
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "terraform": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Major bumps (provider schema rewrites, Helm chart values migrations) need a human eyeball before they hit prd",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ]
+}

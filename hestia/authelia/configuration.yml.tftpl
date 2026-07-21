@@ -1,0 +1,75 @@
+{
+  "authentication_backend": {
+    "password_reset": { "disable": true },
+    "file": { "path": "/config/users_database.yml" }
+  },
+  "access_control": { "default_policy": "two_factor" },
+  "session": {
+    "secret": ${jsonencode(session_secret)},
+    "cookies": [
+      { "domain": "vinnel.cloud", "authelia_url": "https://auth.vinnel.cloud" }
+    ]
+  },
+  "storage": {
+    "encryption_key": ${jsonencode(storage_encryption_key)},
+    "local": { "path": "/config/data/db.sqlite3" }
+  },
+  "notifier": {
+    "filesystem": { "filename": "/config/data/notification.txt" }
+  },
+  "identity_providers": {
+    "oidc": {
+      "hmac_secret": ${jsonencode(oidc_hmac_secret)},
+      "jwks": [
+        {
+          "key_id": "main",
+          "algorithm": "RS256",
+          "use": "sig",
+          "key": ${jsonencode(oidc_issuer_private_key)}
+        }
+      ],
+      "cors": {
+        "endpoints": ["token", "userinfo"],
+        "allowed_origins_from_client_redirect_uris": true
+      },
+      "clients": [
+        {
+          "client_id": "netbird-dashboard",
+          "client_name": "Netbird Dashboard",
+          "client_secret": ${jsonencode(netbird_dashboard_client_secret)},
+          "public": false,
+          "authorization_policy": "two_factor",
+          "token_endpoint_auth_method": "client_secret_post",
+          "redirect_uris": ["https://proxy.vinnel.cloud/nb-auth", "https://proxy.vinnel.cloud/nb-silent-auth"],
+          "audience": ["netbird-dashboard"],
+          "scopes": ["openid", "email", "profile", "offline_access"],
+          "grant_types": ["authorization_code", "refresh_token"],
+          "response_types": ["code"]
+        },
+        {
+          "client_id": "netbird-cli",
+          "client_name": "Netbird CLI",
+          "public": true,
+          "authorization_policy": "two_factor",
+          "redirect_uris": ["http://localhost:53000", "http://localhost:54000"],
+          "audience": ["netbird-cli"],
+          "scopes": ["openid", "email", "profile", "offline_access"],
+          "grant_types": ["authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:device_code"],
+          "response_types": ["code"]
+        },
+        {
+          "client_id": "vinnel-cloud-dashboard",
+          "client_name": "Vinnel Cloud Dashboard",
+          "client_secret": ${jsonencode(vinnel_cloud_dashboard_client_secret)},
+          "public": false,
+          "authorization_policy": "two_factor",
+          "redirect_uris": ["https://dashboard.vinnel.cloud/auth/callback"],
+          "audience": ["vinnel-cloud-dashboard"],
+          "scopes": ["openid", "email", "profile"],
+          "grant_types": ["authorization_code"],
+          "response_types": ["code"]
+        }
+      ]
+    }
+  }
+}

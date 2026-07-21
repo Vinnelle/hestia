@@ -1,0 +1,33 @@
+name: Mirror hestia
+
+on:
+  push:
+    branches: [prd]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: gaia
+
+      - uses: actions/checkout@v5
+        with:
+          repository: Vinnelle/hestia
+          token: ${{ secrets.GH_API_TOKEN }}
+          path: hestia
+
+      - run: |
+          rsync -a --delete --exclude='.git' gaia/ hestia/
+          cd hestia
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && exit 0
+          git commit -m "sync: mirror gaia@${{ github.sha }}"
+          git push

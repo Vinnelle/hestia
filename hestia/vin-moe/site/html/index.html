@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finlay — vin.moe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: #0c0c0d;
+    color: #cececa;
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+    padding: clamp(2rem, 7vh, 5rem) clamp(1.1rem, 5vw, 1.4rem) 4rem;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  ::selection { background: rgba(247,185,209,0.25); color: #fff; }
+  a { color: #f7b9d1; text-decoration: none; }
+  a:hover { color: #fbd3e2; }
+  main { max-width: 680px; width: 100%; }
+
+  header { margin-bottom: 2.4rem; }
+  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.01em; color: #ededea; margin: 0 0 0.3rem; }
+  .tagline { margin: 0; color: #74746f; font-size: 0.9rem; }
+
+  nav { display: flex; flex-wrap: wrap; gap: 0.7rem clamp(0.9rem, 4vw, 1.6rem); margin-bottom: 2.2rem; align-items: baseline; }
+  nav .sep { color: #5c5c58; user-select: none; }
+  .tab {
+    font-family: inherit;
+    font-size: 0.95rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #74746f;
+    text-decoration: none;
+    text-underline-offset: 5px;
+    text-decoration-thickness: 1px;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .tab.active { color: #f7b9d1; text-decoration: underline; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  p { line-height: 1.75; margin: 0 0 1.15rem; }
+  .lead { color: #cececa; }
+  .muted { color: #a9a9a3; }
+  .dim { color: #74746f; font-size: 0.9rem; }
+  .label { color: #5c5c58; font-size: 0.8rem; margin-bottom: 0.2rem; }
+
+  .group { color: #f7b9d1; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin: 2.8rem 0 0.6rem; }
+
+  .links { border-top: 1px solid #1e1e1f; padding-top: 1.3rem; display: flex; gap: 2.4rem; flex-wrap: wrap; margin-top: 1.25rem; }
+  .links .k { color: #5c5c58; font-size: 0.8rem; margin-bottom: 0.35rem; }
+
+  ul { list-style: none; margin: 0 0 2.4rem; padding: 0; display: flex; flex-direction: column; }
+  ul.last { margin-bottom: 0; }
+  li { display: flex; gap: 0.9rem; line-height: 1.7; border-top: 1px solid #1e1e1f; padding: 1.05rem 0; }
+  li .bullet { color: #454542; flex-shrink: 0; }
+  li span:last-child { color: #cececa; }
+
+  .topic { border-top: 1px solid #1e1e1f; padding: 1.4rem 0; }
+  .topic-head { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.55rem; }
+  .topic-num { color: #454542; font-size: 0.85rem; }
+  .topic h2 { font-size: 0.95rem; font-weight: 700; color: #ededea; margin: 0; }
+  .topic p { color: #a3a39d; font-size: 0.92rem; margin: 0; }
+
+  footer { margin-top: 3rem; color: #454542; font-size: 0.82rem; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Finlay</h1>
+    <p class="tagline">infrastructure &middot; devops &middot; software</p>
+  </header>
+
+  <nav>
+    <button class="tab active" data-tab="about">about</button>
+    <span class="sep" aria-hidden="true">/</span>
+    <button class="tab" data-tab="work">things i've done</button>
+    <span class="sep" aria-hidden="true">/</span>
+    <button class="tab" data-tab="runs">how this site runs</button>
+  </nav>
+
+  <!-- ABOUT -->
+  <section class="panel active" id="about">
+    <p class="lead">Hello, my name is Finlay.</p>
+    <p class="muted">I've been working with computers since I was 11 — game mods, personal QoL tools, operating systems, general programming, and whatever else seemed interesting at the time.</p>
+    <p class="muted">Currently I'm an infrastructure engineer at a large financial institution, focused on GCP. Since starting I've grown into a trusted member of my team and the observability SME for the department — the person people come to when something needs building or something breaks.</p>
+    <p class="lead">Looking forward to seeing how far this goes.</p>
+
+    <div class="links">
+      <div>
+        <div class="k"># github</div>
+        <a href="https://tr.ee/vin">tr.ee/vin</a>
+      </div>
+      <div>
+        <div class="k"># email</div>
+        <a href="mailto:a@vin.moe">a@vin.moe</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- WORK -->
+  <section class="panel" id="work">
+    <p class="muted" style="margin-bottom:2.2rem;">Things I've built, fixed, and improved — at work and on my own.</p>
+
+    <div class="label"># work</div>
+    <ul>
+      <li><span class="bullet">–</span><span>Built, tested, and documented my team's Jenkins pipeline metrics collection, feeding failure and SLO alerting into our observability platform — now adopted department-wide.</span></li>
+      <li><span class="bullet">–</span><span>Built custom alerting for RHEL servers on GCE, focused on LDAP/S authentication failures surfaced through our observability platform.</span></li>
+      <li><span class="bullet">–</span><span>Shipped GCP upstream ServiceHealth alerting via Cloud Run into PowerBI and our observability platform, giving the company incident tracking and callout for any affected resource or region.</span></li>
+      <li><span class="bullet">–</span><span>Reworked our bespoke platform health-check pipelines — ~58s faster, ~200 fewer lines, wired into GCP SLOs and observability.</span></li>
+      <li><span class="bullet">–</span><span>Designed the rollout of a new compliance tool into our internal cloud provisioning and GitOps pipelines.</span></li>
+      <li><span class="bullet">–</span><span>Serve as the observability SME for the whole department — supporting other teams and fielding questions on the platform.</span></li>
+      <li><span class="bullet">–</span><span>Zero downtime to date — no incident caused by any change or fix, planned or unplanned.</span></li>
+    </ul>
+
+    <div class="label"># personal</div>
+    <ul class="last">
+      <li><span class="bullet">–</span><span>Ran a fully code-managed GCP stack for my personal cloud before moving to dedicated hardware.</span></li>
+      <li><span class="bullet">–</span><span>Migrated from GCP to a self-hosted setup with minimal disruption and downtime.</span></li>
+      <li><span class="bullet">–</span><span>Secured every service on my server with layered high- and low-level practices and self-hosted tooling.</span></li>
+      <li><span class="bullet">–</span><span>Built and maintain a homelab and Ubiquiti network — multiple servers, storage arrays, switches, WAPs, gateways, a UPS, a firewall, and a Raspberry Pi running network analysis, SIEM, ad-blocking, and custom DNS.</span></li>
+    </ul>
+  </section>
+
+  <!-- RUNS -->
+  <section class="panel" id="runs">
+    <p class="muted">The node, cluster, ingress, container registry, DNS, image build, and Deployment spec are all Terraform, applied through HCP Terraform in a private repo. The site itself is a static HTML/CSS page.</p>
+    <p class="lead">Push to merge, live in ~44 seconds — build, registry push, and a rollout pinned to the commit SHA.</p>
+    <p class="dim" style="margin-bottom:0.4rem;"><em>AI wrote the HTML/CSS on this page. I do infra, not frontend.</em></p>
+
+    <div class="group" style="margin-top:2.2rem;">platform</div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">01</span><h2>cluster</h2></div>
+      <p>One Talos node. Control plane and worker, same physical server (allowSchedulingOnControlPlanes). No managed Kubernetes underneath. The node is provisioned out-of-band; Terraform bootstraps it with the siderolabs/talos provider and stores the resulting kubeconfig as state.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">02</span><h2>registry</h2></div>
+      <p>Self-hosted Harbor on the same cluster. This site gets its own harbor_project. Pushes and pulls go through a CI robot account whose password is a Terraform random_password — never typed by hand — packaged into a dockerconfigjson secret and mounted as an imagePullSecret.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">03</span><h2>ingress &amp; tls</h2></div>
+      <p>ingress-nginx runs as a DaemonSet with hostNetwork: true, bound to the node's public IP. No load balancer. Each domain has its own cert-manager ClusterIssuer solving via DNS-01 against Cloudflare. Zone SSL mode is strict, so TLS is independently valid on both hops: browser→edge and edge→origin.</p>
+    </div>
+
+    <div class="group">the site</div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">04</span><h2>image</h2></div>
+      <p>Two-stage Dockerfile. Stage one is Alpine + imagemagick, converting the source PNG into a multi-resolution favicon.ico (16/32/48/64). Stage two is a pinned nginx:1.29-alpine with nginx.conf, the static HTML, and the favicon copied in. The single server block layers a security-header set (HSTS, CSP, nosniff, frame-deny, referrer policy), a /healthz endpoint, and gzip on top of a try_files fallback that redirects unknown paths back to /.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">05</span><h2>deployment</h2></div>
+      <p>Two replicas behind a ClusterIP Service. 50m CPU / 16Mi requested, 200m / 64Mi limit. Startup, readiness, and liveness probes all hit /healthz. Rollouts surge to 100% with zero unavailable plus a pre-stop drain, and a PodDisruptionBudget keeps at least one replica serving. A VerticalPodAutoscaler in Auto mode tunes the memory request in that band; CPU is left unmanaged.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">06</span><h2>build &amp; deploy</h2></div>
+      <p>A push to the site's path on prd (or a manual workflow_dispatch) triggers GitHub Actions: log into Harbor, buildx build, and push two tags — :latest and the commit SHA. The rollout is a kubectl set-image to the immutable SHA tag followed by rollout status, so every release is a distinct pinned image and a rollback points somewhere real.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">07</span><h2>mirror</h2></div>
+      <p>A second job rsyncs two things to a public GitHub repo via a scoped token: the site source into site-image/ and the workflow file into github-workflow/. It commits only if something changed. Source lives in two places — the private infra monorepo where it's built, and a public read-only mirror.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">08</span><h2>dns &amp; cdn</h2></div>
+      <p>vin.moe's A record points at the node's IP through a proxied Cloudflare record. Combined with DNS-01, none of Let's Encrypt's validation traffic reaches the origin — the only thing that must be reachable is the origin's own valid cert, and only Cloudflare needs to see it. The proxy also acts as the CDN: a Terraform-managed cache ruleset tells Cloudflare's edge to cache everything on this hostname — HTML included, not just static assets — so most requests never touch the origin at all.</p>
+    </div>
+
+    <div class="group">node &amp; security</div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">09</span><h2>the node</h2></div>
+      <p>Dedicated hardware running Talos Linux — an immutable, API-driven OS with no shell, no SSH, and no package manager; every change goes through its config API, not a login. The ephemeral and state partitions are both LUKS2-encrypted. A host-level ingress firewall defaults to deny, with public web traffic accepted only from Cloudflare's published edge ranges — so the origin quietly ignores direct scans and floods.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">10</span><h2>defense in depth</h2></div>
+      <p>Public traffic terminates at Cloudflare and is re-encrypted to the origin — strict SSL, independently valid on both hops — with HSTS and a content-security policy on every response. Administrative surfaces sit behind Authelia two-factor; the SSH VPS (debian pod deployed on cluster for remote dev) is reachable only over a private WireGuard mesh, never the public internet. In-cluster secrets are generated by Terraform and held in HCP Terraform, never committed to the repo, and CI runs on a namespace-scoped token rather than cluster-admin. Workloads run least-privilege under Pod Security Standards.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">11</span><h2>watch &amp; recover</h2></div>
+      <p>A Prometheus / Grafana / Loki / Tempo stack watches the node and every workload. Persistent volumes back up nightly to encrypted object storage on rolling retention, and dependency bumps land automatically through Renovate with a human gate on majors.</p>
+    </div>
+
+    <div class="links" style="margin-top:0.2rem;">
+      <div>
+        <div class="k"># source</div>
+        <a href="https://github.com/Vinnelle/vin.moe">github.com/Vinnelle/vin.moe</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>vin.moe</footer>
+</main>
+
+<script>
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      const name = tab.dataset.tab;
+      tabs.forEach(function (t) { t.classList.toggle('active', t === tab); });
+      panels.forEach(function (p) { p.classList.toggle('active', p.id === name); });
+    });
+  });
+</script>
+</body>
+</html>

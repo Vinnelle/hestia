@@ -1,0 +1,80 @@
+name: Build momus
+
+on:
+  push:
+    branches: [prd]
+    paths:
+      - "hestia/momus/Dockerfile"
+      - "hestia/momus/entrypoint.sh"
+      - "love/love.c"
+      - ".github/workflows/momus-build.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  # Shares the manifest writer lock with site-deploy.yml. Image builds may run
+  # in parallel, but only one workflow may commit an image manifest at a time.
+  group: site-image-manifest-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Log in to Harbor
+        env:
+          HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
+          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if printf '%s' "$HARBOR_PASSWORD" | docker login registry.vinnel.cloud \
+              --username "$HARBOR_USERNAME" --password-stdin; then
+              exit 0
+            fi
+            sleep "$((attempt * 5))"
+          done
+          echo "unable to connect to Harbor after five attempts" >&2
+          exit 1
+
+      - uses: docker/setup-buildx-action@v4
+
+      - id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: hestia/momus/Dockerfile
+          platforms: linux/amd64
+          pull: true
+          push: true
+          tags: |
+            registry.vinnel.cloud/vinnel-cloud/momus:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Record immutable image digest
+        shell: bash
+        run: |
+          jq --arg image "registry.vinnel.cloud/vinnel-cloud/momus@${{ steps.build.outputs.digest }}" \
+            '.momus = $image' hestia/images.json > hestia/images.json.tmp
+          mv hestia/images.json.tmp hestia/images.json
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hestia/images.json
+          git diff --cached --quiet || git commit -m "deploy: pin Momus image digest"
+          for attempt in 1 2 3; do
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
+              exit 0
+            fi
+            sleep "$attempt"
+          done
+          echo "failed to push Momus image digest after three attempts" >&2
+          exit 1

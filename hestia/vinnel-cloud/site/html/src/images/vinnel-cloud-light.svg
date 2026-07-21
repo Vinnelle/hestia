@@ -1,0 +1,35 @@
+<svg width="400" height="100" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cloudGrad" x1="0" y1="0" x2="64" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7ab5ff"/>
+      <stop offset="55%" stop-color="#9b7aff"/>
+      <stop offset="100%" stop-color="#c67aff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#9b7aff" flood-opacity="0.25"/>
+    </filter>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@900&amp;family=DM+Sans:wght@400&amp;display=swap');
+      .wordmark { font-family: 'Nunito', sans-serif; font-weight: 900; font-size: 38px; letter-spacing: -0.02em; }
+      .sub { font-family: 'DM Sans', sans-serif; font-size: 12px; letter-spacing: 0.06em; }
+    </style>
+  </defs>
+
+  <!-- Cloud icon (offset to 18,22) -->
+  <g transform="translate(18,22)">
+    <path d="M48 36H14C8.48 36 4 31.52 4 26C4 20.86 7.96 16.63 13.03 16.07C14.48 11.73 18.55 8.5 23.38 8.5C26.89 8.5 30.03 10.09 32.15 12.59C33.71 11.93 35.44 11.56 37.25 11.56C44.62 11.56 50.6 17.54 50.6 24.91C50.6 25.09 50.59 25.27 50.58 25.45C53.12 26.41 55 28.88 55 31.78C55 35.2 52.2 38 48.8 38L48 36Z"
+          fill="url(#cloudGrad)" filter="url(#shadow)" opacity="0.3"/>
+    <path d="M46 34H12C6.48 34 2 29.52 2 24C2 18.86 5.96 14.63 11.03 14.07C12.48 9.73 16.55 6.5 21.38 6.5C24.89 6.5 28.03 8.09 30.15 10.59C31.71 9.93 33.44 9.56 35.25 9.56C42.62 9.56 48.6 15.54 48.6 22.91C48.6 23.09 48.59 23.27 48.58 23.45C51.12 24.41 53 26.88 53 29.78C53 33.2 50.2 36 46.8 36L46 34Z"
+          fill="url(#cloudGrad)"/>
+    <!-- Sparkles -->
+    <path d="M55 7L56.2 10H59.5L56.8 11.8L57.8 15L55 13L52.2 15L53.2 11.8L50.5 10H53.8Z" fill="#f8c94e" opacity="0.9"/>
+    <circle cx="57" cy="22" r="2.5" fill="#a78bfa" opacity="0.7"/>
+    <path d="M10 40L10.8 42.5H13.5L11.3 44L12 46.5L10 45L8 46.5L8.7 44L6.5 42.5H9.2Z" fill="#5b8fff" opacity="0.55"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="96" y="58" class="wordmark">
+    <tspan fill="#1a1f36">Vinnel</tspan><tspan fill="#a78bfa">.cloud</tspan>
+  </text>
+  <text x="97" y="76" class="sub" fill="#8b95b8">part of Vinnel.Labs</text>
+</svg>

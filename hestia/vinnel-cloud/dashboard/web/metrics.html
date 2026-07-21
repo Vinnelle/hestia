@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Metrics — Vinnel Cloud</title>
+  <script>var d=document.documentElement,s=localStorage;d.dataset.theme=s.theme||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');d.onclick=function(e){if(!e.target.closest('.toggle'))return;d.dataset.themeTransitioning='';d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';s.theme=d.dataset.theme;setTimeout(function(){delete d.dataset.themeTransitioning},500)}</script>
+  <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+  <script defer src="assets/js/chart.js"></script>
+</head>
+<body>
+
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+  <div class="app-layout">
+
+    <aside class="sidebar" id="sidebar">
+      <nav class="sidebar-nav">
+        <a class="sidebar-link" href="https://vinnel.cloud">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>
+          </svg>
+          <span class="sidebar-label">Home</span>
+        </a>
+        <a class="sidebar-link active" href="metrics.html" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <span class="sidebar-label">Metrics</span>
+        </a>
+        <a class="sidebar-link" href="account.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span class="sidebar-label">Account</span>
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-theme-wrap">
+          <button class="toggle" aria-label="Toggle theme">
+            <span class="toggle-knob">
+              <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+              <svg class="icon-sun"  viewBox="0 0 24 24"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zM12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </span>
+          </button>
+          <span class="sidebar-label sidebar-watermark">Vinnel.Labs</span>
+        </div>
+      </div>
+    </aside>
+
+    <div class="app-content">
+
+      <nav class="app-nav">
+        <div class="nav-left">
+          <button class="sidebar-toggle-btn" id="sidebar-toggle" aria-label="Toggle sidebar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="nav-logo-center">
+          <img class="nav-logo logo-dark"  src="assets/images/vinnel-cloud-dark-1x.webp"  alt="Vinnel Cloud">
+          <img class="nav-logo logo-light" src="assets/images/vinnel-cloud-light-1x.webp" alt="Vinnel Cloud">
+        </div>
+        <div class="nav-user">
+          <button class="user-menu-btn" id="user-menu-btn" aria-haspopup="true" aria-expanded="false">
+            <img id="user-avatar" src="" alt="Avatar" width="28" height="28">
+            <span id="user-email"></span>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div class="user-dropdown" id="user-dropdown" hidden>
+            <button class="dropdown-item dropdown-item--danger" id="sign-out-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <main class="app-main">
+        <h1 class="page-title">Traffic</h1>
+        <p class="page-subtitle">Last 30 days · dashboard.vinnel.cloud</p>
+
+        <div class="state-center" id="loading">Loading…</div>
+        <div class="state-center error-msg" id="error" hidden></div>
+
+        <div id="content" class="fade-in-on-show" hidden>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Page views</div>
+              <div class="stat-value" id="stat-pageviews">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Sessions</div>
+              <div class="stat-value" id="stat-sessions">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Active users</div>
+              <div class="stat-value" id="stat-users">—</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="card-title">Page views per day</div>
+            <div class="chart-wrap">
+              <canvas id="sessions-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Page</th>
+                  <th>Views</th>
+                </tr>
+              </thead>
+              <tbody id="pages-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <script src="assets/js/nav.js"></script>
+  <script src="assets/js/metrics.js"></script>
+</body>
+</html>

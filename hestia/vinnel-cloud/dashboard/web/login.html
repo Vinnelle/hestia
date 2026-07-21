@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in — Vinnel Cloud</title>
+  <script>var d=document.documentElement,s=localStorage;d.dataset.theme=s.theme||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');d.onclick=function(e){if(!e.target.closest('.toggle'))return;d.dataset.themeTransitioning='';d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';s.theme=d.dataset.theme;setTimeout(function(){delete d.dataset.themeTransitioning},500)}</script>
+  <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/app.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="logo-wrap">
+        <img class="logo-dark"  src="assets/images/vinnel-cloud-dark-1x.webp"  alt="Vinnel Cloud" width="240" height="60">
+        <img class="logo-light" src="assets/images/vinnel-cloud-light-1x.webp" alt="Vinnel Cloud" width="240" height="60">
+      </div>
+      <h1>Dashboard sign in</h1>
+      <a class="btn-signin" href="/auth/login">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 3a7 7 0 1 1 0 14A7 7 0 0 1 12 5zm0 2a5 5 0 1 0 0 10A5 5 0 0 0 12 7zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+        </svg>
+        Sign in with Authelia
+      </a>
+    </div>
+  </div>
+
+  <button class="toggle" aria-label="Toggle theme">
+    <span class="toggle-knob">
+      <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+      <svg class="icon-sun"  viewBox="0 0 24 24"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zM12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </span>
+  </button>
+</body>
+</html>

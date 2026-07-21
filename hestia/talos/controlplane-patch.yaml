@@ -1,0 +1,23 @@
+cluster:
+  allowSchedulingOnControlPlanes: true
+machine:
+  network:
+    nameservers:
+      - 9.9.9.9
+      - 149.112.112.112
+  time:
+    servers:
+      - time.cloudflare.com
+  sysctls:
+    vm.max_map_count: "262144"
+  systemDiskEncryption:
+    state:
+      provider: luks2
+      keys:
+        - nodeID: {}
+          slot: 0
+    ephemeral:
+      provider: luks2
+      keys:
+        - nodeID: {}
+          slot: 0

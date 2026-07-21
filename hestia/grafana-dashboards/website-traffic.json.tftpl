@@ -1,0 +1,59 @@
+{
+  "title": "Website Traffic — ingress-nginx",
+  "uid": "website-traffic",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate by host",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "sum by (host) (rate(nginx_ingress_controller_requests[5m]))",
+        "legendFormat": "{{host}}"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "5xx error rate by host",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "sum by (host) (rate(nginx_ingress_controller_requests{status=~\"5..\"}[5m]))",
+        "legendFormat": "{{host}}"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "p95 request latency by host",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "histogram_quantile(0.95, sum by (host, le) (rate(nginx_ingress_controller_request_duration_seconds_bucket[5m])))",
+        "legendFormat": "{{host}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "s" } }
+    },
+    {
+      "id": 4,
+      "title": "Requests by status code",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "sum by (status) (rate(nginx_ingress_controller_requests[5m]))",
+        "legendFormat": "{{status}}"
+      }]
+    }
+  ]
+}

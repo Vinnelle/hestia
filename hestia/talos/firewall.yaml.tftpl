@@ -1,0 +1,128 @@
+# Talos ingress firewall (hot-applied, no reboot).
+#
+# Default action: block all inbound to the host. Talos always permits loopback,
+# established/related connections, and rate-limited ICMP/ICMPv6 — so ping,
+# PMTUD and neighbor discovery keep working, and all egress (with replies) is
+# unaffected. hostNetwork pods (ingress-nginx, node-exporter) live in the host
+# namespace, so their ports are governed by these rules.
+#
+# Schema note: each NetworkRuleConfig source list is `ingress:` -> a list of
+# `- subnet: <cidr>` entries (optionally with `except: <cidr>`), NOT an
+# `ingressSelector.subnets` block.
+#
+# Flows this must keep working:
+#   Cloudflare -> 80/443            every public hostname is proxied (orange cloud)
+#   GitHub Actions / TFC -> 6443    CI deploys + the kubernetes/helm providers
+#   TFC -> 50000                    the talos provider itself — closing this would
+#                                   cut off the path that manages this firewall
+#   pods -> 10250/9100/10254        metrics-server -> kubelet, prometheus ->
+#                                   node-exporter and ingress-nginx metrics
+#   netbird mesh                    outbound-initiated (hole punch / relay) —
+#                                   covered by conntrack, no inbound rule needed
+---
+apiVersion: v1alpha1
+kind: NetworkDefaultActionConfig
+ingress: block
+---
+# Web ingress: only Cloudflare's edge may reach nginx. Canonical ranges from
+# https://www.cloudflare.com/ips-v4 and /ips-v6 (stable for years; re-check on
+# a Cloudflare announcement — a missing range shows up as some visitors 522ing).
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: web-from-cloudflare
+portSelector:
+  ports:
+    - 80
+    - 443
+  protocol: tcp
+ingress:
+  - subnet: 173.245.48.0/20
+  - subnet: 103.21.244.0/22
+  - subnet: 103.22.200.0/22
+  - subnet: 103.31.4.0/22
+  - subnet: 141.101.64.0/18
+  - subnet: 108.162.192.0/18
+  - subnet: 190.93.240.0/20
+  - subnet: 188.114.96.0/20
+  - subnet: 197.234.240.0/22
+  - subnet: 198.41.128.0/17
+  - subnet: 162.158.0.0/15
+  - subnet: 104.16.0.0/13
+  - subnet: 104.24.0.0/14
+  - subnet: 172.64.0.0/13
+  - subnet: 131.0.72.0/22
+  - subnet: 2400:cb00::/32
+  - subnet: 2606:4700::/32
+  - subnet: 2803:f800::/32
+  - subnet: 2405:b500::/32
+  - subnet: 2405:8100::/32
+  - subnet: 2a06:98c0::/29
+  - subnet: 2c0f:f248::/32
+---
+# Kubernetes API: world-open by necessity — GitHub Actions runners and TFC
+# workers have no pinnable egress ranges, and in-cluster clients reach the
+# apiserver through this port after DNAT. Client certs / SA tokens gate access.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: kubernetes-api
+portSelector:
+  ports:
+    - 6443
+  protocol: tcp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+# Talos apid: deliberately world-open. It is mTLS-only (no password surface),
+# TFC worker IPs cannot be pinned, and this port is the recovery path for the
+# firewall itself — restricting it risks trading a DoS for a lockout.
+# trustd (50001) gets no rule: single node, no workers join, so it goes dark.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: talos-apid
+portSelector:
+  ports:
+    - 50000
+  protocol: tcp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+# Kubelet API for metrics-server. Sources: pod CIDR (Talos default subnet),
+# plus the node's own IP because flannel masquerades pod->node traffic.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: kubelet-from-pods
+portSelector:
+  ports:
+    - 10250
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+---
+# Prometheus scrape targets that live in the host namespace:
+# node-exporter (9100) and the ingress-nginx metrics endpoint (10254).
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: metrics-from-pods
+portSelector:
+  ports:
+    - 9100
+    - 10254
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+---
+# DHCP client replies, in case the primary IP is DHCP-assigned (common on
+# dedicated hosts). Harmless if the address is static.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: dhcp-client
+portSelector:
+  ports:
+    - 68
+  protocol: udp
+ingress:
+  - subnet: 0.0.0.0/0

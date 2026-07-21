@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <link rel="icon" type="image/png" href="imageRecourses/favicon404.png"/>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="bootstrap-3.3.7-dist/css/bootstrap.min.css"/>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+    <meta charset="utf-8">
+    <meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
+    <meta name="viewport" content="width=device-width" />
+    <title>Monkè Not Found :c</title>
+    <meta Mandatory 404 page>
+    <style>
+        * {
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        html, body {
+            overflow-x: hidden;
+        }
+
+        html {
+            color: #888;
+            display: table;
+            font-family: sans-serif;
+            height: 100%;
+            text-align: center;
+            width: 100%;
+        }
+
+        body {
+            background-image: url("/imageRecourses/404bg.jpg");
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-attachment: unset;
+            display: table-cell;
+            vertical-align: middle;
+            margin: 2em auto;
+            position: -ms-device-fixed;
+            transition: 0.2s;
+        }
+
+        h1 {
+            color: #555;
+            font-size: 2em;
+            font-weight: 400;
+        }
+
+        p {
+            color: #555;
+            margin: 0 auto;
+            width: 340px;
+        }
+
+        #return {
+            border-radius: 4px;
+            background-color: #c42e09;
+            border: none;
+            color: #FFFFFF;
+            text-align: center;
+            position: center;
+            font-size: 15px;
+            padding: 20px;
+            width: 150px;
+            transition: all 0.5s;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        #return span {
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            transition: 0.5s;
+        }
+
+        #return span:after {
+            content: '\00bb';
+            position: absolute;
+            opacity: 0;
+            top: 0;
+            right: -20px;
+            transition: 0.5s;
+        }
+
+        #return:hover span {
+            padding-right: 25px;
+        }
+
+        #return:hover span:after {
+            opacity: 1;
+            right: 0;
+        }
+
+        #return:hover {
+            background-color: gray;
+            border: #0f0f0f;
+            box-shadow: 0 12px 16px 0 rgba(0,0,0,0.24), 0 17px 50px 0 rgba(0,0,0,0.19);
+        }
+
+        @media only screen and (max-width: 601Px) {
+
+            html, body {
+                overflow-x: hidden;
+            }
+
+            body {
+                background-image: url("/imageRecourses/404portback.jpg");
+                background-repeat: no-repeat;
+                background-size: cover;
+                background-attachment: unset;
+                display: inherit;
+                vertical-align: middle;
+                margin: 2em auto;
+                position: relative;
+                transition: 0.2s;
+            }
+
+            p {
+                width: 95%;
+            }
+
+            h1 {
+                font-size: 1.5em;
+                margin: 0 0 0.3em;
+            }
+
+            #return {
+                border-radius: 4px;
+                background-color: #f4511e;
+                border: none;
+                color: #FFFFFF;
+                text-align: center;
+                position: center;
+                font-size: 15px;
+                padding: 20px;
+                width: 150px;
+                transition: all 0.5s;
+                cursor: pointer;
+                margin: 5px;
+            }
+
+        }
+
+        #mistake {
+            align-content: center;
+            filter: invert(1) brightness(50%);
+            transition: all 0.5s;
+            position: static;
+            margin-right: auto;
+        }
+
+        #mistake:hover {
+            filter: invert(0) brightness(100%);
+            transition: all 0.2s;
+        }
+    </style>
+</head>
+
+<body>
+<img id="towel" src="/imageRecourses/towel.gif" style="max-width:80%;height:auto;size: 50%">
+<br>
+<h1>Error 404</h1>
+<p style="font-size: 135%; overflow-wrap: inherit">This page does not exist</p><br>
+<p style="font-size: 125%">Get Real</p><br>
+<button id="return" onclick="location.href='/'">Return Home</button><br>
+<br><img src="/imageRecourses/aforeverlastingsignofmymistake.png" alt="death" id="mistake"><br>
+</body>
+
+</html>

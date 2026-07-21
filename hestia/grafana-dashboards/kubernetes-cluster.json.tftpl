@@ -1,0 +1,103 @@
+{
+  "title": "Kubernetes Cluster — hestia",
+  "uid": "k8s-hestia",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Pods by namespace",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "count by (namespace) (kube_pod_info)",
+        "legendFormat": "{{namespace}}"
+      }]
+    },
+    {
+      "id": 2,
+      "title": "Pod restarts (1h)",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[1h]))",
+        "legendFormat": "{{namespace}}/{{pod}}"
+      }]
+    },
+    {
+      "id": 3,
+      "title": "Deployment availability",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "kube_deployment_status_replicas_available / kube_deployment_spec_replicas",
+        "legendFormat": "{{namespace}}/{{deployment}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } }
+    },
+    {
+      "id": 4,
+      "title": "Container CPU usage",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{container!=\"\"}[5m]))",
+        "legendFormat": "{{namespace}}/{{pod}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 5,
+      "title": "Container memory usage",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\"})",
+        "legendFormat": "{{namespace}}/{{pod}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 7,
+      "title": "Memory usage by pod (% of total system memory)",
+      "type": "bargauge",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "gradient",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "topk(15, sum by (namespace, pod) (container_memory_working_set_bytes{container!=\"\"}) / scalar(sum(node_memory_MemTotal_bytes)) * 100)",
+        "legendFormat": "{{namespace}}/{{pod}}"
+      }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 } }
+    },
+    {
+      "id": 6,
+      "title": "Node ready",
+      "type": "stat",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [{
+        "datasource": ${jsonencode(prometheus_ds)},
+        "expr": "kube_node_status_condition{condition=\"Ready\", status=\"true\"}",
+        "legendFormat": "{{node}}"
+      }]
+    }
+  ]
+}

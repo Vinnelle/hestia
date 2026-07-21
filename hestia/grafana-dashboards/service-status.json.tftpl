@@ -1,0 +1,128 @@
+{
+  "title": "Service Status — hestia",
+  "uid": "service-status-hestia",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-7d", "to": "now" },
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Service Status (7d)",
+      "type": "table",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 20 },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": ${jsonencode(prometheus_ds)},
+          "expr": ${jsonencode(service_ready_ratio)},
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": ${jsonencode(prometheus_ds)},
+          "expr": ${jsonencode(service_uptime_expr)},
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "C",
+          "datasource": ${jsonencode(prometheus_ds)},
+          "expr": "avg by (namespace, service) (rate(container_cpu_usage_seconds_total{container!=\"\", image!=\"\", namespace!=\"kube-system\"}[5m])) * 100",
+          "format": "table",
+          "instant": true
+        },
+        {
+          "refId": "D",
+          "datasource": ${jsonencode(prometheus_ds)},
+          "expr": "avg by (namespace, service) (container_memory_working_set_bytes{container!=\"\", image!=\"\", namespace!=\"kube-system\"} / (container_spec_memory_limit_bytes{container!=\"\", image!=\"\", namespace!=\"kube-system\"} > 0)) * 100",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "namespace": true },
+            "renameByName": { "service": "Name" }
+          }
+        }
+      ],
+      "options": {
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Value #A" },
+            "properties": [
+              { "id": "displayName", "value": "Status" },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "special", "options": { "match": "null+nan", "result": { "text": "Scaled to 0", "color": "blue" } } },
+                  { "type": "range", "options": { "from": 1, "to": 1, "result": { "text": "Active", "color": "green" } } },
+                  { "type": "range", "options": { "from": 0.000001, "to": 0.999999, "result": { "text": "Degraded", "color": "orange" } } },
+                  { "type": "range", "options": { "from": 0, "to": 0, "result": { "text": "Down", "color": "red" } } }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 0.000001 }, { "color": "green", "value": 1 }] }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value #B" },
+            "properties": [
+              { "id": "displayName", "value": "Uptime" },
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 1 },
+              {
+                "id": "mappings",
+                "value": [
+                  { "type": "special", "options": { "match": "null+nan", "result": { "text": "Scaled to 0", "color": "blue" } } }
+                ]
+              },
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "orange", "value": 95 }, { "color": "green", "value": 99 }] }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value #C" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 1 },
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 80 }, { "color": "red", "value": 90 }] }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Value #D" },
+            "properties": [
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 1 },
+              {
+                "id": "thresholds",
+                "value": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 80 }, { "color": "red", "value": 90 }] }
+              },
+              { "id": "custom.cellOptions", "value": { "type": "color-background" } }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

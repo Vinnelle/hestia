@@ -1,0 +1,150 @@
+[container]
+symbol = "box:"
+
+[hostname]
+ssh_symbol = "ssh:"
+
+[git_branch]
+symbol = "git:"
+
+[terraform]
+symbol = "tf:"
+
+[nix_shell]
+symbol = "nix:"
+
+[gcloud]
+disabled = true
+
+[aws]
+symbol = "aws:"
+
+[azure]
+symbol = "az:"
+
+[buf]
+symbol = "buf:"
+
+[c]
+symbol = "c:"
+
+[cmake]
+symbol = "cmake:"
+
+[conda]
+symbol = "conda:"
+
+[crystal]
+symbol = "cr:"
+
+[dart]
+symbol = "dart:"
+
+[deno]
+symbol = "deno:"
+
+[docker_context]
+symbol = "docker:"
+
+[dotnet]
+symbol = "dotnet:"
+
+[elixir]
+symbol = "ex:"
+
+[elm]
+symbol = "elm:"
+
+[erlang]
+symbol = "erl:"
+
+[golang]
+symbol = "go:"
+
+[gradle]
+symbol = "gradle:"
+
+[haskell]
+symbol = "hs:"
+
+[helm]
+symbol = "helm:"
+
+[java]
+symbol = "java:"
+
+[julia]
+symbol = "jl:"
+
+[kotlin]
+symbol = "kt:"
+
+[kubernetes]
+symbol = "k8s:"
+
+[lua]
+symbol = "lua:"
+
+[memory_usage]
+symbol = "mem:"
+
+[nim]
+symbol = "nim:"
+
+[nodejs]
+symbol = "node:"
+
+[ocaml]
+symbol = "ml:"
+
+[package]
+symbol = "pkg:"
+
+[perl]
+symbol = "pl:"
+
+[php]
+symbol = "php:"
+
+[python]
+symbol = "py:"
+
+[ruby]
+symbol = "rb:"
+
+[rust]
+symbol = "rs:"
+
+[scala]
+symbol = "scala:"
+
+[swift]
+symbol = "swift:"
+
+[zig]
+symbol = "zig:"
+
+[os]
+format = "[$symbol]($style) "
+
+[os.symbols]
+Alpine = "alpine:"
+Amazon = "amzn:"
+Android = "android:"
+Arch = "arch:"
+CentOS = "centos:"
+Debian = "deb:"
+Fedora = "fed:"
+FreeBSD = "fbsd:"
+Gentoo = "gentoo:"
+Linux = "linux:"
+Macos = "mac:"
+Manjaro = "manjaro:"
+Mint = "mint:"
+NixOS = "nix:"
+OpenBSD = "obsd:"
+Raspbian = "raspi:"
+Redhat = "rhel:"
+Ubuntu = "ubuntu:"
+Unknown = "os:"
+Windows = "win:"

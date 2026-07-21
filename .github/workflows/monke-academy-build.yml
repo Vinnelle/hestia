@@ -1,0 +1,23 @@
+name: Deploy monke-academy
+
+on:
+  push:
+    branches: [prd]
+    paths:
+      - "hestia/monke-academy/site/**"
+      - ".github/workflows/monke-academy-build.yml"
+      - ".github/workflows/site-deploy.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/site-deploy.yml
+    with:
+      context: hestia/monke-academy/site
+      image: monke-academy/site
+      deployment: monke-academy-site
+      purge_zone: monke.academy
+    secrets: inherit

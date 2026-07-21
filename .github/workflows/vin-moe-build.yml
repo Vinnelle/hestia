@@ -1,0 +1,49 @@
+name: Deploy vin-moe
+
+on:
+  push:
+    branches: [prd]
+    paths:
+      - "hestia/vin-moe/site/**"
+      - ".github/workflows/vin-moe-build.yml"
+      - ".github/workflows/site-deploy.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/site-deploy.yml
+    with:
+      context: hestia/vin-moe/site
+      image: vin-moe/site
+      deployment: vin-moe-site
+      purge_zone: vin.moe
+    secrets: inherit
+
+  mirror:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: hestia
+
+      - uses: actions/checkout@v5
+        with:
+          repository: Vinnelle/vin.moe
+          token: ${{ secrets.GH_API_TOKEN }}
+          path: vin.moe
+
+      - run: |
+          mkdir -p vin.moe/site-image vin.moe/github-workflow
+          rsync -a --delete --exclude='.git' hestia/hestia/vin-moe/site/ vin.moe/site-image/
+          rsync -a hestia/.github/workflows/vin-moe-build.yml vin.moe/github-workflow/
+          cd vin.moe
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --staged --quiet && exit 0
+          git commit -m "sync: mirror vin-moe source from hestia@${{ github.sha }}"
+          git push

@@ -1,0 +1,93 @@
+name: Validate
+
+# terraform validate/plan is intentionally absent: the TFC workspace is
+# VCS-driven, so every push already gets a speculative or real plan there.
+on:
+  push:
+    branches: [prd]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: hashicorp/setup-terraform@v4
+
+      - run: terraform fmt -check -diff -recursive
+
+      - uses: terraform-linters/setup-tflint@v6
+
+      # lints every directory containing .tf files
+      - run: tflint --recursive
+
+  go:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache-dependency-path: "**/go.sum"
+
+      - name: Fmt, vet, and test every Go module
+        run: |
+          git ls-files '*go.mod' | while read -r mod; do
+            dir=$(dirname "$mod")
+            echo "==> $dir"
+            (cd "$dir" && test -z "$(gofmt -l .)" && go vet ./... && go test ./...) || exit 1
+          done
+
+  shellcheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      # -S warning skips info/style-level findings
+      - run: git ls-files '*.sh' | xargs shellcheck -S warning
+
+  yamllint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - run: sudo apt-get install -y yamllint
+
+      # helm values + Talos patches; workflow .yml is covered by actionlint below
+      - run: git ls-files '*.yaml' | xargs yamllint -d relaxed
+
+  actionlint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+      - run: ./actionlint -color
+
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

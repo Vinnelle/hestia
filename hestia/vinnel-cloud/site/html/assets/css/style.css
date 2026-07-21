@@ -1,0 +1,185 @@
+
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:root {
+  --transition-speed: 0.4s;
+  --transition-fn: ease;
+  color-scheme: dark light;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --fg: #fafafa;
+  --muted: #888;
+  --toggle-bg: #1e1e2e;
+  --toggle-knob: #c4a4fd;
+  --toggle-border: #2a2a3e;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f5f5f7;
+  --fg: #1a1f36;
+  --muted: #6b7280;
+  --toggle-bg: #e4e4ec;
+  --toggle-knob: #8b5cf6;
+  --toggle-border: #d1d5db;
+  color-scheme: light;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--fg);
+  transition:
+    background-color var(--transition-speed) var(--transition-fn),
+    color var(--transition-speed) var(--transition-fn);
+}
+
+.container {
+  text-align: center;
+  contain: content;
+}
+
+.container p {
+  font-size: 1.2rem;
+  color: var(--muted);
+  transition: color var(--transition-speed) var(--transition-fn);
+}
+
+.logo-wrap {
+  position: relative;
+  width: 400px;
+  height: 100px;
+  margin: 0 auto;
+  contain: strict;
+}
+
+.logo-dark,
+.logo-light {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  transition: opacity var(--transition-speed) var(--transition-fn);
+}
+
+[data-theme-transitioning] .logo-dark,
+[data-theme-transitioning] .logo-light {
+  will-change: opacity;
+}
+
+[data-theme="dark"] .logo-light,
+[data-theme="light"] .logo-dark {
+  opacity: 0;
+}
+
+[data-theme="dark"] .logo-dark,
+[data-theme="light"] .logo-light {
+  opacity: 1;
+}
+
+.toggle {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 56px;
+  height: 28px;
+  background-color: var(--toggle-bg);
+  border: 1px solid var(--toggle-border);
+  border-radius: 99px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  contain: layout style;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.toggle:hover {
+  border-color: var(--toggle-knob);
+}
+
+.toggle-knob {
+  width: 20px;
+  height: 20px;
+  background-color: var(--toggle-knob);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.3s ease;
+}
+
+[data-theme="light"] .toggle-knob {
+  transform: translateX(28px);
+}
+
+.toggle-knob svg {
+  width: 12px;
+  height: 12px;
+  fill: #fff;
+}
+
+.icon-moon,
+.icon-sun {
+  position: absolute;
+}
+
+[data-theme="dark"] .icon-sun,
+[data-theme="light"] .icon-moon {
+  display: none;
+}
+
+.btn-account {
+  position: fixed;
+  top: 1.25rem;
+  right: 1.5rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-speed) var(--transition-fn),
+    color var(--transition-speed) var(--transition-fn);
+}
+
+.btn-account:hover {
+  border-color: currentColor;
+  color: var(--fg);
+}
+
+@media (max-width: 480px) {
+  .logo-wrap {
+    width: 280px;
+    height: 70px;
+  }
+}

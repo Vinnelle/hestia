@@ -1,0 +1,17 @@
+# Public keys authorized to SSH into momus as the 'ida' user.
+#
+# One key per line. Blank lines and lines starting with '#' are ignored, so
+# you can group and label keys with comments. Add a key here, commit, merge to
+# prd, and TFC installs it — the momus pod auto-rolls, so it takes effect within
+# a minute or two of the apply.
+#
+# Public keys are safe to commit; keep the private half on your own machine.
+# Generate one with:  ssh-keygen -t ed25519 -f <path> -C "<label>"
+
+# --- add keys below ---
+
+# iOS
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHw7LBo3N12EtYU00eGQpbXzUTo0DHXk7HxLO4HuTsBl
+
+# laptop-temp (remove when back on the main machine)
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINUXzg1It3xODZVvSf5sAjYLApolsgx7jw3ZbhZU1V6m laptop-temp

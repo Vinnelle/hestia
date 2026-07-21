@@ -1,0 +1,28 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cloudGrad" x1="0" y1="0" x2="64" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#5b8fff"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#8b5cf6" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Cloud layers (scaled from original, centered in 64x64) -->
+  <g transform="translate(2, 8)">
+    <path d="M50 38H16C9.37 38 4 32.63 4 26C4 19.95 8.55 14.97 14.44 14.12C16.05 9.41 20.53 6 25.83 6C29.77 6 33.28 7.82 35.63 10.66C37.03 10.23 38.51 10 40.05 10C48.35 10 55 16.65 55 24.95C55 25.1 54.99 25.25 54.98 25.4C57.93 26.62 60 29.55 60 33C60 36.87 56.87 40 53 40L50 38Z"
+          fill="url(#cloudGrad)" filter="url(#shadow)" opacity="0.15"/>
+    <path d="M48 36H14C8.48 36 4 31.52 4 26C4 20.86 7.96 16.63 13.03 16.07C14.48 11.73 18.55 8.5 23.38 8.5C26.89 8.5 30.03 10.09 32.15 12.59C33.71 11.93 35.44 11.56 37.25 11.56C44.62 11.56 50.6 17.54 50.6 24.91C50.6 25.09 50.59 25.27 50.58 25.45C53.12 26.41 55 28.88 55 31.78C55 35.2 52.2 38 48.8 38L48 36Z"
+          fill="url(#cloudGrad)" opacity="0.3"/>
+    <path d="M46 34H12C6.48 34 2 29.52 2 24C2 18.86 5.96 14.63 11.03 14.07C12.48 9.73 16.55 6.5 21.38 6.5C24.89 6.5 28.03 8.09 30.15 10.59C31.71 9.93 33.44 9.56 35.25 9.56C42.62 9.56 48.6 15.54 48.6 22.91C48.6 23.09 48.59 23.27 48.58 23.45C51.12 24.41 53 26.88 53 29.78C53 33.2 50.2 36 46.8 36L46 34Z"
+          fill="url(#cloudGrad)"/>
+    <!-- Star accent -->
+    <path d="M55 7L56.2 10H59.5L56.8 11.8L57.8 15L55 13L52.2 15L53.2 11.8L50.5 10H53.8Z" fill="#f59e0b" opacity="0.9"/>
+    <!-- Dot accent -->
+    <circle cx="57" cy="22" r="2.5" fill="#8b5cf6" opacity="0.8"/>
+    <!-- Small star accent -->
+    <path d="M10 40L10.8 42.5H13.5L11.3 44L12 46.5L10 45L8 46.5L8.7 44L6.5 42.5H9.2Z" fill="#5b8fff" opacity="0.65"/>
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Vinnel Cloud — cloud infrastructure and services by Vinnel Labs.">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3MPKF6C22P"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3MPKF6C22P');</script>
+  <script>var d=document.documentElement,s=localStorage;d.dataset.theme=s.theme||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');d.onclick=function(e){if(!e.target.closest('.toggle'))return;d.dataset.themeTransitioning='';d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';s.theme=d.dataset.theme;setTimeout(function(){delete d.dataset.themeTransitioning},500)}</script>
+  <link rel="preconnect" href="https://www.googletagmanager.com">
+  <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
+  <link rel="preload" href="assets/css/style.css" as="style">
+  <link rel="preload" as="image" type="image/webp" fetchpriority="high" imagesrcset="assets/images/vinnel-cloud-dark-1x.webp 400w, assets/images/vinnel-cloud-dark-2x.webp 800w" imagesizes="(max-width: 480px) 280px, 400px">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <title>Vinnel.cloud</title>
+</head>
+<body>
+  <main class="container">
+    <div class="logo-wrap">
+      <img
+        class="logo-dark"
+        src="assets/images/vinnel-cloud-dark-1x.webp"
+        srcset="assets/images/vinnel-cloud-dark-1x.webp 400w, assets/images/vinnel-cloud-dark-2x.webp 800w"
+        sizes="(max-width: 480px) 280px, 400px"
+        alt="Vinnel Cloud"
+        width="400"
+        height="100"
+        fetchpriority="high"
+      >
+      <img
+        class="logo-light"
+        src="assets/images/vinnel-cloud-light-1x.webp"
+        srcset="assets/images/vinnel-cloud-light-1x.webp 400w, assets/images/vinnel-cloud-light-2x.webp 800w"
+        sizes="(max-width: 480px) 280px, 400px"
+        alt="Vinnel Cloud"
+        width="400"
+        height="100"
+        loading="lazy"
+      >
+    </div>
+  </main>
+  <a href="https://dashboard.vinnel.cloud" class="btn-account" id="account-btn">Login</a>
+  <script>fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){if(r.ok)document.getElementById('account-btn').textContent='Dashboard'}).catch(function(){})</script>
+
+  <button class="toggle" aria-label="Toggle theme">
+    <span class="toggle-knob">
+      <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zM12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    </span>
+  </button>
+</body>
+</html>

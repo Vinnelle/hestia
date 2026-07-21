@@ -1,0 +1,22 @@
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: ${name}
+  namespace: ${namespace}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: ${target_kind}
+    name: ${target_name}
+  updateMode: ${update_mode}
+  resourcePolicy:
+    containerPolicies:
+%{ for cp in container_policies ~}
+      - containerName: ${cp.container_name}
+        controlledValues: RequestsOnly
+        controlledResources: [memory]
+        minAllowed:
+          memory: ${cp.min_memory}
+        maxAllowed:
+          memory: ${cp.max_memory}
+%{ endfor ~}

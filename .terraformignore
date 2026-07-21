@@ -1,0 +1,20 @@
+.terraform/
+
+*.tfstate
+*.tfstate.*
+
+crash.log
+crash.*.log
+
+*.tfvars
+*.tfvars.json
+
+.terraformrc
+terraform.rc
+
+# app source built by GitHub Actions, never read by Terraform —
+# keeps ~40MB of site assets out of every TFC config upload
+hestia/monke-academy/
+hestia/vin-moe/
+hestia/vinnel-cloud/
+love/love
