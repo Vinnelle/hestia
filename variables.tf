@@ -76,16 +76,3 @@ variable "debian_server_ssh_public_key" {
   type        = string
   default     = ""
 }
-
-variable "github_runner_token" {
-  description = "Fine-grained GitHub PAT scoped to Vinnelle/hestia with 'Administration: read and write' (needed to register a self-hosted runner). Powers the in-cluster deploy runner so the deploy step reaches the API server internally instead of over public 6443. Leave unset (default) to not create the runner. Set as a TFC workspace variable, not codified."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "github_runner_replicas" {
-  description = "Replica count for the in-cluster GitHub Actions runner. Held at 0 while the entrypoint crashloop is diagnosed — flip to 1 as a TFC workspace variable (no code change / merge needed) once the cause is fixed."
-  type        = number
-  default     = 0
-}
