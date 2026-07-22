@@ -10,11 +10,19 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
+  wait-for-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/wait-for-validate
+
   # compile check only — the released binary is built in the mirror job, and
   # momus compiles from source at pod start, so no binary is committed to git
   build:
+    needs: wait-for-validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

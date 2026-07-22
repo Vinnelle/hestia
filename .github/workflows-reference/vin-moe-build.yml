@@ -11,9 +11,17 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
+  wait-for-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/wait-for-validate
+
   deploy:
+    needs: wait-for-validate
     uses: ./.github/workflows/site-deploy.yml
     with:
       context: hestia/vin-moe/site

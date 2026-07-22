@@ -1,0 +1,33 @@
+name: Wait for Validate
+description: >
+  Blocks until the standalone Validate workflow run for this commit
+  completes, and fails the step if it didn't succeed. Requires the
+  actions:read permission on the calling job.
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        repo="${{ github.repository }}"
+        sha="${{ github.sha }}"
+
+        echo "looking for a Validate run on $sha..."
+        run_id=""
+        for _ in $(seq 1 60); do
+          run_id=$(gh run list --repo "$repo" --workflow=validate.yml \
+            --json headSha,databaseId --jq ".[] | select(.headSha==\"$sha\") | .databaseId" | head -n1)
+          [ -n "$run_id" ] && break
+          sleep 5
+        done
+
+        if [ -z "$run_id" ]; then
+          echo "::error::no Validate run found for $sha after 5 minutes"
+          exit 1
+        fi
+
+        echo "waiting on Validate run $run_id..."
+        gh run watch "$run_id" --repo "$repo" --exit-status

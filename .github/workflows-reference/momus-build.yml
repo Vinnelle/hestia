@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   # Shares the manifest writer lock with site-deploy.yml. Image builds may run
@@ -20,7 +21,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  wait-for-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/wait-for-validate
+
   build-push:
+    needs: wait-for-validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5

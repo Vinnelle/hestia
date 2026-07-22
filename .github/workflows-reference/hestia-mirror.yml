@@ -7,9 +7,17 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
+  wait-for-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/wait-for-validate
+
   mirror:
+    needs: wait-for-validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -23,7 +31,13 @@ jobs:
           path: hestia
 
       - run: |
-          rsync -a --delete --exclude='.git' gaia/ hestia/
+          rsync -a --delete --exclude='.git' --exclude='.github/workflows' gaia/hestia/ hestia/
+
+          rm -rf hestia/.github
+          mkdir -p hestia/.github
+          rsync -a gaia/.github/actions hestia/.github/
+          rsync -a gaia/.github/workflows/ hestia/.github/workflows-reference/
+
           cd hestia
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
