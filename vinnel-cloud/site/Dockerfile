@@ -1,16 +1,19 @@
 FROM alpine:3.24 AS images
-RUN apk add --no-cache imagemagick librsvg libwebp-tools fontconfig
+RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools fontconfig
 COPY src/images/ .
 # librsvg in this image doesn't load embedded @font-face data URIs, so the
 # wordmark fonts are installed as real system fonts instead
 COPY src/fonts/ /usr/share/fonts/truetype/vinnel-cloud/
 RUN fc-cache -f
-RUN magick favicon.svg -background none -resize 64x64 favicon.webp \
- && magick vinnel-cloud-dark.svg -background none -resize 400x100 vinnel-cloud-dark-1x.webp \
- && magick vinnel-cloud-dark.svg -background none -resize 800x200 vinnel-cloud-dark-2x.webp \
- && magick vinnel-cloud-light.svg -background none -resize 400x100 vinnel-cloud-light-1x.webp \
- && magick vinnel-cloud-light.svg -background none -resize 800x200 vinnel-cloud-light-2x.webp \
- && magick vinnel-cloud-gradient.svg -background none -resize 800x200 vinnel-cloud-gradient.webp
+# magick's own SVG rasterizer flattens transparency to opaque white despite
+# -background none; rsvg-convert renders real alpha, so it does the SVG->PNG
+# step and magick only handles the PNG->WebP encode
+RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp \
+ && rsvg-convert -w 400 -h 100 vinnel-cloud-dark.svg | magick png:- vinnel-cloud-dark-1x.webp \
+ && rsvg-convert -w 800 -h 200 vinnel-cloud-dark.svg | magick png:- vinnel-cloud-dark-2x.webp \
+ && rsvg-convert -w 400 -h 100 vinnel-cloud-light.svg | magick png:- vinnel-cloud-light-1x.webp \
+ && rsvg-convert -w 800 -h 200 vinnel-cloud-light.svg | magick png:- vinnel-cloud-light-2x.webp \
+ && rsvg-convert -w 800 -h 200 vinnel-cloud-gradient.svg | magick png:- vinnel-cloud-gradient.webp
 
 FROM nginx:1.31-alpine AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
