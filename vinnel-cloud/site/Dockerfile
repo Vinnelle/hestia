@@ -23,9 +23,9 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_filter_module.so /ngx_http_brotli_filter_module.so \
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
-FROM node:24-alpine AS build
+FROM node:24-alpine AS asset-build
 RUN apk add --no-cache brotli gzip
-RUN npm install -g clean-css-cli
+RUN npm install -g clean-css-cli terser
 
 WORKDIR /app
 COPY build.sh .
@@ -42,5 +42,5 @@ COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
 COPY nginx-main.conf /etc/nginx/nginx.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/ /usr/share/nginx/html/
+COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080

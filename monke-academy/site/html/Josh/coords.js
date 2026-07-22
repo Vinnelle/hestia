@@ -7,7 +7,7 @@ map = document.getElementById("Writable");
 timer = document.getElementById("Timer");
 score = document.getElementById("Score");
 
-image.src = "pictures//pic 1.jpg";
+image.src = "/images/josh/pic-1.jpg";
 map.coords = coords[0];
 score.innerHTML = (count-1)+"/50";
 
