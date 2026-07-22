@@ -1,5 +1,5 @@
 FROM alpine:3.24 AS images
-RUN apk add --no-cache imagemagick
+RUN apk add --no-cache imagemagick librsvg
 COPY src/images/ .
 RUN magick favicon.svg -background none -resize 64x64 favicon.webp \
  && magick vinnel-cloud-dark.svg -background none -resize 400x100 vinnel-cloud-dark-1x.webp \
