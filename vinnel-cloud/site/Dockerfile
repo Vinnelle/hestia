@@ -1,6 +1,10 @@
 FROM alpine:3.24 AS images
-RUN apk add --no-cache imagemagick librsvg libwebp-tools
+RUN apk add --no-cache imagemagick librsvg libwebp-tools fontconfig
 COPY src/images/ .
+# librsvg in this image doesn't load embedded @font-face data URIs, so the
+# wordmark fonts are installed as real system fonts instead
+COPY src/fonts/ /usr/share/fonts/truetype/vinnel-cloud/
+RUN fc-cache -f
 RUN magick favicon.svg -background none -resize 64x64 favicon.webp \
  && magick vinnel-cloud-dark.svg -background none -resize 400x100 vinnel-cloud-dark-1x.webp \
  && magick vinnel-cloud-dark.svg -background none -resize 800x200 vinnel-cloud-dark-2x.webp \
