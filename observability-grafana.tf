@@ -65,7 +65,7 @@ resource "kubernetes_deployment_v1" "grafana" {
 
         container {
           name  = "grafana"
-          image = "grafana/grafana:13.1.0"
+          image = "grafana/grafana:13.1.1"
 
           port {
             container_port = 3000
