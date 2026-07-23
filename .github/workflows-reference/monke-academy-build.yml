@@ -15,8 +15,8 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: arc-runner-gaia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform

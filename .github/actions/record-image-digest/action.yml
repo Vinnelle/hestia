@@ -1,0 +1,58 @@
+name: Record image digest
+description: >
+  Merges one or more deployment->image digest pairs into hestia/images.json
+  and pushes the commit, retrying on push/rebase races. Wrap the calling
+  job in the shared `images-json-${{ github.ref_name }}` concurrency group
+  (cancel-in-progress: false) and keep it separate from any docker build
+  job, so unrelated builds never queue behind each other — only the actual
+  file write needs to be serialized.
+
+inputs:
+  updates:
+    description: JSON object mapping images.json keys to image@digest refs, e.g. '{"momus":"registry/x@sha256:..."}'
+    required: true
+  message:
+    description: Commit message
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
+
+    - shell: bash
+      env:
+        UPDATES: ${{ inputs.updates }}
+        MESSAGE: ${{ inputs.message }}
+      run: |
+        set -euo pipefail
+
+        jq --argjson updates "$UPDATES" '. + $updates' hestia/images.json > hestia/images.json.tmp
+        jq empty hestia/images.json.tmp
+        mv hestia/images.json.tmp hestia/images.json
+
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add hestia/images.json
+
+        if git diff --cached --quiet; then
+          exit 0
+        fi
+        git commit -m "$MESSAGE"
+
+        # Each command in the chain is guarded by the if/&&, not run bare in
+        # the loop body — with `set -e` a bare failing `git rebase` would
+        # kill the whole script on the first conflict instead of retrying.
+        for attempt in 1 2 3 4 5; do
+          if git fetch origin "$GITHUB_REF_NAME" \
+             && git rebase "origin/$GITHUB_REF_NAME" \
+             && git push origin "HEAD:${GITHUB_REF_NAME}"; then
+            exit 0
+          fi
+          git rebase --abort >/dev/null 2>&1 || true
+          sleep "$attempt"
+        done
+
+        echo "::error::failed to push image digest update after five attempts"
+        exit 1

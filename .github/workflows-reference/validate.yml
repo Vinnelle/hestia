@@ -1,10 +1,10 @@
 name: Validate
 
 # terraform plan/apply live in terraform.yml, not here: this job only fmt/lints.
+# Called from terraform.yml (every plan run) so it can't run stale/missing;
+# workflow_dispatch stays for standalone manual runs.
 on:
-  push:
-    branches: [prd]
-  pull_request:
+  workflow_call: {}
   workflow_dispatch: {}
 
 permissions:
@@ -16,10 +16,14 @@ concurrency:
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+
+      # setup-terraform's output wrapper shells to `node`; arc-runner-gaia's
+      # image doesn't ship it on PATH like ubuntu-latest does.
+      - run: sudo apt-get update && sudo apt-get install -y nodejs
 
       - uses: hashicorp/setup-terraform@v4
 
@@ -31,7 +35,7 @@ jobs:
       - run: tflint --recursive
 
   go:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -50,37 +54,49 @@ jobs:
           done
 
   shellcheck:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
+
+      - run: sudo apt-get update && sudo apt-get install -y shellcheck
 
       # -S warning skips info/style-level findings
       - run: git ls-files '*.sh' | xargs shellcheck -S warning
 
   yamllint:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
 
-      - run: sudo apt-get install -y yamllint
+      - run: sudo apt-get update && sudo apt-get install -y yamllint
 
       # helm values + Talos patches; workflow .yml is covered by actionlint below
       - run: git ls-files '*.yaml' | xargs yamllint -d relaxed
 
   actionlint:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
 
-      - run: bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+      - run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install -y curl)
 
-      - run: ./actionlint -color
+      # pinned release tarball, not the floating `main`-branch install script
+      - name: Install actionlint
+        run: |
+          type -p actionlint >/dev/null && exit 0
+          version=1.7.7
+          curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${version}/actionlint_${version}_linux_amd64.tar.gz" -o /tmp/actionlint.tar.gz
+          sudo tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint
+          sudo chmod 0755 /usr/local/bin/actionlint
+          rm /tmp/actionlint.tar.gz
+
+      - run: actionlint -color
 
   secrets:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     timeout-minutes: 5
     permissions:
       contents: read

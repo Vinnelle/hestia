@@ -223,3 +223,12 @@ resource "grafana_dashboard" "service_status" {
     service_uptime_expr = local.service_uptime_expr
   })
 }
+
+resource "grafana_dashboard" "arc_runners" {
+  folder = grafana_folder.infrastructure.uid
+  config_json = templatefile("${path.module}/grafana-dashboards/arc-runners.json.tftpl", {
+    prometheus_ds = local.prometheus_ds
+  })
+
+  depends_on = [helm_release.arc_runner_gaia]
+}

@@ -4,44 +4,63 @@ description: >
   commit completes, and fails the step if it didn't succeed. Requires the
   actions:read permission on the calling job.
 
+inputs:
+  timeout-minutes:
+    description: >
+      Max wall-clock minutes to wait for the run to appear and conclude.
+      Must comfortably exceed validate.yml (up to ~10m) + terraform.yml's
+      plan-apply timeout (30m), plus queueing behind any prior run on the
+      same ref (terraform.yml serializes via a non-cancelling concurrency
+      group). Keep the calling job's own timeout-minutes a few minutes
+      above this value so this loop reports the real error instead of
+      the job being killed first.
+    required: false
+    default: "55"
+
 runs:
   using: composite
   steps:
+    # arc-runner-gaia's image doesn't ship gh on PATH like ubuntu-latest does.
+    - shell: bash
+      run: type -p gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
+
     - shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
+        TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
       run: |
         set -euo pipefail
         repo="${{ github.repository }}"
         sha="${{ github.event.pull_request.head.sha || github.sha }}"
+        deadline=$(( $(date +%s) + TIMEOUT_MINUTES * 60 ))
 
-        echo "looking for a Terraform run on $sha..."
+        echo "looking for a Terraform run on $sha (timeout ${TIMEOUT_MINUTES}m)..."
         run_id=""
-        for _ in $(seq 1 60); do
+        while [ "$(date +%s)" -lt "$deadline" ]; do
           run_id=$(gh run list --repo "$repo" --workflow=terraform.yml \
             --json headSha,databaseId --jq ".[] | select(.headSha==\"$sha\") | .databaseId" | head -n1)
           [ -n "$run_id" ] && break
-          sleep 5
+          sleep 10
         done
 
         if [ -z "$run_id" ]; then
-          echo "::error::no Terraform run found for $sha after 5 minutes"
+          echo "::error::no Terraform run found for $sha within ${TIMEOUT_MINUTES}m"
           exit 1
         fi
 
         echo "waiting on Terraform run $run_id..."
         conclusion=""
-        for _ in $(seq 1 60); do
+        while [ "$(date +%s)" -lt "$deadline" ]; do
           status=$(gh run view "$run_id" --repo "$repo" --json status --jq .status)
           if [ "$status" = "completed" ]; then
             conclusion=$(gh run view "$run_id" --repo "$repo" --json conclusion --jq .conclusion)
             break
           fi
-          sleep 5
+          sleep 10
         done
 
         if [ -z "$conclusion" ]; then
-          echo "::error::Terraform run $run_id did not complete within 5 minutes"
+          echo "::error::Terraform run $run_id did not complete within ${TIMEOUT_MINUTES}m"
           exit 1
         fi
 

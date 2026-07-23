@@ -11,15 +11,15 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: arc-runner-gaia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
 
   mirror:
     needs: wait-for-terraform
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     steps:
       - uses: actions/checkout@v7
         with:
@@ -30,6 +30,8 @@ jobs:
           repository: Vinnelle/hestia
           token: ${{ secrets.GH_API_TOKEN }}
           path: hestia
+
+      - run: sudo apt-get update && sudo apt-get install -y rsync
 
       - run: |
           rsync -a --delete --exclude='.git' --exclude='.github/workflows' gaia/hestia/ hestia/

@@ -24,13 +24,9 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: site-deploy-${{ inputs.deployment }}
-  cancel-in-progress: true
-
 jobs:
   build-push:
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -38,21 +34,10 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Log in to Harbor
-        env:
-          HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
-          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-        shell: bash
-        run: |
-          for attempt in 1 2 3 4 5; do
-            if printf '%s' "$HARBOR_PASSWORD" | docker login registry.vinnel.cloud \
-              --username "$HARBOR_USERNAME" --password-stdin; then
-              exit 0
-            fi
-            sleep "$((attempt * 5))"
-          done
-          echo "unable to connect to Harbor after five attempts" >&2
-          exit 1
+      - uses: ./.github/actions/harbor-login
+        with:
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
 
       - uses: docker/setup-buildx-action@v4
 
@@ -65,52 +50,52 @@ jobs:
             registry.vinnel.cloud/${{ inputs.image }}:latest
             registry.vinnel.cloud/${{ inputs.image }}:${{ github.sha }}
 
-  record-and-deploy:
+  record:
     needs: build-push
-    runs-on: ubuntu-latest
-    # No shared concurrency group here: GitHub keeps only one pending job per
-    # group, so with 3+ simultaneous site deploys one would be silently
-    # cancelled. Manifest push races are handled by the rebase-retry loop, and
-    # rollouts wait without a timeout (capped by timeout-minutes) since
-    # parallel deploys contend on the single node.
+    runs-on: arc-runner-gaia
+    concurrency:
+      # Shared with momus-build.yml and vinnel-cloud-build.yml: all three
+      # write hestia/images.json, and only this small job needs to
+      # serialize — the docker build above stays free to run in parallel
+      # with other deploys, and deploy below is a per-deployment concern.
+      group: images-json-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: ./.github/actions/record-image-digest
+        with:
+          updates: '{"${{ inputs.deployment }}":"registry.vinnel.cloud/${{ inputs.image }}@${{ needs.build-push.outputs.digest }}"}'
+          message: "deploy: pin ${{ inputs.deployment }} image digest"
+
+  deploy:
+    needs: [build-push, record]
+    runs-on: arc-runner-gaia
+    concurrency:
+      # Per-deployment: GitHub keeps only one pending job per group, so a
+      # shared group across all sites would silently cancel one of 3+
+      # simultaneous deploys. Rollouts wait without a timeout (capped by
+      # timeout-minutes) since parallel deploys contend on the single node.
+      group: site-deploy-${{ inputs.deployment }}
+      cancel-in-progress: true
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Record immutable image digest
-        env:
-          DEPLOYMENT: ${{ inputs.deployment }}
-          IMAGE: registry.vinnel.cloud/${{ inputs.image }}@${{ needs.build-push.outputs.digest }}
-        run: |
-          jq --arg deployment "$DEPLOYMENT" --arg image "$IMAGE" \
-            '.[$deployment] = $image' hestia/images.json > hestia/images.json.tmp
-          mv hestia/images.json.tmp hestia/images.json
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add hestia/images.json
-          git diff --cached --quiet || git commit -m "deploy: pin $DEPLOYMENT image digest"
-          for attempt in 1 2 3; do
-            git fetch origin "$GITHUB_REF_NAME"
-            git rebase "origin/$GITHUB_REF_NAME"
-            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-              exit 0
-            fi
-            sleep "$attempt"
-          done
-          echo "failed to push site image digest after three attempts" >&2
-          exit 1
+      - run: type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
+      - run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install -y curl)
 
-      - run: |
-          mkdir -p ~/.kube
-          cat <<'EOF' > ~/.kube/config
-          ${{ secrets.HESTIA_KUBECONFIG }}
-          EOF
+      - uses: ./.github/actions/setup-kubectl
+        with:
+          kubeconfig: ${{ secrets.HESTIA_KUBECONFIG }}
 
-      # The digest was committed above before this imperative rollout. Terraform
-      # reconciles the same immutable reference in the subsequent VCS run.
+      # The digest was committed in the record job before this imperative
+      # rollout. Terraform reconciles the same immutable reference in the
+      # subsequent VCS run.
       - run: |
           kubectl set image "deployment/${{ inputs.deployment }}" -n websites \
             '*=registry.vinnel.cloud/${{ inputs.image }}@${{ needs.build-push.outputs.digest }}'

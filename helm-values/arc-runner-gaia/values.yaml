@@ -6,6 +6,23 @@ minRunners: 0
 containerMode:
   type: "dind"
 
+# Pre-baked tool image (hestia/ci-runner/Dockerfile, built by
+# ci-runner-build.yml) so workflows stop apt-get-installing their
+# toolchain on every run. NOT yet verified against this chart version's
+# dind template-merge behavior — review before this reaches prd, since
+# terraform.yml applies any diff on this file automatically on push.
+# template:
+#   spec:
+#     containers:
+#       - name: runner
+#         image: registry.vinnel.cloud/vinnel-cloud/ci-runner:latest
+#         command: ["/home/runner/run.sh"]
+
 controllerServiceAccount:
   namespace: arc-systems
   name: arc-gha-rs-controller
+
+metrics:
+  controllerManagerAddr: ":8080"
+  listenerAddr: ":8080"
+  listenerEndpoint: "/metrics"

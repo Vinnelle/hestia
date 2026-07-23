@@ -13,21 +13,20 @@ permissions:
   contents: write
   actions: read
 
-concurrency:
-  group: site-deploy-vinnel-cloud
-  cancel-in-progress: true
-
 jobs:
   wait-for-terraform:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: arc-runner-gaia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
 
   build-push:
     needs: wait-for-terraform
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
+    concurrency:
+      group: site-deploy-vinnel-cloud-${{ github.ref_name }}
+      cancel-in-progress: true
     strategy:
       matrix:
         include:
@@ -42,21 +41,10 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Log in to Harbor
-        env:
-          HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
-          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-        shell: bash
-        run: |
-          for attempt in 1 2 3 4 5; do
-            if printf '%s' "$HARBOR_PASSWORD" | docker login registry.vinnel.cloud \
-              --username "$HARBOR_USERNAME" --password-stdin; then
-              exit 0
-            fi
-            sleep "$((attempt * 5))"
-          done
-          echo "unable to connect to Harbor after five attempts" >&2
-          exit 1
+      - uses: ./.github/actions/harbor-login
+        with:
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
 
       - uses: docker/setup-buildx-action@v4
 
@@ -80,13 +68,16 @@ jobs:
           name: digest-${{ matrix.app }}
           path: /tmp/digests/${{ matrix.app }}
 
-  record-and-deploy:
+  record:
     needs: build-push
-    runs-on: ubuntu-latest
-    # No shared concurrency group: one pending slot per group means a third
-    # simultaneous site deploy would be cancelled. Push races are handled by
-    # the rebase-retry loop; rollouts wait without a timeout, capped below.
-    timeout-minutes: 30
+    runs-on: arc-runner-gaia
+    concurrency:
+      # Shared with momus-build.yml and site-deploy.yml: all three write
+      # hestia/images.json, and only this small job needs to serialize —
+      # the docker build above and the rollout below stay free to run in
+      # parallel with other deploys.
+      group: images-json-${{ github.ref_name }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
@@ -100,36 +91,46 @@ jobs:
 
       - name: Record immutable image digests
         run: |
-          SITE_IMAGE="registry.vinnel.cloud/vinnel-cloud/site@$(cat /tmp/digests/site)"
-          DASHBOARD_IMAGE="registry.vinnel.cloud/vinnel-cloud/dashboard@$(cat /tmp/digests/dashboard)"
-          jq --arg site "$SITE_IMAGE" --arg dashboard "$DASHBOARD_IMAGE" \
-            '.["vinnel-cloud-site"] = $site | .["vinnel-cloud-dashboard"] = $dashboard' \
-            hestia/images.json > hestia/images.json.tmp
-          mv hestia/images.json.tmp hestia/images.json
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add hestia/images.json
-          git diff --cached --quiet || git commit -m "deploy: pin vinnel-cloud image digests"
-          for attempt in 1 2 3; do
-            git fetch origin "$GITHUB_REF_NAME"
-            git rebase "origin/$GITHUB_REF_NAME"
-            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-              exit 0
-            fi
-            sleep "$attempt"
-          done
-          echo "failed to push site image digest after three attempts" >&2
-          exit 1
+          echo "SITE_DIGEST=$(cat /tmp/digests/site)" >> "$GITHUB_ENV"
+          echo "DASHBOARD_DIGEST=$(cat /tmp/digests/dashboard)" >> "$GITHUB_ENV"
 
-      - run: |
-          mkdir -p ~/.kube
-          cat <<'EOF' > ~/.kube/config
-          ${{ secrets.HESTIA_KUBECONFIG }}
-          EOF
+      - uses: ./.github/actions/record-image-digest
+        with:
+          updates: |
+            {
+              "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@${{ env.SITE_DIGEST }}",
+              "vinnel-cloud-dashboard": "registry.vinnel.cloud/vinnel-cloud/dashboard@${{ env.DASHBOARD_DIGEST }}"
+            }
+          message: "deploy: pin vinnel-cloud image digests"
 
-      # The digests were committed above before this imperative rollout. Terraform
-      # reconciles the same immutable references in the subsequent VCS run.
+  deploy:
+    needs: [build-push, record]
+    runs-on: arc-runner-gaia
+    concurrency:
+      group: site-deploy-vinnel-cloud-${{ github.ref_name }}
+      cancel-in-progress: true
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.ref_name }}
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: digest-*
+          path: /tmp/digests
+          merge-multiple: true
+
+      - run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install -y curl)
+      - run: type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
+
+      - uses: ./.github/actions/setup-kubectl
+        with:
+          kubeconfig: ${{ secrets.HESTIA_KUBECONFIG }}
+
+      # The digests were committed in the record job before this imperative
+      # rollout. Terraform reconciles the same immutable references in the
+      # subsequent VCS run.
       - run: |
           kubectl set image deployment/vinnel-cloud-site -n websites \
             "*=registry.vinnel.cloud/vinnel-cloud/site@$(cat /tmp/digests/site)"

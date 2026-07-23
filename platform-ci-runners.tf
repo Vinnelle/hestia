@@ -7,6 +7,10 @@ resource "kubernetes_namespace_v1" "arc_systems" {
 resource "kubernetes_namespace_v1" "arc_runners" {
   metadata {
     name = "arc-runners"
+    # dind containerMode needs privileged pods; baseline PSA (namespace default) blocks it.
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "privileged"
+    }
   }
 }
 
@@ -27,15 +31,19 @@ resource "helm_release" "arc_controller" {
   name       = "arc"
   repository = "oci://ghcr.io/actions/actions-runner-controller-charts"
   chart      = "gha-runner-scale-set-controller"
-  version    = "0.9.3"
+  version    = "0.14.2"
   namespace  = kubernetes_namespace_v1.arc_systems.metadata[0].name
+
+  values = [
+    file("${path.module}/helm-values/arc-controller/values.yaml")
+  ]
 }
 
 resource "helm_release" "arc_runner_gaia" {
   name       = "arc-runner-gaia"
   repository = "oci://ghcr.io/actions/actions-runner-controller-charts"
   chart      = "gha-runner-scale-set"
-  version    = "0.9.3"
+  version    = "0.14.2"
   namespace  = kubernetes_namespace_v1.arc_runners.metadata[0].name
 
   depends_on = [helm_release.arc_controller]

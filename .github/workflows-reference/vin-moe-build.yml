@@ -15,8 +15,8 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: arc-runner-gaia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
@@ -33,7 +33,7 @@ jobs:
 
   mirror:
     needs: deploy
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     steps:
       - uses: actions/checkout@v7
         with:
@@ -44,6 +44,8 @@ jobs:
           repository: Vinnelle/vin.moe
           token: ${{ secrets.GH_API_TOKEN }}
           path: vin.moe
+
+      - run: sudo apt-get update && sudo apt-get install -y rsync
 
       - run: |
           mkdir -p vin.moe/site-image vin.moe/github-workflow

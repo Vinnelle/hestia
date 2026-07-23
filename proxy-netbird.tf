@@ -12,11 +12,6 @@ resource "netbird_group" "devices" {
   name       = "User Devices"
 }
 
-resource "netbird_group" "services" {
-  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "services"
-}
-
 resource "netbird_group" "adguard" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "Adguard"

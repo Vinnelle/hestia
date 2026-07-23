@@ -14,41 +14,26 @@ permissions:
   contents: write
   actions: read
 
-concurrency:
-  # Shares the manifest writer lock with site-deploy.yml. Image builds may run
-  # in parallel, but only one workflow may commit an image manifest at a time.
-  group: site-image-manifest-${{ github.ref_name }}
-  cancel-in-progress: true
-
 jobs:
   wait-for-terraform:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: arc-runner-gaia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
 
   build-push:
     needs: wait-for-terraform
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Log in to Harbor
-        env:
-          HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
-          HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-        shell: bash
-        run: |
-          for attempt in 1 2 3 4 5; do
-            if printf '%s' "$HARBOR_PASSWORD" | docker login registry.vinnel.cloud \
-              --username "$HARBOR_USERNAME" --password-stdin; then
-              exit 0
-            fi
-            sleep "$((attempt * 5))"
-          done
-          echo "unable to connect to Harbor after five attempts" >&2
-          exit 1
+      - uses: ./.github/actions/harbor-login
+        with:
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
 
       - uses: docker/setup-buildx-action@v4
 
@@ -66,24 +51,20 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-      - name: Record immutable image digest
-        shell: bash
-        run: |
-          jq --arg image "registry.vinnel.cloud/vinnel-cloud/momus@${{ steps.build.outputs.digest }}" \
-            '.momus = $image' hestia/images.json > hestia/images.json.tmp
-          mv hestia/images.json.tmp hestia/images.json
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add hestia/images.json
-          git diff --cached --quiet || git commit -m "deploy: pin Momus image digest"
-          for attempt in 1 2 3; do
-            git fetch origin "$GITHUB_REF_NAME"
-            git rebase "origin/$GITHUB_REF_NAME"
-            if git push origin "HEAD:${GITHUB_REF_NAME}"; then
-              exit 0
-            fi
-            sleep "$attempt"
-          done
-          echo "failed to push Momus image digest after three attempts" >&2
-          exit 1
+  record:
+    needs: build-push
+    runs-on: arc-runner-gaia
+    concurrency:
+      # Shared with site-deploy.yml and vinnel-cloud-build.yml: all three
+      # write hestia/images.json, and only this small job needs to
+      # serialize — the docker build above is free to run in parallel with
+      # other deploys.
+      group: images-json-${{ github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/record-image-digest
+        with:
+          updates: '{"momus":"registry.vinnel.cloud/vinnel-cloud/momus@${{ needs.build-push.outputs.digest }}"}'
+          message: "deploy: pin Momus image digest"

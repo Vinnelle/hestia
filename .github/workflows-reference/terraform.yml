@@ -14,32 +14,48 @@ on:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 concurrency:
   group: terraform-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  wait-for-validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/wait-for-validate
+  validate:
+    uses: ./.github/workflows/validate.yml
 
   plan-apply:
-    needs: wait-for-validate
-    runs-on: ubuntu-latest
+    needs: validate
+    runs-on: arc-runner-gaia
     timeout-minutes: 30
     defaults:
       run:
         working-directory: hestia
     env:
       TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-plugin-cache
     steps:
       - uses: actions/checkout@v7
 
+      # setup-terraform's output wrapper shells to `node`; arc-runner-gaia's
+      # image doesn't ship it on PATH like ubuntu-latest does.
+      - run: sudo apt-get update && sudo apt-get install -y nodejs
+
+      # wrapper mangles `-detailed-exitcode` (always reports 0/1, never 2),
+      # breaking the apply-gate below; we don't need its stdout-capture output.
       - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      # provider binaries otherwise re-download from the public registry on
+      # every single push, since this workflow runs unconditionally (the
+      # wait-for-terraform gate needs a run to exist for every commit).
+      - uses: actions/cache@v4
+        with:
+          path: ${{ env.TF_PLUGIN_CACHE_DIR }}
+          key: tf-providers-${{ runner.os }}-${{ hashFiles('hestia/.terraform.lock.hcl') }}
+
+      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
       - run: terraform init -input=false
 
@@ -51,6 +67,6 @@ jobs:
           echo "exitcode=$exit_code" >> "$GITHUB_OUTPUT"
           [ "$exit_code" -ne 1 ]
 
-      # apply only on push to prd with actual changes; PRs get a speculative plan only
-      - if: github.ref == 'refs/heads/prd' && github.event_name == 'push' && steps.plan.outputs.exitcode == '2'
+      # apply on push or manual dispatch against prd with actual changes; PRs get a speculative plan only
+      - if: github.ref == 'refs/heads/prd' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.exitcode == '2'
         run: terraform apply -input=false tfplan

@@ -1,0 +1,43 @@
+{
+  "title": "GitHub Actions runners (ARC)",
+  "uid": "arc-runners",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "time": { "from": "now-6h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Runners — desired / busy / idle",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "targets": [
+        { "datasource": ${jsonencode(prometheus_ds)}, "expr": "gha_desired_runners", "legendFormat": "desired {{name}}" },
+        { "datasource": ${jsonencode(prometheus_ds)}, "expr": "gha_busy_runners", "legendFormat": "busy {{name}}" },
+        { "datasource": ${jsonencode(prometheus_ds)}, "expr": "gha_idle_runners", "legendFormat": "idle {{name}}" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Jobs started / completed (rate 5m)",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": ${jsonencode(prometheus_ds)}, "expr": "rate(gha_started_jobs_total[5m])", "legendFormat": "started {{name}}" },
+        { "datasource": ${jsonencode(prometheus_ds)}, "expr": "rate(gha_completed_jobs_total[5m])", "legendFormat": "completed {{name}}" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Registered runners",
+      "type": "timeseries",
+      "datasource": ${jsonencode(prometheus_ds)},
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        { "datasource": ${jsonencode(prometheus_ds)}, "expr": "gha_registered_runners", "legendFormat": "{{name}}" }
+      ]
+    }
+  ]
+}

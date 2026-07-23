@@ -1,0 +1,29 @@
+name: Harbor login
+description: Logs docker in to registry.vinnel.cloud, retrying transient failures.
+
+inputs:
+  username:
+    required: true
+  password:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: type -p docker >/dev/null || (sudo apt-get update && sudo apt-get install -y docker.io)
+
+    - shell: bash
+      env:
+        HARBOR_USERNAME: ${{ inputs.username }}
+        HARBOR_PASSWORD: ${{ inputs.password }}
+      run: |
+        for attempt in 1 2 3 4 5; do
+          if printf '%s' "$HARBOR_PASSWORD" | docker login registry.vinnel.cloud \
+            --username "$HARBOR_USERNAME" --password-stdin; then
+            exit 0
+          fi
+          sleep "$((attempt * 5))"
+        done
+        echo "::error::unable to connect to Harbor after five attempts"
+        exit 1

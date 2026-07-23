@@ -54,7 +54,7 @@ resource "kubernetes_cron_job_v1" "pv_backup" {
 
             container {
               name    = "backup"
-              image   = "restic/restic:0.18.0"
+              image   = "restic/restic:0.19.1"
               command = ["/bin/sh", "-c", file("${path.module}/backup/pv-backup.sh")]
 
               env {

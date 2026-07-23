@@ -14,8 +14,8 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    runs-on: arc-runner-gaia
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
@@ -24,16 +24,18 @@ jobs:
   # momus compiles from source at pod start, so no binary is committed to git
   build:
     needs: wait-for-terraform
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     steps:
       - uses: actions/checkout@v7
+
+      - run: sudo apt-get update && sudo apt-get install -y build-essential
 
       - name: Compile
         run: cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
 
   mirror:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: arc-runner-gaia
     steps:
       - uses: actions/checkout@v7
         with:
@@ -55,6 +57,11 @@ jobs:
           git diff --staged --quiet && exit 0
           git commit -m "sync: mirror love.c from hestia@${{ github.sha }}"
           git push
+
+      - run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      # arc-runner-gaia's image doesn't ship gh on PATH
+      - run: type -p gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
 
       - name: Release binary
         env:
