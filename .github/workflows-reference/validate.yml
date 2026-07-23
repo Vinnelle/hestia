@@ -1,7 +1,6 @@
 name: Validate
 
-# terraform validate/plan is intentionally absent: the TFC workspace is
-# VCS-driven, so every push already gets a speculative or real plan there.
+# terraform plan/apply live in terraform.yml, not here: this job only fmt/lints.
 on:
   push:
     branches: [prd]

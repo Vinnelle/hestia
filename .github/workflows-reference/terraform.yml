@@ -1,0 +1,49 @@
+name: Terraform Plan/Apply
+
+# CLI-driven runs against the TFC "hestia" workspace (cloud block in
+# hestia/versions.tf). The workspace's VCS trigger must be disabled in TFC
+# for org "lover" or every push double-runs (this workflow + TFC's own
+# auto-plan) and the two race for the state lock.
+
+on:
+  push:
+    branches: [prd]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  wait-for-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/wait-for-validate
+
+  plan-apply:
+    needs: wait-for-validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: hestia
+    env:
+      TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: hashicorp/setup-terraform@v4
+
+      - run: terraform init -input=false
+
+      - run: terraform plan -input=false -out=tfplan
+
+      # apply only on push to prd; PRs get a speculative plan only
+      - if: github.ref == 'refs/heads/prd' && github.event_name == 'push'
+        run: terraform apply -input=false tfplan

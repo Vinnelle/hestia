@@ -14,14 +14,14 @@ permissions:
   actions: read
 
 jobs:
-  wait-for-validate:
+  wait-for-terraform:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/wait-for-validate
+      - uses: ./.github/actions/wait-for-terraform
 
   deploy:
-    needs: wait-for-validate
+    needs: wait-for-terraform
     uses: ./.github/workflows/site-deploy.yml
     with:
       context: hestia/monke-academy/site

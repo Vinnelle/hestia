@@ -18,14 +18,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  wait-for-validate:
+  wait-for-terraform:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/wait-for-validate
+      - uses: ./.github/actions/wait-for-terraform
 
   build-push:
-    needs: wait-for-validate
+    needs: wait-for-terraform
     runs-on: ubuntu-latest
     strategy:
       matrix:
