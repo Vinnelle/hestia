@@ -20,6 +20,11 @@ resource "cloudflare_dns_record" "adguard_admin_vinnel_cloud" {
 }
 
 locals {
+  # StatefulSet ordinals. Each gets its own netbird peer identity (setup key,
+  # hostname, state PVC) — netbird has no concept of one peer behind a
+  # load balancer, every replica must register as its own mesh device.
+  adguard_ordinals = toset(["0", "1"])
+
   adguard_config_template_yaml = yamlencode({
     schema_version = 29
     http = {
@@ -64,9 +69,13 @@ resource "kubernetes_config_map_v1" "adguard_config_template" {
   }
 }
 
+# One one-off setup key per replica — netbird setup keys are single-use, so
+# two pods sharing one key means the second pod's netbird sidecar can never
+# register.
 resource "netbird_setup_key" "adguard" {
+  for_each       = local.adguard_ordinals
   depends_on     = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name           = "adguard"
+  name           = "adguard-${each.key}"
   type           = "one-off"
   expiry_seconds = 3600
   ephemeral      = false
@@ -74,16 +83,23 @@ resource "netbird_setup_key" "adguard" {
   auto_groups    = [netbird_group.services.id]
 }
 
-resource "kubernetes_secret_v1" "adguard_netbird_setup_key" {
+resource "kubernetes_secret_v1" "adguard_netbird_setup_keys" {
   metadata {
-    name      = "adguard-netbird-setup-key"
+    name      = "adguard-netbird-setup-keys"
     namespace = kubernetes_namespace_v1.adguard.metadata[0].name
   }
   data = {
-    setup-key = netbird_setup_key.adguard.key
+    for ordinal, key in netbird_setup_key.adguard : "setup-key-${ordinal}" => key.key
   }
 }
 
+# ── Orphaned by the StatefulSet migration below ───────────────────────────────
+# Each replica now gets its own conf/work/netbird-state volume via
+# volume_claim_template, so these single shared PVCs are unreferenced.
+# prevent_destroy is dropped here (first apply) so they *can* be destroyed,
+# but the resources are left in place rather than deleted outright — confirm
+# the new per-ordinal PVCs are healthy and holding the data you expect, then
+# remove these three blocks in a follow-up apply.
 resource "kubernetes_persistent_volume_claim_v1" "adguard_conf" {
   metadata {
     name      = "adguard-conf-pvc"
@@ -98,10 +114,6 @@ resource "kubernetes_persistent_volume_claim_v1" "adguard_conf" {
     }
   }
   wait_until_bound = false
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "kubernetes_persistent_volume_claim_v1" "adguard_work" {
@@ -118,10 +130,6 @@ resource "kubernetes_persistent_volume_claim_v1" "adguard_work" {
     }
   }
   wait_until_bound = false
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
 resource "kubernetes_persistent_volume_claim_v1" "adguard_netbird_state" {
@@ -146,7 +154,28 @@ resource "kubernetes_persistent_volume_claim_v1" "adguard_netbird_state" {
   }
 }
 
-resource "kubernetes_deployment_v1" "adguard" {
+# Headless service purely to satisfy StatefulSet.spec.service_name — gives
+# each pod a stable identity (adguard-0, adguard-1) that the netbird sidecar
+# picks up as its own hostname. Not used for traffic; the ClusterIP service
+# below still handles admin UI access.
+resource "kubernetes_service_v1" "adguard_headless" {
+  metadata {
+    name      = "adguard-headless"
+    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+  }
+  spec {
+    cluster_ip = "None"
+    selector = {
+      app = "adguard"
+    }
+    port {
+      port        = 3000
+      target_port = "http"
+    }
+  }
+}
+
+resource "kubernetes_stateful_set_v1" "adguard" {
   metadata {
     name      = "adguard"
     namespace = kubernetes_namespace_v1.adguard.metadata[0].name
@@ -156,7 +185,8 @@ resource "kubernetes_deployment_v1" "adguard" {
   }
 
   spec {
-    replicas = 1
+    replicas     = 2
+    service_name = kubernetes_service_v1.adguard_headless.metadata[0].name
 
     selector {
       match_labels = {
@@ -164,8 +194,11 @@ resource "kubernetes_deployment_v1" "adguard" {
       }
     }
 
-    strategy {
-      type = "Recreate"
+    # data survives even if the StatefulSet (or a replica) is deleted —
+    # equivalent to the prevent_destroy the standalone PVCs had before
+    persistent_volume_claim_retention_policy {
+      when_deleted = "Retain"
+      when_scaled  = "Retain"
     }
 
     template {
@@ -255,24 +288,24 @@ resource "kubernetes_deployment_v1" "adguard" {
           name  = "netbird"
           image = "netbirdio/netbird:0.74.3"
 
-          env {
-            name = "NB_SETUP_KEY"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.adguard_netbird_setup_key.metadata[0].name
-                key  = "setup-key"
-              }
-            }
-          }
+          # Picks the setup key matching this pod's own ordinal (adguard-0 ->
+          # setup-key-0) off the mounted secret, then hands off to the image's
+          # real entrypoint. NB_HOSTNAME is deliberately not set: dropping it
+          # lets netbird fall back to the pod's own kernel hostname
+          # (adguard-0 / adguard-1), so no per-ordinal templating is needed
+          # for it either.
+          command = ["sh", "-c"]
+          args = [<<-EOT
+            hostname=$(cat /etc/hostname)
+            ordinal=$${hostname##*-}
+            export NB_SETUP_KEY=$(cat "/secrets/setup-key-$${ordinal}")
+            exec /usr/local/bin/netbird-entrypoint.sh
+          EOT
+          ]
 
           env {
             name  = "NB_MANAGEMENT_URL"
             value = "https://proxy.vinnel.cloud"
-          }
-
-          env {
-            name  = "NB_HOSTNAME"
-            value = "adguard"
           }
 
           env {
@@ -309,6 +342,12 @@ resource "kubernetes_deployment_v1" "adguard" {
             name       = "netbird-state"
             mount_path = "/var/lib/netbird"
           }
+
+          volume_mount {
+            name       = "netbird-setup-keys"
+            mount_path = "/secrets"
+            read_only  = true
+          }
         }
 
         volume {
@@ -319,23 +358,9 @@ resource "kubernetes_deployment_v1" "adguard" {
         }
 
         volume {
-          name = "conf"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.adguard_conf.metadata[0].name
-          }
-        }
-
-        volume {
-          name = "work"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.adguard_work.metadata[0].name
-          }
-        }
-
-        volume {
-          name = "netbird-state"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.adguard_netbird_state.metadata[0].name
+          name = "netbird-setup-keys"
+          secret {
+            secret_name = kubernetes_secret_v1.adguard_netbird_setup_keys.metadata[0].name
           }
         }
 
@@ -348,17 +373,77 @@ resource "kubernetes_deployment_v1" "adguard" {
         }
       }
     }
+
+    volume_claim_template {
+      metadata {
+        name = "conf"
+      }
+      spec {
+        access_modes = ["ReadWriteOnce"]
+        resources {
+          requests = {
+            storage = "256Mi"
+          }
+        }
+      }
+    }
+
+    volume_claim_template {
+      metadata {
+        name = "work"
+      }
+      spec {
+        access_modes = ["ReadWriteOnce"]
+        resources {
+          requests = {
+            storage = "2Gi"
+          }
+        }
+      }
+    }
+
+    volume_claim_template {
+      metadata {
+        name = "netbird-state"
+      }
+      spec {
+        access_modes = ["ReadWriteOnce"]
+        resources {
+          requests = {
+            storage = "64Mi"
+          }
+        }
+      }
+    }
+  }
+}
+
+# Guarantees at least one replica survives voluntary disruption (node drain,
+# VPA eviction) — the entire point of going to 2 pods, otherwise k8s can
+# still take both down together.
+resource "kubernetes_pod_disruption_budget_v1" "adguard" {
+  metadata {
+    name      = "adguard"
+    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+  }
+  spec {
+    min_available = 1
+    selector {
+      match_labels = {
+        app = "adguard"
+      }
+    }
   }
 }
 
 resource "kubectl_manifest" "adguard_vpa" {
-  depends_on = [helm_release.vpa, kubernetes_deployment_v1.adguard]
+  depends_on = [helm_release.vpa, kubernetes_stateful_set_v1.adguard]
   yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
     name        = "adguard"
     namespace   = kubernetes_namespace_v1.adguard.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.adguard.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: Auto-mode evictions would drop device DNS at random times
+    target_kind = "StatefulSet"
+    target_name = kubernetes_stateful_set_v1.adguard.metadata[0].name
+    update_mode = "Initial" # 2 replicas behind a PDB now, but still avoid Auto-mode evictions churning both DNS pods for a resource-limit tweak
     container_policies = [
       { container_name = "adguard", min_memory = "64Mi", max_memory = "512Mi" },
       { container_name = "netbird", min_memory = "16Mi", max_memory = "128Mi" },
@@ -424,8 +509,9 @@ resource "kubernetes_ingress_v1" "adguard_admin_vinnel_cloud" {
 
 
 data "netbird_peer" "adguard" {
-  depends_on = [kubernetes_deployment_v1.adguard, cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "adguard"
+  for_each   = local.adguard_ordinals
+  depends_on = [kubernetes_stateful_set_v1.adguard, cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "adguard-${each.key}"
 }
 
 resource "netbird_nameserver_group" "adguard_devices" {
@@ -435,8 +521,8 @@ resource "netbird_nameserver_group" "adguard_devices" {
   primary = true
   enabled = true
   nameservers = [
-    {
-      ip      = data.netbird_peer.adguard.ip
+    for ordinal in sort(keys(data.netbird_peer.adguard)) : {
+      ip      = data.netbird_peer.adguard[ordinal].ip
       ns_type = "udp"
       port    = 53
     }
