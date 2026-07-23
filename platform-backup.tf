@@ -1,5 +1,3 @@
-# R2 backup bucket — restic target, client-side encrypted so R2 only holds
-# ciphertext. Zero egress fees make restores free.
 resource "cloudflare_r2_bucket" "backups" {
   account_id = data.cloudflare_zone.vinnel_cloud.account.id
   name       = "hestia-backups"
@@ -24,10 +22,8 @@ resource "kubernetes_secret_v1" "s3_backup_credentials" {
   }
 
   data = {
-    access_key = var.s3_backup_access_key
-    secret_key = var.s3_backup_secret_key
-    # restic repository password — encrypts snapshots client-side; see the
-    # variable description for the offline-copy requirement
+    access_key      = var.s3_backup_access_key
+    secret_key      = var.s3_backup_secret_key
     restic_password = var.backup_encryption_password
   }
 }
@@ -57,11 +53,8 @@ resource "kubernetes_cron_job_v1" "pv_backup" {
             restart_policy = "OnFailure"
 
             container {
-              name  = "backup"
-              image = "restic/restic:0.18.0"
-              # command (not args): the image's ENTRYPOINT is the restic
-              # binary itself, so the shell has to replace it. set -e in the
-              # script fails the Job (and trips BackupJobFailed) on any step.
+              name    = "backup"
+              image   = "restic/restic:0.18.0"
               command = ["/bin/sh", "-c", file("${path.module}/backup/pv-backup.sh")]
 
               env {

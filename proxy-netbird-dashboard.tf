@@ -144,7 +144,7 @@ resource "kubectl_manifest" "netbird_dashboard_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.netbird_dashboard.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: no need for Auto-mode eviction blips on a static UI
+    update_mode = "Initial"
     container_policies = [
       { container_name = "dashboard", min_memory = "32Mi", max_memory = "128Mi" },
     ]

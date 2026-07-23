@@ -1,10 +1,3 @@
-# ntfy — push notifications for Grafana alerting (see observability-alerting.tf)
-# and anything else in the cluster that wants to publish to https://ntfy.vinnel.cloud.
-#
-# Public and unauthenticated by default (auth-default-access: deny-all), so every
-# topic needs an explicit ACL entry below. "ida" is the personal account (mobile
-# app + web UI, full access via admin role). "publisher" is a write-only token
-# for services (Grafana webhook) to post alerts without a human login.
 
 resource "cloudflare_dns_record" "ntfy_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
@@ -20,30 +13,24 @@ resource "random_password" "ntfy_admin" {
   special = false
 }
 
-# Login password for the "publisher" account. It's never used — publisher
-# authenticates via the token below — but auth-users requires a hash.
 resource "random_password" "ntfy_publisher_password" {
   length  = 24
   special = false
 }
 
 resource "random_password" "ntfy_publisher_token" {
-  # ntfy accepts `tk_` plus 29 URL-safe characters (32 characters total).
   length  = 29
   upper   = false
   special = false
 }
 
 locals {
-  # Match ntfy's ValidToken format: tk_ followed by 29 URL-safe characters.
   ntfy_publisher_token = "tk_${random_password.ntfy_publisher_token.result}"
 
   ntfy_config_yaml = yamlencode({
     "base-url"    = "https://ntfy.vinnel.cloud"
     "listen-http" = ":80"
 
-    # ingress-nginx terminates TLS and proxies every request from one IP —
-    # without this, every visitor is rate-limited as a single client.
     "behind-proxy" = true
 
     "cache-file"           = "/var/cache/ntfy/cache.db"
@@ -121,9 +108,6 @@ resource "kubernetes_persistent_volume_claim_v1" "ntfy_auth" {
 }
 
 import {
-  # The original deployment state had a null identity after a failed rollout.
-  # Importing the existing Kubernetes object lets the remote HCP Terraform run
-  # repair state before reconciling the corrected configuration.
   to = kubernetes_deployment_v1.ntfy
   id = "services/ntfy"
 }
@@ -251,7 +235,7 @@ resource "kubectl_manifest" "ntfy_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.ntfy.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: Auto-mode evictions would drop live subscriber connections at random times
+    update_mode = "Initial"
     container_policies = [
       { container_name = "ntfy", min_memory = "32Mi", max_memory = "256Mi" },
     ]
@@ -276,9 +260,6 @@ resource "kubernetes_service_v1" "ntfy" {
   }
 }
 
-# No Authelia forward-auth here: ntfy's own users/tokens (deny-all default)
-# guard the ingress instead. Forward-auth would intercept the mobile app and
-# Grafana's webhook publisher, which can't complete a browser SSO redirect.
 resource "kubernetes_ingress_v1" "ntfy_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {

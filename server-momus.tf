@@ -9,8 +9,6 @@ resource "kubernetes_namespace_v1" "server" {
   }
 }
 
-# Pull auth for the momus image (Harbor project vinnel-cloud) — same robot
-# account as the websites, but the secret has to exist in this namespace too.
 resource "kubernetes_secret_v1" "registry_dockerconfig_server" {
   metadata {
     name      = "registry-dockerconfig"
@@ -37,8 +35,6 @@ resource "netbird_setup_key" "momus" {
   expiry_seconds = 3600
   ephemeral      = false
   usage_limit    = 1
-  # group membership is handled by netbird_group.servers.peers instead —
-  # see the matching comment in apps-adguard.tf
 }
 
 resource "kubernetes_secret_v1" "momus_netbird_setup_key" {
@@ -52,10 +48,6 @@ resource "kubernetes_secret_v1" "momus_netbird_setup_key" {
 }
 
 locals {
-  # Authorized keys for the 'ida' user: parsed from momus/ssh/authorized_keys
-  # (one key per line, '#' comments and blank lines dropped), merged with the
-  # legacy debian_server_ssh_public_key variable if it's still set. distinct()
-  # drops duplicates if a key appears in both.
   momus_authorized_keys = join("\n", distinct(concat(
     [
       for line in split("\n", file("${path.module}/momus/ssh/authorized_keys")) :
@@ -76,16 +68,6 @@ resource "kubernetes_secret_v1" "momus_authorized_keys" {
   }
 }
 
-# Cluster-admin kubeconfig, mounted read-only into momus so you can drive the
-# cluster over SSH (kubectl/k). SECURITY: this makes momus a crown-jewel — the
-# SSH key that opens momus effectively holds cluster-admin. The credential is a
-# dedicated ServiceAccount token rather than the Talos client-cert kubeconfig:
-# client certs cannot be revoked short of rotating the cluster CA, whereas this
-# is killed instantly by deleting the token secret (terraform taint
-# kubernetes_secret_v1.momus_admin_token + apply rotates it), and API audit
-# logs attribute momus's actions to its own identity. The entrypoint copies it
-# to ~ida/.kube/config so kubectl "just works"; mounted at /etc/momus-kube
-# (outside ~/Projects) so it can never be swept into a commit.
 resource "kubernetes_service_account_v1" "momus_admin" {
   metadata {
     name      = "momus-admin"
@@ -125,8 +107,6 @@ resource "kubernetes_secret_v1" "momus_admin_token" {
 }
 
 locals {
-  # In-cluster API endpoint, not the public node IP: momus is a pod, so this
-  # resolves via CoreDNS and keeps working if/when public 6443 is firewalled.
   momus_kubeconfig = yamlencode({
     apiVersion = "v1"
     kind       = "Config"
@@ -162,8 +142,6 @@ resource "random_password" "momus_ida_sudo" {
   special = false
 }
 
-# SSH stays key-only (PasswordAuthentication no in sshd_config) — these only
-# gate local privilege escalation (sudo/su) once you're already in over SSH.
 resource "kubernetes_secret_v1" "momus_passwords" {
   metadata {
     name      = "momus-passwords"
@@ -231,7 +209,6 @@ resource "kubernetes_persistent_volume_claim_v1" "momus_host_keys" {
   }
   wait_until_bound = false
 
-  # regenerating host keys makes every known_hosts entry scream MITM
   lifecycle {
     prevent_destroy = true
   }
@@ -252,15 +229,11 @@ resource "kubernetes_persistent_volume_claim_v1" "momus_netbird_state" {
   }
   wait_until_bound = false
 
-  # losing netbird state re-registers the peer under a new mesh IP, breaking
-  # the momus_ssh_address output and any saved SSH config
   lifecycle {
     prevent_destroy = true
   }
 }
 
-# Persistent workspace at ~ida/Projects so a repo clone and any work survive
-# pod restarts (the rest of the momus home is ephemeral).
 resource "kubernetes_persistent_volume_claim_v1" "momus_projects" {
   metadata {
     name      = "momus-projects-pvc"
@@ -282,9 +255,6 @@ resource "kubernetes_persistent_volume_claim_v1" "momus_projects" {
 }
 
 
-# Persists the vscode-cli tunnel's device-auth registration (via
-# --cli-data-dir) so `code tunnel` doesn't need re-authenticating against
-# GitHub/Microsoft every time the pod restarts.
 resource "kubernetes_persistent_volume_claim_v1" "momus_vscode_state" {
   metadata {
     name      = "momus-vscode-state-pvc"
@@ -306,9 +276,6 @@ resource "kubernetes_persistent_volume_claim_v1" "momus_vscode_state" {
 }
 
 locals {
-  # Immutable digest recorded by momus-build.yml (see README bootstrap step 9) —
-  # the baked image ships sshd, kubectl, love, starship and the vscode CLI,
-  # all checksum-verified at build time.
   momus_image = local.images["momus"]
 
   momus_config_hash = sha256(join("", [
@@ -316,16 +283,9 @@ locals {
     file("${path.module}/momus/motd/motd"),
     file("${path.module}/momus/shell/.zshrc"),
     file("${path.module}/momus/shell/starship.toml"),
-    # roll the pod when the authorized keys change (file or legacy var), so
-    # adding/rotating a key takes effect — the entrypoint only copies
-    # authorized_keys to ~/.ssh at start
     local.momus_authorized_keys,
-    # roll the pod on password rotation too, so a `terraform taint` of either
-    # random_password actually takes effect instead of sitting unused in the secret
     random_password.momus_root.result,
     random_password.momus_ida_sudo.result,
-    # and on kubeconfig/token rotation — the entrypoint only copies it to
-    # ~ida/.kube/config at start, so a revoke-and-reissue must restart the pod
     local.momus_kubeconfig,
   ]))
 }
@@ -382,10 +342,6 @@ resource "kubernetes_deployment_v1" "momus" {
           }
 
           security_context {
-            # sudo is a setuid-root binary; no_new_privs (what
-            # allow_privilege_escalation=false sets) blocks setuid gains
-            # entirely, so this has to be true for `sudo` inside the container
-            # to work at all. Traded deliberately for the sudo requirement.
             allow_privilege_escalation = true
           }
 
@@ -453,10 +409,6 @@ resource "kubernetes_deployment_v1" "momus" {
             mount_path = "/home/ida/.vscode-cli"
           }
 
-          # The image is now fully baked, but sshd still needs time for secret
-          # hydration, PVC ownership fixes, and first-boot host-key generation.
-          # Keep startup_probe as the guardrail before readiness/liveness start
-          # enforcing the steady-state SSH listener.
           startup_probe {
             tcp_socket {
               port = "ssh"
@@ -515,9 +467,6 @@ resource "kubernetes_deployment_v1" "momus" {
 
           security_context {
             capabilities {
-              # NET_ADMIN + /dev/net/tun is what the wireguard tunnel needs;
-              # SYS_RESOURCE covers rlimit bumps. SYS_ADMIN is near-root and
-              # deliberately not granted.
               add = ["NET_ADMIN", "SYS_RESOURCE"]
             }
           }

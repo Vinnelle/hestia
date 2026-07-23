@@ -1,5 +1,3 @@
-# CI deployer: namespace-scoped credentials for GitHub Actions rollout restarts,
-# replaces the cluster-admin kubeconfig in the HESTIA_KUBECONFIG secret.
 
 resource "kubernetes_service_account_v1" "ci_deployer" {
   metadata {

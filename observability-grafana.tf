@@ -64,9 +64,7 @@ resource "kubernetes_deployment_v1" "grafana" {
         }
 
         container {
-          name = "grafana"
-          # Pinned to the running version; Renovate bumps it forward. Never pin
-          # below the running version — Grafana can't downgrade its sqlite DB.
+          name  = "grafana"
           image = "grafana/grafana:13.1.0"
 
           port {
@@ -126,7 +124,7 @@ resource "kubectl_manifest" "grafana_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.grafana.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: Auto-mode evictions would blip the UI at random times
+    update_mode = "Initial"
     container_policies = [
       { container_name = "grafana", min_memory = "256Mi", max_memory = "1Gi" },
     ]

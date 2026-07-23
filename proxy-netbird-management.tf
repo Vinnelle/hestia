@@ -31,7 +31,6 @@ resource "kubernetes_persistent_volume_claim_v1" "netbird_management" {
   }
   wait_until_bound = false
 
-  # the netbird store: every peer, key and ACL in the mesh lives here
   lifecycle {
     prevent_destroy = true
   }
@@ -152,7 +151,7 @@ resource "kubectl_manifest" "netbird_management_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.netbird_management.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: an Auto-mode eviction stalls the whole mesh control plane
+    update_mode = "Initial"
     container_policies = [
       { container_name = "management", min_memory = "64Mi", max_memory = "256Mi" },
     ]

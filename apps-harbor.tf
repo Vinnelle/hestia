@@ -11,11 +11,6 @@ resource "cloudflare_dns_record" "registry_admin_vinnel_cloud" {
   type    = "A"
   content = var.node_ip
   ttl     = 1
-  # Proxied for Cloudflare's DoS shielding — a deliberate trade-off: the proxy
-  # caps upload bodies (~100MB on free plans), so a docker push with any layer
-  # over that dies with a 413 that looks like a Harbor bug. Current images are
-  # tiny; if a big layer ever appears, slim it or temporarily grey-cloud this
-  # record for the push.
   proxied = true
 }
 

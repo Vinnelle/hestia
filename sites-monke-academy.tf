@@ -8,9 +8,6 @@ resource "cloudflare_dns_record" "monke_academy_apex" {
   proxied = true
 }
 
-# CDN: proxied DNS already caches static assets — this extends caching to
-# everything (HTML included) on the site hostname only. Only one ruleset per
-# phase per zone: further monke.academy cache rules go in this resource.
 resource "cloudflare_ruleset" "monke_academy_cache" {
   zone_id = data.cloudflare_zone.monke_academy.id
   name    = "site cdn cache"

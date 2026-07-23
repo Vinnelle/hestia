@@ -12,12 +12,15 @@ resource "netbird_group" "devices" {
   name       = "User Devices"
 }
 
+resource "netbird_group" "services" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "services"
+}
+
 resource "netbird_group" "adguard" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "Adguard"
-  # auto_groups on the setup key only covers future re-registrations —
-  # this is what actually puts the already-running peers in the group
-  peers = [for ordinal in sort(keys(data.netbird_peer.adguard)) : data.netbird_peer.adguard[ordinal].id]
+  peers      = [for ordinal in sort(keys(data.netbird_peer.adguard)) : data.netbird_peer.adguard[ordinal].id]
 }
 
 resource "netbird_group" "servers" {
@@ -26,12 +29,6 @@ resource "netbird_group" "servers" {
   peers      = [data.netbird_peer.momus.id]
 }
 
-# ── Mesh access policies ──────────────────────────────────────────────────────
-# Least-privilege replacement for the account's built-in "Default" all-to-all
-# policy (disabled below). devices reach Servers/Adguard on exactly the two
-# exposed surfaces — momus sshd and adguard DNS — and nothing initiates
-# toward devices. One rule per policy: the management API rejects
-# multi-rule policies.
 
 resource "netbird_policy" "devices_ssh_to_services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
@@ -84,9 +81,6 @@ resource "netbird_policy" "devices_dns_tcp_to_services" {
   }
 }
 
-# The built-in all-to-all policy, imported and pinned disabled so the explicit
-# policies above are the only access paths. depends_on orders the allow rules
-# ahead of the disable in a single apply, so mesh access never gaps.
 data "netbird_group" "all" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "All"

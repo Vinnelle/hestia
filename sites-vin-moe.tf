@@ -8,9 +8,6 @@ resource "cloudflare_dns_record" "vin_moe_apex" {
   proxied = true
 }
 
-# CDN: proxied DNS already caches static assets — this extends caching to
-# everything (HTML included) on the site hostname only. Only one ruleset per
-# phase per zone: further vin.moe cache rules go in this resource.
 resource "cloudflare_ruleset" "vin_moe_cache" {
   zone_id = data.cloudflare_zone.vin_moe.id
   name    = "site cdn cache"

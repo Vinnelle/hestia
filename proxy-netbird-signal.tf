@@ -78,7 +78,7 @@ resource "kubectl_manifest" "netbird_signal_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.netbird_signal.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: Auto-mode evictions interrupt peer signaling
+    update_mode = "Initial"
     container_policies = [
       { container_name = "signal", min_memory = "32Mi", max_memory = "128Mi" },
     ]

@@ -102,7 +102,7 @@ resource "kubectl_manifest" "netbird_relay_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.netbird_relay.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: Auto-mode evictions drop relayed peer connections
+    update_mode = "Initial"
     container_policies = [
       { container_name = "relay", min_memory = "32Mi", max_memory = "128Mi" },
     ]

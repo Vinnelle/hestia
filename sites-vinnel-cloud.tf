@@ -8,10 +8,6 @@ resource "cloudflare_dns_record" "vinnel_cloud_apex" {
   proxied = true
 }
 
-# CDN: proxied DNS already caches static assets — this extends caching to
-# everything (HTML included) on the apex only, so dynamic apps on other
-# vinnel.cloud subdomains are untouched. Only one ruleset per phase per
-# zone: further vinnel.cloud cache rules go in this resource.
 resource "cloudflare_ruleset" "vinnel_cloud_cache" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "site cdn cache"
@@ -277,7 +273,6 @@ resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_dashboard" {
   }
   wait_until_bound = false
 
-  # holds the analytics sqlite DB
   lifecycle {
     prevent_destroy = true
   }

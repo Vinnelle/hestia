@@ -10,9 +10,5 @@ locals {
   }
 }
 locals {
-  # This committed manifest is updated by site-deploy.yml / momus-build.yml with
-  # the immutable digest emitted by BuildKit. Terraform is therefore the durable
-  # desired state for every deployment and disaster-recovery recreation.
-  # "// ..." keys are section comments — jq-safe, ignored here.
   images = jsondecode(file("${path.module}/images.json"))
 }

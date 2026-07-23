@@ -98,8 +98,6 @@ resource "kubernetes_persistent_volume_claim_v1" "authelia" {
   }
   wait_until_bound = false
 
-  # holds the Authelia sqlite DB (TOTP enrollments, OIDC consent) — losing it
-  # de-enrolls every 2FA device
   lifecycle {
     prevent_destroy = true
   }
@@ -232,7 +230,7 @@ resource "kubectl_manifest" "authelia_vpa" {
     namespace   = kubernetes_namespace_v1.services.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.authelia.metadata[0].name
-    update_mode = "Initial" # single replica, Recreate: an Auto-mode eviction takes all auth down with it
+    update_mode = "Initial"
     container_policies = [
       { container_name = "authelia", min_memory = "64Mi", max_memory = "256Mi" },
     ]

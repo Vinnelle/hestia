@@ -1,8 +1,3 @@
-# Alert rules, provisioned into Grafana's built-in alerting engine.
-#
-# Delivery: routed to ntfy (apps-ntfy.tf) via the default notification policy
-# below. Whole-node death can't be self-reported from a single-node cluster —
-# pair this with an external uptime check on the public sites.
 
 resource "grafana_folder" "alerting" {
   title = "Alerting"
@@ -22,9 +17,6 @@ resource "grafana_contact_point" "ntfy" {
       "Tags"     = "{{ if eq .Status \"firing\" }}rotating_light{{ else }}white_check_mark{{ end }}"
     }
 
-    # ntfy's JSON publish API only exists at the root URL and requires a
-    # "topic" field; posting straight to the topic URL treats the body as the
-    # raw message text instead, so trim it down to just that.
     payload {
       template = "{{ .Message }}"
     }
@@ -258,7 +250,7 @@ resource "grafana_rule_group" "infrastructure" {
         conditions = [{
           evaluator = {
             type   = "lt"
-            params = [1209600] # 14 days in seconds
+            params = [1209600]
           }
         }]
       })
