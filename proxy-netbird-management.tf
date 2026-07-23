@@ -71,7 +71,7 @@ resource "kubernetes_deployment_v1" "netbird_management" {
       spec {
         container {
           name  = "management"
-          image = "netbirdio/management:0.74.3"
+          image = "netbirdio/management:0.74.7"
           args = [
             "--port", "80",
             "--log-file", "console",

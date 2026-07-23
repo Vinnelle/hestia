@@ -30,7 +30,7 @@ resource "kubernetes_deployment_v1" "netbird_relay" {
       spec {
         container {
           name  = "relay"
-          image = "netbirdio/relay:0.74.3"
+          image = "netbirdio/relay:0.74.7"
 
           env {
             name  = "NB_LOG_LEVEL"
