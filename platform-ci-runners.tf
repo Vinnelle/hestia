@@ -49,6 +49,21 @@ resource "helm_release" "arc_runner_gaia" {
   depends_on = [helm_release.arc_controller]
 
   values = [
-    file("${path.module}/helm-values/arc-runner-gaia/values.yaml")
+    templatefile("${path.module}/helm-values/arc-runner-gaia/values.yaml.tftpl", {
+      ingress_nginx_cluster_ip = data.kubernetes_service_v1.ingress_nginx_controller.spec[0].cluster_ip
+    })
   ]
+}
+
+# registry.vinnel.cloud stays Cloudflare-proxied (WAF/DDoS for public
+# traffic), but that proxy caps request bodies (100MB on Free/Pro) and
+# 413s large docker pushes. Runner pods route around it via hostAliases
+# in the runner values template instead, straight to this Service.
+data "kubernetes_service_v1" "ingress_nginx_controller" {
+  metadata {
+    name      = "ingress-nginx-controller"
+    namespace = "ingress-nginx"
+  }
+
+  depends_on = [helm_release.ingress_nginx]
 }
