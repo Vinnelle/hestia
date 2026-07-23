@@ -37,7 +37,8 @@ resource "netbird_setup_key" "momus" {
   expiry_seconds = 3600
   ephemeral      = false
   usage_limit    = 1
-  auto_groups    = [netbird_group.services.id]
+  # group membership is handled by netbird_group.servers.peers instead —
+  # see the matching comment in apps-adguard.tf
 }
 
 resource "kubernetes_secret_v1" "momus_netbird_setup_key" {

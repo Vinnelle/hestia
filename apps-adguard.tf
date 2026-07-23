@@ -80,7 +80,10 @@ resource "netbird_setup_key" "adguard" {
   expiry_seconds = 3600
   ephemeral      = false
   usage_limit    = 1
-  auto_groups    = [netbird_group.services.id]
+  # group membership is handled by netbird_group.adguard.peers instead —
+  # auto_groups only applies to future re-registrations, and referencing
+  # that group here would create a dependency cycle (group -> peer data
+  # source -> this deployment -> this secret -> this setup key)
 }
 
 resource "kubernetes_secret_v1" "adguard_netbird_setup_keys" {

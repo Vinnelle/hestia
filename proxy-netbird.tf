@@ -12,11 +12,6 @@ resource "netbird_group" "devices" {
   name       = "User Devices"
 }
 
-resource "netbird_group" "services" {
-  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "services"
-}
-
 resource "netbird_group" "adguard" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "Adguard"
@@ -33,9 +28,10 @@ resource "netbird_group" "servers" {
 
 # ── Mesh access policies ──────────────────────────────────────────────────────
 # Least-privilege replacement for the account's built-in "Default" all-to-all
-# policy (disabled below). devices reach services on exactly the two exposed
-# surfaces — momus sshd and adguard DNS — and nothing initiates toward devices.
-# One rule per policy: the management API rejects multi-rule policies.
+# policy (disabled below). devices reach Servers/Adguard on exactly the two
+# exposed surfaces — momus sshd and adguard DNS — and nothing initiates
+# toward devices. One rule per policy: the management API rejects
+# multi-rule policies.
 
 resource "netbird_policy" "devices_ssh_to_services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
@@ -50,7 +46,7 @@ resource "netbird_policy" "devices_ssh_to_services" {
     protocol      = "tcp"
     ports         = ["2222"]
     sources       = [netbird_group.devices.id]
-    destinations  = [netbird_group.services.id]
+    destinations  = [netbird_group.servers.id]
   }
 }
 
@@ -67,7 +63,7 @@ resource "netbird_policy" "devices_dns_udp_to_services" {
     protocol      = "udp"
     ports         = ["53"]
     sources       = [netbird_group.devices.id]
-    destinations  = [netbird_group.services.id]
+    destinations  = [netbird_group.adguard.id]
   }
 }
 
@@ -84,7 +80,7 @@ resource "netbird_policy" "devices_dns_tcp_to_services" {
     protocol      = "tcp"
     ports         = ["53"]
     sources       = [netbird_group.devices.id]
-    destinations  = [netbird_group.services.id]
+    destinations  = [netbird_group.adguard.id]
   }
 }
 
