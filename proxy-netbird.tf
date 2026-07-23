@@ -9,12 +9,26 @@ removed {
 
 resource "netbird_group" "devices" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "devices"
+  name       = "User Devices"
 }
 
 resource "netbird_group" "services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "services"
+}
+
+resource "netbird_group" "adguard" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "Adguard"
+  # auto_groups on the setup key only covers future re-registrations —
+  # this is what actually puts the already-running peers in the group
+  peers = [for ordinal in sort(keys(data.netbird_peer.adguard)) : data.netbird_peer.adguard[ordinal].id]
+}
+
+resource "netbird_group" "servers" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "Servers"
+  peers      = [data.netbird_peer.momus.id]
 }
 
 # ── Mesh access policies ──────────────────────────────────────────────────────
