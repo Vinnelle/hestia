@@ -35,6 +35,7 @@ resource "netbird_setup_key" "momus" {
   expiry_seconds = 3600
   ephemeral      = false
   usage_limit    = 1
+  auto_groups    = [netbird_group.servers.id]
 }
 
 resource "kubernetes_secret_v1" "momus_netbird_setup_key" {
@@ -576,6 +577,6 @@ resource "kubernetes_deployment_v1" "momus" {
 }
 
 data "netbird_peer" "momus" {
-  depends_on = [kubernetes_deployment_v1.momus, netbird_setup_key.momus, cloudflare_dns_record.proxy_vinnel_cloud]
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "momus"
 }

@@ -71,6 +71,7 @@ resource "netbird_setup_key" "adguard" {
   expiry_seconds = 3600
   ephemeral      = false
   usage_limit    = 1
+  auto_groups    = [netbird_group.adguard.id]
 }
 
 resource "kubernetes_secret_v1" "adguard_netbird_setup_keys" {
@@ -473,7 +474,7 @@ resource "kubernetes_ingress_v1" "adguard_admin_vinnel_cloud" {
 
 data "netbird_peer" "adguard" {
   for_each   = local.adguard_ordinals
-  depends_on = [kubernetes_stateful_set_v1.adguard, cloudflare_dns_record.proxy_vinnel_cloud]
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "adguard-${each.key}"
 }
 
