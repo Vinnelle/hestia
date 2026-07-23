@@ -22,6 +22,7 @@ concurrency:
 jobs:
   wait-for-validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/wait-for-validate
@@ -42,8 +43,14 @@ jobs:
 
       - run: terraform init -input=false
 
-      - run: terraform plan -input=false -out=tfplan
+      - id: plan
+        run: |
+          set +e
+          terraform plan -input=false -out=tfplan -detailed-exitcode
+          exit_code=$?
+          echo "exitcode=$exit_code" >> "$GITHUB_OUTPUT"
+          [ "$exit_code" -ne 1 ]
 
-      # apply only on push to prd; PRs get a speculative plan only
-      - if: github.ref == 'refs/heads/prd' && github.event_name == 'push'
+      # apply only on push to prd with actual changes; PRs get a speculative plan only
+      - if: github.ref == 'refs/heads/prd' && github.event_name == 'push' && steps.plan.outputs.exitcode == '2'
         run: terraform apply -input=false tfplan

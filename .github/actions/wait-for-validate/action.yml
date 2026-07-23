@@ -13,7 +13,7 @@ runs:
       run: |
         set -euo pipefail
         repo="${{ github.repository }}"
-        sha="${{ github.sha }}"
+        sha="${{ github.event.pull_request.head.sha || github.sha }}"
 
         echo "looking for a Validate run on $sha..."
         run_id=""
@@ -30,4 +30,20 @@ runs:
         fi
 
         echo "waiting on Validate run $run_id..."
-        gh run watch "$run_id" --repo "$repo" --exit-status
+        conclusion=""
+        for _ in $(seq 1 60); do
+          status=$(gh run view "$run_id" --repo "$repo" --json status --jq .status)
+          if [ "$status" = "completed" ]; then
+            conclusion=$(gh run view "$run_id" --repo "$repo" --json conclusion --jq .conclusion)
+            break
+          fi
+          sleep 5
+        done
+
+        if [ -z "$conclusion" ]; then
+          echo "::error::Validate run $run_id did not complete within 5 minutes"
+          exit 1
+        fi
+
+        echo "Validate run $run_id concluded: $conclusion"
+        [ "$conclusion" = "success" ]

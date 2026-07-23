@@ -15,6 +15,7 @@ permissions:
 jobs:
   wait-for-terraform:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/wait-for-terraform
