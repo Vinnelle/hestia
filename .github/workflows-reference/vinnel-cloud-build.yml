@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
 
   build-push:
@@ -38,7 +38,7 @@ jobs:
             context: hestia/vinnel-cloud/dashboard
             image: vinnel-cloud/dashboard
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
 
@@ -88,7 +88,7 @@ jobs:
     # the rebase-retry loop; rollouts wait without a timeout, capped below.
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.ref_name }}
 

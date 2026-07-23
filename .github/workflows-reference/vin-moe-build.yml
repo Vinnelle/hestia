@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: ./.github/actions/wait-for-terraform
 
   deploy:
@@ -35,11 +35,11 @@ jobs:
     needs: deploy
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           path: hestia
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           repository: Vinnelle/vin.moe
           token: ${{ secrets.GH_API_TOKEN }}
