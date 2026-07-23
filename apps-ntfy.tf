@@ -165,7 +165,7 @@ resource "kubernetes_deployment_v1" "ntfy" {
 
         container {
           name  = "ntfy"
-          image = "binwiederhier/ntfy:v2.26.0"
+          image = "binwiederhier/ntfy:v2.26.3"
           args  = ["serve"]
 
           port {
