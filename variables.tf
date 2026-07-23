@@ -76,3 +76,19 @@ variable "debian_server_ssh_public_key" {
   type        = string
   default     = ""
 }
+
+variable "gh_app_id" {
+  description = "App ID of the GitHub App installed on Vinnelle/gaia for actions-runner-controller. Not secret (visible in the GitHub App's UI), but set as a TFC workspace variable to keep it alongside the other GH App vars."
+  type        = string
+}
+
+variable "gh_app_installation_id" {
+  description = "Installation ID of the GitHub App on Vinnelle/gaia for actions-runner-controller. Not secret (visible in the installation URL), but set as a TFC workspace variable to keep it alongside the other GH App vars."
+  type        = string
+}
+
+variable "gh_app_private_key" {
+  description = "PEM private key of the GitHub App used by actions-runner-controller to mint runner registration tokens. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}

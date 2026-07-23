@@ -1,0 +1,46 @@
+resource "kubernetes_namespace_v1" "arc_systems" {
+  metadata {
+    name = "arc-systems"
+  }
+}
+
+resource "kubernetes_namespace_v1" "arc_runners" {
+  metadata {
+    name = "arc-runners"
+  }
+}
+
+resource "kubernetes_secret_v1" "arc_github_app" {
+  metadata {
+    name      = "arc-github-app"
+    namespace = kubernetes_namespace_v1.arc_runners.metadata[0].name
+  }
+
+  data = {
+    github_app_id              = var.gh_app_id
+    github_app_installation_id = var.gh_app_installation_id
+    github_app_private_key     = var.gh_app_private_key
+  }
+}
+
+resource "helm_release" "arc_controller" {
+  name       = "arc"
+  repository = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart      = "gha-runner-scale-set-controller"
+  version    = "0.9.3"
+  namespace  = kubernetes_namespace_v1.arc_systems.metadata[0].name
+}
+
+resource "helm_release" "arc_runner_gaia" {
+  name       = "arc-runner-gaia"
+  repository = "oci://ghcr.io/actions/actions-runner-controller-charts"
+  chart      = "gha-runner-scale-set"
+  version    = "0.9.3"
+  namespace  = kubernetes_namespace_v1.arc_runners.metadata[0].name
+
+  depends_on = [helm_release.arc_controller]
+
+  values = [
+    file("${path.module}/helm-values/arc-runner-gaia/values.yaml")
+  ]
+}

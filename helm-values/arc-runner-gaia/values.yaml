@@ -1,0 +1,11 @@
+githubConfigUrl: "https://github.com/Vinnelle/gaia"
+githubConfigSecret: arc-github-app
+
+minRunners: 0
+
+containerMode:
+  type: "dind"
+
+controllerServiceAccount:
+  namespace: arc-systems
+  name: arc-gha-rs-controller
