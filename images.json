@@ -1,6 +1,6 @@
 {
   "// momus": "server image — updated by momus-build.yml",
-  "momus": "registry.vinnel.cloud/vinnel-cloud/momus@sha256:7683bac3860aae662d4c8a1a2b54140198303d81bc2f5f55d257fa5f81f63973",
+  "momus": "registry.vinnel.cloud/vinnel-cloud/momus@sha256:c1daf002677e3de6ab2180eec391527a51758e53004308a9a51ba184899d8ce1",
   "// sites": "site images — updated by site-deploy.yml",
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:43ec997100333004be15dafc9818cbed033864a8d2aa7b889fe1a027a8ce4fd8",
   "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:8c668ebec790eb07690908ef48d318ec47e6ccf7e288fae97e4aeefb7a2bc99f",

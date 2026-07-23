@@ -205,7 +205,7 @@ resource "kubernetes_deployment_v1" "adguard" {
 
         container {
           name  = "adguard"
-          image = "adguard/adguardhome:v0.107.77"
+          image = "adguard/adguardhome:v0.107.78"
 
           port {
             name           = "http"
