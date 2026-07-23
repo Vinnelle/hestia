@@ -44,6 +44,11 @@ resource "harbor_project" "vinnel_cloud" {
   name       = "vinnel-cloud"
 }
 
+resource "harbor_project" "ci_runner" {
+  depends_on = [helm_release.harbor]
+  name       = "ci-runner"
+}
+
 resource "random_password" "harbor_robot" {
   length  = 24
   special = false
