@@ -12,17 +12,24 @@ containerMode:
 # workflow steps run in, so a plain `echo >> /etc/hosts` step wouldn't
 # reach it. registry.vinnel.cloud stays Cloudflare-proxied for public
 # traffic (WAF/DDoS), but that proxy caps request bodies (100MB on
-# Free/Pro) and 413s large docker pushes — this routes runner-pod pushes
-# straight to the in-cluster ingress-nginx-controller Service instead,
-# bypassing that cap entirely. TLS/Host/SNI still say registry.vinnel.cloud,
-# so cert validation and ingress routing behave identically; only the
-# network path changes. hostAliases is a plain corev1.PodSpec field, so
-# this is a direct passthrough — not chart-specific merge logic like the
-# dind containers override below would be.
+# Free/Pro) and 413s large docker pushes.
+#
+# This is a single-node cluster (kubectl get nodes: INTERNAL-IP ==
+# EXTERNAL-IP == var.node_ip) — there's no separate private address.
+# ingress-nginx runs hostNetwork: true, binding directly to that node
+# IP:443, which is also why the public DNS record targets it directly
+# rather than a LoadBalancer/ClusterIP. An earlier version of this
+# routed to the ingress-nginx-controller Service's ClusterIP instead —
+# wrong target: with hostNetwork, that Service doesn't carry real
+# traffic, so it just times out. var.node_ip is correct: pod -> node's
+# own hostNetwork-bound socket, routed entirely within the one machine,
+# no hairpin/external hop involved. TLS/Host/SNI still say
+# registry.vinnel.cloud, so cert validation and ingress routing behave
+# identically; only the resolved address changes.
 template:
   spec:
     hostAliases:
-      - ip: "${ingress_nginx_cluster_ip}"
+      - ip: "${registry_internal_ip}"
         hostnames:
           - "registry.vinnel.cloud"
 

@@ -12,6 +12,9 @@
 #
 # Flows this must keep working:
 #   Cloudflare -> 80/443            every public hostname is proxied (orange cloud)
+#   pods -> 80/443                  CI runner pods bypass Cloudflare for
+#                                   registry.vinnel.cloud (large docker pushes
+#                                   exceed Cloudflare's proxy body-size cap)
 #   GitHub Actions / TFC -> 6443    CI deploys + the kubernetes/helm providers
 #   TFC -> 50000                    the talos provider itself — closing this would
 #                                   cut off the path that manages this firewall
@@ -58,6 +61,24 @@ ingress:
   - subnet: 2405:8100::/32
   - subnet: 2a06:98c0::/29
   - subnet: 2c0f:f248::/32
+---
+# Same web ingress, opened to in-cluster pods too: CI runner pods route
+# registry.vinnel.cloud straight to ${node_ip} via hostAliases (bypassing
+# Cloudflare's proxy, which caps request bodies and 413s large docker
+# pushes), so nginx needs to accept that traffic directly. node_ip/32
+# included because flannel masquerades pod->node traffic, same as the
+# kubelet/metrics rules below.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: web-from-pods
+portSelector:
+  ports:
+    - 80
+    - 443
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
 ---
 # Kubernetes API: world-open by necessity — GitHub Actions runners and TFC
 # workers have no pinnable egress ranges, and in-cluster clients reach the
