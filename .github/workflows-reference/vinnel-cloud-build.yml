@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/wait-for-validate
 
-  build:
+  build-push:
     needs: wait-for-validate
     runs-on: ubuntu-latest
     strategy:
@@ -79,8 +79,8 @@ jobs:
           name: digest-${{ matrix.app }}
           path: /tmp/digests/${{ matrix.app }}
 
-  rollout:
-    needs: build
+  record-and-deploy:
+    needs: build-push
     runs-on: ubuntu-latest
     # No shared concurrency group: one pending slot per group means a third
     # simultaneous site deploy would be cancelled. Push races are handled by
