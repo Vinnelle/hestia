@@ -31,8 +31,6 @@ jobs:
           token: ${{ secrets.GH_API_TOKEN }}
           path: hestia
 
-      - run: sudo apt-get update && sudo apt-get install -y rsync
-
       - run: |
           rsync -a --delete --exclude='.git' --exclude='.github/workflows' gaia/hestia/ hestia/
 

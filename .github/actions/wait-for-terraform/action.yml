@@ -20,10 +20,6 @@ inputs:
 runs:
   using: composite
   steps:
-    # arc-runner-gaia's image doesn't ship gh on PATH like ubuntu-latest does.
-    - shell: bash
-      run: type -p gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
-
     - shell: bash
       env:
         GH_TOKEN: ${{ github.token }}

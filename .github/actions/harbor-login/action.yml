@@ -11,9 +11,6 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: type -p docker >/dev/null || (sudo apt-get update && sudo apt-get install -y docker.io)
-
-    - shell: bash
       env:
         HARBOR_USERNAME: ${{ inputs.username }}
         HARBOR_PASSWORD: ${{ inputs.password }}

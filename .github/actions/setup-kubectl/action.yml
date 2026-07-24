@@ -1,5 +1,5 @@
 name: Setup kubectl
-description: Installs kubectl and writes ~/.kube/config from the given kubeconfig secret.
+description: Writes ~/.kube/config from the given kubeconfig secret. kubectl itself ships in the ci-runner image.
 
 inputs:
   kubeconfig:
@@ -8,12 +8,6 @@ inputs:
 runs:
   using: composite
   steps:
-    # arc-runner-gaia's image doesn't ship kubectl.
-    - shell: bash
-      run: |
-        curl -fsSL -o kubectl "https://dl.k8s.io/release/$(curl -fsSL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-
     - shell: bash
       env:
         KUBECONFIG_CONTENT: ${{ inputs.kubeconfig }}

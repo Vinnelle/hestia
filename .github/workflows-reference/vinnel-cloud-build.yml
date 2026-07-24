@@ -121,9 +121,6 @@ jobs:
           path: /tmp/digests
           merge-multiple: true
 
-      - run: type -p curl >/dev/null || (sudo apt-get update && sudo apt-get install -y curl)
-      - run: type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
-
       - uses: ./.github/actions/setup-kubectl
         with:
           kubeconfig: ${{ secrets.HESTIA_KUBECONFIG }}

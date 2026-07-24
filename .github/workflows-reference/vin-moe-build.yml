@@ -45,8 +45,6 @@ jobs:
           token: ${{ secrets.GH_API_TOKEN }}
           path: vin.moe
 
-      - run: sudo apt-get update && sudo apt-get install -y rsync
-
       - run: |
           mkdir -p vin.moe/site-image vin.moe/github-workflow
           rsync -a --delete --exclude='.git' hestia/hestia/vin-moe/site/ vin.moe/site-image/

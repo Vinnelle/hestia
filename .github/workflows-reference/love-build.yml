@@ -28,8 +28,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - run: sudo apt-get update && sudo apt-get install -y build-essential
-
       - name: Compile
         run: cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
 
@@ -57,11 +55,6 @@ jobs:
           git diff --staged --quiet && exit 0
           git commit -m "sync: mirror love.c from hestia@${{ github.sha }}"
           git push
-
-      - run: sudo apt-get update && sudo apt-get install -y build-essential
-
-      # arc-runner-gaia's image doesn't ship gh on PATH
-      - run: type -p gh >/dev/null || (sudo apt-get update && sudo apt-get install -y gh)
 
       - name: Release binary
         env:

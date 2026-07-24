@@ -19,9 +19,6 @@ runs:
   using: composite
   steps:
     - shell: bash
-      run: type -p jq >/dev/null || (sudo apt-get update && sudo apt-get install -y jq)
-
-    - shell: bash
       env:
         UPDATES: ${{ inputs.updates }}
         MESSAGE: ${{ inputs.message }}

@@ -37,10 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # setup-terraform's output wrapper shells to `node`; arc-runner-gaia's
-      # image doesn't ship it on PATH like ubuntu-latest does.
-      - run: sudo apt-get update && sudo apt-get install -y nodejs
-
       # wrapper mangles `-detailed-exitcode` (always reports 0/1, never 2),
       # breaking the apply-gate below; we don't need its stdout-capture output.
       - uses: hashicorp/setup-terraform@v4

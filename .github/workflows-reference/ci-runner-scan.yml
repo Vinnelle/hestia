@@ -1,0 +1,44 @@
+name: Scan CI runner image
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  scan:
+    runs-on: arc-runner-gaia
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/harbor-login
+        with:
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Scan for vulnerabilities
+        id: scan
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: registry.vinnel.cloud/ci-runner/ci-runner:latest
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+
+      # Rebuild via workflow_dispatch rather than duplicating the build
+      # steps here: ci-runner-build.yml already builds hestia/ci-runner
+      # fresh (`apt-get upgrade` included), so a plain rebuild is enough
+      # to pick up patched packages for anything not pinned by version.
+      - name: Trigger ci-runner rebuild
+        if: steps.scan.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "::warning::vulnerabilities found in ci-runner image, triggering a rebuild"
+          gh workflow run ci-runner-build.yml --repo "${{ github.repository }}" --ref prd
