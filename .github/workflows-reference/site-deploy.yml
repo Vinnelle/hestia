@@ -50,6 +50,8 @@ jobs:
           tags: |
             registry.vinnel.cloud/${{ inputs.image }}:latest
             registry.vinnel.cloud/${{ inputs.image }}:${{ github.sha }}
+          cache-from: type=registry,ref=registry.vinnel.cloud/${{ inputs.image }}:buildcache
+          cache-to: type=registry,ref=registry.vinnel.cloud/${{ inputs.image }}:buildcache,mode=max
 
   record:
     needs: build-push

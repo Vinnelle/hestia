@@ -53,6 +53,8 @@ jobs:
           tags: |
             registry.vinnel.cloud/${{ matrix.image }}:latest
             registry.vinnel.cloud/${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=registry,ref=registry.vinnel.cloud/${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=registry.vinnel.cloud/${{ matrix.image }}:buildcache,mode=max
 
       # matrix job outputs clobber each other, so digests travel as artifacts
       - name: Save image digest

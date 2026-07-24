@@ -17,6 +17,7 @@ template:
     containers:
       - name: runner
         image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+        imagePullPolicy: IfNotPresent
         command: ["/home/runner/run.sh"]
         resources:
           requests:

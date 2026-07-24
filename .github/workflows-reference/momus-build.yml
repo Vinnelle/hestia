@@ -47,6 +47,8 @@ jobs:
           push: true
           tags: |
             registry.vinnel.cloud/vinnel-cloud/momus:${{ github.sha }}
+          cache-from: type=registry,ref=registry.vinnel.cloud/vinnel-cloud/momus:buildcache
+          cache-to: type=registry,ref=registry.vinnel.cloud/vinnel-cloud/momus:buildcache,mode=max
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
