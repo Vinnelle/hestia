@@ -192,6 +192,34 @@
       <p>A Prometheus / Grafana / Loki / Tempo stack watches the node and every workload. Persistent volumes back up nightly to encrypted object storage on rolling retention, and dependency bumps land automatically through Renovate with a human gate on majors.</p>
     </div>
 
+    <div class="group">ci/cd runners</div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">12</span><h2>actions-runner-controller</h2></div>
+      <p>gha-runner-scale-set, deployed on the same cluster. containerMode is dind — every runner pod gets its own dockerd sidecar rather than mounting the node's docker socket, so concurrent jobs never share daemon state or root-level host access. minRunners is 0: no idle pool, every job gets a pod created fresh against whatever the current scale-set spec is.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">13</span><h2>the runner image</h2></div>
+      <p>A custom image on top of the stock actions-runner base, with the toolchain every workflow needs pre-baked in — docker CLI, gh, jq, rsync, kubectl, tflint, actionlint, build-essential — so jobs stop apt-get installing the same packages on every single run. Built by its own workflow and pushed to a dedicated Harbor project. A scheduled scan runs daily against it; anything at CRITICAL or HIGH severity triggers an automatic rebuild.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">14</span><h2>registry access from runner pods</h2></div>
+      <p>registry.vinnel.cloud stays Cloudflare-proxied for public traffic, but Cloudflare's proxy caps request bodies — too small for this image's own base layer. Runner pods carry a pod-level hostAliases entry routing straight to the node's own hostNetwork-bound ingress instead, paired with a host firewall rule opening 80/443 to the pod network (previously Cloudflare-edge-only). The BuildKit builder container spun up by a push needs its own network=host setting to inherit that same routing — a plain docker login and an actual image push resolve the registry hostname through completely different network paths.</p>
+    </div>
+
+    <div class="group">deploying vin.moe</div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">15</span><h2>wait for infra</h2></div>
+      <p>A push to the site's path on prd (or a manual dispatch) blocks first on that exact commit's Terraform run finishing successfully. A site never deploys against infra that hasn't reconciled yet.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">16</span><h2>pin the digest</h2></div>
+      <p>After buildx pushes :latest and the commit SHA, the immutable sha256 digest — not the mutable tag — gets written into a shared image manifest and committed, under a lock shared with every other site and image build in the repo, so concurrent deploys can't race the same file.</p>
+    </div>
+    <div class="topic">
+      <div class="topic-head"><span class="topic-num">17</span><h2>roll out &amp; purge</h2></div>
+      <p>kubectl set-image to that exact digest, then a wait on rollout status — Terraform reconciles the same pinned reference on its next run, so the imperative rollout and the declared state never drift apart. Cloudflare's cache is purged only once the new pods are confirmed serving, so the CDN never re-caches the build that's on its way out.</p>
+    </div>
+
     <div class="links" style="margin-top:0.2rem;">
       <div>
         <div class="k"># site source</div>

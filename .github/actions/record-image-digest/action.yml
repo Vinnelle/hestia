@@ -2,8 +2,8 @@ name: Record image digest
 description: >
   Merges one or more deployment->image digest pairs into hestia/images.json
   and pushes the commit, retrying on push/rebase races. Wrap the calling
-  job in the shared `images-json-${{ github.ref_name }}` concurrency group
-  (cancel-in-progress: false) and keep it separate from any docker build
+  job in the shared images-json concurrency group, keyed on the ref
+  (cancel-in-progress: false), and keep it separate from any docker build
   job, so unrelated builds never queue behind each other — only the actual
   file write needs to be serialized.
 
