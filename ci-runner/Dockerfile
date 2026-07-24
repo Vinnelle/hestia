@@ -15,7 +15,7 @@ ARG ACTIONLINT_VERSION=1.7.7
 
 USER root
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       docker.io \
       gh \
       jq \

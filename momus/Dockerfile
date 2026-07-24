@@ -20,6 +20,7 @@ ARG VSCODE_CLI_SHA256
 
 RUN set -eux; \
     apt-get update; \
+    apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
       ca-certificates \
       curl \
@@ -55,6 +56,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN set -eux; \
     apt-get update; \
+    apt-get upgrade -y; \
     apt-get install -y --no-install-recommends \
       bash \
       ca-certificates \

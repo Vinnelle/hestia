@@ -12,6 +12,17 @@ template:
       - ip: "${registry_internal_ip}"
         hostnames:
           - "registry.vinnel.cloud"
+    imagePullSecrets:
+      - name: registry-dockerconfig
+    # temp reverted: all runner pods were stuck in ImagePullBackOff on
+    # this image (missing pull creds, now fixed above via
+    # imagePullSecrets, but not yet proven live). Falling back to the
+    # default ARC runner image to unblock every other workflow while
+    # that gets sorted. Re-enable once confirmed working:
+    # containers:
+    #   - name: runner
+    #     image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+    #     command: ["/home/runner/run.sh"]
 
 controllerServiceAccount:
   namespace: arc-systems
