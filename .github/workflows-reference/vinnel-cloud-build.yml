@@ -11,7 +11,7 @@ on:
 
 permissions:
   contents: write
-  actions: read
+  actions: write
 
 jobs:
   wait-for-terraform:
@@ -24,9 +24,6 @@ jobs:
   build-push:
     needs: wait-for-terraform
     runs-on: arc-runner-gaia
-    concurrency:
-      group: site-deploy-vinnel-cloud-${{ github.ref_name }}
-      cancel-in-progress: true
     strategy:
       matrix:
         include:
