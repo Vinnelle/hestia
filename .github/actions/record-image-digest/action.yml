@@ -2,12 +2,14 @@ name: Record image digest
 description: >
   Merges one or more deployment->image digest pairs into hestia/images.json
   and pushes the commit, retrying on push/rebase races, then re-triggers
-  terraform.yml for the new commit. Wrap the calling job in the shared
-  images-json concurrency group, keyed on the ref (cancel-in-progress:
-  false), and keep it separate from any docker build job, so unrelated
-  builds never queue behind each other — only the actual file write needs
-  to be serialized. Requires the actions:write permission on the calling
-  job (for the terraform.yml re-trigger).
+  terraform.yml for the new commit. No concurrency group needed on the
+  calling job — the fetch/rebase/push retry loop below already handles
+  concurrent writers; a shared GitHub concurrency group was tried instead
+  but its "one queued job per group" limit silently canceled a third
+  concurrent deploy's record job outright (never even ran, so the retry
+  loop never got a chance) rather than letting it queue and retry. Requires
+  the actions:write permission on the calling job (for the terraform.yml
+  re-trigger).
 
 inputs:
   updates:

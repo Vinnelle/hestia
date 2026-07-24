@@ -70,13 +70,6 @@ jobs:
   record:
     needs: build-push
     runs-on: arc-runner-gaia
-    concurrency:
-      # Shared with momus-build.yml and site-deploy.yml: all three write
-      # hestia/images.json, and only this small job needs to serialize —
-      # the docker build above and the rollout below stay free to run in
-      # parallel with other deploys.
-      group: images-json-${{ github.ref_name }}
-      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v7
         with:
