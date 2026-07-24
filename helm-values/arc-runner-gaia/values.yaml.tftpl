@@ -18,6 +18,21 @@ template:
       - name: runner
         image: registry.vinnel.cloud/ci-runner/ci-runner:latest
         command: ["/home/runner/run.sh"]
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+      - name: dind
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
 
 controllerServiceAccount:
   namespace: arc-systems
