@@ -24,7 +24,7 @@ jobs:
       - name: Scan for vulnerabilities
         id: scan
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.28.0
         with:
           image-ref: registry.vinnel.cloud/ci-runner/ci-runner:latest
           format: table
