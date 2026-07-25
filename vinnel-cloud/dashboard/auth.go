@@ -52,7 +52,9 @@ func newAuthenticator(ctx context.Context, issuer, clientID, clientSecret, baseU
 
 func randString() string {
 	b := make([]byte, 32)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 

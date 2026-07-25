@@ -1,0 +1,35 @@
+# Values for the Cilium install performed during the CNI migration runbook in
+# README.md — chart isn't wired into a helm_release yet, this is the reference copy.
+# Source: https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/
+#
+# "With kube-proxy" variant: Talos keeps running kube-proxy, Cilium only takes over
+# CNI + NetworkPolicy enforcement. Smaller blast radius than also replacing kube-proxy
+# in the same change — revisit kubeProxyReplacement once the CNI swap itself is proven.
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: false
+securityContext:
+  capabilities:
+    # SYS_MODULE deliberately omitted — Talos does not allow workloads to load kernel
+    # modules, so Cilium's default capability set has to drop it.
+    ciliumAgent:
+      - CHOWN
+      - KILL
+      - NET_ADMIN
+      - NET_RAW
+      - IPC_LOCK
+      - SYS_ADMIN
+      - SYS_RESOURCE
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    cleanCiliumState:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+cgroup:
+  # Talos already provides cgroupv2 and bpffs mounts — don't let Cilium mount its own.
+  autoMount:
+    enabled: false
+  hostRoot: /sys/fs/cgroup

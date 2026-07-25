@@ -1,0 +1,13 @@
+# Disables Talos's built-in Flannel CNI so Cilium can take over instead.
+# Cilium is required for NetworkPolicy enforcement: Flannel is a pure L3 overlay and
+# does not implement the networking.k8s.io/NetworkPolicy API at all.
+#
+# NOT referenced by talos.tf. Do not add this to controlplane's config_patches and
+# apply through the normal push-to-prd pipeline — see the "CNI migration" runbook in
+# README.md. On a single-node cluster, flipping this live tears down pod networking
+# until Cilium is installed; Talos gives you ~10 minutes before it reboots the node to
+# retry. This has to be done by hand, staged, with someone watching.
+cluster:
+  network:
+    cni:
+      name: none

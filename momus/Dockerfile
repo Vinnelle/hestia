@@ -52,6 +52,8 @@ RUN set -eux; \
 
 FROM ${DEBIAN_IMAGE}
 
+# No USER switch below: sshd needs root to spawn per-user sessions via PAM. `ida` is
+# provisioned as the login user for SSH/sudo, not as the container's own runtime user.
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN set -eux; \
