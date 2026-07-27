@@ -304,7 +304,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_dashboard" {
   }
 
   spec {
-    replicas = 1
+    replicas = 2
 
     selector {
       match_labels = {

@@ -115,3 +115,21 @@ resource "kubernetes_network_policy_v1" "arc_runners_egress" {
     }
   }
 }
+
+resource "kubectl_manifest" "arc_runners_egress_host" {
+  depends_on = [helm_release.cilium, helm_release.arc_runner]
+  yaml_body = yamlencode({
+    apiVersion = "cilium.io/v2"
+    kind       = "CiliumNetworkPolicy"
+    metadata = {
+      name      = "arc-runners-egress-host"
+      namespace = kubernetes_namespace_v1.arc_runners.metadata[0].name
+    }
+    spec = {
+      endpointSelector = {}
+      egress = [
+        { toEntities = ["host"] }
+      ]
+    }
+  })
+}
