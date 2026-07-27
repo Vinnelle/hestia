@@ -4,9 +4,36 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Finlay — vin.moe</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<meta name="description" content="Finlay — infrastructure, DevOps, and software. Notes on running a Talos/Kubernetes homelab, GCP observability work, and how this site itself is built and deployed.">
+<link rel="canonical" href="https://vin.moe/">
+<meta name="theme-color" content="#0c0c0d">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/jetbrains-mono.css">
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vin.moe/">
+<meta property="og:title" content="Finlay — vin.moe">
+<meta property="og:description" content="Infrastructure, DevOps, and software — plus a full writeup of how this site runs.">
+<meta property="og:image" content="https://vin.moe/favicon.png">
+<meta property="og:site_name" content="vin.moe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Finlay — vin.moe">
+<meta name="twitter:description" content="Infrastructure, DevOps, and software — plus a full writeup of how this site runs.">
+<meta name="twitter:image" content="https://vin.moe/favicon.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Finlay",
+  "url": "https://vin.moe/",
+  "email": "mailto:a@vin.moe",
+  "sameAs": ["https://tr.ee/vin"],
+  "jobTitle": "Infrastructure Engineer",
+  "description": "Infrastructure engineer focused on GCP observability, Kubernetes/Talos homelab operations, and self-hosted systems."
+}
+</script>
 <style>
   * { box-sizing: border-box; }
   html, body { margin: 0; }
@@ -27,8 +54,10 @@
   a:hover { color: #fbd3e2; }
   main { max-width: 680px; width: 100%; }
 
+  :focus-visible { outline: 2px solid #f7b9d1; outline-offset: 3px; border-radius: 2px; }
+
   header { margin-bottom: 2.4rem; }
-  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.01em; color: #ededea; margin: 0 0 0.3rem; }
+  h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.01em; color: #ededea; margin: 0 0 0.3rem; text-wrap: balance; }
   .tagline { margin: 0; color: #74746f; font-size: 0.9rem; }
 
   nav { display: flex; flex-wrap: wrap; gap: 0.7rem clamp(0.9rem, 4vw, 1.6rem); margin-bottom: 2.2rem; align-items: baseline; }
@@ -38,7 +67,8 @@
     font-size: 0.95rem;
     background: transparent;
     border: none;
-    padding: 0;
+    padding: 0.4rem 0;
+    margin: -0.4rem 0;
     cursor: pointer;
     color: #74746f;
     text-decoration: none;
@@ -50,7 +80,15 @@
   .tab.active { color: #f7b9d1; text-decoration: underline; }
 
   .panel { display: none; }
-  .panel.active { display: block; }
+  .panel.active { display: block; animation: panel-in 220ms ease-out; }
+  @keyframes panel-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel.active { animation: none; }
+    .tab { transition: none; }
+  }
 
   p { line-height: 1.75; margin: 0 0 1.15rem; }
   .lead { color: #cececa; }
@@ -72,7 +110,7 @@
   .topic { border-top: 1px solid #1e1e1f; padding: 1.4rem 0; }
   .topic-head { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.55rem; }
   .topic-num { color: #454542; font-size: 0.85rem; }
-  .topic h2 { font-size: 0.95rem; font-weight: 700; color: #ededea; margin: 0; }
+  .topic h2 { font-size: 0.95rem; font-weight: 700; color: #ededea; margin: 0; text-wrap: balance; }
   .topic p { color: #a3a39d; font-size: 0.92rem; margin: 0; }
 
   footer { margin-top: 3rem; color: #454542; font-size: 0.82rem; }
@@ -85,19 +123,19 @@
     <p class="tagline">infrastructure &middot; devops &middot; software</p>
   </header>
 
-  <nav>
-    <button class="tab active" data-tab="about">about</button>
+  <nav role="tablist" aria-label="Sections">
+    <button class="tab active" role="tab" id="tab-about" aria-selected="true" aria-controls="about" tabindex="0" data-tab="about">about</button>
     <span class="sep" aria-hidden="true">/</span>
-    <button class="tab" data-tab="work">things i've done</button>
+    <button class="tab" role="tab" id="tab-work" aria-selected="false" aria-controls="work" tabindex="-1" data-tab="work">things i’ve done</button>
     <span class="sep" aria-hidden="true">/</span>
-    <button class="tab" data-tab="runs">how this site runs</button>
+    <button class="tab" role="tab" id="tab-runs" aria-selected="false" aria-controls="runs" tabindex="-1" data-tab="runs">how this site runs</button>
   </nav>
 
   <!-- ABOUT -->
-  <section class="panel active" id="about">
+  <section class="panel active" id="about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
     <p class="lead">Hello, my name is Finlay.</p>
-    <p class="muted">I've been working with computers since I was 11 — game mods, personal QoL tools, operating systems, general programming, and whatever else seemed interesting at the time.</p>
-    <p class="muted">Currently I'm an infrastructure engineer at a large financial institution, focused on GCP. Since starting I've grown into a trusted member of my team and the observability SME for the department — the person people come to when something needs building or something breaks.</p>
+    <p class="muted">I’ve been working with computers since I was 11 — game mods, personal QoL tools, operating systems, general programming, and whatever else seemed interesting at the time.</p>
+    <p class="muted">Currently I’m an infrastructure engineer at a large financial institution, focused on GCP. Since starting I’ve grown into a trusted member of my team and the observability SME for the department — the person people come to when something needs building or something breaks.</p>
     <p class="lead">Looking forward to seeing how far this goes.</p>
 
     <div class="links">
@@ -113,8 +151,8 @@
   </section>
 
   <!-- WORK -->
-  <section class="panel" id="work">
-    <p class="muted" style="margin-bottom:2.2rem;">Things I've built, fixed, and improved — at work and on my own.</p>
+  <section class="panel" id="work" role="tabpanel" aria-labelledby="tab-work" tabindex="0">
+    <p class="muted" style="margin-bottom:2.2rem;">Things I’ve built, fixed, and improved — at work and on my own.</p>
 
     <div class="label"># work</div>
     <ul>
@@ -133,7 +171,7 @@
   </section>
 
   <!-- RUNS -->
-  <section class="panel" id="runs">
+  <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
     <p class="muted">The node, cluster, ingress, container registry, DNS, image build, and Deployment spec are all Terraform, applied through HCP Terraform in a private repo. The site itself is a static HTML/CSS page.</p>
     <p class="lead">Push to merge, live in ~44 seconds — build, registry push, and a rollout pinned to the image's immutable digest.</p>
     <p class="dim" style="margin-bottom:0.4rem;"><em>AI wrote the HTML/CSS on this page. I do infra, not frontend.</em></p>
@@ -228,13 +266,35 @@
 </main>
 
 <script>
-  const tabs = document.querySelectorAll('.tab');
-  const panels = document.querySelectorAll('.panel');
-  tabs.forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      const name = tab.dataset.tab;
-      tabs.forEach(function (t) { t.classList.toggle('active', t === tab); });
-      panels.forEach(function (p) { p.classList.toggle('active', p.id === name); });
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const panels = Array.from(document.querySelectorAll('.panel'));
+
+  function activate(tab, opts) {
+    const name = tab.dataset.tab;
+    tabs.forEach(function (t) {
+      const selected = t === tab;
+      t.classList.toggle('active', selected);
+      t.setAttribute('aria-selected', String(selected));
+      t.tabIndex = selected ? 0 : -1;
+    });
+    panels.forEach(function (p) { p.classList.toggle('active', p.id === name); });
+    if (opts && opts.focus) tab.focus();
+  }
+
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () { activate(tab); });
+    tab.addEventListener('keydown', function (e) {
+      const dir = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (dir) {
+        e.preventDefault();
+        activate(tabs[(i + dir + tabs.length) % tabs.length], { focus: true });
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        activate(tabs[0], { focus: true });
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        activate(tabs[tabs.length - 1], { focus: true });
+      }
     });
   });
 </script>
