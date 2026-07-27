@@ -22,6 +22,11 @@ resource "helm_release" "prometheus" {
   ]
 }
 
+import {
+  to = grafana_data_source.prometheus
+  id = "0:prometheus"
+}
+
 resource "grafana_data_source" "prometheus" {
   type       = "prometheus"
   name       = "Prometheus"

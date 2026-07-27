@@ -58,7 +58,6 @@ resource "helm_release" "cert_manager" {
   ]
 }
 
-
 data "cloudflare_zone" "vin_moe" {
   filter = { name = "vin.moe" }
 }

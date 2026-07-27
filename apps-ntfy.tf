@@ -52,7 +52,7 @@ locals {
       "publisher:${local.ntfy_publisher_token}:grafana",
     ]
     "auth-access" = [
-      "publisher:hestia-alerts:write-only",
+      "publisher:gaia-alerts:write-only",
     ]
   })
 }
@@ -105,11 +105,6 @@ resource "kubernetes_persistent_volume_claim_v1" "ntfy_auth" {
   lifecycle {
     prevent_destroy = true
   }
-}
-
-import {
-  to = kubernetes_deployment_v1.ntfy
-  id = "services/ntfy"
 }
 
 resource "kubernetes_deployment_v1" "ntfy" {

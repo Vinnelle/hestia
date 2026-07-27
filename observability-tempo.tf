@@ -11,6 +11,11 @@ resource "helm_release" "tempo" {
   ]
 }
 
+import {
+  to = grafana_data_source.tempo
+  id = "0:tempo"
+}
+
 resource "grafana_data_source" "tempo" {
   type = "tempo"
   name = "Tempo"

@@ -7,7 +7,7 @@ resource "grafana_contact_point" "ntfy" {
   name = "ntfy"
 
   webhook {
-    url                       = "https://ntfy.vinnel.cloud/hestia-alerts"
+    url                       = "https://ntfy.vinnel.cloud/gaia-alerts"
     authorization_scheme      = "Bearer"
     authorization_credentials = local.ntfy_publisher_token
 

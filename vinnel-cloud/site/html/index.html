@@ -4,17 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Vinnel Cloud — cloud infrastructure and services by Vinnel Labs.">
+  <link rel="canonical" href="https://vinnel.cloud/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Vinnel Cloud">
+  <meta property="og:title" content="Vinnel Cloud">
+  <meta property="og:description" content="Cloud infrastructure and services by Vinnel Labs.">
+  <meta property="og:url" content="https://vinnel.cloud/">
+  <meta property="og:image" content="https://vinnel.cloud/assets/images/vinnel-cloud-gradient.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Vinnel Cloud">
+  <meta name="twitter:description" content="Cloud infrastructure and services by Vinnel Labs.">
+  <meta name="twitter:image" content="https://vinnel.cloud/assets/images/vinnel-cloud-gradient.webp">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-3MPKF6C22P"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3MPKF6C22P');</script>
   <script>var d=document.documentElement,s=localStorage;d.dataset.theme=s.theme||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');d.onclick=function(e){if(!e.target.closest('.toggle'))return;d.dataset.themeTransitioning='';d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';s.theme=d.dataset.theme;setTimeout(function(){delete d.dataset.themeTransitioning},500)}</script>
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
   <link rel="preload" href="assets/css/style.css" as="style">
+  <link rel="preload" as="font" type="font/ttf" href="assets/fonts/DMSans-Regular.ttf" crossorigin>
   <link rel="preload" as="image" type="image/webp" fetchpriority="high" imagesrcset="assets/images/vinnel-cloud-dark-1x.webp 400w, assets/images/vinnel-cloud-dark-2x.webp 800w" imagesizes="(max-width: 480px) 280px, 400px">
   <link rel="stylesheet" href="assets/css/style.css">
   <title>Vinnel.cloud</title>
 </head>
 <body>
+  <div class="ambient-bg" aria-hidden="true"></div>
   <main class="container">
     <div class="logo-wrap">
       <img
@@ -37,7 +50,11 @@
         height="100"
         loading="lazy"
       >
+      <span class="sparkle sparkle--gold" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg></span>
+      <span class="sparkle sparkle--blue" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg></span>
+      <span class="sparkle sparkle--purple" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 7 7 2-7 2-2 7-2-7-7-2 7-2z"/></svg></span>
     </div>
+    <p>Cloud infrastructure and services, self-hosted.</p>
   </main>
   <a href="https://dashboard.vinnel.cloud" class="btn-account" id="account-btn">Login</a>
   <script>fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){if(r.ok)document.getElementById('account-btn').textContent='Dashboard'}).catch(function(){})</script>

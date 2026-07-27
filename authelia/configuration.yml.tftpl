@@ -17,6 +17,9 @@
   "notifier": {
     "filesystem": { "filename": "/config/data/notification.txt" }
   },
+  "telemetry": {
+    "metrics": { "enabled": true }
+  },
   "identity_providers": {
     "oidc": {
       "hmac_secret": ${jsonencode(oidc_hmac_secret)},

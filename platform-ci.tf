@@ -52,7 +52,7 @@ resource "kubernetes_secret_v1" "ci_deployer_token" {
 }
 
 output "ci_kubeconfig" {
-  description = "Namespace-scoped kubeconfig for GitHub Actions (HESTIA_KUBECONFIG secret)."
+  description = "Namespace-scoped kubeconfig for GitHub Actions (KUBECONFIG secret)."
   sensitive   = true
   value = yamlencode({
     apiVersion = "v1"

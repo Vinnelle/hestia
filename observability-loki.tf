@@ -27,6 +27,11 @@ resource "helm_release" "promtail" {
   depends_on = [helm_release.loki]
 }
 
+import {
+  to = grafana_data_source.loki
+  id = "0:loki"
+}
+
 resource "grafana_data_source" "loki" {
   type = "loki"
   name = "Loki"

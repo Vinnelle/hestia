@@ -1,3 +1,4 @@
+
 resource "kubernetes_namespace_v1" "server" {
   metadata {
     name = "server"
@@ -29,13 +30,11 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_server" {
 }
 
 resource "netbird_setup_key" "momus" {
-  depends_on     = [cloudflare_dns_record.proxy_vinnel_cloud]
   name           = "momus"
   type           = "one-off"
   expiry_seconds = 3600
   ephemeral      = false
   usage_limit    = 1
-  auto_groups    = [netbird_group.servers.id]
 }
 
 resource "kubernetes_secret_v1" "momus_netbird_setup_key" {
@@ -254,7 +253,6 @@ resource "kubernetes_persistent_volume_claim_v1" "momus_projects" {
     prevent_destroy = true
   }
 }
-
 
 resource "kubernetes_persistent_volume_claim_v1" "momus_vscode_state" {
   metadata {
@@ -577,6 +575,6 @@ resource "kubernetes_deployment_v1" "momus" {
 }
 
 data "netbird_peer" "momus" {
-  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  depends_on = [kubernetes_deployment_v1.momus]
   name       = "momus"
 }

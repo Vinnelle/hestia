@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   terraform:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -29,7 +29,7 @@ jobs:
       - run: tflint --recursive
 
   go:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -48,7 +48,7 @@ jobs:
           done
 
   shellcheck:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -57,7 +57,7 @@ jobs:
       - run: git ls-files '*.sh' | xargs shellcheck -S warning
 
   yamllint:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -66,7 +66,7 @@ jobs:
       - run: git ls-files '*.yaml' | xargs yamllint -d relaxed
 
   actionlint:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
@@ -74,7 +74,7 @@ jobs:
       - run: actionlint -color
 
   secrets:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 5
     permissions:
       contents: read

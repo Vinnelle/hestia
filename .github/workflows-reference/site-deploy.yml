@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   build-push:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -55,7 +55,7 @@ jobs:
 
   record:
     needs: build-push
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     steps:
       - uses: actions/checkout@v7
         with:
@@ -68,7 +68,7 @@ jobs:
 
   deploy:
     needs: [build-push, record]
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     concurrency:
       # Per-deployment: GitHub keeps only one pending job per group, so a
       # shared group across all sites would silently cancel one of 3+
@@ -84,7 +84,7 @@ jobs:
 
       - uses: ./.github/actions/setup-kubectl
         with:
-          kubeconfig: ${{ secrets.HESTIA_KUBECONFIG }}
+          kubeconfig: ${{ secrets.KUBECONFIG }}
 
       # The digest was committed in the record job before this imperative
       # rollout. Terraform reconciles the same immutable reference in the

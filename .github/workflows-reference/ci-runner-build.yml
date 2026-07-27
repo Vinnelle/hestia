@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   build-push:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     steps:
       - uses: actions/checkout@v7
 

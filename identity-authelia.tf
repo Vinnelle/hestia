@@ -148,6 +148,11 @@ resource "kubernetes_deployment_v1" "authelia" {
             container_port = 9091
           }
 
+          port {
+            name           = "metrics"
+            container_port = 9959
+          }
+
           resources {
             requests = {
               cpu    = "100m"

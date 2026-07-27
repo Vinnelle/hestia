@@ -1,5 +1,5 @@
 # Values for the Cilium install performed during the CNI migration runbook in
-# README.md — chart isn't wired into a helm_release yet, this is the reference copy.
+# README.md.
 # Source: https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/
 #
 # "With kube-proxy" variant: Talos keeps running kube-proxy, Cilium only takes over
@@ -8,6 +8,15 @@
 ipam:
   mode: kubernetes
 kubeProxyReplacement: false
+operator:
+  # Chart default is 2 replicas with pod anti-affinity — the second can never
+  # schedule on this single-node cluster and sits permanently Pending.
+  replicas: 1
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
 securityContext:
   capabilities:
     # SYS_MODULE deliberately omitted — Talos does not allow workloads to load kernel

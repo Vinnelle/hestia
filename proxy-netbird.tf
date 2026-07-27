@@ -1,10 +1,40 @@
 
-removed {
-  from = netbird_user.ida
+import {
+  to = netbird_user.ida
+  id = "602cdb07-d95e-4014-8361-1c24136a8a25"
+}
 
-  lifecycle {
-    destroy = false
-  }
+resource "netbird_user" "ida" {
+  role            = "admin"
+  is_blocked      = false
+  is_service_user = false
+}
+
+import {
+  to = netbird_account_settings.main
+  id = "d9jkfom7tkps73ehoj6g"
+}
+
+resource "netbird_account_settings" "main" {
+  auto_update_version                    = "latest"
+  dns_domain                             = ""
+  groups_propagation_enabled             = true
+  jwt_allow_groups                       = []
+  jwt_groups_claim_name                  = ""
+  jwt_groups_enabled                     = false
+  lazy_connection_enabled                = true
+  network_range                          = "100.64.0.0/16"
+  network_traffic_logs_enabled           = false
+  network_traffic_packet_counter_enabled = false
+  peer_approval_enabled                  = false
+  peer_expose_enabled                    = false
+  peer_inactivity_expiration             = 600
+  peer_inactivity_expiration_enabled     = false
+  peer_login_expiration                  = 86400
+  peer_login_expiration_enabled          = false
+  regular_users_view_blocked             = true
+  routing_peer_dns_resolution_enabled    = true
+  user_approval_required                 = false
 }
 
 resource "netbird_group" "devices" {
@@ -23,7 +53,6 @@ resource "netbird_group" "servers" {
   name       = "Servers"
   peers      = [data.netbird_peer.momus.id]
 }
-
 
 resource "netbird_policy" "devices_ssh_to_services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
@@ -79,16 +108,6 @@ resource "netbird_policy" "devices_dns_tcp_to_services" {
 data "netbird_group" "all" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "All"
-}
-
-data "netbird_policy" "default" {
-  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "Default"
-}
-
-import {
-  to = netbird_policy.default
-  id = data.netbird_policy.default.id
 }
 
 resource "netbird_policy" "default" {

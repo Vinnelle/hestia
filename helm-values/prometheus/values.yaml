@@ -19,6 +19,37 @@ server:
           target_label: namespace
         - source_labels: [__meta_kubernetes_pod_name]
           target_label: pod
+    - job_name: 'cilium'
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - kube-system
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+          regex: "(cilium|hubble-relay)"
+          action: keep
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
+    - job_name: 'authelia'
+      kubernetes_sd_configs:
+        - role: pod
+          namespaces:
+            names:
+              - services
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          regex: "authelia"
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          regex: "9959"
+          action: keep
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: namespace
+        - source_labels: [__meta_kubernetes_pod_name]
+          target_label: pod
 alertmanager:
   enabled: false
 prometheus-pushgateway:

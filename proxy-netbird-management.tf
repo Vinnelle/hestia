@@ -1,3 +1,4 @@
+
 locals {
   netbird_management_json = templatefile("${path.module}/netbird-management/management.json.tftpl", {
     relay_auth_secret = random_password.netbird_relay_auth_secret.result

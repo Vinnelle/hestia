@@ -1,8 +1,3 @@
-resource "cloudflare_r2_bucket" "backups" {
-  account_id = data.cloudflare_zone.vinnel_cloud.account.id
-  name       = "hestia-backups"
-  location   = "WEUR"
-}
 
 resource "kubernetes_namespace_v1" "backup" {
   metadata {
@@ -59,7 +54,7 @@ resource "kubernetes_cron_job_v1" "pv_backup" {
 
               env {
                 name  = "RESTIC_REPOSITORY"
-                value = "s3:https://${data.cloudflare_zone.vinnel_cloud.account.id}.r2.cloudflarestorage.com/${cloudflare_r2_bucket.backups.name}/restic"
+                value = "s3:https://${var.s3_backup_endpoint}/restic"
               }
               env {
                 name = "RESTIC_PASSWORD"

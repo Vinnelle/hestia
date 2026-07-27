@@ -121,7 +121,7 @@ func main() {
 }
 
 func isAsset(p string) bool {
-	return len(p) >= 8 && p[:8] == "/assets/"
+	return strings.HasPrefix(p, "/assets/")
 }
 
 func openDB(path string) (*sql.DB, error) {
@@ -137,5 +137,9 @@ func openDB(path string) (*sql.DB, error) {
 		email TEXT NOT NULL,
 		session_id TEXT NOT NULL
 	)`)
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_hits_ts ON hits(ts)`)
 	return db, err
 }

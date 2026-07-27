@@ -66,8 +66,9 @@ ingress:
 # registry.vinnel.cloud straight to ${node_ip} via hostAliases (bypassing
 # Cloudflare's proxy, which caps request bodies and 413s large docker
 # pushes), so nginx needs to accept that traffic directly. node_ip/32
-# included because flannel masquerades pod->node traffic, same as the
-# kubelet/metrics rules below.
+# included because the CNI masquerades pod->node traffic (true of both
+# Flannel and Cilium's default settings), same as the kubelet/metrics
+# rules below.
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
 name: web-from-pods
@@ -110,7 +111,7 @@ ingress:
   - subnet: ::/0
 ---
 # Kubelet API for metrics-server. Sources: pod CIDR (Talos default subnet),
-# plus the node's own IP because flannel masquerades pod->node traffic.
+# plus the node's own IP because the CNI masquerades pod->node traffic.
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
 name: kubelet-from-pods
@@ -131,6 +132,20 @@ portSelector:
   ports:
     - 9100
     - 10254
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+---
+# Hubble relay -> Cilium agent's hubble-peer gRPC. cilium binds this on the
+# host namespace (hostNetwork), so it's subject to this firewall like
+# kubelet/node-exporter above, even for same-node pod traffic.
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: hubble-peer-from-pods
+portSelector:
+  ports:
+    - 4244
   protocol: tcp
 ingress:
   - subnet: 10.244.0.0/16

@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
@@ -23,7 +23,7 @@ jobs:
 
   build-push:
     needs: wait-for-terraform
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     strategy:
       matrix:
         include:
@@ -69,7 +69,7 @@ jobs:
 
   record:
     needs: build-push
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     steps:
       - uses: actions/checkout@v7
         with:
@@ -97,7 +97,7 @@ jobs:
 
   deploy:
     needs: [build-push, record]
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     concurrency:
       group: site-deploy-vinnel-cloud-${{ github.ref_name }}
       cancel-in-progress: true
@@ -115,7 +115,7 @@ jobs:
 
       - uses: ./.github/actions/setup-kubectl
         with:
-          kubeconfig: ${{ secrets.HESTIA_KUBECONFIG }}
+          kubeconfig: ${{ secrets.KUBECONFIG }}
 
       # The digests were committed in the record job before this imperative
       # rollout. Terraform reconciles the same immutable references in the

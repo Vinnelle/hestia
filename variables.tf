@@ -2,7 +2,7 @@
 variable "node_ip" {
   description = "Public IP of the Talos node"
   type        = string
-  default     = "51.83.199.137"
+  default     = "146.59.54.33"
 }
 
 variable "cluster_name" {
@@ -48,19 +48,25 @@ variable "harbor_admin_password" {
 }
 
 variable "s3_backup_access_key" {
-  description = "Cloudflare R2 S3 access key ID for the hestia-backups bucket (create under R2 -> Manage API Tokens, scoped to this bucket). Set as a TFC workspace variable, not codified."
+  description = "S3-compatible access key ID for the gaia-backups bucket. Set as a TFC workspace variable, not codified."
   type        = string
   sensitive   = true
 }
 
+variable "s3_backup_endpoint" {
+  description = "S3-compatible endpoint hosting the gaia-backups bucket."
+  type        = string
+  default     = "gaia-backups.s3.g.megas4.com"
+}
+
 variable "s3_backup_secret_key" {
-  description = "Cloudflare R2 S3 secret access key for the hestia-backups bucket. Set as a TFC workspace variable, not codified."
+  description = "S3-compatible secret access key for the gaia-backups bucket. Set as a TFC workspace variable, not codified."
   type        = string
   sensitive   = true
 }
 
 variable "backup_encryption_password" {
-  description = "Restic repository password encrypting the pv-backup snapshots client-side before they reach R2. Set as a TFC workspace variable, not codified. CRITICAL: also keep a copy offline (with the state exports) — without it every backup is unreadable, and it cannot be recovered from R2 or TFC state loss."
+  description = "Restic repository password encrypting the pv-backup snapshots client-side before they reach the bucket. Set as a TFC workspace variable, not codified. CRITICAL: also keep a copy offline (with the state exports) — without it every backup is unreadable, and it cannot be recovered from bucket or TFC state loss."
   type        = string
   sensitive   = true
 }

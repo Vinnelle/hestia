@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
@@ -33,7 +33,7 @@ jobs:
 
   mirror:
     needs: deploy
-    runs-on: arc-runner-gaia
+    runs-on: arc-runner
     steps:
       - uses: actions/checkout@v7
         with:

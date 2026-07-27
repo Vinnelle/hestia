@@ -237,7 +237,6 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_site" {
   }
 }
 
-
 resource "cloudflare_dns_record" "vinnel_cloud_dashboard" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "dashboard.vinnel.cloud"

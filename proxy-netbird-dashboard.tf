@@ -1,3 +1,4 @@
+
 resource "kubernetes_deployment_v1" "netbird_dashboard" {
   metadata {
     name      = "netbird-dashboard"

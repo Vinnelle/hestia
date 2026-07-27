@@ -230,5 +230,5 @@ resource "grafana_dashboard" "arc_runners" {
     prometheus_ds = local.prometheus_ds
   })
 
-  depends_on = [helm_release.arc_runner_gaia]
+  depends_on = [helm_release.arc_runner]
 }
