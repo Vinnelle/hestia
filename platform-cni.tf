@@ -6,7 +6,12 @@ resource "helm_release" "cilium" {
   namespace  = "kube-system"
 
   values = [
-    file("${path.module}/helm-values/cilium/values.yaml")
+    file("${path.module}/helm-values/cilium/values.yaml"),
+    yamlencode({
+      podAnnotations = {
+        "config-hash" = sha256(file("${path.module}/helm-values/cilium/values.yaml"))
+      }
+    })
   ]
 }
 
