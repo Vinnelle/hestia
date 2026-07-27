@@ -8,6 +8,13 @@
 ipam:
   mode: kubernetes
 kubeProxyReplacement: false
+# Without this, Cilium treats the node's own IP as the "host" identity, which
+# a plain NetworkPolicy ipBlock CIDR rule never matches even when the CIDR
+# math includes it — silently dropping pod -> node_ip traffic (e.g.
+# arc-runners-egress's "0.0.0.0/0 except pod/service CIDR" rule, meant to
+# cover the CI runners' Harbor hostAlias bypass to node_ip).
+policyCIDRMatchMode:
+  - nodes
 operator:
   # Chart default is 2 replicas with pod anti-affinity — the second can never
   # schedule on this single-node cluster and sits permanently Pending.
