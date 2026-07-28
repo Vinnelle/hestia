@@ -437,7 +437,7 @@ resource "kubernetes_deployment_v1" "momus" {
 
         container {
           name  = "netbird"
-          image = "netbirdio/netbird:0.75.0"
+          image = "netbirdio/netbird:0.75.1"
 
           env {
             name = "NB_SETUP_KEY"

@@ -1,10 +1,5 @@
 name: Terraform Plan/Apply
 
-# CLI-driven runs against the TFC "hestia" workspace (cloud block in
-# hestia/versions.tf). The workspace's VCS trigger must be disabled in TFC
-# for org "lover" or every push double-runs (this workflow + TFC's own
-# auto-plan) and the two race for the state lock.
-
 on:
   push:
     branches: [prd]
@@ -37,25 +32,23 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      # wrapper mangles `-detailed-exitcode` (always reports 0/1, never 2),
-      # breaking the apply-gate below; we don't need its stdout-capture output.
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
         with:
           terraform_wrapper: false
 
-      # provider binaries otherwise re-download from the public registry on
-      # every single push, since this workflow runs unconditionally (the
-      # wait-for-terraform gate needs a run to exist for every commit).
-      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: ${{ env.TF_PLUGIN_CACHE_DIR }}
           key: tf-providers-${{ runner.os }}-${{ hashFiles('hestia/.terraform.lock.hcl') }}
 
-      - run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
+      - name: Create plugin cache dir
+        run: mkdir -p "$TF_PLUGIN_CACHE_DIR"
 
-      - run: terraform init -input=false
+      - name: Terraform Init
+        run: terraform init -input=false
 
       - id: plan
+        name: Terraform Plan
         run: |
           set +e
           terraform plan -input=false -out=tfplan -detailed-exitcode
@@ -63,6 +56,6 @@ jobs:
           echo "exitcode=$exit_code" >> "$GITHUB_OUTPUT"
           [ "$exit_code" -ne 1 ]
 
-      # apply on push or manual dispatch against prd with actual changes; PRs get a speculative plan only
-      - if: github.ref == 'refs/heads/prd' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.exitcode == '2'
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/prd' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.exitcode == '2'
         run: terraform apply -input=false tfplan

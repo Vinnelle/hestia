@@ -7,19 +7,16 @@ on:
 
 permissions:
   contents: read
-  actions: read
+  actions: write
 
 jobs:
   wait-for-terraform:
-    runs-on: arc-runner
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/wait-for-terraform
+    uses: ./.github/workflows/wait-for-terraform.yml
 
   mirror:
     needs: wait-for-terraform
     runs-on: arc-runner
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -31,7 +28,8 @@ jobs:
           token: ${{ secrets.GH_API_TOKEN }}
           path: hestia
 
-      - run: |
+      - name: Sync hestia mirror
+        run: |
           rsync -a --delete --exclude='.git' --exclude='.github/workflows' gaia/hestia/ hestia/
 
           rm -rf hestia/.github
@@ -39,10 +37,7 @@ jobs:
           rsync -a gaia/.github/actions hestia/.github/
           rsync -a gaia/.github/workflows/ hestia/.github/workflows-reference/
 
-          cd hestia
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --staged --quiet && exit 0
-          git commit -m "sync: mirror gaia@${{ github.sha }}"
-          git push
+      - uses: ./gaia/.github/actions/git-commit-push
+        with:
+          path: hestia
+          message: "sync: mirror gaia@${{ github.sha }}"

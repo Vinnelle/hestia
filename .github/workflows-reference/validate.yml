@@ -1,8 +1,5 @@
 name: Validate
 
-# terraform plan/apply live in terraform.yml, not here: this job only fmt/lints.
-# Called from terraform.yml (every plan run) so it can't run stale/missing;
-# workflow_dispatch stays for standalone manual runs.
 on:
   workflow_call: {}
   workflow_dispatch: {}
@@ -23,10 +20,11 @@ jobs:
 
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
 
-      - run: terraform fmt -check -diff -recursive
+      - name: Terraform fmt check
+        run: terraform fmt -check -diff -recursive
 
-      # lints every directory containing .tf files
-      - run: tflint --recursive
+      - name: Tflint
+        run: tflint --recursive
 
   go:
     runs-on: arc-runner
@@ -53,8 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      # -S warning skips info/style-level findings
-      - run: git ls-files '*.sh' | xargs shellcheck -S warning
+      - name: Shellcheck
+        run: git ls-files '*.sh' | xargs shellcheck -S warning
 
   yamllint:
     runs-on: arc-runner
@@ -62,8 +60,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      # helm values + Talos patches; workflow .yml is covered by actionlint below
-      - run: git ls-files '*.yaml' | xargs yamllint -d relaxed
+      - name: Yamllint
+        run: git ls-files '*.yaml' | xargs yamllint -d relaxed
 
   actionlint:
     runs-on: arc-runner
@@ -71,7 +69,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - run: actionlint -color
+      - name: Actionlint
+        run: actionlint -color
 
   secrets:
     runs-on: arc-runner

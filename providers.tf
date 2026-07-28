@@ -28,11 +28,6 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
-provider "grafana" {
-  url  = "https://grafana.vinnel.cloud"
-  auth = var.grafana_sa_token
-}
-
 provider "harbor" {
   url      = "https://registry.vinnel.cloud"
   username = "admin"
@@ -44,4 +39,23 @@ provider "tls" {}
 provider "netbird" {
   management_url = "https://proxy.vinnel.cloud"
   token          = var.netbird_api_token
+}
+
+provider "signoz" {
+  endpoint     = "https://signoz.vinnel.cloud"
+  access_token = var.signoz_api_token
+}
+
+provider "restapi" {
+  endpoint = "https://signoz.vinnel.cloud"
+  headers = {
+    "SIGNOZ-API-KEY" = var.signoz_api_token
+    "Content-Type"   = "application/json"
+  }
+  create_method  = "POST"
+  update_method  = "PUT"
+  destroy_method = "DELETE"
+
+  create_returns_object = true
+  id_attribute          = "data/id"
 }

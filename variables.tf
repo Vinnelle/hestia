@@ -35,12 +35,6 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
-variable "grafana_sa_token" {
-  description = "Grafana service account token, manually created in the Grafana UI. Set as a TFC workspace variable, not codified."
-  type        = string
-  sensitive   = true
-}
-
 variable "harbor_admin_password" {
   description = "Harbor admin password (registry.vinnel.cloud). Set as a TFC workspace variable, not codified."
   type        = string
@@ -95,6 +89,12 @@ variable "gh_app_installation_id" {
 
 variable "gh_app_private_key" {
   description = "PEM private key of the GitHub App used by actions-runner-controller to mint runner registration tokens. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
+variable "signoz_api_token" {
+  description = "SigNoz API access token, manually created in the SigNoz UI (Settings -> API Keys). Set as a TFC workspace variable, not codified."
   type        = string
   sensitive   = true
 }

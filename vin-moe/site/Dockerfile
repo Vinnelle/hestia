@@ -8,9 +8,6 @@ RUN magick favicon.png -gravity center -background none -extent 530x530 \
 
 FROM nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
-# ngx_brotli publishes no versioned releases compatible with current nginx, so
-# master is cloned at build time; the module is compiled against the exact
-# nginx version of the base image above
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
  && NGINX_VERSION=$(nginx -v 2>&1 | sed 's/.*\///') \
  && wget -q "https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" -O /tmp/nginx.tar.gz \
@@ -32,11 +29,6 @@ COPY src/images/favicon.png .
 COPY --from=images /favicon.ico .
 COPY --from=images /apple-touch-icon.png .
 
-# Self-hosts JetBrains Mono instead of loading it from fonts.googleapis.com at
-# runtime: fetches the same css2 response the old <link> pulled (a UA string
-# is required because Google only serves woff2 to UAs that declare support),
-# then rewrites its gstatic.com src urls to local relative files. No pinned
-# font-revision hash — always resolves whatever Google currently serves.
 RUN mkdir -p fonts && cd fonts && \
     UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" && \
     curl -fsSL -A "$UA" "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" -o jetbrains-mono.css && \

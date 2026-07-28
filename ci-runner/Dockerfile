@@ -1,13 +1,3 @@
-# Pre-bakes the tools every gaia workflow currently installs on every run
-# (docker.io, gh, jq, rsync, nodejs, build-essential, kubectl, tflint,
-# shellcheck, yamllint, actionlint). Each workflow already guards its
-# install step with `type -p <tool> || apt-get install -y <tool>`, so
-# nothing else needs to change: once this image is wired in, those guards
-# just become no-ops.
-#
-# Terraform itself stays on hashicorp/setup-terraform (handles version
-# selection); not baked in here.
-# Digest resolved from :latest on 2026-07-25 — Renovate's docker.pinDigests keeps this current.
 FROM ghcr.io/actions/actions-runner:latest@sha256:0cfdcc701ce933c6d243c6b0b2da767366dc9f2e99961d4c3754b0b78084cdda
 
 ARG KUBECTL_VERSION=v1.31.2

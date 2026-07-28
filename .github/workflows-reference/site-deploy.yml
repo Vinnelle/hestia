@@ -28,6 +28,7 @@ permissions:
 jobs:
   build-push:
     runs-on: arc-runner
+    timeout-minutes: 20
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -56,6 +57,7 @@ jobs:
   record:
     needs: build-push
     runs-on: arc-runner
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -70,10 +72,6 @@ jobs:
     needs: [build-push, record]
     runs-on: arc-runner
     concurrency:
-      # Per-deployment: GitHub keeps only one pending job per group, so a
-      # shared group across all sites would silently cancel one of 3+
-      # simultaneous deploys. Rollouts wait without a timeout (capped by
-      # timeout-minutes) since parallel deploys contend on the single node.
       group: site-deploy-${{ inputs.deployment }}
       cancel-in-progress: true
     timeout-minutes: 30
@@ -86,15 +84,12 @@ jobs:
         with:
           kubeconfig: ${{ secrets.KUBECONFIG }}
 
-      # The digest was committed in the record job before this imperative
-      # rollout. Terraform reconciles the same immutable reference in the
-      # subsequent VCS run.
-      - run: |
+      - name: Roll out deployment
+        run: |
           kubectl set image "deployment/${{ inputs.deployment }}" -n websites \
             '*=registry.vinnel.cloud/${{ inputs.image }}@${{ needs.build-push.outputs.digest }}'
           kubectl rollout status "deployment/${{ inputs.deployment }}" -n websites
 
-      # purge only after new pods serve traffic, otherwise the CDN re-caches the old build
       - name: Purge Cloudflare cache
         if: inputs.purge_zone != ''
         env:

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	_ "modernc.org/sqlite"
 )
 
@@ -41,6 +42,7 @@ func main() {
 		cookieSecret string
 		dbPath       string
 		addr         string
+		otelEndpoint string
 	}{
 		issuer:       mustEnv("OIDC_ISSUER"),
 		clientID:     mustEnv("OIDC_CLIENT_ID"),
@@ -49,7 +51,14 @@ func main() {
 		cookieSecret: mustEnv("COOKIE_SECRET"),
 		dbPath:       env("DB_PATH", "/data/dashboard.db"),
 		addr:         env("LISTEN_ADDR", ":8080"),
+		otelEndpoint: env("OTEL_COLLECTOR_ENDPOINT", ""),
 	}
+
+	shutdownTracing, err := setupTracing(context.Background(), cfg.otelEndpoint)
+	if err != nil {
+		log.Fatalf("otel setup: %v", err)
+	}
+	defer shutdownTracing(context.Background())
 
 	db, err := openDB(cfg.dbPath)
 	if err != nil {
@@ -78,7 +87,6 @@ func main() {
 	mux.HandleFunc("GET /auth/callback", auth.handleCallback)
 	mux.HandleFunc("POST /auth/logout", auth.handleLogout)
 
-	// vinnel.cloud landing page probes this to swap Login → Dashboard
 	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "https://vinnel.cloud")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -102,8 +110,6 @@ func main() {
 				http.Redirect(w, r, "/login.html", http.StatusFound)
 				return
 			}
-			// only count paths that resolve to a real page — otherwise the hits
-			// table stores arbitrary attacker-chosen strings from 404 requests
 			if _, err := fs.Stat(webRoot, strings.TrimPrefix(r.URL.Path, "/")); err == nil {
 				recordHit(db, r.URL.Path, s.Email, sessionIDCookie(w, r))
 			}
@@ -113,7 +119,7 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              cfg.addr,
-		Handler:           mux,
+		Handler:           otelhttp.NewHandler(mux, "http"),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	log.Printf("vinnel-cloud-dashboard listening on %s", cfg.addr)

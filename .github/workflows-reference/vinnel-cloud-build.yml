@@ -15,15 +15,12 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: arc-runner
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/wait-for-terraform
+    uses: ./.github/workflows/wait-for-terraform.yml
 
   build-push:
     needs: wait-for-terraform
     runs-on: arc-runner
+    timeout-minutes: 20
     strategy:
       matrix:
         include:
@@ -56,7 +53,6 @@ jobs:
           cache-from: type=registry,ref=registry.vinnel.cloud/${{ matrix.image }}:buildcache
           cache-to: type=registry,ref=registry.vinnel.cloud/${{ matrix.image }}:buildcache,mode=max
 
-      # matrix job outputs clobber each other, so digests travel as artifacts
       - name: Save image digest
         run: |
           mkdir -p /tmp/digests
@@ -70,6 +66,7 @@ jobs:
   record:
     needs: build-push
     runs-on: arc-runner
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -117,10 +114,8 @@ jobs:
         with:
           kubeconfig: ${{ secrets.KUBECONFIG }}
 
-      # The digests were committed in the record job before this imperative
-      # rollout. Terraform reconciles the same immutable references in the
-      # subsequent VCS run.
-      - run: |
+      - name: Roll out deployments
+        run: |
           kubectl set image deployment/vinnel-cloud-site -n websites \
             "*=registry.vinnel.cloud/vinnel-cloud/site@$(cat /tmp/digests/site)"
           kubectl set image deployment/vinnel-cloud-dashboard -n websites \
@@ -128,7 +123,6 @@ jobs:
           kubectl rollout status deployment/vinnel-cloud-site -n websites
           kubectl rollout status deployment/vinnel-cloud-dashboard -n websites
 
-      # purge only after new pods serve traffic, otherwise the CDN re-caches the old build
       - name: Purge Cloudflare cache
         env:
           CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

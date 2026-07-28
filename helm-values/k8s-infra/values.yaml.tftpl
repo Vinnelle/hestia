@@ -1,0 +1,10 @@
+clusterName: "${cluster_name}"
+otelCollectorEndpoint: "http://signoz-otel-collector.${monitoring_namespace}.svc.cluster.local:4318"
+otelInsecure: true
+
+presets:
+  loggingEnabled: true
+  otlpExportersEnabled: true
+  prometheus:
+    enabled: true
+    namespaceScoped: false

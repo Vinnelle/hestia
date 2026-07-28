@@ -49,7 +49,7 @@ locals {
       "publisher:${random_password.ntfy_publisher_password.bcrypt_hash}:user",
     ]
     "auth-tokens" = [
-      "publisher:${local.ntfy_publisher_token}:grafana",
+      "publisher:${local.ntfy_publisher_token}:signoz",
     ]
     "auth-access" = [
       "publisher:gaia-alerts:write-only",

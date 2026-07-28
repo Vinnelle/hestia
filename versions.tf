@@ -32,10 +32,6 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.9"
     }
-    grafana = {
-      source  = "grafana/grafana"
-      version = "~> 4.39"
-    }
     harbor = {
       source  = "goharbor/harbor"
       version = "~> 3.12"
@@ -47,6 +43,14 @@ terraform {
     netbird = {
       source  = "netbirdio/netbird"
       version = "~> 0.0"
+    }
+    signoz = {
+      source  = "SigNoz/signoz"
+      version = "~> 0.1"
+    }
+    restapi = {
+      source  = "thegeeklab/restapi"
+      version = "~> 0.3"
     }
   }
 }

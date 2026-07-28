@@ -1,15 +1,5 @@
 name: Record image digest
-description: >
-  Merges one or more deployment->image digest pairs into hestia/images.json
-  and pushes the commit, retrying on push/rebase races, then re-triggers
-  terraform.yml for the new commit. No concurrency group needed on the
-  calling job — the fetch/rebase/push retry loop below already handles
-  concurrent writers; a shared GitHub concurrency group was tried instead
-  but its "one queued job per group" limit silently canceled a third
-  concurrent deploy's record job outright (never even ran, so the retry
-  loop never got a chance) rather than letting it queue and retry. Requires
-  the actions:write permission on the calling job (for the terraform.yml
-  re-trigger).
+description: Merges deployment->image digest pairs into hestia/images.json, pushes, then re-triggers terraform.yml.
 
 inputs:
   updates:
@@ -43,9 +33,6 @@ runs:
         fi
         git commit -m "$MESSAGE"
 
-        # Each command in the chain is guarded by the if/&&, not run bare in
-        # the loop body — with `set -e` a bare failing `git rebase` would
-        # kill the whole script on the first conflict instead of retrying.
         pushed=""
         for attempt in 1 2 3 4 5; do
           if git fetch origin "$GITHUB_REF_NAME" \
@@ -63,19 +50,4 @@ runs:
           exit 1
         fi
 
-        # GITHUB_TOKEN-authored pushes don't fire push events (GitHub's
-        # own loop-prevention), so this commit would otherwise never get
-        # a terraform.yml run — leaving a permanent gap where any later
-        # wait-for-terraform gate checking this exact sha hangs until a
-        # genuine human push lands. workflow_dispatch via the API isn't
-        # subject to that suppression, so trigger it explicitly instead.
-        #
-        # Not deduplicated against already-running terraform.yml runs on
-        # purpose: a workflow_dispatch run's headSha is captured at
-        # creation, not live-updated, and the images-json concurrency
-        # lock this step runs under means any run already in flight was
-        # necessarily queued for an older commit — it can't cover this
-        # one. Dispatching every time is correct, not redundant; each
-        # run serializes behind the last via terraform.yml's own
-        # concurrency group rather than running wastefully in parallel.
         gh workflow run terraform.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"

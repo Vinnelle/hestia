@@ -4,9 +4,6 @@ cephClusterSpec:
   mgr:
     count: 1
 
-  # ssl: false so ingress-nginx can proxy plain HTTP, same pattern as grafana/adguard here —
-  # TLS is terminated at the ingress (cert-manager) and auth by Authelia forward-auth, not the
-  # dashboard's own self-signed cert.
   dashboard:
     enabled: true
     ssl: false
@@ -21,8 +18,6 @@ cephClusterSpec:
 toolbox:
   enabled: true
 
-# Single node: replicas must spread across OSDs, not hosts (there's only one host),
-# and isDefault is false so this doesn't collide with local-path's existing default.
 cephBlockPools:
   - name: ceph-blockpool
     spec:

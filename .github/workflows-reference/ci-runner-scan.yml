@@ -36,14 +36,10 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security
         if: always() && (steps.scan.outcome == 'success' || steps.scan.outcome == 'failure')
-        uses: github/codeql-action/upload-sarif@4187e74d05793876e9989daffde9c3e66b4acd07 # v3
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4
         with:
           sarif_file: trivy-results.sarif
 
-      # Rebuild via workflow_dispatch rather than duplicating the build
-      # steps here: ci-runner-build.yml already builds hestia/ci-runner
-      # fresh (`apt-get upgrade` included), so a plain rebuild is enough
-      # to pick up patched packages for anything not pinned by version.
       - name: Trigger ci-runner rebuild
         if: steps.scan.outcome == 'failure'
         env:

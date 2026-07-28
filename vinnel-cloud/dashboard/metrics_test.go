@@ -37,7 +37,7 @@ func TestHandleMetrics(t *testing.T) {
 	insert(0, "/metrics.html", "a@vin.moe", "s1")
 	insert(1, "/metrics.html", "a@vin.moe", "s1")
 	insert(1, "/account.html", "b@vin.moe", "s2")
-	insert(40, "/metrics.html", "a@vin.moe", "s1") // outside the 30-day window
+	insert(40, "/metrics.html", "a@vin.moe", "s1")
 
 	w := httptest.NewRecorder()
 	handleMetrics(db, w, httptest.NewRequest("GET", "/api/metrics", nil))

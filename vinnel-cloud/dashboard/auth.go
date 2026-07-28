@@ -199,7 +199,6 @@ func (a *authenticator) clearCookie(w http.ResponseWriter, name string) {
 	})
 }
 
-// Authelia issues no picture claim (authentik did) — derive avatar from email
 func gravatarURL(email string) string {
 	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email))))
 	return "https://www.gravatar.com/avatar/" + hex.EncodeToString(sum[:]) + "?d=mp"

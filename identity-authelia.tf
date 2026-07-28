@@ -133,6 +133,8 @@ resource "kubernetes_deployment_v1" "authelia" {
         annotations = {
           "checksum/config"         = sha256(local.authelia_configuration_yaml)
           "checksum/users-database" = sha256(local.authelia_users_database_yaml)
+          "prometheus.io/scrape"    = "true"
+          "prometheus.io/port"      = "9959"
         }
       }
 

@@ -385,6 +385,10 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_dashboard" {
             name  = "DB_PATH"
             value = "/data/dashboard.db"
           }
+          env {
+            name  = "OTEL_COLLECTOR_ENDPOINT"
+            value = "signoz-otel-collector.${kubernetes_namespace_v1.monitoring.metadata[0].name}.svc.cluster.local:4317"
+          }
 
           volume_mount {
             name       = "data"

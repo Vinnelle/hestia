@@ -15,11 +15,7 @@ permissions:
 
 jobs:
   wait-for-terraform:
-    runs-on: arc-runner
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: ./.github/actions/wait-for-terraform
+    uses: ./.github/workflows/wait-for-terraform.yml
 
   deploy:
     needs: wait-for-terraform
@@ -34,6 +30,7 @@ jobs:
   mirror:
     needs: deploy
     runs-on: arc-runner
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -45,14 +42,13 @@ jobs:
           token: ${{ secrets.GH_API_TOKEN }}
           path: vin.moe
 
-      - run: |
+      - name: Sync vin-moe site
+        run: |
           mkdir -p vin.moe/site-image vin.moe/github-workflow
           rsync -a --delete --exclude='.git' hestia/hestia/vin-moe/site/ vin.moe/site-image/
           rsync -a hestia/.github/workflows/vin-moe-build.yml vin.moe/github-workflow/
-          cd vin.moe
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --staged --quiet && exit 0
-          git commit -m "sync: mirror vin-moe source from hestia@${{ github.sha }}"
-          git push
+
+      - uses: ./hestia/.github/actions/git-commit-push
+        with:
+          path: vin.moe
+          message: "sync: mirror vin-moe source from hestia@${{ github.sha }}"

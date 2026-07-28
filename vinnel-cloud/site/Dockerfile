@@ -1,13 +1,8 @@
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS images
 RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools fontconfig
 COPY src/images/ .
-# librsvg in this image doesn't load embedded @font-face data URIs, so the
-# wordmark fonts are installed as real system fonts instead
 COPY src/fonts/ /usr/share/fonts/truetype/vinnel-cloud/
 RUN fc-cache -f
-# magick's own SVG rasterizer flattens transparency to opaque white despite
-# -background none; rsvg-convert renders real alpha, so it does the SVG->PNG
-# step and magick only handles the PNG->WebP encode
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp \
  && rsvg-convert -w 400 -h 100 vinnel-cloud-dark.svg | magick png:- vinnel-cloud-dark-1x.webp \
  && rsvg-convert -w 800 -h 200 vinnel-cloud-dark.svg | magick png:- vinnel-cloud-dark-2x.webp \
@@ -17,9 +12,6 @@ RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp \
 
 FROM nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
-# ngx_brotli publishes no versioned releases compatible with current nginx, so
-# master is cloned at build time; the module is compiled against the exact
-# nginx version of the base image above
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
  && NGINX_VERSION=$(nginx -v 2>&1 | sed 's/.*\///') \
  && wget -q "https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" -O /tmp/nginx.tar.gz \
