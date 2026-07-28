@@ -1,19 +1,14 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Finlay — vin.moe</title>
 <meta name="description" content="Finlay — infrastructure, DevOps, and software. Notes on running a Talos/Kubernetes homelab, GCP observability work, and how this site itself is built and deployed.">
 <link rel="canonical" href="https://vin.moe/">
-<meta name="theme-color" content="#0c0c0d">
-<script>
-(function () {
-  var d = document.documentElement;
-  d.dataset.theme = localStorage.theme || 'dark';
-  document.querySelector('meta[name=theme-color]').content = d.dataset.theme === 'light' ? '#faf8f5' : '#0c0c0d';
-})();
-</script>
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/jetbrains-mono.css">
@@ -42,36 +37,25 @@
 }
 </script>
 <style>
-  :root, [data-theme="dark"] {
-    --bg:            #0c0c0d;
-    --fg:            #cececa;
-    --fg-strong:     #ededea;
-    --muted:         #a9a9a3;
-    --dim:           #74746f;
-    --faint:         #5c5c58;
-    --fainter:       #454542;
-    --border:        #1e1e1f;
-    --accent:        #f7b9d1;
-    --accent-strong: #fbd3e2;
-    --select-bg:     rgba(247,185,209,0.25);
-    --select-fg:     #fff;
-    color-scheme: dark;
+  /* One palette, not two. light-dark() resolves against color-scheme, so the
+     theme toggle flips a single property instead of re-declaring every token. */
+  :root {
+    color-scheme: light dark;
+    --bg:            light-dark(#faf8f5, #0c0c0d);
+    --fg:            light-dark(#2a2825, #cececa);
+    --fg-strong:     light-dark(#161514, #ededea);
+    --muted:         light-dark(#4a4743, #a9a9a3);
+    --dim:           light-dark(#625e57, #74746f);
+    --faint:         light-dark(#736e66, #5c5c58);
+    --fainter:       light-dark(#8f8a80, #454542);
+    --border:        light-dark(#e6e0d8, #1e1e1f);
+    --accent:        light-dark(#b3466b, #f7b9d1);
+    --accent-strong: light-dark(#8f3355, #fbd3e2);
+    --select-bg:     light-dark(rgb(179 70 107 / 0.18), rgb(247 185 209 / 0.25));
+    --select-fg:     light-dark(#161514, #fff);
   }
-  [data-theme="light"] {
-    --bg:            #faf8f5;
-    --fg:            #2a2825;
-    --fg-strong:     #161514;
-    --muted:         #4a4743;
-    --dim:           #625e57;
-    --faint:         #736e66;
-    --fainter:       #8f8a80;
-    --border:        #e6e0d8;
-    --accent:        #b3466b;
-    --accent-strong: #8f3355;
-    --select-bg:     rgba(179,70,107,0.18);
-    --select-fg:     #161514;
-    color-scheme: light;
-  }
+  :root[data-theme="light"] { color-scheme: light; }
+  :root[data-theme="dark"]  { color-scheme: dark; }
 
   * { box-sizing: border-box; }
   html, body { margin: 0; }
@@ -89,21 +73,29 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
   ::selection { background: var(--select-bg); color: var(--select-fg); }
-  a { color: var(--accent); text-decoration: none; }
-  a:hover { color: var(--accent-strong); }
+  a {
+    color: var(--accent);
+    text-decoration: none;
+    &:hover { color: var(--accent-strong); }
+  }
   main { max-width: 680px; width: 100%; }
-
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 
   header { margin-bottom: 2.4rem; animation: enter 420ms ease-out both; }
   h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.01em; color: var(--fg-strong); margin: 0 0 0.3rem; text-wrap: balance; }
   .tagline { margin: 0; color: var(--dim); font-size: 0.9rem; }
-  /* .tagline::after { content: " _"; color: var(--faint); animation: blink 1.1s step-end infinite; } */
 
-  nav { display: flex; flex-wrap: wrap; gap: 0.7rem clamp(0.9rem, 4vw, 1.6rem); margin-bottom: 2.2rem; align-items: baseline; animation: enter 420ms ease-out 80ms both; }
-  nav .sep { color: var(--faint); user-select: none; }
+  nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem clamp(0.9rem, 4vw, 1.6rem);
+    margin-bottom: 2.2rem;
+    align-items: baseline;
+    animation: enter 420ms ease-out 80ms both;
+    .sep { color: var(--faint); user-select: none; }
+  }
   .tab {
-    font-family: inherit;
+    font: inherit;
     font-size: 0.95rem;
     background: transparent;
     border: none;
@@ -111,54 +103,87 @@
     margin: -0.4rem 0;
     cursor: pointer;
     color: var(--dim);
-    text-decoration: none;
     text-underline-offset: 5px;
     text-decoration-thickness: 1px;
     white-space: nowrap;
     transition: color 0.15s;
-  }
-  .tab:hover { color: var(--muted); }
-  .tab.active { color: var(--accent); text-decoration: underline; }
-
-  .panel { display: none; }
-  .panel.active { display: block; animation: panel-in 220ms ease-out; }
-  @keyframes panel-in {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes enter {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes blink { 50% { opacity: 0; } }
-  @keyframes theme-pop {
-    0%, 100% { transform: scale(1); }
-    40% { transform: scale(1.15); }
+    &:hover { color: var(--muted); }
+    &[aria-selected="true"] { color: var(--accent); text-decoration: underline; }
   }
 
-  p { line-height: 1.75; margin: 0 0 1.15rem; }
+  .panel {
+    display: none;
+    &.active { display: block; animation: panel-in 220ms ease-out; }
+  }
+
+  /* No JS: the tabs can't switch, so drop the control and show every panel. */
+  @media (scripting: none) {
+    nav { display: none; }
+    .panel { display: block; }
+    .panel + .panel { margin-top: 3rem; }
+  }
+
+  @keyframes panel-in { from { opacity: 0; transform: translateY(4px); } }
+  @keyframes enter    { from { opacity: 0; transform: translateY(6px); } }
+  @keyframes theme-pop { 40% { transform: scale(1.15); } }
+
+  p { line-height: 1.75; margin: 0 0 1.15rem; text-wrap: pretty; }
   .lead { color: var(--fg); }
   .muted { color: var(--muted); }
   .dim { color: var(--dim); font-size: 0.9rem; }
   .label { color: var(--faint); font-size: 0.8rem; margin-bottom: 0.2rem; }
 
-  .group { color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin: 2.8rem 0 0.6rem; }
+  h2 { color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin: 2.8rem 0 0.6rem; }
 
-  .links { border-top: 1px solid var(--border); padding-top: 1.3rem; display: flex; gap: 2.4rem; flex-wrap: wrap; margin-top: 1.25rem; }
-  .links .k { color: var(--faint); font-size: 0.8rem; margin-bottom: 0.35rem; }
+  .links {
+    border-top: 1px solid var(--border);
+    padding-top: 1.3rem;
+    display: flex;
+    gap: 2.4rem;
+    flex-wrap: wrap;
+    margin-top: 1.25rem;
+    .k { color: var(--faint); font-size: 0.8rem; margin-bottom: 0.35rem; }
+  }
 
-  ul { list-style: none; margin: 0 0 2.4rem; padding: 0; display: flex; flex-direction: column; }
-  ul.last { margin-bottom: 0; }
-  li { display: flex; gap: 0.9rem; line-height: 1.7; border-top: 1px solid var(--border); padding: 1.05rem 0; transition: transform 0.15s ease; }
-  li:hover { transform: translateX(3px); }
-  li .bullet { color: var(--fainter); flex-shrink: 0; }
-  li span:last-child { color: var(--fg); }
+  .list {
+    list-style: none;
+    margin: 0 0 2.4rem;
+    padding: 0;
+    &.last { margin-bottom: 0; }
+    li {
+      display: flex;
+      gap: 0.9rem;
+      line-height: 1.7;
+      border-top: 1px solid var(--border);
+      padding: 1.05rem 0;
+      color: var(--fg);
+      transition: transform 0.15s ease;
+      &::before { content: "–"; color: var(--fainter); }
+      &:hover { transform: translateX(3px); }
+    }
+  }
 
-  .topic { border-top: 1px solid var(--border); padding: 1.4rem 0; }
-  .topic-head { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 0.55rem; }
-  .topic-num { color: var(--fainter); font-size: 0.85rem; }
-  .topic h2 { font-size: 0.95rem; font-weight: 700; color: var(--fg-strong); margin: 0; text-wrap: balance; }
-  .topic p { color: var(--muted); font-size: 0.92rem; margin: 0; }
+  /* Numbers are a CSS counter, not hand-typed spans — reorder freely.
+     The reset lives on #runs, so the count runs unbroken across all six lists. */
+  .topics {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    li {
+      border-top: 1px solid var(--border);
+      padding: 1.4rem 0;
+      &::before {
+        counter-increment: topic;
+        content: counter(topic, decimal-leading-zero);
+        color: var(--fainter);
+        font-size: 0.85rem;
+        margin-right: 0.7rem;
+      }
+    }
+    h3 { display: inline; font-size: 0.95rem; font-weight: 700; color: var(--fg-strong); margin: 0; }
+    p { color: var(--muted); font-size: 0.92rem; margin: 0.55rem 0 0; }
+  }
+  #runs { counter-reset: topic; }
 
   footer {
     margin-top: 3rem;
@@ -170,11 +195,14 @@
     gap: 1rem;
     flex-wrap: wrap;
   }
-  .theme-toggle { display: flex; align-items: baseline; gap: 0.5rem; }
-  .theme-toggle .sep { color: var(--faint); user-select: none; }
+  .theme-toggle {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    .sep { color: var(--faint); user-select: none; }
+  }
   .theme-opt {
-    font-family: inherit;
-    font-size: inherit;
+    font: inherit;
     background: transparent;
     border: none;
     padding: 0;
@@ -183,20 +211,15 @@
     text-underline-offset: 4px;
     text-decoration-thickness: 1px;
     transition: color 0.15s;
-  }
-  .theme-opt:hover { color: var(--muted); }
-  .theme-opt.pop { display: inline-block; animation: theme-pop 260ms ease-out; }
-  [data-theme="light"] .theme-opt[data-theme-choice="light"],
-  [data-theme="dark"] .theme-opt[data-theme-choice="dark"] {
-    color: var(--accent);
-    text-decoration: underline;
+    &:hover { color: var(--muted); }
+    &[aria-pressed="true"] { color: var(--accent); text-decoration: underline; }
+    &.pop { display: inline-block; animation: theme-pop 260ms ease-out; }
   }
 
-  /* last in the sheet so it outranks the equal-specificity rules above */
+  /* Last in the sheet so it outranks the equal-specificity rules above. */
   @media (prefers-reduced-motion: reduce) {
-    .panel.active, header, nav, .theme-opt.pop { animation: none; }
-    .tab, .theme-opt, li, body { transition: none; }
-    .tagline::after { display: none; }
+    *, ::before, ::after { animation: none !important; transition: none !important; }
+    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   }
 </style>
 </head>
@@ -208,7 +231,7 @@
   </header>
 
   <nav role="tablist" aria-label="Sections">
-    <button class="tab active" role="tab" id="tab-about" aria-selected="true" aria-controls="about" tabindex="0" data-tab="about">about</button>
+    <button class="tab" role="tab" id="tab-about" aria-selected="true" aria-controls="about" data-tab="about">about</button>
     <span class="sep" aria-hidden="true">/</span>
     <button class="tab" role="tab" id="tab-work" aria-selected="false" aria-controls="work" tabindex="-1" data-tab="work">things i’ve done</button>
     <span class="sep" aria-hidden="true">/</span>
@@ -218,8 +241,8 @@
   <!-- ABOUT -->
   <section class="panel active" id="about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
     <p class="lead">Hello, my name is Finlay.</p>
-    <p class="muted">I’ve been working with computers since I was 11 — game mods, personal QoL tools, operating systems, general programming, and whatever else seemed interesting at the time.</p>
-    <p class="muted">Currently I’m an infrastructure engineer at a large financial institution, focused on GCP. Since starting I’ve grown into a trusted member of my team and the observability SME for the department — the person people come to when something needs building or something breaks.</p>
+    <p class="muted">I’ve been working with computers since I was 11 — game mods, QoL tools, operating systems, and whatever else looked interesting at the time.</p>
+    <p class="muted">Now an infrastructure engineer at a large financial institution, working on GCP. I’m the observability SME for the department: the person people come to when something needs building, or something breaks.</p>
     <p class="lead">Looking forward to seeing how far this goes.</p>
 
     <div class="links">
@@ -239,100 +262,151 @@
     <p class="muted" style="margin-bottom:2.2rem;">Things I’ve built, fixed, and improved — at work and on my own.</p>
 
     <div class="label"># work</div>
-    <ul>
-      <li><span class="bullet">–</span><span>Built custom alerting for RHEL servers on GCE, focused on LDAP/S authentication failures surfaced through our observability platform.</span></li>
-      <li><span class="bullet">–</span><span>Reworked our bespoke platform health-check pipelines — ~58s faster, ~200 fewer lines, wired into GCP SLOs and observability.</span></li>
-      <li><span class="bullet">–</span><span>Serve as the observability SME for the whole department — supporting other teams and fielding questions on the platform.</span></li>
+    <ul class="list">
+      <li>Custom alerting for RHEL servers on GCE, targeting LDAP/S authentication failures.</li>
+      <li>Reworked the platform health-check pipelines: 58s faster, 200 fewer lines, wired into GCP SLOs.</li>
+      <li>Observability SME for the department.</li>
     </ul>
 
     <div class="label"># personal</div>
-    <ul class="last">
-      <li><span class="bullet">–</span><span>Ran a fully code-managed GCP stack for my personal cloud before moving to dedicated hardware.</span></li>
-      <li><span class="bullet">–</span><span>Migrated from GCP to a self-hosted setup with minimal disruption and downtime.</span></li>
-      <li><span class="bullet">–</span><span>Secured every service on my server with layered high- and low-level practices and self-hosted tooling.</span></li>
-      <li><span class="bullet">–</span><span>Built and maintain a homelab and Ubiquiti network — multiple servers, storage arrays, switches, WAPs, gateways, a UPS, a firewall, and a Raspberry Pi running network analysis, SIEM, ad-blocking, and custom DNS.</span></li>
+    <ul class="list last">
+      <li>Ran a fully code-managed GCP stack before moving to dedicated hardware.</li>
+      <li>Migrated off GCP to self-hosted, with minimal downtime.</li>
+      <li>Every service on the server sits behind SSO, a mesh VPN, or both.</li>
+      <li>Built and maintain a homelab and Ubiquiti network — servers, storage arrays, switches, WAPs, gateways, a UPS, a firewall, and a Pi running network analysis, SIEM, ad-blocking and DNS.</li>
     </ul>
   </section>
 
   <!-- RUNS -->
   <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
-    <p class="muted">The node, cluster, ingress, container registry, DNS, image build, and Deployment spec are all Terraform, applied through HCP Terraform in a private repo. The site itself is a static HTML/CSS page.</p>
-    <p class="lead">Push to merge, live in ~44 seconds — build, registry push, and a rollout pinned to the image's immutable digest.</p>
+    <p class="muted">Node config, cluster, CNI, storage, ingress, TLS, DNS, registry, this image’s build and this Deployment’s spec: all Terraform, ~6k lines of it, applied by self-hosted runners against an HCP Terraform workspace. The repo is canonical — nothing gets changed by hand against the cluster.</p>
+    <p class="lead">Push to merge, live in ~44 seconds.</p>
+    <p class="dim">one node &middot; no shell on it &middot; no managed Kubernetes &middot; no load balancer &middot; every image, Action and provider pinned by digest</p>
     <p class="dim" style="margin-bottom:0.4rem;"><em>AI wrote the HTML/CSS on this page. I do infra, not frontend.</em></p>
 
-    <div class="group" style="margin-top:2.2rem;">platform</div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">01</span><h2>cluster</h2></div>
-      <p>One Talos node. Control plane and worker, same physical server (allowSchedulingOnControlPlanes). No managed Kubernetes underneath. The node is provisioned out-of-band; Terraform bootstraps it with the siderolabs/talos provider and stores the resulting kubeconfig as state.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">02</span><h2>registry</h2></div>
-      <p>Self-hosted Harbor on the same cluster. This site gets its own harbor_project. Pushes and pulls go through a CI robot account whose password is a Terraform random_password — never typed by hand — packaged into a dockerconfigjson secret and mounted as an imagePullSecret.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">03</span><h2>ingress &amp; tls</h2></div>
-      <p>ingress-nginx runs as a DaemonSet with hostNetwork: true, bound to the node's public IP. No load balancer. Each domain has its own cert-manager ClusterIssuer solving via DNS-01 against Cloudflare. Zone SSL mode is strict, so TLS is independently valid on both hops: browser→edge and edge→origin.</p>
-    </div>
+    <h2 style="margin-top:2.2rem;">platform</h2>
+    <ol class="topics">
+      <li>
+        <h3>the node</h3>
+        <p>Talos Linux on dedicated hardware. No shell, no SSH, no package manager — every change is a declarative machine config applied over an mTLS API. Ephemeral and state partitions are LUKS2. Boot media comes from an Image Factory schematic pinned by content hash, and the installer image has to be that same schematic; point it at the stock one and Talos drops every extension at disk-write time.</p>
+      </li>
+      <li>
+        <h3>cluster</h3>
+        <p>One node, control plane and worker (allowSchedulingOnControlPlanes). Terraform generates the machine secrets, applies the config, bootstraps etcd, and holds the resulting kubeconfig in state.</p>
+      </li>
+      <li>
+        <h3>network</h3>
+        <p>Cilium replaced Flannel. Flannel accepts NetworkPolicy objects and never enforces them, which is worse than rejecting them. Cilium enforces in eBPF and adds identity-based policy, so a rule can select the node’s own host identity — a CIDR ipBlock never matches it, whatever the arithmetic says. Hubble’s flow UI sits behind SSO.</p>
+      </li>
+      <li>
+        <h3>storage</h3>
+        <p>local-path is the default class, for small sqlite-backed volumes. Rook Ceph runs across three disks for anything replicated, failure domain set to osd rather than host — one node, so disks are the only fault boundary that exists — with encryption at rest handled by Ceph.</p>
+      </li>
+      <li>
+        <h3>ingress &amp; tls</h3>
+        <p>ingress-nginx as a DaemonSet on hostNetwork, bound to the node’s public IP. No load balancer. Per-domain cert-manager ClusterIssuers solve DNS-01 against Cloudflare, and every zone is strict SSL, so TLS is independently valid on both hops: browser→edge and edge→origin.</p>
+      </li>
+      <li>
+        <h3>registry</h3>
+        <p>Self-hosted Harbor on the same cluster, one project per site. Pushes and pulls go through a robot account whose password is a Terraform random_password — generated, never typed — mounted as an imagePullSecret.</p>
+      </li>
+    </ol>
 
-    <div class="group">the site</div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">04</span><h2>image</h2></div>
-      <p>Two-stage Dockerfile. Stage one is Alpine + imagemagick, converting the source PNG into a multi-resolution favicon.ico (16/32/48/64). Stage two is a pinned nginx:1.29-alpine with nginx.conf, the static HTML, and the favicon copied in. The single server block layers a security-header set (HSTS, CSP, nosniff, frame-deny, referrer policy), a /healthz endpoint, and gzip on top of a try_files fallback that redirects unknown paths back to /.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">05</span><h2>deployment</h2></div>
-      <p>Two replicas behind a ClusterIP Service. 50m CPU / 16Mi requested, 200m / 64Mi limit. Startup, readiness, and liveness probes all hit /healthz. Rollouts surge to 100% with zero unavailable plus a pre-stop drain, and a PodDisruptionBudget keeps at least one replica serving. A VerticalPodAutoscaler in Auto mode tunes the memory request in that band; CPU is left unmanaged.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">06</span><h2>mirror</h2></div>
-      <p>A second job rsyncs two things to a public GitHub repo via a scoped token: the site source into site-image/ and the workflow file into github-workflow/. It commits only if something changed. Source lives in two places — the private infra monorepo where it's built, and a public read-only mirror.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">07</span><h2>dns &amp; cdn</h2></div>
-      <p>vin.moe's A record points at the node's IP through a proxied Cloudflare record. Combined with DNS-01, none of Let's Encrypt's validation traffic reaches the origin — the only thing that must be reachable is the origin's own valid cert, and only Cloudflare needs to see it. The proxy also acts as the CDN: a Terraform-managed cache ruleset tells Cloudflare's edge to cache everything on this hostname — HTML included, not just static assets — so most requests never touch the origin at all.</p>
-    </div>
+    <h2>the site</h2>
+    <ol class="topics">
+      <li>
+        <h3>the image</h3>
+        <p>Four build stages, every base pinned by sha256. One rasterizes the source PNG into a multi-resolution .ico and an apple-touch icon. One compiles ngx_brotli against the exact nginx version of the base image, since upstream ships no compatible release. One builds the assets. The last is nginx-unprivileged, running non-root.</p>
+      </li>
+      <li>
+        <h3>assets</h3>
+        <p>The webfont is fetched at build time and self-hosted, so nothing third-party loads at runtime and the CSP stays default-src 'self'. CSS and JS are minified, renamed to include a hash of their own contents, and every reference rewritten — which is what makes a one-year immutable cache safe rather than a guess. Everything text-shaped is pre-compressed once: gzip -9, brotli -q 11.</p>
+      </li>
+      <li>
+        <h3>serving</h3>
+        <p>nginx serves those pre-compressed files directly, so the runtime never spends a cycle compressing per request. Hashed assets get immutable cache headers and open_file_cache keeps hot descriptors around. Every response carries HSTS, CSP, nosniff, frame and referrer policy. /healthz is plaintext for the probes; .html URLs redirect to their extensionless form.</p>
+      </li>
+      <li>
+        <h3>the page itself</h3>
+        <p>No framework, no bundler, no runtime dependency. One document with its CSS and JS inlined; the font is the only other request. Themes are one palette through light-dark() rather than two copies of every token, so the toggle flips a single property. The numbers you’re reading are a CSS counter. Tabs are a real ARIA tablist — arrow-key navigation, deep-linkable by fragment, animated by the View Transitions API where it exists and plain where it doesn’t — and with JS off the nav hides itself and every panel renders instead.</p>
+      </li>
+      <li>
+        <h3>deployment</h3>
+        <p>Two replicas behind a ClusterIP Service. 50m/16Mi requested, 200m/64Mi limit. Non-root, every capability dropped, no privilege escalation, RuntimeDefault seccomp. Startup, readiness and liveness probes hit /healthz. Rollouts surge to 100% with zero unavailable plus a pre-stop drain, a PodDisruptionBudget keeps one replica serving, and a VerticalPodAutoscaler tunes memory inside that band.</p>
+      </li>
+      <li>
+        <h3>dns &amp; cdn</h3>
+        <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic ever reaches the origin — only Cloudflare needs to see its cert. A Terraform-managed cache ruleset caches everything on this hostname, HTML included, so most requests never reach the cluster.</p>
+      </li>
+      <li>
+        <h3>mirror</h3>
+        <p>After a successful deploy, a job rsyncs the site source and its workflow to a public GitHub repo through a scoped token, committing only if something changed. Private monorepo to build from, public mirror to read.</p>
+      </li>
+    </ol>
 
-    <div class="group">node &amp; security</div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">08</span><h2>the node</h2></div>
-      <p>Dedicated hardware running Talos Linux — an immutable, API-driven OS with no shell, no SSH, and no package manager; every change goes through its config API, not a login. The ephemeral and state partitions are both LUKS2-encrypted. A host-level ingress firewall defaults to deny, with public web traffic accepted only from Cloudflare's published edge ranges — so the origin quietly ignores direct scans and floods.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">09</span><h2>defense in depth</h2></div>
-      <p>Public traffic terminates at Cloudflare and is re-encrypted to the origin — strict SSL, independently valid on both hops — with HSTS and a content-security policy on every response. Administrative surfaces sit behind Authelia two-factor; the SSH VPS (debian pod deployed on cluster for remote dev) is reachable only over a private WireGuard mesh, never the public internet. In-cluster secrets are generated by Terraform and held in HCP Terraform, never committed to the repo, and CI runs on a namespace-scoped token rather than cluster-admin. Workloads run least-privilege under Pod Security Standards — the one exception is the CI runner pods (privileged, for docker-in-docker), so a Cilium NetworkPolicy scopes their egress to DNS and the outside world, blocking direct pod-to-pod reach into every other namespace: Harbor's internals, momus, Authelia, netbird.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">10</span><h2>watch &amp; recover</h2></div>
-      <p>SigNoz — a single ClickHouse-backed stack for metrics, logs, and traces — watches the node and every workload, having replaced a separate Prometheus/Grafana/Loki/Tempo stack. An OpenTelemetry collector auto-discovers anything carrying a <code>prometheus.io/scrape</code> annotation, so new workloads get scraped with zero added config, and alerts route to ntfy and Slack. Persistent volumes back up nightly to encrypted object storage on rolling retention, and dependency bumps land automatically through Renovate with a human gate on majors.</p>
-    </div>
+    <h2>hardening</h2>
+    <ol class="topics">
+      <li>
+        <h3>the front door</h3>
+        <p>Talos host firewall, default deny. 80/443 accept only Cloudflare’s published edge ranges, so scans against the origin IP are dropped before nginx sees them. The Kubernetes and Talos APIs stay world-reachable on purpose: both are certificate-gated with no password surface, CI and Terraform have no pinnable egress IPs, and the Talos API is the recovery path for the firewall itself.</p>
+      </li>
+      <li>
+        <h3>defense in depth</h3>
+        <p>Admin surfaces sit behind Authelia 2FA. The dev box is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets are Terraform-generated and live in state, never the repo. CI authenticates with a token scoped to patching Deployments in one namespace. Workloads run under Pod Security Standards; the exception is the runner pods, which need privileged for docker-in-docker, so a Cilium policy limits their egress to DNS and the internet and blocks pod-to-pod reach into every other namespace.</p>
+      </li>
+      <li>
+        <h3>supply chain</h3>
+        <p>Base images, Actions and providers are pinned by digest or lockfile, so a moved tag can’t change what ships. Every push runs terraform fmt, tflint, go vet and tests, shellcheck, yamllint, actionlint, and gitleaks over full history. Trivy scans the runner image on a schedule and anything critical or high triggers a rebuild. Renovate raises the version bumps.</p>
+      </li>
+    </ol>
 
-    <div class="group">ci/cd runners</div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">11</span><h2>actions-runner-controller</h2></div>
-      <p>gha-runner-scale-set, deployed on the same cluster. containerMode is dind — every runner pod gets its own dockerd sidecar rather than mounting the node's docker socket, so concurrent jobs never share daemon state or root-level host access. minRunners is 0: no idle pool, every job gets a pod created fresh against whatever the current scale-set spec is.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">12</span><h2>the runner image</h2></div>
-      <p>A custom image on top of the stock actions-runner base, with the toolchain every workflow needs pre-baked in — docker CLI, gh, jq, rsync, kubectl, tflint, actionlint, build-essential — so jobs stop apt-get installing the same packages on every single run. Built by its own workflow and pushed to a dedicated Harbor project. A scheduled scan runs daily against it; anything at CRITICAL or HIGH severity triggers an automatic rebuild.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">13</span><h2>registry access from runner pods</h2></div>
-      <p>registry.vinnel.cloud stays Cloudflare-proxied for public traffic, but Cloudflare's proxy caps request bodies — too small for this image's own base layer. Runner pods carry a pod-level hostAliases entry routing straight to the node's own hostNetwork-bound ingress instead, paired with a host firewall rule opening 80/443 to the pod network (previously Cloudflare-edge-only). The BuildKit builder container spun up by a push needs its own network=host setting to inherit that same routing — a plain docker login and an actual image push resolve the registry hostname through completely different network paths.</p>
-    </div>
+    <h2>observability</h2>
+    <ol class="topics">
+      <li>
+        <h3>signoz</h3>
+        <p>One ClickHouse-backed stack for metrics, logs and traces, replacing Prometheus/Grafana/Loki/Tempo — four things to run and correlate by hand, now one. An OpenTelemetry collector discovers targets by pod annotation, so a new workload becomes observable by adding two labels, with no scrape config to edit. ingress-nginx exports OTLP spans, so a slow request and the logs behind it are one trace.</p>
+      </li>
+      <li>
+        <h3>alerting</h3>
+        <p>Alert rules are Terraform resources, not clicks in a UI: backup failure, node NotReady, PVC over 85%, certificate under 14 days, workload below desired replicas. They fan out to self-hosted ntfy and to Slack, renotifying every 4h while still firing. Dashboards go through the same API. What none of it can do is report its own death — a single node that stops answering stops alerting too, so that check belongs somewhere else.</p>
+      </li>
+      <li>
+        <h3>chaos &amp; recovery</h3>
+        <p>Chaos Mesh kills a random site pod every 30 minutes and stresses one hourly, which is what keeps the disruption budget and probes above honest. Scoped to the websites namespace only — never auth, the mesh, or the alerting meant to catch it. restic snapshots the volumes nightly, encrypted and deduplicated client-side so object storage holds only ciphertext, on 7-day rolling retention with an integrity check each run.</p>
+      </li>
+    </ol>
 
-    <div class="group">deploying vin.moe</div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">14</span><h2>wait for infra</h2></div>
-      <p>A push to the site's path on prd (or a manual dispatch) checks whether that exact commit's Terraform run is still mid-flight and waits for it if so, purely to avoid racing a concurrent apply — advisory only, not a success gate. The deploy itself is imperative against an already-committed image digest, and Terraform reconciles that same reference on its own next run regardless of how the wait resolves.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">15</span><h2>pin the digest</h2></div>
-      <p>After buildx pushes :latest and the commit SHA, the immutable sha256 digest — not the mutable tag — gets merged into a shared image manifest and committed. Concurrent deploys retry through a fetch/rebase/push loop rather than queuing behind a GitHub concurrency lock: a lock was tried first, but its one-pending-job-per-group limit silently dropped a third simultaneous deploy instead of letting it wait its turn. Bot-authored commits don't fire GitHub's own push events, so the same job explicitly re-triggers the Terraform run for that commit rather than leaving it to trigger itself.</p>
-    </div>
-    <div class="topic">
-      <div class="topic-head"><span class="topic-num">16</span><h2>roll out &amp; purge</h2></div>
-      <p>kubectl set-image to that exact digest, then a wait on rollout status — Terraform reconciles the same pinned reference on its next run, so the imperative rollout and the declared state never drift apart. Cloudflare's cache is purged only once the new pods are confirmed serving, so the CDN never re-caches the build that's on its way out.</p>
-    </div>
+    <h2>ci/cd runners</h2>
+    <ol class="topics">
+      <li>
+        <h3>actions-runner-controller</h3>
+        <p>gha-runner-scale-set on the same cluster: CI runs on the node it deploys to. containerMode is dind, so every runner pod gets its own dockerd rather than mounting the node’s socket, and concurrent jobs never share daemon state or root-level host access. minRunners is 0 — no idle pool, every job gets a fresh pod against the current spec.</p>
+      </li>
+      <li>
+        <h3>the runner image</h3>
+        <p>Custom image on the stock actions-runner base with the toolchain pre-baked — docker, gh, jq, rsync, kubectl, tflint, actionlint, build-essential — so jobs stop apt-get installing the same packages every run. Each workflow’s install step was already guarded, so they became no-ops the day it landed.</p>
+      </li>
+      <li>
+        <h3>registry access from runner pods</h3>
+        <p>registry.vinnel.cloud stays Cloudflare-proxied for public traffic, but the proxy caps request bodies below this image’s own base layer. Runner pods carry a hostAliases entry routing straight to the node’s ingress, paired with a firewall rule opening the web ports to the pod network. BuildKit needs network=host on top of that: it runs in its own container with its own DNS, so docker login and the actual push resolve the same hostname through different paths.</p>
+      </li>
+    </ol>
+
+    <h2>deploying vin.moe</h2>
+    <ol class="topics">
+      <li>
+        <h3>wait for infra</h3>
+        <p>A push to the site’s path on prd waits only if that commit’s Terraform run is still mid-flight, purely to avoid racing an apply. Advisory, not a success gate: the deploy is imperative against an already-committed digest, and Terraform reconciles the same reference on its next run either way.</p>
+      </li>
+      <li>
+        <h3>pin the digest</h3>
+        <p>buildx pushes :latest and the commit SHA against a registry-hosted layer cache, so unchanged stages — the compiled nginx module included — are pulled, not rebuilt. The sha256 digest it returns, not the mutable tag, is merged into a shared image manifest and committed. Concurrent deploys retry through fetch/rebase/push: a GitHub concurrency lock was tried first, and its one-pending-job limit dropped a third simultaneous deploy outright instead of queuing it. Bot commits don’t fire push events, so the job re-triggers Terraform explicitly.</p>
+      </li>
+      <li>
+        <h3>roll out &amp; purge</h3>
+        <p>kubectl set image to that exact digest, then wait on rollout status. Terraform reconciles the same pinned reference next run, so the imperative rollout and the declared state converge instead of drifting. Cloudflare’s cache is purged only once the new pods are serving — purge first and the CDN re-caches the build on its way out.</p>
+      </li>
+    </ol>
 
     <div class="links" style="margin-top:0.2rem;">
       <div>
@@ -357,59 +431,61 @@
 </main>
 
 <script>
-  const tabs = Array.from(document.querySelectorAll('.tab'));
-  const panels = Array.from(document.querySelectorAll('.panel'));
+const root = document.documentElement;
+const tabs = [...document.querySelectorAll('.tab')];
+const panels = [...document.querySelectorAll('.panel')];
 
-  function activate(tab, opts) {
-    const name = tab.dataset.tab;
-    tabs.forEach(function (t) {
-      const selected = t === tab;
-      t.classList.toggle('active', selected);
-      t.setAttribute('aria-selected', String(selected));
-      t.tabIndex = selected ? 0 : -1;
-    });
-    panels.forEach(function (p) { p.classList.toggle('active', p.id === name); });
-    if (opts && opts.focus) tab.focus();
+const render = (tab) => {
+  for (const t of tabs) {
+    const on = t === tab;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
   }
+  for (const p of panels) p.classList.toggle('active', p.id === tab.dataset.tab);
+};
 
-  tabs.forEach(function (tab, i) {
-    tab.addEventListener('click', function () { activate(tab); });
-    tab.addEventListener('keydown', function (e) {
-      const dir = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
-      if (dir) {
-        e.preventDefault();
-        activate(tabs[(i + dir + tabs.length) % tabs.length], { focus: true });
-      } else if (e.key === 'Home') {
-        e.preventDefault();
-        activate(tabs[0], { focus: true });
-      } else if (e.key === 'End') {
-        e.preventDefault();
-        activate(tabs[tabs.length - 1], { focus: true });
-      }
-    });
+// startViewTransition where supported, straight through where it isn't.
+const show = (tab, { focus = false } = {}) => {
+  if (!tab || tab.getAttribute('aria-selected') === 'true') return;
+  const name = tab.dataset.tab;
+  history.replaceState(null, '', name === 'about' ? location.pathname + location.search : '#' + name);
+  document.startViewTransition ? document.startViewTransition(() => render(tab)) : render(tab);
+  if (focus) tab.focus();
+};
+
+const byName = (name) => tabs.find((t) => t.dataset.tab === name);
+
+document.querySelector('nav').addEventListener('click', (e) => show(e.target.closest('.tab')));
+
+document.querySelector('nav').addEventListener('keydown', (e) => {
+  const i = tabs.indexOf(e.target);
+  if (i < 0) return;
+  const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
+  if (next === undefined) return;
+  e.preventDefault();
+  show(tabs[(next + tabs.length) % tabs.length], { focus: true });
+});
+
+addEventListener('hashchange', () => show(byName(location.hash.slice(1))));
+if (location.hash) show(byName(location.hash.slice(1)));
+
+const themeOpts = [...document.querySelectorAll('.theme-opt')];
+const syncTheme = () => {
+  const active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  for (const b of themeOpts) b.setAttribute('aria-pressed', b.dataset.themeChoice === active);
+};
+syncTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+
+for (const b of themeOpts) {
+  b.addEventListener('click', () => {
+    root.dataset.theme = b.dataset.themeChoice;
+    try { localStorage.theme = b.dataset.themeChoice; } catch {} // storage can be blocked; the toggle still works
+    syncTheme();
+    b.classList.add('pop');
   });
-
-  const root = document.documentElement;
-  const themeMeta = document.querySelector('meta[name="theme-color"]');
-  const themeOpts = Array.from(document.querySelectorAll('.theme-opt'));
-
-  function syncThemeButtons() {
-    themeOpts.forEach(function (b) {
-      b.setAttribute('aria-pressed', String(b.dataset.themeChoice === root.dataset.theme));
-    });
-  }
-  syncThemeButtons();
-
-  themeOpts.forEach(function (b) {
-    b.addEventListener('click', function () {
-      root.dataset.theme = b.dataset.themeChoice;
-      localStorage.theme = b.dataset.themeChoice;
-      themeMeta.content = b.dataset.themeChoice === 'light' ? '#faf8f5' : '#0c0c0d';
-      syncThemeButtons();
-      b.classList.add('pop');
-    });
-    b.addEventListener('animationend', function () { b.classList.remove('pop'); });
-  });
+  b.addEventListener('animationend', () => b.classList.remove('pop'));
+}
 </script>
 </body>
 </html>
