@@ -36,3 +36,8 @@ output "momus_ida_sudo_password" {
   value     = random_password.momus_ida_sudo.result
   sensitive = true
 }
+
+output "ceph_dashboard_password" {
+  value     = data.kubernetes_secret_v1.rook_ceph_dashboard_password.data["password"]
+  sensitive = true
+}

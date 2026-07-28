@@ -31,6 +31,14 @@ resource "helm_release" "rook_ceph_cluster" {
   depends_on = [helm_release.rook_ceph_operator]
 }
 
+data "kubernetes_secret_v1" "rook_ceph_dashboard_password" {
+  depends_on = [helm_release.rook_ceph_cluster]
+  metadata {
+    name      = "rook-ceph-dashboard-password"
+    namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+  }
+}
+
 resource "cloudflare_dns_record" "ceph_dashboard_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "ceph.vinnel.cloud"
@@ -45,9 +53,9 @@ resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
   metadata {
     name      = "ceph-dashboard-vinnel-cloud"
     namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
-    annotations = merge(local.authelia_forward_auth_annotations, {
+    annotations = {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
-    })
+    }
   }
 
   spec {
