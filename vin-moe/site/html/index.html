@@ -303,7 +303,7 @@
     </div>
     <div class="topic">
       <div class="topic-head"><span class="topic-num">10</span><h2>watch &amp; recover</h2></div>
-      <p>A Prometheus / Grafana / Loki / Tempo stack watches the node and every workload. Persistent volumes back up nightly to encrypted object storage on rolling retention, and dependency bumps land automatically through Renovate with a human gate on majors.</p>
+      <p>SigNoz — a single ClickHouse-backed stack for metrics, logs, and traces — watches the node and every workload, having replaced a separate Prometheus/Grafana/Loki/Tempo stack. An OpenTelemetry collector auto-discovers anything carrying a <code>prometheus.io/scrape</code> annotation, so new workloads get scraped with zero added config, and alerts route to ntfy and Slack. Persistent volumes back up nightly to encrypted object storage on rolling retention, and dependency bumps land automatically through Renovate with a human gate on majors.</p>
     </div>
 
     <div class="group">ci/cd runners</div>
@@ -323,7 +323,7 @@
     <div class="group">deploying vin.moe</div>
     <div class="topic">
       <div class="topic-head"><span class="topic-num">14</span><h2>wait for infra</h2></div>
-      <p>A push to the site's path on prd (or a manual dispatch) blocks first on that exact commit's Terraform run finishing successfully. A site never deploys against infra that hasn't reconciled yet.</p>
+      <p>A push to the site's path on prd (or a manual dispatch) checks whether that exact commit's Terraform run is still mid-flight and waits for it if so, purely to avoid racing a concurrent apply — advisory only, not a success gate. The deploy itself is imperative against an already-committed image digest, and Terraform reconciles that same reference on its own next run regardless of how the wait resolves.</p>
     </div>
     <div class="topic">
       <div class="topic-head"><span class="topic-num">15</span><h2>pin the digest</h2></div>
