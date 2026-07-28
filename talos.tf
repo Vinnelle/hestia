@@ -17,7 +17,7 @@ data "talos_machine_configuration" "controlplane" {
       machine = {
         install = {
           disk  = "/dev/nvme0n1"
-          image = "factory.talos.dev/installer/fc53b0370f142f9f3c225d126416cd23bf42ef43b5039ab26da9e692b9588a40:v1.13.7"
+          image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.13.7"
         }
       }
     }),
