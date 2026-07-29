@@ -35,7 +35,7 @@
     </header>
 
     <div class="cta">
-      <a href="https://dashboard.vinnel.cloud" id="account-btn">login &rarr;</a>
+      <a href="https://dashboard.vinnel.cloud" id="account-btn"><img id="account-avatar" class="avatar" alt="" hidden><span id="account-label">login &rarr;</span></a>
     </div>
   </main>
 
@@ -47,7 +47,20 @@
     </div>
   </footer>
 
-  <script>fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){if(r.ok)document.getElementById('account-btn').textContent='dashboard →'}).catch(function(){})</script>
+  <script>
+    fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){
+      if (!r.ok) return;
+      return r.json();
+    }).then(function(me){
+      if (!me) return;
+      document.getElementById('account-label').textContent = 'dashboard →';
+      if (me.picture) {
+        var avatar = document.getElementById('account-avatar');
+        avatar.src = me.picture;
+        avatar.hidden = false;
+      }
+    }).catch(function(){})
+  </script>
   <script>
     var root = document.documentElement;
     var opts = Array.prototype.slice.call(document.querySelectorAll('.theme-opt'));
