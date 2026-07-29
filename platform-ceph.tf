@@ -13,7 +13,7 @@ resource "helm_release" "rook_ceph_operator" {
   name       = "rook-ceph"
   repository = "https://charts.rook.io/release"
   chart      = "rook-ceph"
-  version    = "v1.20.2"
+  version    = "v1.20.3"
   namespace  = kubernetes_namespace_v1.rook_ceph.metadata[0].name
 }
 
@@ -21,7 +21,7 @@ resource "helm_release" "rook_ceph_cluster" {
   name       = "rook-ceph-cluster"
   repository = "https://charts.rook.io/release"
   chart      = "rook-ceph-cluster"
-  version    = "v1.20.2"
+  version    = "v1.20.3"
   namespace  = kubernetes_namespace_v1.rook_ceph.metadata[0].name
 
   values = [
