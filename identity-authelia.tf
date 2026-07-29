@@ -33,16 +33,6 @@ resource "random_password" "netbird_dashboard_oidc_client_secret" {
   special = false
 }
 
-resource "random_password" "vinnel_cloud_dashboard_oidc_client_secret" {
-  length  = 48
-  special = false
-}
-
-resource "random_password" "vinnel_cloud_dashboard_cookie_secret" {
-  length  = 64
-  special = false
-}
-
 resource "tls_private_key" "authelia_oidc_issuer" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -50,12 +40,11 @@ resource "tls_private_key" "authelia_oidc_issuer" {
 
 locals {
   authelia_configuration_yaml = templatefile("${path.module}/authelia/configuration.yml.tftpl", {
-    session_secret                       = random_password.authelia_session_secret.result
-    storage_encryption_key               = random_password.authelia_storage_encryption_key.result
-    oidc_hmac_secret                     = random_password.authelia_oidc_hmac_secret.result
-    oidc_issuer_private_key              = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
-    netbird_dashboard_client_secret      = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
-    vinnel_cloud_dashboard_client_secret = random_password.vinnel_cloud_dashboard_oidc_client_secret.bcrypt_hash
+    session_secret                  = random_password.authelia_session_secret.result
+    storage_encryption_key          = random_password.authelia_storage_encryption_key.result
+    oidc_hmac_secret                = random_password.authelia_oidc_hmac_secret.result
+    oidc_issuer_private_key         = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
+    netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
   })
 
   authelia_users_database_yaml = templatefile("${path.module}/authelia/users_database.yml.tftpl", {

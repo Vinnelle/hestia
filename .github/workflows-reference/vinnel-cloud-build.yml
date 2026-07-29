@@ -5,7 +5,6 @@ on:
     branches: [prd]
     paths:
       - "hestia/vinnel-cloud/site/**"
-      - "hestia/vinnel-cloud/dashboard/**"
       - "hestia/vinnel-cloud/admin/**"
       - ".github/workflows/vinnel-cloud-build.yml"
       - ".github/workflows/site-deploy.yml"
@@ -13,7 +12,6 @@ on:
   pull_request:
     paths:
       - "hestia/vinnel-cloud/site/**"
-      - "hestia/vinnel-cloud/dashboard/**"
       - "hestia/vinnel-cloud/admin/**"
       - ".github/workflows/vinnel-cloud-build.yml"
       - ".github/workflows/site-deploy.yml"
@@ -36,9 +34,6 @@ jobs:
         [{"context": "hestia/vinnel-cloud/site",
           "image": "vinnel-cloud/site",
           "deployment": "vinnel-cloud-site"},
-         {"context": "hestia/vinnel-cloud/dashboard",
-          "image": "vinnel-cloud/dashboard",
-          "deployment": "vinnel-cloud-dashboard"},
          {"context": "hestia/vinnel-cloud/admin",
           "image": "vinnel-cloud/admin",
           "deployment": "vinnel-cloud-admin"}]

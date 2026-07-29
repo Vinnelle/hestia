@@ -59,18 +59,6 @@
           "scopes": ["openid", "email", "profile", "offline_access"],
           "grant_types": ["authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:device_code"],
           "response_types": ["code"]
-        },
-        {
-          "client_id": "vinnel-cloud-dashboard",
-          "client_name": "Vinnel Cloud Dashboard",
-          "client_secret": ${jsonencode(vinnel_cloud_dashboard_client_secret)},
-          "public": false,
-          "authorization_policy": "two_factor",
-          "redirect_uris": ["https://dashboard.vinnel.cloud/auth/callback"],
-          "audience": ["vinnel-cloud-dashboard"],
-          "scopes": ["openid", "email", "profile"],
-          "grant_types": ["authorization_code"],
-          "response_types": ["code"]
         }
       ]
     }

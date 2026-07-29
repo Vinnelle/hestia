@@ -35,7 +35,7 @@
     </header>
 
     <div class="cta">
-      <a href="https://dashboard.vinnel.cloud" id="account-btn"><img id="account-avatar" class="avatar" alt="" hidden><span id="account-label">login &rarr;</span></a>
+      <a href="https://admin.vinnel.cloud" id="account-btn"><span id="account-label">login &rarr;</span></a>
     </div>
   </main>
 
@@ -48,17 +48,16 @@
   </footer>
 
   <script>
-    fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){
+    // admin.vinnel.cloud sits behind Authelia forward-auth. Signed in, this
+    // returns JSON with the CORS headers the portal sets for this origin.
+    // Signed out, nginx redirects to auth.vinnel.cloud, which sends no CORS
+    // headers, so the fetch rejects and the button correctly stays "login".
+    fetch('https://admin.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){
       if (!r.ok) return;
       return r.json();
     }).then(function(me){
-      if (!me) return;
-      document.getElementById('account-label').textContent = 'dashboard →';
-      if (me.picture) {
-        var avatar = document.getElementById('account-avatar');
-        avatar.src = me.picture;
-        avatar.hidden = false;
-      }
+      if (!me || !me.email) return;
+      document.getElementById('account-label').textContent = 'admin →';
     }).catch(function(){})
   </script>
   <script>
