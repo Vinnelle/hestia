@@ -45,6 +45,7 @@ locals {
     oidc_hmac_secret                = random_password.authelia_oidc_hmac_secret.result
     oidc_issuer_private_key         = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
     netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
+    keycloak_client_secret          = random_password.keycloak_oidc_client_secret.bcrypt_hash
   })
 
   authelia_users_database_yaml = templatefile("${path.module}/authelia/users_database.yml.tftpl", {
