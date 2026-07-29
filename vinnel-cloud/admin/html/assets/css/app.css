@@ -138,8 +138,18 @@ a { color: var(--accent); text-decoration: none; }
   opacity: 0.9;
 }
 
+/* .theme-opt is `font: inherit`, so setting the type here covers both options and
+   the separator — they match .sidebar-watermark beside them. */
 .sidebar-theme-toggle {
   flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+/* letter-spacing is inherited, but the UA stylesheet resets it on form controls. */
+.sidebar-theme-toggle .theme-opt {
+  letter-spacing: inherit;
 }
 
 .sidebar--collapsed .sidebar-theme-toggle {

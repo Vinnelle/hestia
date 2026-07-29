@@ -86,56 +86,6 @@ locals {
   }
 }
 
-resource "signoz_rule" "backup_job_failed" {
-  depends_on     = [helm_release.signoz]
-  alert          = "BackupJobFailed"
-  alert_type     = "METRIC_BASED_ALERT"
-  rule_type      = "promql_rule"
-  schema_version = "v2alpha1"
-  description    = "pv-backup CronJob has a failed run — last night's snapshot did not complete"
-
-  condition = {
-    composite_query = {
-      panel_type = "graph"
-      query_type = "promql"
-      queries = [{
-        promql = {
-          type = "promql"
-          spec = {
-            name  = "A"
-            query = "max({\"k8s.job.failed_pods\",\"k8s.namespace.name\"=\"backup\"})"
-          }
-        }
-      }]
-    }
-    selected_query_name = "A"
-    thresholds = {
-      basic = {
-        kind = "basic"
-        spec = [{
-          name       = "critical"
-          op         = "above"
-          match_type = "at_least_once"
-          target     = 0
-          channels   = local.signoz_alert_channels
-        }]
-      }
-    }
-  }
-
-  evaluation = {
-    rolling = {
-      kind = "rolling"
-      spec = {
-        eval_window = "1m"
-        frequency   = "1m"
-      }
-    }
-  }
-
-  notification_settings = local.signoz_notification_settings
-}
-
 resource "signoz_rule" "node_not_ready" {
   depends_on     = [helm_release.signoz]
   alert          = "NodeNotReady"
