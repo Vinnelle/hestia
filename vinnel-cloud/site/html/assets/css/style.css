@@ -28,10 +28,8 @@
 body {
   font-family: var(--mono);
   font-size: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
+  display: grid;
+  min-height: 100dvh;
   padding: 1.5rem;
   background: var(--bg);
   color: var(--fg);
@@ -54,11 +52,14 @@ a:hover {
 }
 
 .container {
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  justify-items: center;
   text-align: center;
 }
 
 .brand {
-  margin-bottom: 2.5rem;
+  grid-row: 2;
   animation: enter 420ms ease-out both;
 }
 
@@ -72,13 +73,9 @@ a:hover {
   color: var(--accent);
 }
 
-.tagline {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--dim);
-}
-
 .cta {
+  grid-row: 3;
+  margin-top: 2.5rem;
   font-size: 0.95rem;
   animation: enter 420ms ease-out 80ms both;
 }
@@ -101,7 +98,9 @@ a:hover {
   left: 0;
   right: 0;
   display: flex;
+  align-items: baseline;
   justify-content: center;
+  gap: 0.75rem;
 }
 
 .theme-toggle {
@@ -110,9 +109,17 @@ a:hover {
   gap: 0.5rem;
 }
 
-.theme-toggle .sep {
+.sep {
   color: var(--faint);
   user-select: none;
+}
+
+.footer-link {
+  color: var(--faint);
+}
+
+.footer-link:hover {
+  color: var(--muted);
 }
 
 .theme-opt {
