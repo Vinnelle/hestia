@@ -34,13 +34,12 @@
     </header>
 
     <div class="cta">
-      <a href="https://auth.vinnel.cloud/?rd=https%3A%2F%2Fadmin.vinnel.cloud%2F" id="account-btn"><span id="account-label">login &rarr;</span></a>
+      <a href="https://auth.vinnel.cloud/?rd=https%3A%2F%2Fadmin.vinnel.cloud%2F" id="account-btn"><span id="account-label">login</span></a>
     </div>
   </main>
 
   <footer class="site-footer">
     <a class="footer-link" href="https://status.vinnel.cloud/">status</a>
-    <span class="sep" aria-hidden="true">&middot;</span>
     <div class="theme-toggle" role="group" aria-label="Theme">
       <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
       <span class="sep" aria-hidden="true">/</span>
@@ -54,7 +53,7 @@
       return r.json();
     }).then(function(me){
       if (!me || !me.email) return;
-      document.getElementById('account-label').textContent = 'admin →';
+      document.getElementById('account-label').textContent = 'admin';
       document.getElementById('account-btn').setAttribute('href', 'https://admin.vinnel.cloud/');
     }).catch(function(){})
   </script>
