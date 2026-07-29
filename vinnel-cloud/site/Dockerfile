@@ -19,13 +19,22 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
 FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS asset-build
-RUN apk add --no-cache brotli gzip
+RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser
 
 WORKDIR /app
 COPY build.sh .
 COPY html/ .
 COPY --from=images /*.webp assets/images/
+
+RUN mkdir -p assets/fonts && cd assets/fonts && \
+    UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" && \
+    curl -fsSL -A "$UA" "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" -o jetbrains-mono.css && \
+    grep -oE 'https://fonts\.gstatic\.com/[a-zA-Z0-9._/-]+\.woff2' jetbrains-mono.css | sort -u | while IFS= read -r url; do \
+      fname="$(basename "$url")"; \
+      curl -fsSL "$url" -o "$fname"; \
+      sed -i "s#$url#./$fname#g" jetbrains-mono.css; \
+    done
 
 RUN sh build.sh
 

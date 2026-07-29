@@ -1,27 +1,29 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="vinnel.cloud — self-hosted infrastructure run on one bare-metal node: Kubernetes, mesh VPN, SSO, and full observability.">
+  <meta name="description" content="vinnel.cloud — cloud infrastructure, run simply.">
   <link rel="canonical" href="https://vinnel.cloud/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="vinnel.cloud">
   <meta property="og:title" content="vinnel.cloud">
-  <meta property="og:description" content="Self-hosted infrastructure run on one bare-metal node: Kubernetes, mesh VPN, SSO, and full observability.">
+  <meta property="og:description" content="Cloud infrastructure, run simply.">
   <meta property="og:url" content="https://vinnel.cloud/">
   <meta property="og:image" content="https://vinnel.cloud/assets/images/vinnel-cloud-social.webp">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="vinnel.cloud">
-  <meta name="twitter:description" content="Self-hosted infrastructure run on one bare-metal node: Kubernetes, mesh VPN, SSO, and full observability.">
+  <meta name="twitter:description" content="Cloud infrastructure, run simply.">
   <meta name="twitter:image" content="https://vinnel.cloud/assets/images/vinnel-cloud-social.webp">
+  <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-3MPKF6C22P"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3MPKF6C22P');</script>
-  <script>var d=document.documentElement,s=localStorage;d.dataset.theme=s.theme||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');d.onclick=function(e){if(!e.target.closest('.toggle'))return;d.dataset.themeTransitioning='';d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';s.theme=d.dataset.theme;setTimeout(function(){delete d.dataset.themeTransitioning},500)}</script>
+  <script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
   <link rel="preload" href="assets/css/style.css" as="style">
-  <link rel="preload" as="font" type="font/ttf" href="assets/fonts/DMSans-Regular.ttf" crossorigin>
+  <link rel="stylesheet" href="assets/fonts/jetbrains-mono.css">
   <link rel="stylesheet" href="assets/css/style.css">
   <title>vinnel.cloud</title>
 </head>
@@ -29,36 +31,39 @@
   <main class="container">
     <header class="brand">
       <h1 class="wordmark">vinnel<span class="accent">.cloud</span></h1>
-      <p class="tagline">One bare-metal node, run like a fleet.</p>
+      <p class="tagline">Cloud infrastructure, run simply.</p>
     </header>
 
-    <section class="stack" aria-labelledby="stack-eyebrow">
-      <p class="stack-eyebrow" id="stack-eyebrow"># the stack</p>
-      <dl class="stack-list">
-        <div class="stack-row"><dt>talos</dt><dd>kubernetes os</dd></div>
-        <div class="stack-row"><dt>cilium</dt><dd>cni &amp; network policy</dd></div>
-        <div class="stack-row"><dt>ceph</dt><dd>block storage</dd></div>
-        <div class="stack-row"><dt>netbird</dt><dd>mesh vpn</dd></div>
-        <div class="stack-row"><dt>authelia</dt><dd>sso / oidc</dd></div>
-        <div class="stack-row"><dt>signoz</dt><dd>metrics, logs, traces</dd></div>
-      </dl>
-    </section>
-
     <div class="cta">
-      <a href="https://dashboard.vinnel.cloud" class="btn" id="account-btn">login<span class="btn-arrow" aria-hidden="true">&rarr;</span></a>
+      <a href="https://dashboard.vinnel.cloud" id="account-btn">login &rarr;</a>
     </div>
   </main>
 
   <footer class="site-footer">
-    <span class="footer-label">vinnel labs</span>
-    <button class="toggle" aria-label="Toggle theme">
-      <span class="toggle-knob">
-        <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
-        <svg class="icon-sun" viewBox="0 0 24 24"><path d="M12 7a5 5 0 100 10 5 5 0 000-10zM12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      </span>
-    </button>
+    <div class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
+    </div>
   </footer>
 
-  <script>fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){if(r.ok)document.getElementById('account-btn').firstChild.textContent='dashboard'}).catch(function(){})</script>
+  <script>fetch('https://dashboard.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){if(r.ok)document.getElementById('account-btn').textContent='dashboard →'}).catch(function(){})</script>
+  <script>
+    var root = document.documentElement;
+    var opts = Array.prototype.slice.call(document.querySelectorAll('.theme-opt'));
+    function sync() {
+      var active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      opts.forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.themeChoice === active); });
+    }
+    sync();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
+    opts.forEach(function(b){
+      b.addEventListener('click', function(){
+        root.dataset.theme = b.dataset.themeChoice;
+        try { localStorage.theme = b.dataset.themeChoice; } catch(e) {}
+        sync();
+      });
+    });
+  </script>
 </body>
 </html>

@@ -2,17 +2,17 @@
 
 [data-theme="dark"] {
   --card-bg:     #131316;
-  --card-border: #232327;
-  --accent:      #ffb238;
-  --accent-dim:  rgba(255, 178, 56, 0.12);
+  --card-border: #1e1e1f;
+  --accent:      #f7b9d1;
+  --accent-dim:  rgba(247, 185, 209, 0.12);
   --row-hover:   rgba(255, 255, 255, 0.03);
 }
 
 [data-theme="light"] {
   --card-bg:     #ffffff;
-  --card-border: #e4e2dc;
-  --accent:      #b35900;
-  --accent-dim:  rgba(179, 89, 0, 0.1);
+  --card-border: #e6e0d8;
+  --accent:      #b3466b;
+  --accent-dim:  rgba(179, 70, 107, 0.1);
   --row-hover:   rgba(0, 0, 0, 0.02);
 }
 

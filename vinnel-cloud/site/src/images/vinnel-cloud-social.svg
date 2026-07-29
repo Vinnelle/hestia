@@ -5,17 +5,14 @@
     </style>
   </defs>
 
-  <rect width="1200" height="630" fill="#0b0b0d"/>
+  <rect width="1200" height="630" fill="#0c0c0d"/>
 
   <!-- node mark -->
-  <rect x="100" y="112" width="34" height="34" rx="6" fill="#ffb238"/>
-  <rect x="144" y="112" width="34" height="34" rx="6" fill="#ffb238" opacity="0.55"/>
-  <rect x="100" y="156" width="34" height="34" rx="6" fill="#ffb238" opacity="0.55"/>
-  <rect x="144" y="156" width="34" height="34" rx="6" fill="#ffb238"/>
+  <rect x="100" y="112" width="34" height="34" rx="6" fill="#f7b9d1"/>
+  <rect x="144" y="112" width="34" height="34" rx="6" fill="#f7b9d1" opacity="0.55"/>
+  <rect x="100" y="156" width="34" height="34" rx="6" fill="#f7b9d1" opacity="0.55"/>
+  <rect x="144" y="156" width="34" height="34" rx="6" fill="#f7b9d1"/>
 
-  <text x="98" y="288" font-size="84" fill="#ededf0">vinnel<tspan fill="#ffb238">.cloud</tspan></text>
-  <text x="100" y="336" font-size="30" fill="#9a9aa0">One bare-metal node, run like a fleet.</text>
-
-  <line x1="100" y1="470" x2="1100" y2="470" stroke="#232327" stroke-width="1"/>
-  <text x="100" y="516" font-size="22" fill="#6b6b70" style="letter-spacing:0.05em">talos &#183; cilium &#183; ceph &#183; netbird &#183; authelia &#183; signoz</text>
+  <text x="98" y="288" font-size="84" fill="#cececa">vinnel<tspan fill="#f7b9d1">.cloud</tspan></text>
+  <text x="100" y="336" font-size="30" fill="#a9a9a3">Cloud infrastructure, run simply.</text>
 </svg>
