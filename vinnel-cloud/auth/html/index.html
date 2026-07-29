@@ -28,9 +28,15 @@
         <input type="password" name="password" autocomplete="current-password" required>
       </label>
       <label class="check">
-        <input type="checkbox" name="remember"> remember me
+        <input type="checkbox" name="remember">
+        <span>remember me</span>
+        <svg class="tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.75l3.75 3.75L13.5 4.5"/></svg>
       </label>
-      <button type="submit">sign in &rarr;</button>
+      <p class="actions">
+        <button type="submit">sign in &rarr;</button>
+        <span class="sep" aria-hidden="true" id="passkey-sep" hidden>/</span>
+        <button type="button" id="passkey" hidden>passkey</button>
+      </p>
     </form>
 
     <form id="totp" class="stage" hidden>
@@ -39,6 +45,11 @@
       </label>
       <button type="submit">verify &rarr;</button>
     </form>
+
+    <div id="webauthn" class="stage" hidden>
+      <p class="hint">confirm with your passkey or security key.</p>
+      <button type="button" id="webauthn-go">continue &rarr;</button>
+    </div>
 
     <div id="done" class="stage" hidden>
       <p>signed in as <span class="accent" id="who"></span></p>

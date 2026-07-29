@@ -374,7 +374,9 @@ a { color: var(--accent); text-decoration: none; }
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: 12px;
-  overflow: hidden;
+  /* Scrolls rather than clipping: five columns do not fit a phone, and the
+     rounded corners still need a clipping context. */
+  overflow-x: auto;
 }
 
 .table-card table {
@@ -403,10 +405,12 @@ a { color: var(--accent); text-decoration: none; }
 
 .table-card tr:hover td { background: var(--row-hover); }
 
-.table-card th:first-child,
+/* The first column is the identifying label (node name, claim name) and carries a
+   status dot. It gets no width cap: at 2.5rem the dot and the name it belongs to
+   were forced onto separate lines. nowrap keeps them together at any width — the
+   card scrolls instead. */
 .table-card td:first-child {
-  width: 2.5rem;
-  color: var(--muted);
+  white-space: nowrap;
 }
 
 .table-card th:last-child,
