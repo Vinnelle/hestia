@@ -1,3 +1,8 @@
+FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS images
+RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools
+COPY src/images/ .
+RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp
+
 FROM nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
@@ -17,6 +22,7 @@ RUN npm install -g clean-css-cli terser
 WORKDIR /app
 COPY build.sh .
 COPY html/ .
+COPY --from=images /favicon.webp assets/images/
 
 RUN mkdir -p assets/fonts && cd assets/fonts && \
     UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" && \
