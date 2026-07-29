@@ -45,11 +45,15 @@ var services = []service{
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", true, iconNetwork},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", true, iconShield},
 	{"ceph", "Ceph", "ceph.vinnel.cloud", "Cluster storage", true, iconDisk},
-	// Nextcloud sends X-Frame-Options: SAMEORIGIN but its CSP has NO
-	// frame-ancestors directive (checked 2026-07-29), and frame-ancestors does not
-	// fall back to default-src. Clearing the one header is enough, so its
-	// nonce-based script-src survives untouched.
-	{"nextcloud", "Nextcloud", "nextcloud.vinnel.cloud", "Files and sync", true, iconFolder},
+	// Not frameable. Its X-Frame-Options is cleared at the ingress, but the
+	// logged-in pages still send CSP frame-ancestors 'self' and the browser blocks
+	// the frame on that alone. Do not trust an unauthenticated curl of / here — it
+	// returns a CSP *without* frame-ancestors, which is what wrongly marked this
+	// frameable on 2026-07-29. The real CSP is nonce-based, so replacing it to
+	// admit the portal would throw away the per-request script nonces and break
+	// the app. Opens in a new tab, so its ingress takes plain forward-auth with no
+	// Sec-Fetch bounce.
+	{"nextcloud", "Nextcloud", "nextcloud.vinnel.cloud", "Files and sync", false, iconFolder},
 	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", true, iconBox},
 	// Not frameable: the netbird dashboard sends both X-Frame-Options: SAMEORIGIN
 	// and a ~2KB CSP ending in frame-ancestors 'self'. Reproducing that CSP with
