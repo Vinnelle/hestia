@@ -286,12 +286,6 @@ resource "signoz_rule" "workload_degraded" {
   notification_settings = local.signoz_notification_settings
 }
 
-# Web UI: behind Authelia and framed by admin.vinnel.cloud. Split from /api below,
-# which must stay open — the signoz and restapi providers in providers.tf reach
-# https://signoz.vinnel.cloud/api/v1 from Terraform Cloud, outside the cluster, so
-# a forward-auth redirect there would break every dashboard and alert rule apply.
-# The SPA's own XHR to /api also lands on the open Ingress; SigNoz's API-key auth
-# is the gate for that path, exactly as it is today.
 resource "kubernetes_ingress_v1" "signoz_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx, helm_release.signoz]
   metadata {
@@ -330,11 +324,6 @@ resource "kubernetes_ingress_v1" "signoz_vinnel_cloud" {
   }
 }
 
-# API plane: Terraform Cloud providers and the SPA's own XHR. No forward-auth and
-# no Sec-Fetch bounce. cert-manager.io/cluster-issuer is deliberately absent —
-# signoz_vinnel_cloud above owns signoz-vinnel-cloud-tls, and two Ingresses
-# requesting the same secret for the same host would leave two Certificates
-# contending over it.
 resource "kubernetes_ingress_v1" "signoz_api_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx, helm_release.signoz, kubernetes_ingress_v1.signoz_vinnel_cloud]
   metadata {

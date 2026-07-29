@@ -93,10 +93,6 @@ resource "kubernetes_persistent_volume_claim_v1" "authelia" {
   }
 }
 
-# ceph-block migration target for kubernetes_persistent_volume_claim_v1.authelia above —
-# local-path has no CSI driver, so Velero can't snapshot-back it up. Not yet referenced
-# by the deployment; cutover happens last (highest blast radius — every forward-auth
-# ingress depends on Authelia) in a separate, supervised step.
 resource "kubernetes_persistent_volume_claim_v1" "authelia_ceph" {
   metadata {
     name      = "authelia-pvc-ceph"
@@ -285,23 +281,6 @@ resource "kubernetes_ingress_v1" "authelia" {
     annotations = {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
 
-      # Brand restyle for the STOCK portal routes still served by Authelia
-      # (/consent, /settings — the login page itself is the custom front-end in
-      # identity-auth-portal.tf). Authelia has no supported custom-CSS hook, and
-      # its CSP is style-src 'self' + a per-response nonce — so an inline
-      # <style> injection is blocked, but a SAME-ORIGIN stylesheet is fine. The
-      # server-snippet serves the brand CSS at auth.vinnel.cloud/brand.css
-      # straight from nginx (never touches Authelia), and the
-      # configuration-snippet rewrites the SPA shell to link it. Tokens mirror
-      # vinnel-cloud/site/html/assets/css/style.css.
-      #
-      # Accept-Encoding is stripped so sub_filter sees uncompressed HTML;
-      # Cloudflare re-compresses toward the client. sub_filter only touches
-      # text/html, so API responses pass through untouched.
-      #
-      # Fragile by nature: the selectors are MUI internals, an Authelia upgrade
-      # can shuffle them. Failure mode is cosmetic (stock look returns), never
-      # functional.
       "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
         location = /brand.css {
           default_type text/css;
@@ -351,12 +330,6 @@ resource "kubernetes_ingress_v1" "authelia" {
       secret_name = "authelia-tls"
     }
 
-    # `/` belongs to the custom login front-end (identity-auth-portal.tf, in
-    # the websites namespace — an Ingress can only back services in its own
-    # namespace, so the host is split across two Ingress resources). Everything
-    # Authelia still owns is enumerated here: the whole API surface plus the
-    # SPA routes the custom page doesn't reimplement. Longest-prefix wins, so
-    # these always beat the catch-all `/`.
     rule {
       host = "auth.vinnel.cloud"
       http {

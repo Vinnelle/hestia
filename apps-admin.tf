@@ -1,10 +1,3 @@
-# admin.vinnel.cloud — the single authenticated front door to every service in
-# the cluster. It lists them and loads each one in an iframe; the framed hosts
-# carry local.admin_framed_service_annotations so direct navigation to them
-# bounces to vinnel.cloud.
-#
-# Lives in the websites namespace, not services: site-deploy.yml rolls out with a
-# hardcoded `-n websites`, and this image ships through that same pipeline.
 
 resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
@@ -15,10 +8,6 @@ resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   proxied = true
 }
 
-# Home reads node/pod counts and metrics.k8s.io usage straight from the
-# apiserver with this identity. Read-only and cluster-scoped because node and
-# metrics objects are cluster-scoped; it grants no access to secrets or to any
-# object contents beyond what the portal renders.
 resource "kubernetes_service_account_v1" "vinnel_cloud_admin" {
   metadata {
     name      = "vinnel-cloud-admin"
@@ -43,11 +32,6 @@ resource "kubernetes_cluster_role_v1" "vinnel_cloud_admin" {
     verbs      = ["get", "list"]
   }
 
-  # Rook publishes live pool capacity on the CephCluster status, so the storage
-  # panel reads it over the apiserver instead of reaching for the Ceph mgr API
-  # and its dashboard credentials. Deliberately NOT nodes/proxy: per-volume used
-  # bytes would need the kubelet summary API, and that grants the whole kubelet
-  # surface for a capacity readout.
   rule {
     api_groups = ["ceph.rook.io"]
     resources  = ["cephclusters"]
@@ -100,9 +84,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   }
 
   spec {
-    # Stateless: cluster and storage panels are read straight from the apiserver
-    # on each request, so replicas can scale freely and a rollout never drops the
-    # portal.
+
     replicas          = 2
     min_ready_seconds = 10
 
@@ -241,10 +223,6 @@ resource "kubernetes_service_v1" "vinnel_cloud_admin" {
   }
 }
 
-# Authelia gates the portal, and the portal is the only place a Remote-* header is
-# trusted — auth-response-headers makes nginx overwrite any client-supplied value.
-# The app sets its own X-Frame-Options: DENY and a frame-src CSP derived from its
-# service registry, so no header snippet is needed here.
 resource "kubernetes_ingress_v1" "vinnel_cloud_admin" {
   depends_on = [helm_release.ingress_nginx]
   metadata {

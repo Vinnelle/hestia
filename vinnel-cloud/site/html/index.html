@@ -48,10 +48,6 @@
   </footer>
 
   <script>
-    // admin.vinnel.cloud sits behind Authelia forward-auth. Signed in, this
-    // returns JSON with the CORS headers the portal sets for this origin.
-    // Signed out, nginx redirects to auth.vinnel.cloud, which sends no CORS
-    // headers, so the fetch rejects and the button correctly stays "login".
     fetch('https://admin.vinnel.cloud/api/me',{credentials:'include'}).then(function(r){
       if (!r.ok) return;
       return r.json();
@@ -74,7 +70,6 @@
       b.addEventListener('click', function(){
         root.dataset.theme = b.dataset.themeChoice;
         try { localStorage.theme = b.dataset.themeChoice; } catch(e) {}
-        // Domain cookie shares the choice with admin.vinnel.cloud (localStorage is per-origin).
         document.cookie = 'theme=' + b.dataset.themeChoice + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
         sync();
       });

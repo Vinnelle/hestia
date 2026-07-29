@@ -1,10 +1,3 @@
-# Keycloak — SAML<->OIDC bridge for the Ceph dashboard, nothing more. Ceph's
-# dashboard can only do SSO via SAML2 on a Rook cluster (its OAuth2 path needs
-# cephadm's mgmt-gateway/oauth2-proxy, which Rook doesn't run), and Authelia has
-# no SAML IdP support. Keycloak fronts Ceph as a SAML IdP and brokers the actual
-# authentication upstream to Authelia over OIDC, so login stays Authelia and this
-# realm carries no passwords of its own. See CLAUDE.md for the full rationale and
-# the one-time Ceph-side toolbox runbook.
 
 resource "cloudflare_dns_record" "kc_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
@@ -20,17 +13,11 @@ resource "random_password" "keycloak_admin_password" {
   special = false
 }
 
-# Plaintext goes to Keycloak's broker config below; the Authelia side gets the
-# bcrypt hash (identity-authelia.tf) — same split as netbird-dashboard's secret.
 resource "random_password" "keycloak_oidc_client_secret" {
   length  = 48
   special = false
 }
 
-# ponytail: dev-file H2 on a PVC, no postgres. The entire DB is disposable —
-# realm config is Terraform-managed and the only user is broker-created on next
-# login — so a real DB buys nothing here. Upgrade to postgres if Keycloak ever
-# serves more than this one bridge realm.
 resource "kubernetes_persistent_volume_claim_v1" "keycloak" {
   metadata {
     name      = "keycloak-pvc"
@@ -71,8 +58,7 @@ resource "kubernetes_deployment_v1" "keycloak" {
   }
 
   spec {
-    # Single replica, Recreate: RWO PVC, and the H2 file store allows exactly
-    # one writer anyway.
+
     replicas = 1
 
     selector {
@@ -91,8 +77,7 @@ resource "kubernetes_deployment_v1" "keycloak" {
           app = "keycloak"
         }
         annotations = {
-          # Management port serves /metrics — cluster-wide scrape convention,
-          # see observability-signoz.tf notes in CLAUDE.md.
+
           "prometheus.io/scrape" = "true"
           "prometheus.io/port"   = "9000"
         }
@@ -102,7 +87,7 @@ resource "kubernetes_deployment_v1" "keycloak" {
         enable_service_links = false
 
         security_context {
-          # The upstream image runs as UID 1000; fs_group hands it the PVC.
+
           fs_group = 1000
         }
 
@@ -161,8 +146,6 @@ resource "kubernetes_deployment_v1" "keycloak" {
             mount_path = "/opt/keycloak/data"
           }
 
-          # JVM start is slow — startup probe carries the boot, then the usual
-          # readiness/liveness take over on the management port.
           startup_probe {
             http_get {
               path = "/health/started"
@@ -235,9 +218,6 @@ resource "kubernetes_service_v1" "keycloak" {
   }
 }
 
-# No Authelia forward-auth: this IS an IdP hop — the browser only ever lands
-# here mid-flight between Ceph and Authelia, and forward-auth would break the
-# SAML POST callbacks. Same reasoning as Authelia's own ingress.
 resource "kubernetes_ingress_v1" "keycloak" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
@@ -245,8 +225,7 @@ resource "kubernetes_ingress_v1" "keycloak" {
     namespace = kubernetes_namespace_v1.services.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
-      # Keycloak's responses carry big headers (admin console cookies, SAML
-      # payloads); ingress-nginx's default 4k proxy buffer 502s on them.
+
       "nginx.ingress.kubernetes.io/proxy-buffer-size" = "128k"
     }
   }
@@ -279,13 +258,6 @@ resource "kubernetes_ingress_v1" "keycloak" {
   }
 }
 
-# ---------------------------------------------------------------------------
-# Realm configuration. Same lazy-provider bootstrap as harbor_project: these
-# resources reach https://kc.vinnel.cloud, so on a cold apply they must wait
-# for the deployment, ingress and DNS record above. Cert issuance can still
-# race a first apply — a re-apply converges.
-# ---------------------------------------------------------------------------
-
 resource "keycloak_realm" "vinnel" {
   depends_on = [
     kubernetes_deployment_v1.keycloak,
@@ -297,9 +269,6 @@ resource "keycloak_realm" "vinnel" {
   display_name = "vinnel.cloud"
 }
 
-# Authelia as the upstream authentication source: Keycloak never shows its own
-# login form (browser flow below redirects straight out), it just mints SAML
-# assertions from the brokered Authelia identity.
 resource "keycloak_oidc_identity_provider" "authelia" {
   realm              = keycloak_realm.vinnel.id
   alias              = "authelia"
@@ -317,20 +286,16 @@ resource "keycloak_oidc_identity_provider" "authelia" {
   sync_mode          = "IMPORT"
 
   extra_config = {
-    # Must match the Authelia client's token_endpoint_auth_method.
+
     clientAuthMethod = "client_secret_post"
   }
 }
 
-# Browser flow = cookie, else bounce straight to Authelia. This is what makes
-# the bridge invisible: no Keycloak login page, no IdP picker.
 resource "keycloak_authentication_flow" "browser_authelia" {
   realm_id = keycloak_realm.vinnel.id
   alias    = "browser-authelia"
 }
 
-# Explicit priorities (KC >= 25) instead of the old creation-order/depends_on
-# dance — lower value sits higher in the flow.
 resource "keycloak_authentication_execution" "browser_cookie" {
   realm_id          = keycloak_realm.vinnel.id
   parent_flow_alias = keycloak_authentication_flow.browser_authelia.alias
@@ -361,11 +326,6 @@ resource "keycloak_authentication_bindings" "vinnel" {
   browser_flow = keycloak_authentication_flow.browser_authelia.alias
 }
 
-# The Ceph dashboard as SAML SP. client_id must equal the SP entity ID Ceph
-# derives from its base URL (<base>/auth/saml2/metadata); the ACS lives at
-# <base>/auth/saml2. Ceph is set up without an SP cert/key (the optional args
-# to `ceph dashboard sso setup saml2`), so it can't sign AuthnRequests —
-# client_signature_required must stay false or every login 400s.
 resource "keycloak_saml_client" "ceph_dashboard" {
   realm_id  = keycloak_realm.vinnel.id
   client_id = "https://ceph.vinnel.cloud/auth/saml2/metadata"
@@ -382,9 +342,6 @@ resource "keycloak_saml_client" "ceph_dashboard" {
   name_id_format              = "username"
 }
 
-# Ceph reads the username from a SAML attribute (`uid` is what the runbook
-# passes to `sso setup saml2`), not the NameID — emit it explicitly so the
-# mapping is deterministic.
 resource "keycloak_saml_user_property_protocol_mapper" "ceph_uid" {
   realm_id                   = keycloak_realm.vinnel.id
   client_id                  = keycloak_saml_client.ceph_dashboard.id

@@ -1,11 +1,4 @@
 
-# status.vinnel.cloud fronts the Better Stack status page (vinnel.betteruptime.com)
-# from our own origin instead of CNAME-ing at theirs: a proxied CNAME to
-# betteruptime never resolved (Better Stack only answers for hostnames registered
-# on their side), so the record pointed at a host that did not exist. The page is
-# hestia/vinnel-cloud/site/html/status.html, served by the existing site
-# deployment — conf/nginx.conf rewrites `/` to it for this host only, so no second
-# image, deployment or build target exists just to hold one iframe.
 resource "cloudflare_dns_record" "status_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "status.vinnel.cloud"
@@ -15,9 +8,6 @@ resource "cloudflare_dns_record" "status_vinnel_cloud" {
   proxied = true
 }
 
-# Its own Ingress and TLS secret rather than another host on the site's Ingress:
-# adding a SAN to vinnel-cloud-tls would make cert-manager reissue the apex
-# certificate, and the apex is the one cert worth not churning.
 resource "kubernetes_ingress_v1" "status_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {

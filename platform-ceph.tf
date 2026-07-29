@@ -63,9 +63,7 @@ resource "cloudflare_dns_record" "ceph_dashboard_vinnel_cloud" {
 }
 
 resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
-  # ingress_nginx must land first: the configuration-snippet below is rejected by
-  # the validating webhook until the controller has picked up
-  # allow-snippet-annotations from its ConfigMap.
+
   depends_on = [helm_release.rook_ceph_cluster, helm_release.ingress_nginx]
   metadata {
     name      = "ceph-dashboard-vinnel-cloud"
@@ -73,11 +71,6 @@ resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
     annotations = merge(local.authelia_forward_auth_annotations, {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
 
-      # local.admin_framed_annotations plus a CSP replacement. The Ceph dashboard
-      # sends exactly "frame-ancestors 'self';" and nothing else (checked
-      # 2026-07-29), so replacing the whole header costs no script-src/style-src
-      # protection — the usual reason the shared local leaves CSP alone does not
-      # apply here. Re-check this after a Rook upgrade.
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         more_clear_headers "X-Frame-Options";
         more_set_headers "Content-Security-Policy: frame-ancestors https://admin.vinnel.cloud";

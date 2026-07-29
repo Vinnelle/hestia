@@ -19,10 +19,6 @@ resource "kubernetes_secret_v1" "velero_s3_credentials" {
   }
 }
 
-# The release exists in the cluster but had dropped out of state, so every apply
-# planned it as a create and Helm refused with "cannot re-use a name that is
-# still in use". Adopting it back is the non-destructive fix: uninstalling to let
-# Terraform recreate it would tear down the backup controller.
 import {
   to = helm_release.velero
   id = "velero/velero"

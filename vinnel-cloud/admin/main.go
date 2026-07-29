@@ -32,10 +32,6 @@ func env(key, def string) string {
 	return def
 }
 
-// frameSrc is derived from the registry so services.go stays the only place a
-// service is declared. Get this wrong and our own CSP silently blanks the frame.
-// Non-frameable services are excluded: they open in a new tab and never load
-// here, so listing them would only widen the policy for nothing.
 var frameSrc = func() string {
 	var origins []string
 	for _, s := range services {
@@ -47,8 +43,6 @@ var frameSrc = func() string {
 }()
 
 var securityHeaders = map[string]string{
-	// The portal is the framer and must never itself be framed: anyone able to
-	// frame it would be framing every service through it.
 	"X-Frame-Options":        "DENY",
 	"X-Content-Type-Options": "nosniff",
 	"Referrer-Policy":        "strict-origin-when-cross-origin",
@@ -67,10 +61,6 @@ var securityHeaders = map[string]string{
 
 var hashedAsset = regexp.MustCompile(`\.[0-9a-f]{8}\.(css|js)$`)
 
-// assetCache mirrors what the nginx sites next door serve: content-hashed CSS/JS
-// is immutable, fonts and images get a month, anything else revalidates. Without
-// an explicit header Cloudflare applies its own default browser TTL, which
-// leaves returning browsers running stale JS against freshly rendered HTML.
 func assetCache(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
@@ -85,11 +75,6 @@ func assetCache(h http.Handler) http.Handler {
 	})
 }
 
-// userFromRequest reads the identity Authelia handed to ingress-nginx. The
-// auth-response-headers list in hestia/locals.tf makes nginx overwrite any
-// client-supplied Remote-* header with the value from Authelia's auth response,
-// so a caller arriving through the ingress cannot forge these. The portal is
-// ClusterIP-only and has no other route in.
 func userFromRequest(r *http.Request) string {
 	if email := r.Header.Get("Remote-Email"); email != "" {
 		return email
@@ -104,8 +89,6 @@ func writeJSON(w http.ResponseWriter, v any) {
 	}
 }
 
-// The cluster read costs three API calls, and Home polls it. Cache briefly so a
-// left-open tab does not hammer the apiserver.
 type statsCache struct {
 	mu   sync.Mutex
 	at   time.Time
@@ -137,8 +120,6 @@ func main() {
 	}
 	defer shutdownTracing(context.Background())
 
-	// A portal that cannot reach the apiserver should still list services, so
-	// this is a warning rather than a fatal.
 	kube, err := newKubeClient()
 	if err != nil {
 		log.Printf("kubernetes client unavailable, cluster stats disabled: %v", err)
@@ -160,10 +141,6 @@ func main() {
 
 	mux.Handle("GET /assets/", assetCache(http.FileServer(http.FS(htmlRoot))))
 
-	// Read by the apex site at vinnel.cloud to decide whether to offer a login
-	// link or a link straight into the portal. Unauthenticated callers never
-	// reach this: forward-auth redirects them to Authelia, which sends no CORS
-	// headers, so the apex's fetch rejects and it falls back to "login".
 	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "https://vinnel.cloud")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
@@ -180,7 +157,6 @@ func main() {
 			w.Header().Set(k, v)
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		// The page is rendered per-user and carries the signed-in email.
 		w.Header().Set("Cache-Control", "no-store")
 		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: services}); err != nil {
 			log.Printf("render portal: %v", err)

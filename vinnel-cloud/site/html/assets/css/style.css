@@ -136,9 +136,6 @@ a:hover {
   text-decoration: underline;
 }
 
-/* status.html is Better Stack's own page and nothing else — no chrome of ours
-   around it, so the frame is the whole viewport. dvh rather than vh so mobile
-   browser chrome collapsing does not leave a strip of our background showing. */
 .status-page {
   display: block;
   padding: 0;

@@ -1,35 +1,6 @@
-// Custom front-end for Authelia's first-party API. The stock React portal is
-// compiled into the Authelia binary and can't be restyled structurally, so this
-// page replaces it at the ingress for `/` while /api (and the /consent and
-// /settings SPA routes, still served by Authelia) remain untouched.
-//
-// The API is Authelia's internal portal contract, not a stable public API — all
-// of the below was read out of authelia/authelia v4.39.20 (internal/server
-// handlers.go, internal/handlers/types.go, web/src/services, web/src/constants)
-// and must be re-verified after an Authelia upgrade:
-//   GET  /api/state                 -> data.authentication_level (0|1|2), data.username
-//   POST /api/firstfactor           {username, password, keepMeLoggedIn, targetURL?, requestMethod?, flow?, flowID?, subflow?}
-//   GET  /api/user/info             -> data.method ("totp" | "webauthn" | "mobile_push")
-//   POST /api/secondfactor/totp     {token, targetURL?, flow?, flowID?, subflow?}
-//   GET  /api/firstfactor/passkey   -> data.publicKey (PublicKeyCredentialRequestOptionsJSON)
-//   POST /api/firstfactor/passkey   {response, keepMeLoggedIn, targetURL?, requestMethod?, flow?, flowID?, subflow?}
-//   GET  /api/secondfactor/webauthn -> data.publicKey
-//   POST /api/secondfactor/webauthn {response, targetURL?, flow?, flowID?, subflow?}
-//   POST /api/logout                {}
-// Responses are {status: "OK"|"KO", data?, message?}; a redirect target, when
-// Authelia knows one, arrives as data.redirect. Second factors implemented here:
-// TOTP and WebAuthn — mobile_push still points at /settings (stock UI).
-//
-// The passkey routes exist only while `webauthn.enable_passkey_login` is true in
-// hestia/authelia/configuration.yml.tftpl; with it false they 404, which is what
-// hides the button.
 (function () {
   'use strict';
 
-  // Query names are Authelia's own (web/src/constants/SearchParams.ts): rd, rm,
-  // flow, flow_id, subflow. The POST bodies spell the same things targetURL,
-  // requestMethod, flow, flowID, subflow — unknown keys are silently dropped, so
-  // a wrong name here costs the OIDC flow context with no error anywhere.
   var qs = new URLSearchParams(location.search);
   var rd = qs.get('rd') || '';
   var rm = qs.get('rm') || '';
@@ -37,9 +8,6 @@
   var flowID = qs.get('flow_id') || '';
   var subflow = qs.get('subflow') || '';
 
-  // WebAuthn Level 3 JSON serialization does the base64url plumbing natively, so
-  // no library and no hand-rolled codec. Where it is missing, the passkey button
-  // stays hidden and password login is unaffected.
   var canPasskey = !!(window.isSecureContext && window.PublicKeyCredential &&
     PublicKeyCredential.parseRequestOptionsFromJSON);
 
@@ -83,7 +51,6 @@
     return !!target && /^https:\/\/([a-z0-9-]+\.)*vinnel\.cloud([/?#]|$)/.test(target);
   }
 
-  // Same-site targets only; anything else falls back to the "signed in" stage.
   function finish(redirect) {
     var target = redirect || rd;
     if (sameSite(target)) {
@@ -93,11 +60,7 @@
     state();
   }
 
-  // Only one WebAuthn ceremony may be outstanding: a second GET rotates the
-  // challenge Authelia stored in the session and invalidates the first one.
   var busy = false;
-  // The second factor is auto-started at most once. Everything after that is a
-  // button press, so nothing can prompt in a loop.
   var autoAsserted = false;
   var autofill = null;
 
@@ -105,14 +68,7 @@
     if (autofill) { autofill.abort(); autofill = null; }
   }
 
-  // One assertion ceremony for both routes: the passkey (first factor) and
-  // WebAuthn (second factor) endpoints take the same shape, differing only in the
-  // extra fields withFlow/keepMeLoggedIn add to the POST. `mediation` is
-  // 'conditional' for the silent autofill attempt and unset for a modal prompt.
   function assert(path, body, levelBefore, mediation) {
-    // `busy` only guards modal ceremonies. The conditional one is long-lived by
-    // design — it sits waiting on the autofill dropdown — so letting it hold the
-    // lock would leave the passkey button dead until its abort landed.
     var modal = !mediation;
     if (modal) {
       if (busy) return;
@@ -139,8 +95,6 @@
     }).catch(function (err) {
       if (modal) busy = false;
       autofill = null;
-      // A dismissed OS prompt (NotAllowedError) and an aborted conditional
-      // request (AbortError) are both ordinary, not failures to report.
       if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) return;
       msg('passkey sign-in failed — use your password, or check /settings.');
     });
@@ -150,10 +104,6 @@
     if (!res.ok) { msg('that key was not accepted.'); return; }
     if (res.data.redirect) { location.replace(res.data.redirect); return; }
     api('GET', '/api/state').then(function (s) {
-      // Accepted but no elevation — Authelia counts a passkey as one factor
-      // unless it verified the user (see experimental_enable_passkey_uv_two_factors
-      // in authelia/configuration.yml.tftpl). Without this guard the router would
-      // walk straight back into the same ceremony and prompt forever.
       if ((s.data.authentication_level || 0) <= levelBefore) {
         secondFactor('that key only counts as one factor — finish with a code, or check /settings.');
         return;
@@ -162,7 +112,6 @@
     });
   }
 
-  // `note` is applied after show(), which clears whatever msg() held.
   function secondFactor(note) {
     api('GET', '/api/user/info').then(function (res) {
       if (res.data.method === 'webauthn' && canPasskey) {
@@ -186,10 +135,6 @@
     assert('/api/secondfactor/webauthn', {}, 1);
   }
 
-  // Non-modal: the browser offers any discoverable vinnel.cloud passkey straight
-  // from the username field (which is why that input is autocomplete="username
-  // webauthn"). A platform with no passkey shows nothing, so this can never get in
-  // the way of password login.
   function passkeyAutofill() {
     if (!canPasskey || !PublicKeyCredential.isConditionalMediationAvailable) return;
     PublicKeyCredential.isConditionalMediationAvailable().then(function (ok) {
@@ -231,8 +176,6 @@
   $('login').addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target;
-    // The pending conditional request has to go before a password login: the two
-    // ceremonies share one session-side challenge.
     stopAutofill();
     api('POST', '/api/firstfactor', withFlow({
       username: f.username.value,
@@ -270,15 +213,11 @@
 
   $('webauthn-go').addEventListener('click', webauthnAssert);
 
-  // Revealed only where the browser can do the ceremony. Enrolment stays on
-  // Authelia's own /settings — registration is a different set of endpoints and
-  // the stock UI already covers it.
   if (canPasskey) {
     $('passkey').hidden = false;
     $('passkey-sep').hidden = false;
     $('passkey').addEventListener('click', function () {
       msg('');
-      // Cancels the conditional attempt so the modal one can take the challenge.
       stopAutofill();
       assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked }, 0);
     });

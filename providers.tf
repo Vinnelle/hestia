@@ -51,9 +51,7 @@ provider "keycloak" {
   username  = "admin"
   password  = random_password.keycloak_admin_password.result
   url       = "https://kc.vinnel.cloud"
-  # Don't log in at provider-configure time: on the bootstrap apply Keycloak
-  # doesn't exist yet, and the realm resources below depend_on the deployment
-  # coming up first — same lazy-connect shape as the harbor provider above.
+
   initial_login = false
 }
 

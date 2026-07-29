@@ -15,10 +15,7 @@ resource "cloudflare_dns_record" "registry_admin_vinnel_cloud" {
 }
 
 resource "helm_release" "harbor" {
-  # The chart emits the registry.vinnel.cloud Ingress, and its annotations carry a
-  # configuration-snippet the validating webhook rejects until ingress_nginx has
-  # picked up allow-snippet-annotations. Without this the two race, and it only
-  # passed the first time because the harbor upgrade happened to take longer.
+
   depends_on = [helm_release.ingress_nginx]
 
   name       = "harbor"

@@ -2,25 +2,13 @@ package main
 
 import "html/template"
 
-// service is one entry in the portal. The portal frames https://<Host>/ directly:
-// admin.vinnel.cloud and every Host below share the registrable domain
-// vinnel.cloud, so the frame is same-SITE (cross-origin), which means each app's
-// own SameSite=Lax session cookies still flow inside it and no browser cookie
-// partitioning applies. The apps' X-Frame-Options headers are cleared at the
-// ingress — see admin_framed_annotations in hestia/locals.tf.
-//
-// Frameable=false renders an open-in-new-tab link instead of loading the service
-// into the frame. That is the escape hatch for an app that busts the frame from
-// JS or whose framing headers we cannot rewrite cleanly.
 type service struct {
 	Slug      string
 	Label     string
 	Host      string
 	Desc      string
 	Frameable bool
-	// Icon is inlined into the page unescaped. Every value is a compile-time
-	// constant in this file; never populate it from a request or a config file.
-	Icon template.HTML
+	Icon      template.HTML
 }
 
 func (s service) URL() string { return "https://" + s.Host + "/" }
@@ -35,31 +23,12 @@ const (
 	iconGlobe   = `<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 010 18a15 15 0 010-18z"/>`
 )
 
-// Adding a service here is the only edit the portal needs: it drives the sidebar,
-// the tile grid and the frame-src CSP directive in main.go. The matching ingress
-// still needs local.admin_framed_annotations applied in Terraform.
-//
-// dashboard.vinnel.cloud is deliberately absent — it is out of scope for the portal.
 var services = []service{
 	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", true, iconChart},
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", true, iconNetwork},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", true, iconShield},
 	{"ceph", "Ceph", "ceph.vinnel.cloud", "Cluster storage", true, iconDisk},
-	// Not frameable. Its X-Frame-Options is cleared at the ingress, but the
-	// logged-in pages still send CSP frame-ancestors 'self' and the browser blocks
-	// the frame on that alone. Do not trust an unauthenticated curl of / here — it
-	// returns a CSP *without* frame-ancestors, which is what wrongly marked this
-	// frameable on 2026-07-29. The real CSP is nonce-based, so replacing it to
-	// admit the portal would throw away the per-request script nonces and break
-	// the app. Opens in a new tab, so its ingress takes plain forward-auth with no
-	// Sec-Fetch bounce.
 	{"nextcloud", "Nextcloud", "nextcloud.vinnel.cloud", "Files and sync", false, iconFolder},
 	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", true, iconBox},
-	// Not frameable: the netbird dashboard sends both X-Frame-Options: SAMEORIGIN
-	// and a ~2KB CSP ending in frame-ancestors 'self'. Reproducing that CSP with
-	// frame-ancestors swapped would mean pinning a copy of it here, and Renovate
-	// bumps netbirdio/dashboard automatically — a stale copy would silently
-	// override the image's own script-src after an upgrade. Opens in a new tab
-	// instead, so its ingress takes plain forward-auth with no Sec-Fetch bounce.
 	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", false, iconGlobe},
 }

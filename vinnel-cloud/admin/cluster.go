@@ -12,10 +12,6 @@ import (
 	"time"
 )
 
-// Talks to the Kubernetes API with the pod's own ServiceAccount. Deliberately
-// not client-go: three GETs against two well-known endpoints do not justify the
-// dependency, and metrics.k8s.io is already served by the metrics-server that
-// platform-vpa.tf installs for the VPA.
 const (
 	saDir      = "/var/run/secrets/kubernetes.io/serviceaccount"
 	nodesPath  = "/api/v1/nodes"
@@ -40,11 +36,6 @@ type nodeStat struct {
 	MemPercent float64 `json:"memPercent"`
 }
 
-// volumeStat is one PersistentVolume. Requested is what the PVC asked for and
-// Capacity what the PV actually provides; neither is live usage. Per-volume
-// used-bytes would mean reading the kubelet summary API through nodes/proxy,
-// which grants far more than a storage panel is worth — SigNoz already scrapes
-// kubelet for that if you need it.
 type volumeStat struct {
 	Name      string  `json:"name"`
 	Namespace string  `json:"namespace"`
@@ -131,7 +122,6 @@ func (k *kubeClient) get(path string, out any) error {
 	return json.NewDecoder(resp.Body).Decode(out)
 }
 
-// Kubernetes quantities: CPU as "1500m" or "2", memory as "16008812Ki".
 func parseCPU(s string) float64 {
 	if strings.HasSuffix(s, "n") {
 		v, _ := strconv.ParseFloat(strings.TrimSuffix(s, "n"), 64)
@@ -200,8 +190,6 @@ func (k *kubeClient) stats() clusterStats {
 		return out
 	}
 
-	// Index, not pointer: append reallocates the backing array, and a pointer
-	// taken before that would silently absorb the usage writes below.
 	byName := map[string]int{}
 	for _, n := range nodes.Items {
 		s := nodeStat{
@@ -222,8 +210,6 @@ func (k *kubeClient) stats() clusterStats {
 		byName[s.Name] = len(out.Nodes) - 1
 	}
 
-	// Usage is best-effort: if metrics-server is down the node list and pod
-	// counts are still worth rendering, just without the CPU/memory bars.
 	var usage struct {
 		Items []struct {
 			Metadata struct {
@@ -282,13 +268,7 @@ func (k *kubeClient) stats() clusterStats {
 	return out
 }
 
-// storage fills in the Ceph pool capacity and the PersistentVolume inventory.
-// Both are best-effort: a portal that cannot read them should still render the
-// node and pod panels above.
 func (out *clusterStats) storage(k *kubeClient) {
-	// Rook publishes live pool capacity on the CephCluster status, which means
-	// the real backing-store numbers are available over the apiserver without
-	// touching the Ceph mgr API or its dashboard credentials.
 	var cephList struct {
 		Items []struct {
 			Status struct {
@@ -314,8 +294,6 @@ func (out *clusterStats) storage(k *kubeClient) {
 		}
 	}
 
-	// PVC lookup keyed by the PV's claimRef, so each volume can show which
-	// workload owns it rather than just a provisioner-generated pvc-<uuid>.
 	type claimKey struct{ ns, name string }
 	claimClass := map[claimKey]string{}
 	var pvcs struct {

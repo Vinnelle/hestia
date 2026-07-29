@@ -170,24 +170,8 @@ resource "cloudflare_dns_record" "nextcloud_vinnel_cloud" {
   proxied = true
 }
 
-# Web UI: behind Authelia, reached from admin.vinnel.cloud. Split from the sync
-# endpoints below, which must stay open — the desktop and mobile clients speak
-# WebDAV and cannot complete Authelia's browser login, so gating the whole host
-# would silently stop every sync.
-#
-# Plain forward-auth, NOT admin_framed_service_annotations: nextcloud is marked
-# Frameable=false in vinnel-cloud/admin/services.go because its logged-in pages
-# send CSP frame-ancestors 'self' on top of X-Frame-Options, and that CSP is
-# nonce-based so it cannot be rewritten to admit the portal. The portal opens it
-# in a new tab, and that navigation is a top-level document — the Sec-Fetch-Dest
-# bounce would send it straight back to vinnel.cloud.
-#
-# If you use no Nextcloud sync client at all, delete nextcloud_dav below and this
-# Ingress covers the host on its own.
 resource "kubernetes_ingress_v1" "nextcloud_vinnel_cloud" {
-  # ingress_nginx must land first: admin_framed_service_annotations carries a
-  # configuration-snippet, and the validating webhook rejects it until the
-  # controller has picked up allow-snippet-annotations from its ConfigMap.
+
   depends_on = [helm_release.nextcloud, helm_release.ingress_nginx]
   metadata {
     name      = "nextcloud-vinnel-cloud"
@@ -225,14 +209,6 @@ resource "kubernetes_ingress_v1" "nextcloud_vinnel_cloud" {
   }
 }
 
-# Sync plane: WebDAV, OCS and the discovery endpoints the clients bootstrap from.
-# No forward-auth and no Sec-Fetch bounce — Nextcloud's own auth is the gate here,
-# exactly as it is today. More specific prefixes than "/" above, so ingress-nginx
-# routes these here.
-#
-# cert-manager.io/cluster-issuer is deliberately absent: nextcloud_vinnel_cloud
-# owns nextcloud-vinnel-cloud-tls, and two Ingresses requesting the same secret
-# for the same host would leave two Certificates contending over it.
 resource "kubernetes_ingress_v1" "nextcloud_dav" {
   depends_on = [helm_release.nextcloud, kubernetes_ingress_v1.nextcloud_vinnel_cloud]
   metadata {

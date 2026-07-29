@@ -1,12 +1,3 @@
-# Custom login front-end for Authelia (hestia/vinnel-cloud/auth) — replaces the
-# stock React portal at auth.vinnel.cloud/ so the sign-in page matches the
-# vinnel.cloud brand. Authelia itself is untouched: this page speaks its /api
-# endpoints, and the SPA routes that still need the stock UI (/consent,
-# /settings) stay routed to Authelia in identity-authelia.tf's ingress.
-#
-# Identity-domain resource, but it lives in the websites namespace: the image
-# ships through site-deploy.yml, which hardcodes `-n websites` (same constraint
-# as vinnel-cloud-admin, see apps-admin.tf).
 
 resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_auth" {
   metadata {
@@ -173,11 +164,6 @@ resource "kubernetes_service_v1" "vinnel_cloud_auth" {
   }
 }
 
-# Second ingress on the auth.vinnel.cloud host: it has to live in this service's
-# namespace (websites) while Authelia's ingress stays in services — ingress-nginx
-# merges both into one server block by hostname, longest path prefix wins. TLS
-# for the host is declared once, on the Authelia ingress; adding a tls block
-# here too would have two ingresses fighting over the certificate.
 resource "kubernetes_ingress_v1" "vinnel_cloud_auth" {
   depends_on = [helm_release.ingress_nginx]
   metadata {

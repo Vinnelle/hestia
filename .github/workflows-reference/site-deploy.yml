@@ -90,9 +90,6 @@ jobs:
 
       - name: Roll out deployments
         run: |
-          # A brand-new target has no Deployment yet: Terraform creates it from the
-          # digest the build job just recorded, which lands in a later commit. Skip
-          # it this once instead of failing the whole rollout.
           mapfile -t names < <(jq -r '.[].deployment' <<<"$TARGETS")
           live=()
           for name in "${names[@]}"; do

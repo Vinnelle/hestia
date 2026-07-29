@@ -1,6 +1,3 @@
-// The frame is driven off location.hash so a reload, a bookmark or the back
-// button all land on the same service. Only frameable services carry data-url;
-// the rest are plain target=_blank links and never reach this router.
 const frame = document.getElementById('service-frame');
 const home = document.getElementById('frame-empty');
 const back = document.getElementById('frame-back');
@@ -16,7 +13,6 @@ function show(slug) {
   }
 
   if (!active) {
-    // Unknown or empty hash — fall back to Home rather than a blank frame.
     frame.hidden = true;
     frame.removeAttribute('src');
     home.hidden = false;
@@ -32,8 +28,6 @@ function show(slug) {
   frameTitle.textContent = active.dataset.label;
   document.title = active.dataset.label + ' — vinnel.cloud';
 
-  // Only reassign src on a real change: rewriting it reloads the app and would
-  // throw away whatever the user had open.
   if (frame.getAttribute('src') !== active.dataset.url) {
     frame.setAttribute('src', active.dataset.url);
   }
@@ -52,8 +46,6 @@ menuBtn.addEventListener('click', () => {
   menuBtn.setAttribute('aria-expanded', String(!expanded));
 });
 
-// ---- Home metrics -------------------------------------------------------
-
 const fmtBytes = (b) => {
   if (!b) return '0 B';
   const u = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
@@ -63,9 +55,6 @@ const fmtBytes = (b) => {
 const pct = (n) => (n || 0).toFixed(0) + '%';
 const text = (id, v) => { document.getElementById(id).textContent = v; };
 
-// Width is carried as data-pct and applied via CSSOM below: a literal style
-// attribute would be blocked by style-src 'self', and widening the CSP for a
-// progress bar is not a trade worth making.
 function bar(percent) {
   const cls = percent >= 90 ? ' meter--crit' : percent >= 75 ? ' meter--warn' : '';
   return '<div class="meter"><span class="meter-fill' + cls +
@@ -129,7 +118,6 @@ function renderStorage(c) {
   text('stat-vols', vols.length);
   text('stat-vol-bytes', fmtBytes(c.volumeBytes));
 
-  // Biggest first: the ones worth noticing are the ones taking the space.
   const rows = vols.slice().sort((a, b) => b.capacity - a.capacity);
   document.getElementById('volumes-tbody').innerHTML = rows.map((v) => {
     const bound = v.phase === 'Bound';
@@ -152,7 +140,6 @@ function refresh() {
   loadCluster();
 }
 
-// Only polls while Home is actually visible, so an open frame costs nothing.
 setInterval(refresh, 30000);
 
 show(location.hash.slice(1));

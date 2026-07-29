@@ -1,9 +1,3 @@
-// Loaded without defer so the theme lands before first paint. One identical
-// copy per site (vinnel.cloud, auth.vinnel.cloud, admin.vinnel.cloud): the
-// choice is shared through a Domain=.vinnel.cloud cookie, read here in
-// preference to localStorage, which is per-origin and only a legacy fallback.
-// Unset means "follow the OS", which the CSS light-dark() palette already does,
-// so nothing is written to the root element in that case.
 (function () {
   var root = document.documentElement;
   try {

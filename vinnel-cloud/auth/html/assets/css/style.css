@@ -112,9 +112,6 @@ a:hover {
   border-bottom-color: var(--accent);
 }
 
-/* No box: the label text is the control, and a tick appears beside it when it is
-   on. fit-content keeps the hit area on the words — the parent is block flow, so
-   a plain flex label would stretch across the whole row. */
 .stage label.check {
   display: flex;
   width: fit-content;
@@ -124,9 +121,6 @@ a:hover {
   user-select: none;
 }
 
-/* The checkbox stays in the DOM but unpainted — login.js reads
-   `f.remember.checked`, and it keeps keyboard and screen-reader semantics that a
-   div with a click handler would throw away. */
 .stage label.check input[type="checkbox"] {
   position: absolute;
   width: 1px;
@@ -158,7 +152,6 @@ a:hover {
   color: var(--fg);
 }
 
-/* The focus ring has to be drawn on the text, since the input itself is clipped. */
 .stage label.check input[type="checkbox"]:focus-visible ~ span {
   outline: 2px solid var(--accent);
   outline-offset: 3px;

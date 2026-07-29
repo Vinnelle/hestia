@@ -37,8 +37,6 @@
 }
 </script>
 <style>
-  /* light-dark() resolves against color-scheme, so the theme toggle
-     flips a single property instead of re-declaring every token. */
   :root {
     color-scheme: light dark;
     --bg:            light-dark(#faf8f5, #0c0c0d);
@@ -116,7 +114,6 @@
     &.active { display: block; animation: panel-in 220ms ease-out; }
   }
 
-  /* No JS: the tabs can't switch, so drop the control and show every panel. */
   @media (scripting: none) {
     nav { display: none; }
     .panel { display: block; }
@@ -163,8 +160,6 @@
     }
   }
 
-  /* Numbers are a CSS counter, not hand-typed spans — reorder freely.
-     The reset lives on #runs, so the count runs unbroken across all six lists. */
   .topics {
     list-style: none;
     padding: 0;
@@ -216,7 +211,6 @@
     &.pop { display: inline-block; animation: theme-pop 260ms ease-out; }
   }
 
-  /* Last in the sheet so it outranks the equal-specificity rules above. */
   @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after { animation: none !important; transition: none !important; }
     ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
@@ -238,7 +232,6 @@
     <button class="tab" role="tab" id="tab-runs" aria-selected="false" aria-controls="runs" tabindex="-1" data-tab="runs">how this site runs</button>
   </nav>
 
-  <!-- ABOUT -->
   <section class="panel active" id="about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
     <p class="lead">Hello, my name is Finlay.</p>
     <p class="muted">I’ve been working with computers since I was 11 — game mods, QoL tools, operating systems, and whatever else looked interesting at the time.</p>
@@ -257,7 +250,6 @@
     </div>
   </section>
 
-  <!-- WORK -->
   <section class="panel" id="work" role="tabpanel" aria-labelledby="tab-work" tabindex="0">
     <p class="muted" style="margin-bottom:2.2rem;">Things I’ve built, fixed, and improved — at work and on my own.</p>
 
@@ -277,7 +269,6 @@
     </ul>
   </section>
 
-  <!-- RUNS -->
   <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
     <p class="muted">Node config, cluster, CNI, storage, ingress, TLS, DNS, registry, this image’s build and this Deployment’s spec: all Terraform, ~6k lines of it, applied by self-hosted runners against an HCP Terraform workspace. The repo is canonical — nothing gets changed by hand against the cluster.</p>
     <p class="lead">Push to merge, live in ~44 seconds.</p>
@@ -448,7 +439,6 @@ const render = (tab) => {
   for (const p of panels) p.classList.toggle('active', p.id === tab.dataset.tab);
 };
 
-// startViewTransition where supported, straight through where it isn't.
 const show = (tab, { focus = false } = {}) => {
   if (!tab || tab.getAttribute('aria-selected') === 'true') return;
   const name = tab.dataset.tab;

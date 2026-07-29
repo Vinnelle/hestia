@@ -1,6 +1,3 @@
-/* .app-content is already a flex column in app.css, so the frame just needs to
-   claim the remaining height. min-height:0 stops the iframe from forcing the
-   column taller than the viewport. */
 .app-main--frame {
   flex: 1;
   min-height: 0;
@@ -119,7 +116,6 @@
   background: var(--accent);
 }
 
-/* Thresholds are advisory, not alerting — SigNoz owns the real alerts. */
 .meter-fill.meter--warn { background: var(--warn); }
 .meter-fill.meter--crit { background: var(--danger); }
 

@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-# Unit test for the (identical) hash_and_rewrite/precompress logic shared by
-# every site's build.sh. cleancss/terser/brotli
-# are shimmed as no-ops so this needs no real minifier/compressor installed —
-# only hash_and_rewrite's sed-rewrite correctness and precompress's file
-# creation are under test, not the third-party tools.
-# Paths are listed rather than globbed so a site that loses its build.sh fails
-# here instead of silently dropping out of the loop. monke-academy still keeps
-# its copy at the site root; the other four moved theirs under scripts/.
 set -uo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -20,9 +12,6 @@ for tool in cleancss terser; do
   printf '#!/bin/sh\ntrue\n' >"$shim_dir/$tool"
   chmod +x "$shim_dir/$tool"
 done
-# brotli -k -q 11 FILE writes FILE.br; a bare `true` shim would silently skip
-# that, so precompress()'s own contract (a .br sidecar exists) goes untested.
-# Real invocation only ever passes one file (the last arg); flags come first.
 printf '#!/bin/sh\neval f=\\"\\${$#}\\"\ncp "$f" "$f.br"\n' >"$shim_dir/brotli"
 chmod +x "$shim_dir/brotli"
 export PATH="$shim_dir:$PATH"
