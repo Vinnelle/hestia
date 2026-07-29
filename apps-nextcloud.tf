@@ -182,7 +182,10 @@ resource "cloudflare_dns_record" "nextcloud_vinnel_cloud" {
 # If you use no Nextcloud sync client at all, delete nextcloud_dav below and this
 # Ingress covers the host on its own.
 resource "kubernetes_ingress_v1" "nextcloud_vinnel_cloud" {
-  depends_on = [helm_release.nextcloud]
+  # ingress_nginx must land first: admin_framed_service_annotations carries a
+  # configuration-snippet, and the validating webhook rejects it until the
+  # controller has picked up allow-snippet-annotations from its ConfigMap.
+  depends_on = [helm_release.nextcloud, helm_release.ingress_nginx]
   metadata {
     name      = "nextcloud-vinnel-cloud"
     namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name

@@ -63,7 +63,10 @@ resource "cloudflare_dns_record" "ceph_dashboard_vinnel_cloud" {
 }
 
 resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
-  depends_on = [helm_release.rook_ceph_cluster]
+  # ingress_nginx must land first: the configuration-snippet below is rejected by
+  # the validating webhook until the controller has picked up
+  # allow-snippet-annotations from its ConfigMap.
+  depends_on = [helm_release.rook_ceph_cluster, helm_release.ingress_nginx]
   metadata {
     name      = "ceph-dashboard-vinnel-cloud"
     namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
