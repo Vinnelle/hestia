@@ -143,7 +143,7 @@ a:hover {
   padding: 0;
 }
 
-.status-bar {
+/*status-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -155,12 +155,12 @@ a:hover {
 .status-bar .wordmark {
   font-size: 1.1rem;
   color: var(--fg);
-}
+}*/
 
 .status-frame {
   display: block;
   width: 100%;
-  height: calc(100vh - 3.25rem);
+  /*height: calc(100vh - 3.25rem);*/
   border: 0;
 }
 
