@@ -93,77 +93,135 @@
     state();
   }
 
+  // Only one WebAuthn ceremony may be outstanding: a second GET rotates the
+  // challenge Authelia stored in the session and invalidates the first one.
+  var busy = false;
+  // The second factor is auto-started at most once. Everything after that is a
+  // button press, so nothing can prompt in a loop.
+  var autoAsserted = false;
+  var autofill = null;
+
+  function stopAutofill() {
+    if (autofill) { autofill.abort(); autofill = null; }
+  }
+
   // One assertion ceremony for both routes: the passkey (first factor) and
   // WebAuthn (second factor) endpoints take the same shape, differing only in the
-  // extra fields withFlow/keepMeLoggedIn add to the POST.
-  function assert(path, body) {
-    return api('GET', path).then(function (res) {
+  // extra fields withFlow/keepMeLoggedIn add to the POST. `mediation` is
+  // 'conditional' for the silent autofill attempt and unset for a modal prompt.
+  function assert(path, body, levelBefore, mediation) {
+    // `busy` only guards modal ceremonies. The conditional one is long-lived by
+    // design — it sits waiting on the autofill dropdown — so letting it hold the
+    // lock would leave the passkey button dead until its abort landed.
+    var modal = !mediation;
+    if (modal) {
+      if (busy) return;
+      busy = true;
+    }
+    api('GET', path).then(function (res) {
       if (!res.ok || !res.data.publicKey) {
         throw new Error('no challenge');
       }
-      return navigator.credentials.get({
-        publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(res.data.publicKey)
-      });
+      var opts = { publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(res.data.publicKey) };
+      if (mediation) {
+        opts.mediation = mediation;
+        autofill = new AbortController();
+        opts.signal = autofill.signal;
+      }
+      return navigator.credentials.get(opts);
     }).then(function (credential) {
       body.response = credential.toJSON();
       return api('POST', path, withFlow(body));
+    }).then(function (res) {
+      if (modal) busy = false;
+      autofill = null;
+      settle(res, levelBefore);
+    }).catch(function (err) {
+      if (modal) busy = false;
+      autofill = null;
+      // A dismissed OS prompt (NotAllowedError) and an aborted conditional
+      // request (AbortError) are both ordinary, not failures to report.
+      if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) return;
+      msg('passkey sign-in failed — use your password, or check /settings.');
     });
   }
 
-  function afterAssertion(res) {
+  function settle(res, levelBefore) {
     if (!res.ok) { msg('that key was not accepted.'); return; }
     if (res.data.redirect) { location.replace(res.data.redirect); return; }
-    // A passkey counts as one factor, so state() decides whether the access
-    // policy still wants a second one. With
-    // webauthn.experimental_enable_passkey_uv_two_factors it lands at level 2 and
-    // this same call finishes the login instead.
-    state();
+    api('GET', '/api/state').then(function (s) {
+      // Accepted but no elevation — Authelia counts a passkey as one factor
+      // unless it verified the user (see experimental_enable_passkey_uv_two_factors
+      // in authelia/configuration.yml.tftpl). Without this guard the router would
+      // walk straight back into the same ceremony and prompt forever.
+      if ((s.data.authentication_level || 0) <= levelBefore) {
+        secondFactor('that key only counts as one factor — finish with a code, or check /settings.');
+        return;
+      }
+      route(s);
+    });
   }
 
-  // A dismissed OS prompt is a NotAllowedError and needs no error text.
-  function assertionFailed(err) {
-    if (err && err.name === 'NotAllowedError') { msg(''); return; }
-    msg('passkey sign-in failed — use your password, or check /settings.');
-  }
-
-  function secondFactor() {
+  // `note` is applied after show(), which clears whatever msg() held.
+  function secondFactor(note) {
     api('GET', '/api/user/info').then(function (res) {
       if (res.data.method === 'webauthn' && canPasskey) {
         show('webauthn', 'one more step.');
-        webauthnAssert();
+        if (!autoAsserted) {
+          autoAsserted = true;
+          webauthnAssert();
+        }
       } else if (res.data.method === 'totp') {
         show('totp', 'one more step.');
       } else {
         show('totp', 'one more step.');
-        msg('that 2FA method is not supported here — manage methods at /settings.');
+        note = note || 'that 2FA method is not supported here — manage methods at /settings.';
       }
+      if (note) msg(note);
     });
   }
 
   function webauthnAssert() {
-    assert('/api/secondfactor/webauthn', {})
-      .then(afterAssertion)
-      .catch(assertionFailed);
+    stopAutofill();
+    assert('/api/secondfactor/webauthn', {}, 1);
+  }
+
+  // Non-modal: the browser offers any discoverable vinnel.cloud passkey straight
+  // from the username field (which is why that input is autocomplete="username
+  // webauthn"). A platform with no passkey shows nothing, so this can never get in
+  // the way of password login.
+  function passkeyAutofill() {
+    if (!canPasskey || !PublicKeyCredential.isConditionalMediationAvailable) return;
+    PublicKeyCredential.isConditionalMediationAvailable().then(function (ok) {
+      if (ok) assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked }, 0, 'conditional');
+    });
+  }
+
+  function route(res) {
+    var lvl = res.data.authentication_level || 0;
+    if (lvl >= 2) {
+      $('who').textContent = res.data.username || '';
+      if (rd) { finish(''); return; }
+      show('done', 'welcome back.');
+    } else if (lvl === 1) {
+      secondFactor();
+    } else {
+      show('login', 'sign in.');
+      passkeyAutofill();
+    }
   }
 
   function state() {
     api('GET', '/api/state').then(function (res) {
-      var lvl = res.data.authentication_level || 0;
       if (location.pathname === '/logout') {
         api('POST', '/api/logout', {}).then(function () {
           if (sameSite(rd)) { location.replace(rd); return; }
           history.replaceState(null, '', '/');
           show('login', 'signed out.');
         });
-      } else if (lvl >= 2) {
-        $('who').textContent = res.data.username || '';
-        if (rd) { finish(''); return; }
-        show('done', 'welcome back.');
-      } else if (lvl === 1) {
-        secondFactor();
-      } else {
-        show('login', 'sign in.');
+        return;
       }
+      route(res);
     }).catch(function () {
       show('login', 'sign in.');
       msg('authelia is unreachable.');
@@ -173,6 +231,9 @@
   $('login').addEventListener('submit', function (e) {
     e.preventDefault();
     var f = e.target;
+    // The pending conditional request has to go before a password login: the two
+    // ceremonies share one session-side challenge.
+    stopAutofill();
     api('POST', '/api/firstfactor', withFlow({
       username: f.username.value,
       password: f.password.value,
@@ -217,9 +278,9 @@
     $('passkey-sep').hidden = false;
     $('passkey').addEventListener('click', function () {
       msg('');
-      assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked })
-        .then(afterAssertion)
-        .catch(assertionFailed);
+      // Cancels the conditional attempt so the modal one can take the challenge.
+      stopAutofill();
+      assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked }, 0);
     });
   }
 

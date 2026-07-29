@@ -7,7 +7,9 @@
   "access_control": { "default_policy": "two_factor" },
   "webauthn": {
     "display_name": "vinnel.cloud",
-    "enable_passkey_login": true
+    "enable_passkey_login": true,
+    "experimental_enable_passkey_uv_two_factors": true,
+    "selection_criteria": { "user_verification": "required" }
   },
   "session": {
     "secret": ${jsonencode(session_secret)},
