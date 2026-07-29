@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Unit test for the (identical) hash_and_rewrite/precompress logic shared by
-# monke-academy/vin-moe/vinnel-cloud's site/build.sh. cleancss/terser/brotli
+# monke-academy/vin-moe/vinnel-cloud's site/build.sh and vinnel-cloud/auth's
+# build.sh. cleancss/terser/brotli
 # are shimmed as no-ops so this needs no real minifier/compressor installed —
 # only hash_and_rewrite's sed-rewrite correctness and precompress's file
 # creation are under test, not the third-party tools.
@@ -67,8 +68,8 @@ EOF
   rm -rf "$work"
 }
 
-for rel in monke-academy vin-moe vinnel-cloud; do
-  test_one "$repo_root/hestia/$rel/site/build.sh"
+for rel in monke-academy/site vin-moe/site vinnel-cloud/site vinnel-cloud/auth; do
+  test_one "$repo_root/hestia/$rel/build.sh"
 done
 
 exit "$fail"

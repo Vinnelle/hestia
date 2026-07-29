@@ -4,6 +4,13 @@
   "// sites": "site images — updated by site-deploy.yml",
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:6b85d7c9ae4abaa9b7689dd8c5f0a98666c9e4a3b2151c5fd362d2ef86d538d6",
   "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:d28ef954ba7fd0aca9b0a6749b91971e2b6cbc4fc389cf9bce724dffb3aa264c",
+<<<<<<< HEAD
+  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:c1e17e0ea365ef3560bceb1450504234fd1cd633daeaa112cfc35cf03a887b8e",
+  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:d2d733f8614ebfc0aca23dcdae411320ea13420bef1540fae9a4421e0e74ba89"
+=======
   "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:ae1679a7b2e01bdc1b5635bde475045a507949e6660ae43221fd4c5b50dee59d",
-  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:df15ac977374e4c8e8d25911ac149bec0dc69abdea09427c33dd5b10b1233d5f"
+  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:df15ac977374e4c8e8d25911ac149bec0dc69abdea09427c33dd5b10b1233d5f",
+  "// vinnel-cloud-auth": "bootstrap: pinned to the site image (healthy nginx) until the first auth build records its real digest",
+  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/site@sha256:ae1679a7b2e01bdc1b5635bde475045a507949e6660ae43221fd4c5b50dee59d"
+>>>>>>> 3e4a517 (feat(auth): implement custom login portal for Authelia with theming support)
 }

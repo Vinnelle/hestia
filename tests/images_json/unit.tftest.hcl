@@ -5,7 +5,7 @@ run "required_deployment_keys_exist" {
 
   assert {
     condition = alltrue([
-      for k in ["momus", "monke-academy-site", "vin-moe-site", "vinnel-cloud-admin", "vinnel-cloud-site"] :
+      for k in ["momus", "monke-academy-site", "vin-moe-site", "vinnel-cloud-admin", "vinnel-cloud-auth", "vinnel-cloud-site"] :
       contains(keys(output.images), k)
     ])
     error_message = "images.json is missing a key that hestia/*.tf reads via local.images[...]"

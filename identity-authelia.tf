@@ -284,6 +284,62 @@ resource "kubernetes_ingress_v1" "authelia" {
     namespace = kubernetes_namespace_v1.services.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
+
+      # Brand restyle for the STOCK portal routes still served by Authelia
+      # (/consent, /settings — the login page itself is the custom front-end in
+      # identity-auth-portal.tf). Authelia has no supported custom-CSS hook, and
+      # its CSP is style-src 'self' + a per-response nonce — so an inline
+      # <style> injection is blocked, but a SAME-ORIGIN stylesheet is fine. The
+      # server-snippet serves the brand CSS at auth.vinnel.cloud/brand.css
+      # straight from nginx (never touches Authelia), and the
+      # configuration-snippet rewrites the SPA shell to link it. Tokens mirror
+      # vinnel-cloud/site/html/assets/css/style.css.
+      #
+      # Accept-Encoding is stripped so sub_filter sees uncompressed HTML;
+      # Cloudflare re-compresses toward the client. sub_filter only touches
+      # text/html, so API responses pass through untouched.
+      #
+      # Fragile by nature: the selectors are MUI internals, an Authelia upgrade
+      # can shuffle them. Failure mode is cosmetic (stock look returns), never
+      # functional.
+      "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
+        location = /brand.css {
+          default_type text/css;
+          expires 1h;
+          return 200 ":root{color-scheme:light dark;
+            --bg:light-dark(#faf8f5,#0c0c0d);
+            --fg:light-dark(#2a2825,#cececa);
+            --muted:light-dark(#4a4743,#a9a9a3);
+            --dim:light-dark(#625e57,#74746f);
+            --accent:light-dark(#b3466b,#f7b9d1);
+            --accent-strong:light-dark(#8f3355,#fbd3e2);}
+          *{font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace !important;}
+          html,body,#root{background:var(--bg) !important;color:var(--fg) !important;}
+          .MuiPaper-root{background:transparent !important;background-image:none !important;box-shadow:none !important;color:var(--fg) !important;}
+          .MuiTypography-root{color:var(--fg) !important;}
+          .MuiTypography-h5{text-transform:lowercase;letter-spacing:-0.01em;}
+          .MuiAvatar-root{display:none !important;}
+          .MuiFormLabel-root{color:var(--dim) !important;}
+          .MuiFormLabel-root.Mui-focused{color:var(--accent) !important;}
+          .MuiInputBase-input{color:var(--fg) !important;}
+          .MuiOutlinedInput-notchedOutline{border-color:var(--dim) !important;border-radius:2px;}
+          .Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--accent) !important;}
+          .MuiSvgIcon-root{color:var(--dim);}
+          .MuiButton-contained{background:var(--accent) !important;color:var(--bg) !important;box-shadow:none !important;border-radius:2px;text-transform:lowercase !important;}
+          .MuiButton-contained:hover{background:var(--accent-strong) !important;}
+          .MuiButton-text{color:var(--accent) !important;text-transform:lowercase !important;}
+          .MuiCheckbox-root{color:var(--dim) !important;}
+          .MuiCheckbox-root.Mui-checked{color:var(--accent) !important;}
+          a{color:var(--accent) !important;}
+          a:hover{color:var(--accent-strong) !important;}";
+        }
+      EOT
+
+      "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
+        proxy_set_header Accept-Encoding "";
+        sub_filter '</head>' '<link rel="stylesheet" href="./brand.css" /></head>';
+        sub_filter_once on;
+      EOT
     }
   }
 
@@ -295,17 +351,26 @@ resource "kubernetes_ingress_v1" "authelia" {
       secret_name = "authelia-tls"
     }
 
+    # `/` belongs to the custom login front-end (identity-auth-portal.tf, in
+    # the websites namespace — an Ingress can only back services in its own
+    # namespace, so the host is split across two Ingress resources). Everything
+    # Authelia still owns is enumerated here: the whole API surface plus the
+    # SPA routes the custom page doesn't reimplement. Longest-prefix wins, so
+    # these always beat the catch-all `/`.
     rule {
       host = "auth.vinnel.cloud"
       http {
-        path {
-          path      = "/"
-          path_type = "Prefix"
-          backend {
-            service {
-              name = kubernetes_service_v1.authelia.metadata[0].name
-              port {
-                number = 80
+        dynamic "path" {
+          for_each = ["/api", "/consent", "/settings", "/static", "/locales", "/jwks.json", "/.well-known", "/device", "/reset-password"]
+          content {
+            path      = path.value
+            path_type = "Prefix"
+            backend {
+              service {
+                name = kubernetes_service_v1.authelia.metadata[0].name
+                port {
+                  number = 80
+                }
               }
             }
           }
