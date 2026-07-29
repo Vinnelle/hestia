@@ -33,13 +33,24 @@ resource "kubernetes_cluster_role_v1" "vinnel_cloud_admin" {
 
   rule {
     api_groups = [""]
-    resources  = ["nodes", "pods"]
+    resources  = ["nodes", "pods", "persistentvolumes", "persistentvolumeclaims"]
     verbs      = ["get", "list"]
   }
 
   rule {
     api_groups = ["metrics.k8s.io"]
     resources  = ["nodes"]
+    verbs      = ["get", "list"]
+  }
+
+  # Rook publishes live pool capacity on the CephCluster status, so the storage
+  # panel reads it over the apiserver instead of reaching for the Ceph mgr API
+  # and its dashboard credentials. Deliberately NOT nodes/proxy: per-volume used
+  # bytes would need the kubelet summary API, and that grants the whole kubelet
+  # surface for a capacity readout.
+  rule {
+    api_groups = ["ceph.rook.io"]
+    resources  = ["cephclusters"]
     verbs      = ["get", "list"]
   }
 }
@@ -62,32 +73,21 @@ resource "kubernetes_cluster_role_binding_v1" "vinnel_cloud_admin" {
   }
 }
 
-# Portal usage (service opens), carried over from the dashboard app. ceph-block
-# so Velero can snapshot it, unlike the local-path PVCs it replaces.
-resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin" {
+resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_admin" {
   metadata {
-    name      = "vinnel-cloud-admin-pvc"
+    name      = "vinnel-cloud-admin-pdb"
     namespace = kubernetes_namespace_v1.websites.metadata[0].name
   }
   spec {
-    access_modes       = ["ReadWriteOnce"]
-    storage_class_name = "ceph-block"
-    resources {
-      requests = {
-        storage = "1Gi"
+    min_available = 1
+    selector {
+      match_labels = {
+        app = "vinnel-cloud-admin"
       }
     }
   }
-  wait_until_bound = false
-
-  lifecycle {
-    prevent_destroy = true
-  }
 }
 
-# No PodDisruptionBudget on purpose. The usage DB is sqlite on a ReadWriteOnce
-# volume, so this runs a single writer; a minAvailable=1 budget over one replica
-# would permit no voluntary eviction at all and block every node drain.
 resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   depends_on = [helm_release.harbor, harbor_project.vinnel_cloud, kubernetes_secret_v1.registry_dockerconfig_websites]
 
@@ -100,9 +100,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   }
 
   spec {
-    # Single writer: sqlite on a ReadWriteOnce volume. Recreate rather than
-    # RollingUpdate so the old pod releases the volume before the new one binds.
-    replicas = 1
+    # Stateless: cluster and storage panels are read straight from the apiserver
+    # on each request, so replicas can scale freely and a rollout never drops the
+    # portal.
+    replicas          = 2
+    min_ready_seconds = 10
 
     selector {
       match_labels = {
@@ -111,7 +113,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
     }
 
     strategy {
-      type = "Recreate"
+      type = "RollingUpdate"
+      rolling_update {
+        max_surge       = "100%"
+        max_unavailable = 0
+      }
     }
 
     template {
@@ -159,23 +165,6 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             value = "signoz-otel-collector.${kubernetes_namespace_v1.monitoring.metadata[0].name}.svc.cluster.local:4317"
           }
 
-          env {
-            name  = "DB_PATH"
-            value = "/data/admin.db"
-          }
-
-          volume_mount {
-            name       = "data"
-            mount_path = "/data"
-          }
-
-          # read_only_root_filesystem is on, and sqlite needs somewhere to put
-          # its journal and temp files.
-          volume_mount {
-            name       = "tmp"
-            mount_path = "/tmp"
-          }
-
           resources {
             requests = {
               cpu    = "50m"
@@ -214,18 +203,6 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             period_seconds  = 10
             timeout_seconds = 2
           }
-        }
-
-        volume {
-          name = "data"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin.metadata[0].name
-          }
-        }
-
-        volume {
-          name = "tmp"
-          empty_dir {}
         }
       }
     }

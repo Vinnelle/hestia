@@ -4,7 +4,7 @@
   "// sites": "site images — updated by site-deploy.yml",
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:6b85d7c9ae4abaa9b7689dd8c5f0a98666c9e4a3b2151c5fd362d2ef86d538d6",
   "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:d28ef954ba7fd0aca9b0a6749b91971e2b6cbc4fc389cf9bce724dffb3aa264c",
-  "vinnel-cloud-dashboard": "registry.vinnel.cloud/vinnel-cloud/dashboard@sha256:0755cca750f56a3949fdda986a428c69830c31c9866b51ef667a697379f1cbec",
-  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:d1120856df7d857264bfe2f79dd1c5e473dff35eb72877ddc817d0644b23764b",
-  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:24cdd23817733daa934a1714bc4e2a485d126a0c3bdaa194bc595a8d14b73e44"
+  "vinnel-cloud-dashboard": "registry.vinnel.cloud/vinnel-cloud/dashboard@sha256:5d07682644abfcc41f01401c4d7e1701c882969ace1b245ed8ce167edfb9b90c",
+  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:b204a75c9c3f091bc379d115bf25ddee1d9687cf515db93108593feebe962092",
+  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:30da0df1cc0a8f91b4a93ee0a42c256eec39daccb3f69ddb9b140f54a4e4733f"
 }

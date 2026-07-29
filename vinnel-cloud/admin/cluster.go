@@ -20,7 +20,10 @@ const (
 	saDir      = "/var/run/secrets/kubernetes.io/serviceaccount"
 	nodesPath  = "/api/v1/nodes"
 	podsPath   = "/api/v1/pods"
+	pvcsPath   = "/api/v1/persistentvolumeclaims"
+	pvsPath    = "/api/v1/persistentvolumes"
 	nodeMetric = "/apis/metrics.k8s.io/v1beta1/nodes"
+	cephPath   = "/apis/ceph.rook.io/v1/namespaces/rook-ceph/cephclusters"
 )
 
 type nodeStat struct {
@@ -37,6 +40,28 @@ type nodeStat struct {
 	MemPercent float64 `json:"memPercent"`
 }
 
+// volumeStat is one PersistentVolume. Requested is what the PVC asked for and
+// Capacity what the PV actually provides; neither is live usage. Per-volume
+// used-bytes would mean reading the kubelet summary API through nodes/proxy,
+// which grants far more than a storage panel is worth — SigNoz already scrapes
+// kubelet for that if you need it.
+type volumeStat struct {
+	Name      string  `json:"name"`
+	Namespace string  `json:"namespace"`
+	Claim     string  `json:"claim"`
+	Class     string  `json:"class"`
+	Phase     string  `json:"phase"`
+	Capacity  float64 `json:"capacity"`
+}
+
+type cephStat struct {
+	Available float64 `json:"available"`
+	Used      float64 `json:"used"`
+	Total     float64 `json:"total"`
+	Health    string  `json:"health"`
+	Present   bool    `json:"present"`
+}
+
 type clusterStats struct {
 	Nodes       []nodeStat `json:"nodes"`
 	NodesReady  int        `json:"nodesReady"`
@@ -46,7 +71,12 @@ type clusterStats struct {
 	CPUTotal    float64    `json:"cpuTotal"`
 	MemUsed     float64    `json:"memUsed"`
 	MemTotal    float64    `json:"memTotal"`
-	Err         string     `json:"err,omitempty"`
+
+	Ceph        cephStat     `json:"ceph"`
+	Volumes     []volumeStat `json:"volumes"`
+	VolumeBytes float64      `json:"volumeBytes"`
+
+	Err string `json:"err,omitempty"`
 }
 
 type kubeClient struct {
@@ -235,6 +265,8 @@ func (k *kubeClient) stats() clusterStats {
 		}
 	}
 
+	out.storage(k)
+
 	for i := range out.Nodes {
 		s := &out.Nodes[i]
 		s.CPUPercent = pct(s.CPUUsed, s.CPUTotal)
@@ -248,4 +280,96 @@ func (k *kubeClient) stats() clusterStats {
 		out.MemTotal += s.MemTotal
 	}
 	return out
+}
+
+// storage fills in the Ceph pool capacity and the PersistentVolume inventory.
+// Both are best-effort: a portal that cannot read them should still render the
+// node and pod panels above.
+func (out *clusterStats) storage(k *kubeClient) {
+	// Rook publishes live pool capacity on the CephCluster status, which means
+	// the real backing-store numbers are available over the apiserver without
+	// touching the Ceph mgr API or its dashboard credentials.
+	var cephList struct {
+		Items []struct {
+			Status struct {
+				Ceph struct {
+					Health   string `json:"health"`
+					Capacity struct {
+						BytesAvailable float64 `json:"bytesAvailable"`
+						BytesUsed      float64 `json:"bytesUsed"`
+						BytesTotal     float64 `json:"bytesTotal"`
+					} `json:"capacity"`
+				} `json:"ceph"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+	if err := k.get(cephPath, &cephList); err == nil && len(cephList.Items) > 0 {
+		c := cephList.Items[0].Status.Ceph
+		out.Ceph = cephStat{
+			Available: c.Capacity.BytesAvailable,
+			Used:      c.Capacity.BytesUsed,
+			Total:     c.Capacity.BytesTotal,
+			Health:    c.Health,
+			Present:   true,
+		}
+	}
+
+	// PVC lookup keyed by the PV's claimRef, so each volume can show which
+	// workload owns it rather than just a provisioner-generated pvc-<uuid>.
+	type claimKey struct{ ns, name string }
+	claimClass := map[claimKey]string{}
+	var pvcs struct {
+		Items []struct {
+			Metadata struct {
+				Name      string `json:"name"`
+				Namespace string `json:"namespace"`
+			} `json:"metadata"`
+			Spec struct {
+				StorageClassName string `json:"storageClassName"`
+			} `json:"spec"`
+		} `json:"items"`
+	}
+	if err := k.get(pvcsPath, &pvcs); err == nil {
+		for _, c := range pvcs.Items {
+			claimClass[claimKey{c.Metadata.Namespace, c.Metadata.Name}] = c.Spec.StorageClassName
+		}
+	}
+
+	var pvs struct {
+		Items []struct {
+			Metadata struct {
+				Name string `json:"name"`
+			} `json:"metadata"`
+			Spec struct {
+				Capacity         map[string]string `json:"capacity"`
+				StorageClassName string            `json:"storageClassName"`
+				ClaimRef         struct {
+					Name      string `json:"name"`
+					Namespace string `json:"namespace"`
+				} `json:"claimRef"`
+			} `json:"spec"`
+			Status struct {
+				Phase string `json:"phase"`
+			} `json:"status"`
+		} `json:"items"`
+	}
+	if err := k.get(pvsPath, &pvs); err != nil {
+		return
+	}
+	for _, p := range pvs.Items {
+		size := parseMem(p.Spec.Capacity["storage"])
+		class := p.Spec.StorageClassName
+		if class == "" {
+			class = claimClass[claimKey{p.Spec.ClaimRef.Namespace, p.Spec.ClaimRef.Name}]
+		}
+		out.Volumes = append(out.Volumes, volumeStat{
+			Name:      p.Metadata.Name,
+			Namespace: p.Spec.ClaimRef.Namespace,
+			Claim:     p.Spec.ClaimRef.Name,
+			Class:     class,
+			Phase:     p.Status.Phase,
+			Capacity:  size,
+		})
+		out.VolumeBytes += size
+	}
 }

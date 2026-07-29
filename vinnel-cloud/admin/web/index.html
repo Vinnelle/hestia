@@ -69,7 +69,7 @@
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <div class="user-dropdown" id="user-dropdown" hidden>
-            <a class="dropdown-item dropdown-item--danger" href="https://auth.vinnel.cloud/logout">
+            <a class="dropdown-item dropdown-item--danger" href="https://auth.vinnel.cloud/logout?rd=https%3A%2F%2Fvinnel.cloud">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
               Sign out
             </a>
@@ -138,28 +138,26 @@
             </table>
           </div>
 
-          <h2 class="section-title">Portal usage</h2>
-          <p class="page-subtitle">Last 30 days</p>
+          <h2 class="section-title">Storage</h2>
+          <p class="page-subtitle" id="ceph-health">Ceph pool and every persistent volume</p>
 
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-label">Service opens</div>
-              <div class="stat-value" id="stat-opens">—</div>
+              <div class="stat-label">Ceph used</div>
+              <div class="stat-value" id="stat-ceph">—</div>
+              <div class="stat-sub" id="stat-ceph-sub"></div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Sessions</div>
-              <div class="stat-value" id="stat-sessions">—</div>
+              <div class="stat-label">Ceph available</div>
+              <div class="stat-value" id="stat-ceph-avail">—</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Active users</div>
-              <div class="stat-value" id="stat-users">—</div>
+              <div class="stat-label">Volumes</div>
+              <div class="stat-value" id="stat-vols">—</div>
             </div>
-          </div>
-
-          <div class="chart-card">
-            <div class="card-title">Service opens per day</div>
-            <div class="chart-wrap">
-              <canvas id="usage-chart"></canvas>
+            <div class="stat-card">
+              <div class="stat-label">Provisioned</div>
+              <div class="stat-value" id="stat-vol-bytes">—</div>
             </div>
           </div>
 
@@ -167,12 +165,14 @@
             <table>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>Service</th>
-                  <th>Opens</th>
+                  <th>Claim</th>
+                  <th>Namespace</th>
+                  <th>Class</th>
+                  <th>Size</th>
+                  <th>Phase</th>
                 </tr>
               </thead>
-              <tbody id="services-tbody"></tbody>
+              <tbody id="volumes-tbody"></tbody>
             </table>
           </div>
         </section>
@@ -184,7 +184,6 @@
     </div>
   </div>
 
-  <script src="/assets/js/chart.js"></script>
   <script src="/assets/js/admin.js"></script>
 </body>
 </html>

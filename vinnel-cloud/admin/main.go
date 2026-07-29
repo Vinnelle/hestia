@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	_ "modernc.org/sqlite"
 )
 
 //go:embed web
@@ -117,12 +116,6 @@ func main() {
 	}
 	defer shutdownTracing(context.Background())
 
-	db, err := openDB(env("DB_PATH", "/data/admin.db"))
-	if err != nil {
-		log.Fatalf("open db: %v", err)
-	}
-	defer db.Close()
-
 	// A portal that cannot reach the apiserver should still list services, so
 	// this is a warning rather than a fatal.
 	kube, err := newKubeClient()
@@ -136,11 +129,6 @@ func main() {
 	webRoot, err := fs.Sub(webFS, "web")
 	if err != nil {
 		log.Fatalf("embed sub: %v", err)
-	}
-
-	slugs := map[string]bool{}
-	for _, s := range services {
-		slugs[s.Slug] = true
 	}
 
 	mux := http.NewServeMux()
@@ -164,22 +152,6 @@ func main() {
 
 	mux.HandleFunc("GET /api/cluster", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, cache.get())
-	})
-
-	mux.HandleFunc("GET /api/usage", func(w http.ResponseWriter, r *http.Request) {
-		handleUsage(db, w, r)
-	})
-
-	// Beacon from a tile click. Slug is checked against the registry so a caller
-	// cannot write arbitrary rows.
-	mux.HandleFunc("POST /api/open", func(w http.ResponseWriter, r *http.Request) {
-		slug := r.URL.Query().Get("slug")
-		if !slugs[slug] {
-			http.Error(w, "unknown service", http.StatusBadRequest)
-			return
-		}
-		recordOpen(db, slug, userFromRequest(r), sessionIDCookie(w, r))
-		w.WriteHeader(http.StatusNoContent)
 	})
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {

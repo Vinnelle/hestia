@@ -39,16 +39,6 @@ function show(slug) {
   }
 }
 
-// Fire-and-forget so the click is never delayed by the beacon.
-function beacon(slug) {
-  if (!slug) return;
-  navigator.sendBeacon('/api/open?slug=' + encodeURIComponent(slug));
-}
-
-for (const el of document.querySelectorAll('.service-link[data-slug]')) {
-  el.addEventListener('click', () => beacon(el.dataset.slug));
-}
-
 addEventListener('hashchange', () => show(location.hash.slice(1)));
 
 document.getElementById('sidebar-toggle').addEventListener('click', () => {
@@ -113,63 +103,43 @@ async function loadCluster() {
         '<td class="dim">' + escapeHtml(n.kubelet || '') + '</td></tr>';
     }).join('');
     applyMeters(tbody);
+    renderStorage(c);
   } catch (e) {
     err.hidden = false;
     err.textContent = 'Could not load cluster stats.';
   }
 }
 
-let usageChart = null;
-
-async function loadUsage() {
-  try {
-    const u = await (await fetch('/api/usage')).json();
-    text('stat-opens', u.opens);
-    text('stat-sessions', u.sessions);
-    text('stat-users', u.users);
-
-    document.getElementById('services-tbody').innerHTML = (u.services || [])
-      .map((s, i) => '<tr><td class="dim">' + (i + 1) + '</td><td>' +
-        escapeHtml(s.label) + '</td><td>' + s.opens + '</td></tr>').join('');
-
-    const css = getComputedStyle(document.documentElement);
-    const accent = css.getPropertyValue('--accent').trim();
-    const muted = css.getPropertyValue('--muted').trim();
-    const labels = (u.daily || []).map((d) => d.day);
-    const data = (u.daily || []).map((d) => d.count);
-
-    if (usageChart) {
-      usageChart.data.labels = labels;
-      usageChart.data.datasets[0].data = data;
-      usageChart.update();
-      return;
-    }
-    usageChart = new Chart(document.getElementById('usage-chart'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          data,
-          borderColor: accent,
-          backgroundColor: accent + '33',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0,
-        }],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { ticks: { color: muted }, grid: { display: false } },
-          y: { beginAtZero: true, ticks: { color: muted, precision: 0 }, grid: { color: muted + '22' } },
-        },
-      },
-    });
-  } catch (e) {
-    /* usage is non-critical; the service tiles above still work */
+function renderStorage(c) {
+  const ceph = c.ceph || {};
+  if (ceph.present) {
+    text('stat-ceph', pct(ceph.total ? (ceph.used / ceph.total) * 100 : 0));
+    text('stat-ceph-sub', fmtBytes(ceph.used) + ' / ' + fmtBytes(ceph.total));
+    text('stat-ceph-avail', fmtBytes(ceph.available));
+    text('ceph-health', ceph.health
+      ? 'Ceph ' + ceph.health + ' · every persistent volume'
+      : 'Ceph pool and every persistent volume');
+  } else {
+    text('stat-ceph', 'n/a');
+    text('stat-ceph-sub', 'CephCluster status unavailable');
+    text('stat-ceph-avail', 'n/a');
   }
+
+  const vols = c.volumes || [];
+  text('stat-vols', vols.length);
+  text('stat-vol-bytes', fmtBytes(c.volumeBytes));
+
+  // Biggest first: the ones worth noticing are the ones taking the space.
+  const rows = vols.slice().sort((a, b) => b.capacity - a.capacity);
+  document.getElementById('volumes-tbody').innerHTML = rows.map((v) => {
+    const bound = v.phase === 'Bound';
+    return '<tr><td>' + escapeHtml(v.claim || v.name) + '</td>' +
+      '<td class="dim">' + escapeHtml(v.namespace || '—') + '</td>' +
+      '<td class="dim">' + escapeHtml(v.class || '—') + '</td>' +
+      '<td>' + fmtBytes(v.capacity) + '</td>' +
+      '<td><span class="dot' + (bound ? ' dot--ok' : ' dot--bad') + '"></span>' +
+      escapeHtml(v.phase || '') + '</td></tr>';
+  }).join('');
 }
 
 function escapeHtml(s) {
@@ -180,7 +150,6 @@ function escapeHtml(s) {
 function refresh() {
   if (home.hidden) return;
   loadCluster();
-  loadUsage();
 }
 
 // Only polls while Home is actually visible, so an open frame costs nothing.
