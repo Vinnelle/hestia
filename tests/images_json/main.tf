@@ -3,6 +3,10 @@
 # credentials/backend for almost everything else. Testing it here means
 # `terraform test` never has to mock the cloud backend or the ~10 providers
 # in providers.tf.
+terraform {
+  required_version = ">= 1.9.0"
+}
+
 locals {
   images = jsondecode(file("${path.module}/../../images.json"))
 }
