@@ -28,8 +28,8 @@ fetch('/api/metrics').then(r => {
       datasets: [{
         label: 'Page views',
         data: data.daily.map(d => d.count),
-        borderColor: '#7c5cff',
-        backgroundColor: 'rgba(124,92,255,0.15)',
+        borderColor: '#ffb238',
+        backgroundColor: 'rgba(255,178,56,0.15)',
         fill: true,
         tension: 0.3,
       }],

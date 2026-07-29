@@ -4,11 +4,7 @@ COPY src/images/ .
 COPY src/fonts/ /usr/share/fonts/truetype/vinnel-cloud/
 RUN fc-cache -f
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp \
- && rsvg-convert -w 400 -h 100 vinnel-cloud-dark.svg | magick png:- vinnel-cloud-dark-1x.webp \
- && rsvg-convert -w 800 -h 200 vinnel-cloud-dark.svg | magick png:- vinnel-cloud-dark-2x.webp \
- && rsvg-convert -w 400 -h 100 vinnel-cloud-light.svg | magick png:- vinnel-cloud-light-1x.webp \
- && rsvg-convert -w 800 -h 200 vinnel-cloud-light.svg | magick png:- vinnel-cloud-light-2x.webp \
- && rsvg-convert -w 800 -h 200 vinnel-cloud-gradient.svg | magick png:- vinnel-cloud-gradient.webp
+ && rsvg-convert -w 1200 -h 630 vinnel-cloud-social.svg | magick png:- vinnel-cloud-social.webp
 
 FROM nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign in — Vinnel Cloud</title>
+  <title>sign in — vinnel.cloud</title>
   <script>var d=document.documentElement,s=localStorage;d.dataset.theme=s.theme||(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');d.onclick=function(e){if(!e.target.closest('.toggle'))return;d.dataset.themeTransitioning='';d.dataset.theme=d.dataset.theme=='dark'?'light':'dark';s.theme=d.dataset.theme;setTimeout(function(){delete d.dataset.themeTransitioning},500)}</script>
   <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
   <link rel="stylesheet" href="assets/css/style.css">
@@ -12,10 +12,7 @@
 <body>
   <div class="login-wrap">
     <div class="login-card">
-      <div class="logo-wrap">
-        <img class="logo-dark"  src="assets/images/vinnel-cloud-dark-1x.webp"  alt="Vinnel Cloud" width="240" height="60">
-        <img class="logo-light" src="assets/images/vinnel-cloud-light-1x.webp" alt="Vinnel Cloud" width="240" height="60">
-      </div>
+      <p class="wordmark">vinnel<span class="accent">.cloud</span></p>
       <h1>Dashboard sign in</h1>
       <a class="btn-signin" href="/auth/login">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor">
