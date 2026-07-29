@@ -3,15 +3,18 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"html/template"
 	"io/fs"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	_ "modernc.org/sqlite"
 )
 
 //go:embed web
@@ -74,6 +77,37 @@ func userFromRequest(r *http.Request) string {
 	return r.Header.Get("Remote-User")
 }
 
+func writeJSON(w http.ResponseWriter, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		log.Printf("writeJSON: %v", err)
+	}
+}
+
+// The cluster read costs three API calls, and Home polls it. Cache briefly so a
+// left-open tab does not hammer the apiserver.
+type statsCache struct {
+	mu   sync.Mutex
+	at   time.Time
+	val  clusterStats
+	ttl  time.Duration
+	kube *kubeClient
+}
+
+func (c *statsCache) get() clusterStats {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.kube == nil {
+		return clusterStats{Err: "kubernetes API unavailable"}
+	}
+	if time.Since(c.at) < c.ttl {
+		return c.val
+	}
+	c.val = c.kube.stats()
+	c.at = time.Now()
+	return c.val
+}
+
 func main() {
 	addr := env("LISTEN_ADDR", ":8080")
 
@@ -83,11 +117,30 @@ func main() {
 	}
 	defer shutdownTracing(context.Background())
 
+	db, err := openDB(env("DB_PATH", "/data/admin.db"))
+	if err != nil {
+		log.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	// A portal that cannot reach the apiserver should still list services, so
+	// this is a warning rather than a fatal.
+	kube, err := newKubeClient()
+	if err != nil {
+		log.Printf("kubernetes client unavailable, cluster stats disabled: %v", err)
+	}
+	cache := &statsCache{kube: kube, ttl: 15 * time.Second}
+
 	tmpl := template.Must(template.ParseFS(webFS, "web/index.html"))
 
 	webRoot, err := fs.Sub(webFS, "web")
 	if err != nil {
 		log.Fatalf("embed sub: %v", err)
+	}
+
+	slugs := map[string]bool{}
+	for _, s := range services {
+		slugs[s.Slug] = true
 	}
 
 	mux := http.NewServeMux()
@@ -97,6 +150,37 @@ func main() {
 	})
 
 	mux.Handle("GET /assets/", http.FileServer(http.FS(webRoot)))
+
+	// Read by the apex site at vinnel.cloud to decide whether to offer a login
+	// link or a link straight into the portal. Unauthenticated callers never
+	// reach this: forward-auth redirects them to Authelia, which sends no CORS
+	// headers, so the apex's fetch rejects and it falls back to "login".
+	mux.HandleFunc("GET /api/me", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "https://vinnel.cloud")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Vary", "Origin")
+		writeJSON(w, map[string]string{"email": userFromRequest(r)})
+	})
+
+	mux.HandleFunc("GET /api/cluster", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, cache.get())
+	})
+
+	mux.HandleFunc("GET /api/usage", func(w http.ResponseWriter, r *http.Request) {
+		handleUsage(db, w, r)
+	})
+
+	// Beacon from a tile click. Slug is checked against the registry so a caller
+	// cannot write arbitrary rows.
+	mux.HandleFunc("POST /api/open", func(w http.ResponseWriter, r *http.Request) {
+		slug := r.URL.Query().Get("slug")
+		if !slugs[slug] {
+			http.Error(w, "unknown service", http.StatusBadRequest)
+			return
+		}
+		recordOpen(db, slug, userFromRequest(r), sessionIDCookie(w, r))
+		w.WriteHeader(http.StatusNoContent)
+	})
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range securityHeaders {

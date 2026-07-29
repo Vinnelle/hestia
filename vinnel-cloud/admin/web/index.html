@@ -22,7 +22,7 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>
           </svg>
-          <span class="sidebar-label">All services</span>
+          <span class="sidebar-label">Home</span>
         </a>
         {{range .Services}}
         <a class="sidebar-link service-link"
@@ -80,14 +80,15 @@
       <main class="app-main app-main--frame">
 
         <section class="frame-empty" id="frame-empty">
-          <h1 class="page-title">Services</h1>
+          <h1 class="page-title">Home</h1>
           <p class="page-subtitle">Everything under vinnel.cloud, in one place.</p>
 
           <div class="service-grid">
             {{range .Services}}
             <a class="service-tile service-link"
                href="{{if .Frameable}}#{{.Slug}}{{else}}{{.URL}}{{end}}"
-               {{if .Frameable}}data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}"{{else}}target="_blank" rel="noopener noreferrer"{{end}}>
+               data-slug="{{.Slug}}"
+               {{if .Frameable}}data-url="{{.URL}}" data-label="{{.Label}}"{{else}}data-external="1" target="_blank" rel="noopener noreferrer"{{end}}>
               <svg class="service-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
               <div class="service-tile-body">
                 <div class="service-tile-label">{{.Label}}{{if not .Frameable}} <span class="service-tile-ext">↗</span>{{end}}</div>
@@ -96,6 +97,83 @@
               </div>
             </a>
             {{end}}
+          </div>
+
+          <h2 class="section-title">Cluster</h2>
+          <div class="state-center error-msg" id="cluster-error" hidden></div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Nodes ready</div>
+              <div class="stat-value" id="stat-nodes">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Pods running</div>
+              <div class="stat-value" id="stat-pods">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">CPU used</div>
+              <div class="stat-value" id="stat-cpu">—</div>
+              <div class="stat-sub" id="stat-cpu-sub"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Memory used</div>
+              <div class="stat-value" id="stat-mem">—</div>
+              <div class="stat-sub" id="stat-mem-sub"></div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>Node</th>
+                  <th>CPU</th>
+                  <th>Memory</th>
+                  <th>Pods</th>
+                  <th>Kubelet</th>
+                </tr>
+              </thead>
+              <tbody id="nodes-tbody"></tbody>
+            </table>
+          </div>
+
+          <h2 class="section-title">Portal usage</h2>
+          <p class="page-subtitle">Last 30 days</p>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Service opens</div>
+              <div class="stat-value" id="stat-opens">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Sessions</div>
+              <div class="stat-value" id="stat-sessions">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Active users</div>
+              <div class="stat-value" id="stat-users">—</div>
+            </div>
+          </div>
+
+          <div class="chart-card">
+            <div class="card-title">Service opens per day</div>
+            <div class="chart-wrap">
+              <canvas id="usage-chart"></canvas>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Service</th>
+                  <th>Opens</th>
+                </tr>
+              </thead>
+              <tbody id="services-tbody"></tbody>
+            </table>
           </div>
         </section>
 
@@ -106,6 +184,7 @@
     </div>
   </div>
 
+  <script src="/assets/js/chart.js"></script>
   <script src="/assets/js/admin.js"></script>
 </body>
 </html>

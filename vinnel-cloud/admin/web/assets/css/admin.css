@@ -87,3 +87,58 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 2.5rem 0 0.25rem;
+}
+
+.stat-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+}
+
+.meter-cell { min-width: 140px; }
+
+.meter {
+  display: inline-block;
+  width: 90px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--card-border);
+  overflow: hidden;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+.meter-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+/* Thresholds are advisory, not alerting — SigNoz owns the real alerts. */
+.meter-fill.meter--warn { background: #e0a34a; }
+.meter-fill.meter--crit { background: #d9534f; }
+
+.meter-text {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.dot--ok  { background: #4a9d5f; }
+.dot--bad { background: #d9534f; }
+
+.dim { color: var(--muted); }

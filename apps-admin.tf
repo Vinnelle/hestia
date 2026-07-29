@@ -15,21 +15,79 @@ resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   proxied = true
 }
 
-resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_admin" {
+# Home reads node/pod counts and metrics.k8s.io usage straight from the
+# apiserver with this identity. Read-only and cluster-scoped because node and
+# metrics objects are cluster-scoped; it grants no access to secrets or to any
+# object contents beyond what the portal renders.
+resource "kubernetes_service_account_v1" "vinnel_cloud_admin" {
   metadata {
-    name      = "vinnel-cloud-admin-pdb"
+    name      = "vinnel-cloud-admin"
     namespace = kubernetes_namespace_v1.websites.metadata[0].name
-  }
-  spec {
-    min_available = 1
-    selector {
-      match_labels = {
-        app = "vinnel-cloud-admin"
-      }
-    }
   }
 }
 
+resource "kubernetes_cluster_role_v1" "vinnel_cloud_admin" {
+  metadata {
+    name = "vinnel-cloud-admin-read"
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["nodes", "pods"]
+    verbs      = ["get", "list"]
+  }
+
+  rule {
+    api_groups = ["metrics.k8s.io"]
+    resources  = ["nodes"]
+    verbs      = ["get", "list"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding_v1" "vinnel_cloud_admin" {
+  metadata {
+    name = "vinnel-cloud-admin-read"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role_v1.vinnel_cloud_admin.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+}
+
+# Portal usage (service opens), carried over from the dashboard app. ceph-block
+# so Velero can snapshot it, unlike the local-path PVCs it replaces.
+resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin" {
+  metadata {
+    name      = "vinnel-cloud-admin-pvc"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+  spec {
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "ceph-block"
+    resources {
+      requests = {
+        storage = "1Gi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+# No PodDisruptionBudget on purpose. The usage DB is sqlite on a ReadWriteOnce
+# volume, so this runs a single writer; a minAvailable=1 budget over one replica
+# would permit no voluntary eviction at all and block every node drain.
 resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   depends_on = [helm_release.harbor, harbor_project.vinnel_cloud, kubernetes_secret_v1.registry_dockerconfig_websites]
 
@@ -42,8 +100,9 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   }
 
   spec {
-    replicas          = 2
-    min_ready_seconds = 10
+    # Single writer: sqlite on a ReadWriteOnce volume. Recreate rather than
+    # RollingUpdate so the old pod releases the volume before the new one binds.
+    replicas = 1
 
     selector {
       match_labels = {
@@ -52,11 +111,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
     }
 
     strategy {
-      type = "RollingUpdate"
-      rolling_update {
-        max_surge       = "100%"
-        max_unavailable = 0
-      }
+      type = "Recreate"
     }
 
     template {
@@ -67,6 +122,8 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
       }
 
       spec {
+        service_account_name = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
+
         image_pull_secrets {
           name = kubernetes_secret_v1.registry_dockerconfig_websites.metadata[0].name
         }
@@ -75,6 +132,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           run_as_non_root = true
           run_as_user     = 10001
           run_as_group    = 10001
+          fs_group        = 10001
           seccomp_profile {
             type = "RuntimeDefault"
           }
@@ -99,6 +157,23 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           env {
             name  = "OTEL_COLLECTOR_ENDPOINT"
             value = "signoz-otel-collector.${kubernetes_namespace_v1.monitoring.metadata[0].name}.svc.cluster.local:4317"
+          }
+
+          env {
+            name  = "DB_PATH"
+            value = "/data/admin.db"
+          }
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/data"
+          }
+
+          # read_only_root_filesystem is on, and sqlite needs somewhere to put
+          # its journal and temp files.
+          volume_mount {
+            name       = "tmp"
+            mount_path = "/tmp"
           }
 
           resources {
@@ -139,6 +214,18 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             period_seconds  = 10
             timeout_seconds = 2
           }
+        }
+
+        volume {
+          name = "data"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "tmp"
+          empty_dir {}
         }
       }
     }
