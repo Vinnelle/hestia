@@ -1,5 +1,5 @@
 name: Wait for Terraform
-description: If a terraform.yml run for this commit is in progress, waits for it. Otherwise (none running, or it already failed) skips without blocking.
+description: If a terraform.yml run for this commit on prd is in progress, waits for it. Otherwise (none running, or it already failed) skips without blocking.
 
 inputs:
   timeout-minutes:
@@ -20,7 +20,7 @@ runs:
         sha="${{ github.event.pull_request.head.sha || github.sha }}"
         deadline=$(( $(date +%s) + TIMEOUT_MINUTES * 60 ))
 
-        run_id=$(gh run list --repo "$repo" --workflow=terraform.yml \
+        run_id=$(gh run list --repo "$repo" --workflow=terraform.yml --branch prd \
           --json headSha,status,databaseId \
           --jq ".[] | select(.headSha==\"$sha\") | select(.status!=\"completed\") | .databaseId" | head -n1)
 
