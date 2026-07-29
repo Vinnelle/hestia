@@ -11,7 +11,7 @@ resource "kubectl_manifest" "ceph_block_snapshot_class" {
     metadata = {
       name = "ceph-block-snapshot"
       labels = {
-        "k10.kasten.io/is-snapshot-class" = "true"
+        "velero.io/csi-volumesnapshot-class" = "true"
       }
     }
     driver         = "rook-ceph.rbd.csi.ceph.com"

@@ -1,0 +1,27 @@
+credentials:
+  useSecret: true
+  existingSecret: "velero-s3-credentials"
+
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: gaia-backups
+      prefix: velero
+      config:
+        region: auto
+        s3ForcePathStyle: "true"
+        s3Url: "https://${s3_backup_endpoint}"
+  features: EnableCSI
+
+deployNodeAgent: false
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8085"
+
+schedules:
+  daily:
+    schedule: "0 3 * * *"
+    template:
+      ttl: "168h0m0s"

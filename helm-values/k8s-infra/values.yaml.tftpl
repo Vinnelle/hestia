@@ -109,7 +109,3 @@ presets:
       - job_name: etcd
         static_configs:
           - targets: ["${node_ip}:2381"]
-
-      - job_name: kasten-k10
-        http_sd_configs:
-          - url: http://metering-svc.kasten-io.svc.cluster.local:8000/v0/listScrapeTargets

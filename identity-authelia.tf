@@ -104,7 +104,7 @@ resource "kubernetes_persistent_volume_claim_v1" "authelia" {
 }
 
 # ceph-block migration target for kubernetes_persistent_volume_claim_v1.authelia above —
-# local-path has no CSI driver, so Kasten K10 can't snapshot-back it up. Not yet referenced
+# local-path has no CSI driver, so Velero can't snapshot-back it up. Not yet referenced
 # by the deployment; cutover happens last (highest blast radius — every forward-auth
 # ingress depends on Authelia) in a separate, supervised step.
 resource "kubernetes_persistent_volume_claim_v1" "authelia_ceph" {
