@@ -62,63 +62,36 @@ body {
   color: var(--toggle-knob);
 }
 
-.toggle {
-  position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 44px;
-  height: 24px;
-  background-color: var(--toggle-bg);
-  border: 1px solid var(--toggle-border);
-  border-radius: 99px;
+.theme-toggle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.theme-toggle .sep {
+  color: var(--muted);
+  user-select: none;
+}
+
+.theme-opt {
+  font: inherit;
+  background: transparent;
+  border: none;
+  padding: 0;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  padding: 3px;
-  contain: layout style;
-  transition:
-    background-color 0.3s ease,
-    border-color 0.3s ease;
+  color: var(--muted);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s;
 }
 
-.toggle:hover,
-.toggle:focus-visible {
-  border-color: var(--toggle-knob);
+.theme-opt:hover {
+  color: var(--fg);
 }
 
-.toggle-knob {
-  width: 16px;
-  height: 16px;
-  background-color: var(--toggle-knob);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  will-change: transform;
-  transition:
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    background-color 0.3s ease;
-}
-
-[data-theme="light"] .toggle-knob {
-  transform: translateX(20px);
-}
-
-.toggle-knob svg {
-  width: 10px;
-  height: 10px;
-  fill: var(--bg);
-}
-
-.icon-moon,
-.icon-sun {
-  position: absolute;
-}
-
-[data-theme="dark"] .icon-sun,
-[data-theme="light"] .icon-moon {
-  display: none;
+.theme-opt[aria-pressed="true"] {
+  color: var(--toggle-knob);
+  text-decoration: underline;
 }
 
 a:focus-visible,

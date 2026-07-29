@@ -122,6 +122,7 @@ a { color: var(--accent); text-decoration: none; }
   align-items: center;
   gap: 0.75rem;
   white-space: nowrap;
+  min-width: 0;
   width: 100%;
 }
 
@@ -140,35 +141,13 @@ a { color: var(--accent); text-decoration: none; }
   opacity: 0.9;
 }
 
-.sidebar .toggle {
-  position: static;
-  bottom: auto;
-  left: auto;
-  transform: none;
+.sidebar-theme-toggle {
   flex-shrink: 0;
-  transition:
-    width 0.25s ease,
-    border-radius 0.25s ease,
-    padding 0.25s ease,
-    background-color 0.3s ease,
-    border-color 0.3s ease,
-    transform 0.12s ease;
 }
 
-.sidebar--collapsed .toggle {
-  width: 28px;
-  border-radius: 50%;
-  padding: 4px;
-  justify-content: center;
-}
-
-.sidebar--collapsed .toggle .toggle-knob {
-  transform: none;
-  transition: background-color 0.3s ease;
-}
-
-.sidebar--collapsed .toggle:active {
-  transform: scale(0.85);
+.sidebar--collapsed .sidebar-theme-toggle {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-toggle-btn {

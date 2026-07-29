@@ -1,17 +1,30 @@
-// Loaded without defer so the theme is set before first paint — an inline script
-// would need a CSP hash, and script-src is 'self' only.
+// Loaded without defer so the theme lands before first paint — an inline
+// script would need a CSP hash, and script-src is 'self' only. Reads the
+// Domain=.vinnel.cloud cookie shared with vinnel.cloud/auth.vinnel.cloud first,
+// localStorage as the per-origin legacy fallback.
 (function () {
-  var d = document.documentElement, s = localStorage;
-  // Cookie first: vinnel.cloud shares the choice via a Domain=.vinnel.cloud cookie
-  // (localStorage is per-origin). localStorage is the pre-cookie legacy fallback.
-  var m = document.cookie.match(/(?:^|; )theme=(dark|light)/);
-  d.dataset.theme = (m && m[1]) || s.theme || (matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark');
-  d.addEventListener('click', function (e) {
-    if (!e.target.closest('.toggle')) return;
-    d.dataset.themeTransitioning = '';
-    d.dataset.theme = d.dataset.theme === 'dark' ? 'light' : 'dark';
-    s.theme = d.dataset.theme;
-    document.cookie = 'theme=' + d.dataset.theme + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
-    setTimeout(function () { delete d.dataset.themeTransitioning; }, 500);
+  var root = document.documentElement;
+  try {
+    var m = document.cookie.match(/(?:^|; )theme=(dark|light)/);
+    var t = (m && m[1]) || localStorage.theme;
+    root.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  } catch (e) {}
+
+  addEventListener('DOMContentLoaded', function () {
+    var opts = Array.prototype.slice.call(document.querySelectorAll('.theme-opt'));
+    function sync() {
+      var active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      opts.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.themeChoice === active); });
+    }
+    sync();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
+    opts.forEach(function (b) {
+      b.addEventListener('click', function () {
+        root.dataset.theme = b.dataset.themeChoice;
+        try { localStorage.theme = b.dataset.themeChoice; } catch (e) {}
+        document.cookie = 'theme=' + b.dataset.themeChoice + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
+        sync();
+      });
+    });
   });
 })();
