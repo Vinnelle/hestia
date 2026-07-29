@@ -3,18 +3,19 @@ name: Mirror hestia
 on:
   push:
     branches: [prd]
+  schedule:
+    - cron: "0 5 * * *"
   workflow_dispatch: {}
 
 permissions:
   contents: read
-  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 jobs:
-  wait-for-terraform:
-    uses: ./.github/workflows/wait-for-terraform.yml
-
   mirror:
-    needs: wait-for-terraform
     runs-on: arc-runner
     timeout-minutes: 15
     steps:

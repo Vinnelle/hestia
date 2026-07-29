@@ -1,5 +1,5 @@
 name: Commit and push
-description: Stages all changes under the given path, commits if anything is staged, and pushes with a fetch/rebase/push retry loop.
+description: Publishes the working tree at the given path as one commit on top of the remote tip, retrying the whole re-parent/commit/push cycle on a push race.
 
 inputs:
   path:
@@ -20,28 +20,27 @@ runs:
         set -euo pipefail
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add -A
-
-        if git diff --cached --quiet; then
-          exit 0
-        fi
-        git commit -m "$MESSAGE"
 
         branch=$(git rev-parse --abbrev-ref HEAD)
 
-        pushed=""
         for attempt in 1 2 3 4 5; do
-          if git fetch origin "$branch" \
-             && git rebase "origin/$branch" \
-             && git push origin "HEAD:$branch"; then
-            pushed=1
-            break
+          if ! { git fetch --depth=1 origin "$branch" && git reset --soft FETCH_HEAD; }; then
+            sleep "$attempt"
+            continue
           fi
-          git rebase --abort >/dev/null 2>&1 || true
+          git add -A
+
+          if git diff --cached --quiet; then
+            echo "mirror already up to date"
+            exit 0
+          fi
+
+          git commit -m "$MESSAGE"
+          if git push origin "HEAD:$branch"; then
+            exit 0
+          fi
           sleep "$attempt"
         done
 
-        if [ -z "$pushed" ]; then
-          echo "::error::failed to push after five attempts"
-          exit 1
-        fi
+        echo "::error::failed to push after five attempts"
+        exit 1

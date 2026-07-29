@@ -7,22 +7,30 @@ on:
       - "hestia/monke-academy/site/**"
       - ".github/workflows/monke-academy-build.yml"
       - ".github/workflows/site-deploy.yml"
+      - ".github/actions/**"
+  pull_request:
+    paths:
+      - "hestia/monke-academy/site/**"
+      - ".github/workflows/monke-academy-build.yml"
+      - ".github/workflows/site-deploy.yml"
+      - ".github/actions/**"
   workflow_dispatch: {}
 
 permissions:
   contents: write
   actions: write
 
-jobs:
-  wait-for-terraform:
-    uses: ./.github/workflows/wait-for-terraform.yml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
   deploy:
-    needs: wait-for-terraform
     uses: ./.github/workflows/site-deploy.yml
     with:
-      context: hestia/monke-academy/site
-      image: monke-academy/site
-      deployment: monke-academy-site
+      targets: >-
+        [{"context": "hestia/monke-academy/site",
+          "image": "monke-academy/site",
+          "deployment": "monke-academy-site"}]
       purge_zone: monke.academy
     secrets: inherit

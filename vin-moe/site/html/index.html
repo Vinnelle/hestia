@@ -356,7 +356,7 @@
       </li>
       <li>
         <h3>supply chain</h3>
-        <p>Base images, Actions and providers are pinned by digest or lockfile, so a moved tag can’t change what ships. Every push runs terraform fmt, tflint, go vet and tests, shellcheck, yamllint, actionlint, and gitleaks over full history. Trivy scans the runner image on a schedule and anything critical or high triggers a rebuild. Renovate raises the version bumps.</p>
+        <p>Base images, Actions and providers are pinned by digest or lockfile, so a moved tag can’t change what ships. Every push runs go vet and tests, shellcheck, yamllint, actionlint, and gitleaks over full history; terraform fmt and tflint run in front of the plan they gate. Trivy scans the runner image on a schedule and anything critical or high triggers a rebuild. Renovate raises the version bumps, grouped so a dozen digest bumps arrive as one reviewable pull request instead of a dozen pipelines, and majors wait for a human.</p>
       </li>
     </ol>
 
@@ -380,11 +380,11 @@
     <ol class="topics">
       <li>
         <h3>actions-runner-controller</h3>
-        <p>gha-runner-scale-set on the same cluster: CI runs on the node it deploys to. containerMode is dind, so every runner pod gets its own dockerd rather than mounting the node’s socket, and concurrent jobs never share daemon state or root-level host access. minRunners is 0 — no idle pool, every job gets a fresh pod against the current spec.</p>
+        <p>gha-runner-scale-set on the same cluster: CI runs on the node it deploys to. containerMode is dind, so every runner pod gets its own dockerd rather than mounting the node’s socket, and concurrent jobs never share daemon state or root-level host access. One runner stays warm so the common single-job workflow starts immediately instead of waiting on scheduling and registration; six is the ceiling, because the pool is one machine and an unbounded fan-out would starve the workloads it deploys.</p>
       </li>
       <li>
         <h3>the runner image</h3>
-        <p>Custom image on the stock actions-runner base with the toolchain pre-baked — docker, gh, jq, rsync, kubectl, tflint, actionlint, build-essential — so jobs stop apt-get installing the same packages every run. Each workflow’s install step was already guarded, so they became no-ops the day it landed.</p>
+        <p>Custom image on the stock actions-runner base with the toolchain pre-baked — docker, gh, jq, rsync, kubectl, tflint, actionlint, build-essential — so jobs stop apt-get installing the same packages every run. Pods pull it on every start rather than trusting a cached tag: with one node and a mutable :latest, the kubelet otherwise keeps the first copy it ever saw and silently ignores every rebuild, including the ones the vulnerability scan triggers. That makes the tag load-bearing, so a rebuild is smoke-tested — every baked binary actually runs — before it is allowed to become :latest. A broken runner image takes CI down and CI cannot fix it.</p>
       </li>
       <li>
         <h3>registry access from runner pods</h3>
@@ -395,16 +395,20 @@
     <h2>deploying vin.moe</h2>
     <ol class="topics">
       <li>
-        <h3>wait for infra</h3>
-        <p>A push to the site’s path on prd waits only if that commit’s Terraform run is still mid-flight, purely to avoid racing an apply. Advisory, not a success gate: the deploy is imperative against an already-committed digest, and Terraform reconciles the same reference on its next run either way.</p>
+        <h3>prove it builds</h3>
+        <p>A pull request touching the site runs the same build with the push disabled and no rollout: the Dockerfile is proven against the registry cache without anything reaching the cluster or the pinned manifest. That gate is what makes automerged base-image bumps safe. Nothing else starts: the infrastructure plan skips the paths Terraform demonstrably never reads, so editing HTML no longer queues an apply on the one node that also serves the page.</p>
       </li>
       <li>
-        <h3>pin the digest</h3>
-        <p>buildx pushes :latest and the commit SHA against a registry-hosted layer cache, so unchanged stages — the compiled nginx module included — are pulled, not rebuilt. The sha256 digest it returns, not the mutable tag, is merged into a shared image manifest and committed with a fetch/rebase/push retry loop, so concurrent deploys don't clobber each other's entry. Bot commits don't fire push events, so the job re-triggers Terraform explicitly.</p>
+        <h3>build &amp; pin the digest</h3>
+        <p>buildx pushes :latest and the commit SHA against a registry-hosted layer cache, so unchanged stages — the compiled nginx module included — are pulled, not rebuilt. The sha256 digest it returns, not the mutable tag, is merged into a shared image manifest and committed by the job that built it. On a push race the retry re-merges onto whatever landed first rather than replaying a fixed commit: sites deploying at once write neighbouring lines of the same JSON file, and a rebase would hit the identical conflict on every attempt until it gave up.</p>
       </li>
       <li>
         <h3>roll out &amp; purge</h3>
-        <p>kubectl set image to that exact digest, then wait on rollout status. Terraform reconciles the same pinned reference next run, so the imperative rollout and the declared state converge instead of drifting. Cloudflare’s cache is purged only once the new pods are serving — purge first and the CDN re-caches the build on its way out.</p>
+        <p>The rollout reads the digest back out of git at the remote tip — deploy what was recorded, not what a job variable remembered — and waits only if that commit’s Terraform run is still mid-flight, purely to avoid racing an apply. Advisory, not a success gate. Then kubectl set image to that exact digest and wait on rollout status. Cloudflare’s cache is purged only once the new pods are serving — purge first and the CDN re-caches the build on its way out.</p>
+      </li>
+      <li>
+        <h3>reconcile &amp; mirror</h3>
+        <p>Commits authored by CI fire no push events, by GitHub’s own loop prevention, so Terraform is triggered explicitly — after the rollout, so it reconciles against state that is already live. It converges on the identical immutable reference, which is what keeps the imperative rollout and the declared state from drifting. The public mirror syncs last.</p>
       </li>
     </ol>
 

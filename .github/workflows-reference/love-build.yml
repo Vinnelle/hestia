@@ -6,57 +6,54 @@ on:
     paths:
       - "love/love.c"
       - ".github/workflows/love-build.yml"
+  pull_request:
+    paths:
+      - "love/love.c"
+      - ".github/workflows/love-build.yml"
   workflow_dispatch: {}
 
 permissions:
   contents: read
-  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  wait-for-terraform:
-    uses: ./.github/workflows/wait-for-terraform.yml
-
   build:
-    needs: wait-for-terraform
     runs-on: arc-runner
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Compile
         run: cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
 
-  mirror:
-    needs: build
-    runs-on: arc-runner
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          path: hestia
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - if: github.event_name != 'pull_request'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: Vinnelle/love
           token: ${{ secrets.GH_API_TOKEN }}
-          path: love
+          path: mirror
 
       - name: Copy source
-        run: cp hestia/love/love.c love/love.c
+        if: github.event_name != 'pull_request'
+        run: cp love/love.c mirror/love.c
 
-      - uses: ./hestia/.github/actions/git-commit-push
+      - if: github.event_name != 'pull_request'
+        uses: ./.github/actions/git-commit-push
         with:
-          path: love
-          message: "sync: mirror love.c from hestia@${{ github.sha }}"
+          path: mirror
+          message: "sync: mirror love.c from gaia@${{ github.sha }}"
 
       - name: Release binary
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ secrets.GH_API_TOKEN }}
         run: |
-          cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o hestia/love/love hestia/love/love.c
           tag="v${{ github.run_number }}"
           gh release view "$tag" --repo Vinnelle/love >/dev/null 2>&1 && exit 0
-          gh release create "$tag" hestia/love/love \
+          gh release create "$tag" love/love \
             --repo Vinnelle/love \
             --title "$tag" \
-            --notes "compiled from hestia@${{ github.sha }}"
+            --notes "compiled from gaia@${{ github.sha }}"

@@ -3,24 +3,32 @@ name: Terraform Plan/Apply
 on:
   push:
     branches: [prd]
+    paths-ignore:
+      - "hestia/monke-academy/**"
+      - "hestia/vin-moe/**"
+      - "hestia/vinnel-cloud/**"
+      - "hestia/ci-runner/**"
+      - "love/**"
+      - "**.md"
   pull_request:
+    paths-ignore:
+      - "hestia/monke-academy/**"
+      - "hestia/vin-moe/**"
+      - "hestia/vinnel-cloud/**"
+      - "hestia/ci-runner/**"
+      - "love/**"
+      - "**.md"
   workflow_dispatch: {}
 
 permissions:
   contents: read
-  actions: read
-  pull-requests: read
 
 concurrency:
   group: terraform-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  validate:
-    uses: ./.github/workflows/validate.yml
-
   plan-apply:
-    needs: validate
     runs-on: arc-runner
     timeout-minutes: 30
     defaults:
@@ -28,6 +36,7 @@ jobs:
         working-directory: hestia
     env:
       TF_TOKEN_app_terraform_io: ${{ secrets.TFC_API_TOKEN }}
+      TF_IN_AUTOMATION: "1"
       TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform-plugin-cache
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -40,6 +49,11 @@ jobs:
         with:
           path: ${{ env.TF_PLUGIN_CACHE_DIR }}
           key: tf-providers-${{ runner.os }}-${{ hashFiles('hestia/.terraform.lock.hcl') }}
+
+      - name: Terraform fmt and tflint
+        run: |
+          terraform fmt -check -diff -recursive
+          tflint --recursive
 
       - name: Create plugin cache dir
         run: mkdir -p "$TF_PLUGIN_CACHE_DIR"

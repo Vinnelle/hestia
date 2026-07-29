@@ -7,132 +7,35 @@ on:
       - "hestia/vinnel-cloud/site/**"
       - "hestia/vinnel-cloud/dashboard/**"
       - ".github/workflows/vinnel-cloud-build.yml"
+      - ".github/workflows/site-deploy.yml"
+      - ".github/actions/**"
+  pull_request:
+    paths:
+      - "hestia/vinnel-cloud/site/**"
+      - "hestia/vinnel-cloud/dashboard/**"
+      - ".github/workflows/vinnel-cloud-build.yml"
+      - ".github/workflows/site-deploy.yml"
+      - ".github/actions/**"
   workflow_dispatch: {}
 
 permissions:
   contents: write
   actions: write
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  wait-for-terraform:
-    uses: ./.github/workflows/wait-for-terraform.yml
-
-  build-push:
-    needs: wait-for-terraform
-    runs-on: arc-runner
-    timeout-minutes: 20
-    strategy:
-      matrix:
-        include:
-          - app: site
-            context: hestia/vinnel-cloud/site
-            image: vinnel-cloud/site
-          - app: dashboard
-            context: hestia/vinnel-cloud/dashboard
-            image: vinnel-cloud/dashboard
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.ref_name }}
-
-      - uses: ./.github/actions/harbor-login
-        with:
-          username: ${{ secrets.HARBOR_USERNAME }}
-          password: ${{ secrets.HARBOR_PASSWORD }}
-
-      - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
-        with:
-          driver-opts: network=host
-
-      - id: build
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: ${{ matrix.context }}
-          push: true
-          tags: |
-            registry.vinnel.cloud/${{ matrix.image }}:latest
-            registry.vinnel.cloud/${{ matrix.image }}:${{ github.sha }}
-          cache-from: type=registry,ref=registry.vinnel.cloud/${{ matrix.image }}:buildcache
-          cache-to: type=registry,ref=registry.vinnel.cloud/${{ matrix.image }}:buildcache,mode=max
-
-      - name: Save image digest
-        run: |
-          mkdir -p /tmp/digests
-          printf '%s' "${{ steps.build.outputs.digest }}" > "/tmp/digests/${{ matrix.app }}"
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: digest-${{ matrix.app }}
-          path: /tmp/digests/${{ matrix.app }}
-
-  record:
-    needs: build-push
-    runs-on: arc-runner
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.ref_name }}
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          pattern: digest-*
-          path: /tmp/digests
-          merge-multiple: true
-
-      - name: Record immutable image digests
-        run: |
-          echo "SITE_DIGEST=$(cat /tmp/digests/site)" >> "$GITHUB_ENV"
-          echo "DASHBOARD_DIGEST=$(cat /tmp/digests/dashboard)" >> "$GITHUB_ENV"
-
-      - uses: ./.github/actions/record-image-digest
-        with:
-          updates: |
-            {
-              "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@${{ env.SITE_DIGEST }}",
-              "vinnel-cloud-dashboard": "registry.vinnel.cloud/vinnel-cloud/dashboard@${{ env.DASHBOARD_DIGEST }}"
-            }
-          message: "deploy: pin vinnel-cloud image digests"
-
   deploy:
-    needs: [build-push, record]
-    runs-on: arc-runner
-    concurrency:
-      group: site-deploy-vinnel-cloud-${{ github.ref_name }}
-      cancel-in-progress: true
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.ref_name }}
-
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
-        with:
-          pattern: digest-*
-          path: /tmp/digests
-          merge-multiple: true
-
-      - uses: ./.github/actions/setup-kubectl
-        with:
-          kubeconfig: ${{ secrets.KUBECONFIG }}
-
-      - name: Roll out deployments
-        run: |
-          kubectl set image deployment/vinnel-cloud-site -n websites \
-            "*=registry.vinnel.cloud/vinnel-cloud/site@$(cat /tmp/digests/site)"
-          kubectl set image deployment/vinnel-cloud-dashboard -n websites \
-            "*=registry.vinnel.cloud/vinnel-cloud/dashboard@$(cat /tmp/digests/dashboard)"
-          kubectl rollout status deployment/vinnel-cloud-site -n websites
-          kubectl rollout status deployment/vinnel-cloud-dashboard -n websites
-
-      - name: Purge Cloudflare cache
-        env:
-          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          ZONE_NAME: vinnel.cloud
-        run: |
-          zone_id=$(curl -fsS -H "Authorization: Bearer $CF_TOKEN" \
-            "https://api.cloudflare.com/client/v4/zones?name=$ZONE_NAME" | jq -re '.result[0].id')
-          curl -fsS -X POST \
-            -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
-            --data '{"purge_everything":true}' \
-            "https://api.cloudflare.com/client/v4/zones/$zone_id/purge_cache" | jq -e '.success'
+    uses: ./.github/workflows/site-deploy.yml
+    with:
+      targets: >-
+        [{"context": "hestia/vinnel-cloud/site",
+          "image": "vinnel-cloud/site",
+          "deployment": "vinnel-cloud-site"},
+         {"context": "hestia/vinnel-cloud/dashboard",
+          "image": "vinnel-cloud/dashboard",
+          "deployment": "vinnel-cloud-dashboard"}]
+      purge_zone: vinnel.cloud
+    secrets: inherit

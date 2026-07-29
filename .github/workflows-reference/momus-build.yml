@@ -8,22 +8,30 @@ on:
       - "hestia/momus/entrypoint.sh"
       - "love/love.c"
       - ".github/workflows/momus-build.yml"
+      - ".github/actions/**"
+  pull_request:
+    paths:
+      - "hestia/momus/Dockerfile"
+      - "hestia/momus/entrypoint.sh"
+      - "love/love.c"
+      - ".github/workflows/momus-build.yml"
+      - ".github/actions/**"
   workflow_dispatch: {}
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  wait-for-terraform:
-    uses: ./.github/workflows/wait-for-terraform.yml
-
   build-push:
-    needs: wait-for-terraform
     runs-on: arc-runner
     timeout-minutes: 20
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      contents: write
+      actions: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -42,8 +50,7 @@ jobs:
           context: .
           file: hestia/momus/Dockerfile
           platforms: linux/amd64
-          pull: true
-          push: true
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
             registry.vinnel.cloud/vinnel-cloud/momus:${{ github.sha }}
           cache-from: type=registry,ref=registry.vinnel.cloud/vinnel-cloud/momus:buildcache
@@ -52,14 +59,14 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
 
-  record:
-    needs: build-push
-    runs-on: arc-runner
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-
-      - uses: ./.github/actions/record-image-digest
+      - if: github.event_name != 'pull_request'
+        uses: ./.github/actions/record-image-digest
         with:
-          updates: '{"momus":"registry.vinnel.cloud/vinnel-cloud/momus@${{ needs.build-push.outputs.digest }}"}'
+          updates: '{"momus":"registry.vinnel.cloud/vinnel-cloud/momus@${{ steps.build.outputs.digest }}"}'
           message: "deploy: pin Momus image digest"
+
+      - name: Reconcile Terraform against the recorded digest
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run terraform.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"

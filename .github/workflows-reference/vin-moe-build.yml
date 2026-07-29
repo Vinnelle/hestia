@@ -7,34 +7,45 @@ on:
       - "hestia/vin-moe/site/**"
       - ".github/workflows/vin-moe-build.yml"
       - ".github/workflows/site-deploy.yml"
+      - ".github/actions/**"
+  pull_request:
+    paths:
+      - "hestia/vin-moe/site/**"
+      - ".github/workflows/vin-moe-build.yml"
+      - ".github/workflows/site-deploy.yml"
+      - ".github/actions/**"
   workflow_dispatch: {}
 
 permissions:
   contents: write
   actions: write
 
-jobs:
-  wait-for-terraform:
-    uses: ./.github/workflows/wait-for-terraform.yml
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
+jobs:
   deploy:
-    needs: wait-for-terraform
     uses: ./.github/workflows/site-deploy.yml
     with:
-      context: hestia/vin-moe/site
-      image: vin-moe/site
-      deployment: vin-moe-site
+      targets: >-
+        [{"context": "hestia/vin-moe/site",
+          "image": "vin-moe/site",
+          "deployment": "vin-moe-site"}]
       purge_zone: vin.moe
     secrets: inherit
 
   mirror:
     needs: deploy
+    if: github.event_name != 'pull_request'
     runs-on: arc-runner
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          path: hestia
+          path: gaia
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -45,10 +56,10 @@ jobs:
       - name: Sync vin-moe site
         run: |
           mkdir -p vin.moe/site-image vin.moe/github-workflow
-          rsync -a --delete --exclude='.git' hestia/hestia/vin-moe/site/ vin.moe/site-image/
-          rsync -a hestia/.github/workflows/vin-moe-build.yml vin.moe/github-workflow/
+          rsync -a --delete --exclude='.git' gaia/hestia/vin-moe/site/ vin.moe/site-image/
+          rsync -a gaia/.github/workflows/vin-moe-build.yml vin.moe/github-workflow/
 
-      - uses: ./hestia/.github/actions/git-commit-push
+      - uses: ./gaia/.github/actions/git-commit-push
         with:
           path: vin.moe
-          message: "sync: mirror vin-moe source from hestia@${{ github.sha }}"
+          message: "sync: mirror vin-moe source from gaia@${{ github.sha }}"

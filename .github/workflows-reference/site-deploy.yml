@@ -3,16 +3,11 @@ name: Deploy site
 on:
   workflow_call:
     inputs:
-      context:
-        description: "Docker build context path"
-        required: true
-        type: string
-      image:
-        description: "Harbor repo path (project/name)"
-        required: true
-        type: string
-      deployment:
-        description: "Deployment name in the websites namespace"
+      targets:
+        description: >-
+          JSON array of build targets. Each entry is
+          {"context": <build context>, "image": <harbor project/name>,
+           "deployment": <deployment name in websites, also the images.json key>}.
         required: true
         type: string
       purge_zone:
@@ -22,19 +17,20 @@ on:
         default: ""
 
 permissions:
-  contents: write
-  actions: write
+  contents: read
 
 jobs:
-  build-push:
+  build:
     runs-on: arc-runner
     timeout-minutes: 20
-    outputs:
-      digest: ${{ steps.build.outputs.digest }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        target: ${{ fromJSON(inputs.targets) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.ref_name }}
 
       - uses: ./.github/actions/harbor-login
         with:
@@ -48,49 +44,60 @@ jobs:
       - id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
-          context: ${{ inputs.context }}
-          push: true
+          context: ${{ matrix.target.context }}
+          push: ${{ github.event_name != 'pull_request' }}
           tags: |
-            registry.vinnel.cloud/${{ inputs.image }}:latest
-            registry.vinnel.cloud/${{ inputs.image }}:${{ github.sha }}
-          cache-from: type=registry,ref=registry.vinnel.cloud/${{ inputs.image }}:buildcache
-          cache-to: type=registry,ref=registry.vinnel.cloud/${{ inputs.image }}:buildcache,mode=max
+            registry.vinnel.cloud/${{ matrix.target.image }}:latest
+            registry.vinnel.cloud/${{ matrix.target.image }}:${{ github.sha }}
+          cache-from: type=registry,ref=registry.vinnel.cloud/${{ matrix.target.image }}:buildcache
+          cache-to: type=registry,ref=registry.vinnel.cloud/${{ matrix.target.image }}:buildcache,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
-  record:
-    needs: build-push
-    runs-on: arc-runner
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - if: github.event_name != 'pull_request'
+        uses: ./.github/actions/record-image-digest
         with:
-          ref: ${{ github.ref_name }}
-
-      - uses: ./.github/actions/record-image-digest
-        with:
-          updates: '{"${{ inputs.deployment }}":"registry.vinnel.cloud/${{ inputs.image }}@${{ needs.build-push.outputs.digest }}"}'
-          message: "deploy: pin ${{ inputs.deployment }} image digest"
+          updates: '{"${{ matrix.target.deployment }}":"registry.vinnel.cloud/${{ matrix.target.image }}@${{ steps.build.outputs.digest }}"}'
+          message: "deploy: pin ${{ matrix.target.deployment }} image digest"
 
   deploy:
-    needs: [build-push, record]
+    needs: build
+    if: github.event_name != 'pull_request'
     runs-on: arc-runner
+    permissions:
+      contents: read
+      actions: write
     concurrency:
-      group: site-deploy-${{ inputs.deployment }}
+      group: site-deploy-${{ github.workflow }}
       cancel-in-progress: true
     timeout-minutes: 30
+    env:
+      TARGETS: ${{ inputs.targets }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: ${{ github.ref_name }}
+
+      - name: Read back the digests the build job recorded
+        run: |
+          git fetch --depth=1 origin "$GITHUB_REF_NAME"
+          git show FETCH_HEAD:hestia/images.json > /tmp/images.json
+
+      - uses: ./.github/actions/wait-for-terraform
 
       - uses: ./.github/actions/setup-kubectl
         with:
           kubeconfig: ${{ secrets.KUBECONFIG }}
 
-      - name: Roll out deployment
+      - name: Roll out deployments
         run: |
-          kubectl set image "deployment/${{ inputs.deployment }}" -n websites \
-            '*=registry.vinnel.cloud/${{ inputs.image }}@${{ needs.build-push.outputs.digest }}'
-          kubectl rollout status "deployment/${{ inputs.deployment }}" -n websites
+          mapfile -t names < <(jq -r '.[].deployment' <<<"$TARGETS")
+          for name in "${names[@]}"; do
+            image=$(jq -re --arg n "$name" '.[$n]' /tmp/images.json)
+            kubectl set image "deployment/$name" -n websites "*=$image"
+          done
+          for name in "${names[@]}"; do
+            kubectl rollout status "deployment/$name" -n websites
+          done
 
       - name: Purge Cloudflare cache
         if: inputs.purge_zone != ''
@@ -104,3 +111,8 @@ jobs:
             -H "Authorization: Bearer $CF_TOKEN" -H "Content-Type: application/json" \
             --data '{"purge_everything":true}' \
             "https://api.cloudflare.com/client/v4/zones/$zone_id/purge_cache" | jq -e '.success'
+
+      - name: Reconcile Terraform against the recorded digests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run terraform.yml --repo "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME"

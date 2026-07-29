@@ -6,10 +6,21 @@ on:
     paths:
       - "hestia/ci-runner/Dockerfile"
       - ".github/workflows/ci-runner-build.yml"
+  pull_request:
+    paths:
+      - "hestia/ci-runner/Dockerfile"
+      - ".github/workflows/ci-runner-build.yml"
   workflow_dispatch: {}
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: registry.vinnel.cloud/ci-runner/ci-runner
 
 jobs:
   build-push:
@@ -30,9 +41,33 @@ jobs:
       - uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: hestia/ci-runner
-          push: true
-          tags: |
-            registry.vinnel.cloud/ci-runner/ci-runner:latest
-            registry.vinnel.cloud/ci-runner/ci-runner:${{ github.sha }}
-          cache-from: type=registry,ref=registry.vinnel.cloud/ci-runner/ci-runner:buildcache
-          cache-to: type=registry,ref=registry.vinnel.cloud/ci-runner/ci-runner:buildcache,mode=max
+          load: true
+          tags: ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Smoke test the baked toolchain
+        run: |
+          docker run --rm --entrypoint bash "$IMAGE:${{ github.sha }}" -c '
+            set -e
+            kubectl version --client >/dev/null
+            tflint --version >/dev/null
+            actionlint -version >/dev/null
+            shellcheck --version >/dev/null
+            yamllint --version >/dev/null
+            gh --version >/dev/null
+            jq --version >/dev/null
+            rsync --version >/dev/null
+            docker --version >/dev/null
+            cc --version >/dev/null
+          '
+
+      - name: Publish
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push "$IMAGE:${{ github.sha }}"
+          docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:latest"
+          docker push "$IMAGE:latest"

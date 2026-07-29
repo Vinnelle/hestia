@@ -1,7 +1,8 @@
 githubConfigUrl: "https://github.com/Vinnelle/gaia"
 githubConfigSecret: arc-github-app
 
-minRunners: 0
+minRunners: 1
+maxRunners: 6
 
 containerMode:
   type: "dind"
@@ -17,7 +18,7 @@ template:
     containers:
       - name: runner
         image: registry.vinnel.cloud/ci-runner/ci-runner:latest
-        imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
         command: ["/home/runner/run.sh"]
         resources:
           requests:

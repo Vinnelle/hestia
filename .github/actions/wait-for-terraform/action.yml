@@ -1,11 +1,11 @@
 name: Wait for Terraform
-description: If a terraform.yml run for this commit on prd is in progress, waits for it. Otherwise (none running, or it already failed) skips without blocking.
+description: If a terraform.yml run for this commit on prd is in progress, waits for it. Otherwise (none running, or it already finished) skips without blocking. Advisory only, never fails.
 
 inputs:
   timeout-minutes:
-    description: Max wall-clock minutes to wait for an in-progress run to conclude.
+    description: Max wall-clock minutes to wait for an in-progress run to conclude. Must stay below the calling job's timeout-minutes so a slow apply warns instead of failing the job.
     required: false
-    default: "55"
+    default: "15"
 
 runs:
   using: composite
@@ -14,40 +14,35 @@ runs:
       env:
         GH_TOKEN: ${{ github.token }}
         TIMEOUT_MINUTES: ${{ inputs.timeout-minutes }}
+        REPO: ${{ github.repository }}
+        SHA: ${{ github.sha }}
       run: |
         set -euo pipefail
-        repo="${{ github.repository }}"
-        sha="${{ github.event.pull_request.head.sha || github.sha }}"
         deadline=$(( $(date +%s) + TIMEOUT_MINUTES * 60 ))
 
-        run_id=$(gh run list --repo "$repo" --workflow=terraform.yml --branch prd \
+        run_id=$(gh run list --repo "$REPO" --workflow=terraform.yml --branch prd \
           --json headSha,status,databaseId \
-          --jq ".[] | select(.headSha==\"$sha\") | select(.status!=\"completed\") | .databaseId" | head -n1)
+          --jq ".[] | select(.headSha==\"$SHA\") | select(.status!=\"completed\") | .databaseId" | head -n1)
 
         if [ -z "$run_id" ]; then
-          echo "no Terraform run in progress for $sha, skipping wait"
+          echo "no Terraform run in progress for $SHA, skipping wait"
           exit 0
         fi
 
         echo "Terraform run $run_id in progress, waiting up to ${TIMEOUT_MINUTES}m..."
         conclusion=""
         while [ "$(date +%s)" -lt "$deadline" ]; do
-          status=$(gh run view "$run_id" --repo "$repo" --json status --jq .status)
-          if [ "$status" = "completed" ]; then
-            conclusion=$(gh run view "$run_id" --repo "$repo" --json conclusion --jq .conclusion)
+          if [ "$(gh run view "$run_id" --repo "$REPO" --json status --jq .status)" = "completed" ]; then
+            conclusion=$(gh run view "$run_id" --repo "$REPO" --json conclusion --jq .conclusion)
             break
           fi
-          sleep 10
+          sleep 15
         done
 
         if [ -z "$conclusion" ]; then
           echo "::warning::Terraform run $run_id still running after ${TIMEOUT_MINUTES}m, proceeding anyway"
-          exit 0
-        fi
-
-        if [ "$conclusion" != "success" ]; then
+        elif [ "$conclusion" != "success" ]; then
           echo "::warning::Terraform run $run_id concluded: $conclusion, proceeding anyway"
-          exit 0
+        else
+          echo "Terraform run $run_id concluded: success"
         fi
-
-        echo "Terraform run $run_id concluded: success"
