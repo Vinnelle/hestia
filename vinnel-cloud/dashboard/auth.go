@@ -118,7 +118,7 @@ func (a *authenticator) handleCallback(w http.ResponseWriter, r *http.Request) {
 
 func (a *authenticator) handleLogout(w http.ResponseWriter, r *http.Request) {
 	a.clearCookie(w, "session")
-	http.Redirect(w, r, "/login.html", http.StatusFound)
+	http.Redirect(w, r, "https://vinnel.cloud", http.StatusFound)
 }
 
 func (a *authenticator) requireSession(next func(http.ResponseWriter, *http.Request, *session)) http.HandlerFunc {

@@ -104,10 +104,10 @@ func main() {
 			http.Redirect(w, r, "/metrics.html", http.StatusFound)
 			return
 		}
-		if !isAsset(r.URL.Path) && r.URL.Path != "/login.html" {
+		if !isAsset(r.URL.Path) {
 			s := auth.sessionFromRequest(r)
 			if s == nil {
-				http.Redirect(w, r, "/login.html", http.StatusFound)
+				http.Redirect(w, r, "/auth/login", http.StatusFound)
 				return
 			}
 			if _, err := fs.Stat(webRoot, strings.TrimPrefix(r.URL.Path, "/")); err == nil {

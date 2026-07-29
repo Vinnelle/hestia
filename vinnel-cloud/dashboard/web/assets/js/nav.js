@@ -1,7 +1,7 @@
 fetch('/api/me').then(r => r.ok ? r.json() : Promise.reject()).then(me => {
   document.getElementById('user-email').textContent = me.email || '';
   if (me.picture) document.getElementById('user-avatar').src = me.picture;
-}).catch(() => { window.location.href = '/login.html'; });
+}).catch(() => { window.location.href = '/auth/login'; });
 
 document.getElementById('user-menu-btn').addEventListener('click', () => {
   const dd = document.getElementById('user-dropdown');
@@ -11,7 +11,7 @@ document.getElementById('user-menu-btn').addEventListener('click', () => {
 });
 
 document.getElementById('sign-out-btn').addEventListener('click', () => {
-  fetch('/auth/logout', { method: 'POST' }).then(() => { window.location.href = '/login.html'; });
+  fetch('/auth/logout', { method: 'POST' }).then(() => { window.location.href = 'https://vinnel.cloud'; });
 });
 
 document.getElementById('sidebar-toggle')?.addEventListener('click', () => {
