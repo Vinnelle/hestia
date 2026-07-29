@@ -160,16 +160,30 @@ resource "kubernetes_secret_v1" "netbird_secrets" {
   }
 }
 
-resource "kubernetes_ingress_v1" "netbird_http" {
+# Split from the API paths below so the dashboard can sit behind Authelia. /api
+# and /relay must NOT inherit that: every peer and the netbird CLI talk to them,
+# and a forward-auth redirect would brick the mesh. Annotations are per-Ingress
+# in ingress-nginx, hence two objects.
+#
+# Plain forward-auth, NOT admin_framed_service_annotations: netbird is marked
+# Frameable=false in vinnel-cloud/admin/services.go, so the portal opens it in a
+# new tab and that navigation is a top-level document — the Sec-Fetch-Dest bounce
+# would send it straight back to vinnel.cloud.
+#
+# Known wrinkle: /nb-silent-auth (the dashboard's hidden-iframe token renewal)
+# lives under / and so is gated too. If the Authelia session ever lapses, renewal
+# redirects to a login page inside that hidden iframe and fails quietly rather
+# than erroring. The portal keeps the session warm, so this should not surface.
+resource "kubernetes_ingress_v1" "netbird_dashboard_http" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
-    name      = "netbird-http"
+    name      = "netbird-dashboard-http"
     namespace = kubernetes_namespace_v1.services.metadata[0].name
-    annotations = {
+    annotations = merge(local.authelia_forward_auth_annotations, {
       "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600"
       "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600"
-    }
+    })
   }
 
   spec {
@@ -195,7 +209,37 @@ resource "kubernetes_ingress_v1" "netbird_http" {
             }
           }
         }
+      }
+    }
+  }
+}
 
+# Machine plane: netbird peers and the CLI. No forward-auth, no Sec-Fetch bounce.
+# cert-manager.io/cluster-issuer is deliberately absent — netbird_dashboard_http
+# above owns the netbird-tls secret. Two Ingresses claiming the same secret for
+# the same host would have two Certificates contending over it.
+resource "kubernetes_ingress_v1" "netbird_api_http" {
+  depends_on = [helm_release.ingress_nginx, kubernetes_ingress_v1.netbird_dashboard_http]
+  metadata {
+    name      = "netbird-api-http"
+    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600"
+      "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["proxy.vinnel.cloud"]
+      secret_name = "netbird-tls"
+    }
+
+    rule {
+      host = "proxy.vinnel.cloud"
+      http {
         path {
           path      = "/api"
           path_type = "Prefix"

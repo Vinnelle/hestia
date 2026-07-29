@@ -67,9 +67,22 @@ resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
   metadata {
     name      = "ceph-dashboard-vinnel-cloud"
     namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
-    annotations = {
+    annotations = merge(local.authelia_forward_auth_annotations, {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
-    }
+
+      # local.admin_framed_annotations plus a CSP replacement. The Ceph dashboard
+      # sends exactly "frame-ancestors 'self';" and nothing else (checked
+      # 2026-07-29), so replacing the whole header costs no script-src/style-src
+      # protection — the usual reason the shared local leaves CSP alone does not
+      # apply here. Re-check this after a Rook upgrade.
+      "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
+        more_clear_headers "X-Frame-Options";
+        more_set_headers "Content-Security-Policy: frame-ancestors https://admin.vinnel.cloud";
+        if ($http_sec_fetch_dest = "document") {
+          return 302 https://vinnel.cloud/;
+        }
+      EOT
+    })
   }
 
   spec {

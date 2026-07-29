@@ -11,6 +11,18 @@ controller:
         prometheus.io/scrape: "true"
         prometheus.io/port: "10254"
   config:
+    # Required for the admin.vinnel.cloud portal: clearing each framed app's
+    # X-Frame-Options needs more_clear_headers, and configuration-snippet is the
+    # only annotation that can emit it. Both keys are needed on 4.15 —
+    # allow-snippet-annotations has defaulted to false since 4.11, and snippet
+    # annotations sit at the Critical risk level.
+    #
+    # The default guards against a tenant with Ingress-create rights injecting
+    # arbitrary nginx config. That threat does not exist here: every Ingress in
+    # this cluster is created by Terraform from this repo, which is the canonical
+    # state. Revisit if anything else is ever granted write access to Ingresses.
+    allow-snippet-annotations: "true"
+    annotations-risk-level: Critical
     enable-opentelemetry: "true"
     otlp-collector-host: "signoz-otel-collector.monitoring.svc.cluster.local"
     otlp-collector-port: "4317"

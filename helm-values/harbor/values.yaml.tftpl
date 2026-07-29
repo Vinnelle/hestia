@@ -15,6 +15,19 @@ expose:
     annotations:
       cert-manager.io/cluster-issuer: "${cluster_issuer}"
       nginx.ingress.kubernetes.io/proxy-body-size: "0"
+      # Framed by admin.vinnel.cloud. Deliberately NO Authelia forward-auth: the
+      # chart emits one Ingress for the whole host, so an auth annotation would
+      # also cover /v2/ and /service/token (every image pull, in-cluster CI and
+      # kubelet) and /api/v2.0/ (the harbor provider, reached from Terraform
+      # Cloud outside the cluster). Harbor's own auth stays the gate here.
+      #
+      # The Sec-Fetch-Dest bounce is safe for those clients: they are not
+      # browsers and send no Sec-Fetch headers at all, so the test never matches.
+      nginx.ingress.kubernetes.io/configuration-snippet: |
+        more_clear_headers "X-Frame-Options";
+        if ($http_sec_fetch_dest = "document") {
+          return 302 https://vinnel.cloud/;
+        }
 
 persistence:
   enabled: true

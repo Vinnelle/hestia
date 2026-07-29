@@ -170,14 +170,25 @@ resource "cloudflare_dns_record" "nextcloud_vinnel_cloud" {
   proxied = true
 }
 
+# Web UI: behind Authelia, reached from admin.vinnel.cloud. Split from the sync
+# endpoints below, which must stay open — the desktop and mobile clients speak
+# WebDAV and cannot complete Authelia's browser login, so gating the whole host
+# would silently stop every sync.
+#
+# Nextcloud sends X-Frame-Options: SAMEORIGIN but no CSP frame-ancestors at all
+# (checked 2026-07-29), so the shared snippet's more_clear_headers is enough and
+# its nonce-based script-src is left alone.
+#
+# If you use no Nextcloud sync client at all, delete nextcloud_dav below and this
+# Ingress covers the host on its own.
 resource "kubernetes_ingress_v1" "nextcloud_vinnel_cloud" {
   depends_on = [helm_release.nextcloud]
   metadata {
     name      = "nextcloud-vinnel-cloud"
     namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
-    annotations = {
+    annotations = merge(local.admin_framed_service_annotations, {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
-    }
+    })
   }
 
   spec {
@@ -199,6 +210,60 @@ resource "kubernetes_ingress_v1" "nextcloud_vinnel_cloud" {
               name = "nextcloud"
               port {
                 number = 8080
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# Sync plane: WebDAV, OCS and the discovery endpoints the clients bootstrap from.
+# No forward-auth and no Sec-Fetch bounce — Nextcloud's own auth is the gate here,
+# exactly as it is today. More specific prefixes than "/" above, so ingress-nginx
+# routes these here.
+#
+# cert-manager.io/cluster-issuer is deliberately absent: nextcloud_vinnel_cloud
+# owns nextcloud-vinnel-cloud-tls, and two Ingresses requesting the same secret
+# for the same host would leave two Certificates contending over it.
+resource "kubernetes_ingress_v1" "nextcloud_dav" {
+  depends_on = [helm_release.nextcloud, kubernetes_ingress_v1.nextcloud_vinnel_cloud]
+  metadata {
+    name      = "nextcloud-dav"
+    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["nextcloud.vinnel.cloud"]
+      secret_name = "nextcloud-vinnel-cloud-tls"
+    }
+
+    rule {
+      host = "nextcloud.vinnel.cloud"
+      http {
+        dynamic "path" {
+          for_each = [
+            "/remote.php",
+            "/public.php",
+            "/status.php",
+            "/ocs",
+            "/ocm-provider",
+            "/.well-known",
+          ]
+          iterator = prefix
+          content {
+            path      = prefix.value
+            path_type = "Prefix"
+            backend {
+              service {
+                name = "nextcloud"
+                port {
+                  number = 8080
+                }
               }
             }
           }

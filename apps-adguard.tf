@@ -436,7 +436,7 @@ resource "kubernetes_ingress_v1" "adguard_admin_vinnel_cloud" {
   metadata {
     name      = "adguard-admin-vinnel-cloud"
     namespace = kubernetes_namespace_v1.adguard.metadata[0].name
-    annotations = merge(local.authelia_forward_auth_annotations, {
+    annotations = merge(local.admin_framed_service_annotations, {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })
   }
