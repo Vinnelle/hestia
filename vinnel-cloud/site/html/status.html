@@ -8,26 +8,15 @@
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+  <!-- No toggle on this page, but the shared theme.js still applies the stored
+       choice to the root element, so --bg matches behind the frame while it loads
+       instead of flashing light at a dark-mode reader. -->
   <script src="/assets/js/theme.js"></script>
   <link rel="icon" type="image/webp" href="/assets/images/favicon.webp">
-  <link rel="stylesheet" href="/assets/fonts/jetbrains-mono.css">
   <link rel="stylesheet" href="/assets/css/style.css">
   <title>status — vinnel.cloud</title>
 </head>
 <body class="status-page">
-  <!--<header class="status-bar">
-    <a class="wordmark" href="https://vinnel.cloud/">vinnel<span class="accent">.cloud</span></a>
-    <div class="theme-toggle" role="group" aria-label="Theme">
-      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
-      <span class="sep" aria-hidden="true">/</span>
-      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
-    </div>
-  </header>-->
-
   <iframe class="status-frame" src="https://vinnel.betteruptime.com" title="vinnel.cloud service status"></iframe>
-
-  <noscript>
-    <p class="status-fallback"><a href="https://vinnel.betteruptime.com">Open the status page directly &rarr;</a></p>
-  </noscript>
 </body>
 </html>

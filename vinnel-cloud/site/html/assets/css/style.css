@@ -136,37 +136,20 @@ a:hover {
   text-decoration: underline;
 }
 
-/* status.html: Better Stack's own page in a frame, so the chrome around it is
-   just enough to keep the host on-brand. */
+/* status.html is Better Stack's own page and nothing else — no chrome of ours
+   around it, so the frame is the whole viewport. dvh rather than vh so mobile
+   browser chrome collapsing does not leave a strip of our background showing. */
 .status-page {
   display: block;
   padding: 0;
+  overflow: hidden;
 }
-
-/*status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.9rem 1.25rem;
-  height: 3.25rem;
-}
-
-.status-bar .wordmark {
-  font-size: 1.1rem;
-  color: var(--fg);
-}*/
 
 .status-frame {
   display: block;
   width: 100%;
-  /*height: calc(100vh - 3.25rem);*/
+  height: 100dvh;
   border: 0;
-}
-
-.status-fallback {
-  padding: 1.25rem;
-  text-align: center;
 }
 
 @keyframes enter {
