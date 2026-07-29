@@ -23,20 +23,11 @@ RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser
 
 WORKDIR /app
-COPY build.sh .
+COPY scripts/ /build/
 COPY html/ .
 COPY --from=images /*.webp assets/images/
 
-RUN mkdir -p assets/fonts && cd assets/fonts && \
-    UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36" && \
-    curl -fsSL -A "$UA" "https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&display=swap" -o jetbrains-mono.css && \
-    grep -oE 'https://fonts\.gstatic\.com/[a-zA-Z0-9._/-]+\.woff2' jetbrains-mono.css | sort -u | while IFS= read -r url; do \
-      fname="$(basename "$url")"; \
-      curl -fsSL "$url" -o "$fname"; \
-      sed -i "s#$url#./$fname#g" jetbrains-mono.css; \
-    done
-
-RUN sh build.sh
+RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh
 
 FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:59ccf0943b0b8e8d9e6ea9039a39555730f544701a655c596f7df7d096c593f5
 USER root
@@ -44,7 +35,7 @@ RUN apk --no-cache upgrade
 USER nginx
 COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
-COPY nginx-main.conf /etc/nginx/nginx.conf
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY conf/nginx-main.conf /etc/nginx/nginx.conf
+COPY conf/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080

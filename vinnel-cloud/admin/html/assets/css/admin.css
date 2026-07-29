@@ -120,8 +120,8 @@
 }
 
 /* Thresholds are advisory, not alerting — SigNoz owns the real alerts. */
-.meter-fill.meter--warn { background: #e0a34a; }
-.meter-fill.meter--crit { background: #d9534f; }
+.meter-fill.meter--warn { background: var(--warn); }
+.meter-fill.meter--crit { background: var(--danger); }
 
 .meter-text {
   font-family: var(--mono);
@@ -138,7 +138,7 @@
   vertical-align: middle;
 }
 
-.dot--ok  { background: #4a9d5f; }
-.dot--bad { background: #d9534f; }
+.dot--ok  { background: var(--ok); }
+.dot--bad { background: var(--danger); }
 
 .dim { color: var(--muted); }

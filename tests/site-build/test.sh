@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Unit test for the (identical) hash_and_rewrite/precompress logic shared by
-# monke-academy/vin-moe/vinnel-cloud's site/build.sh and vinnel-cloud/auth's
-# build.sh. cleancss/terser/brotli
+# every site's build.sh. cleancss/terser/brotli
 # are shimmed as no-ops so this needs no real minifier/compressor installed —
 # only hash_and_rewrite's sed-rewrite correctness and precompress's file
 # creation are under test, not the third-party tools.
+# Paths are listed rather than globbed so a site that loses its build.sh fails
+# here instead of silently dropping out of the loop. monke-academy still keeps
+# its copy at the site root; the other four moved theirs under scripts/.
 set -uo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
@@ -68,8 +70,12 @@ EOF
   rm -rf "$work"
 }
 
-for rel in monke-academy/site vin-moe/site vinnel-cloud/site vinnel-cloud/auth; do
-  test_one "$repo_root/hestia/$rel/build.sh"
+for rel in monke-academy/site/build.sh \
+           vin-moe/site/scripts/build.sh \
+           vinnel-cloud/site/scripts/build.sh \
+           vinnel-cloud/auth/scripts/build.sh \
+           vinnel-cloud/admin/scripts/build.sh; do
+  test_one "$repo_root/hestia/$rel"
 done
 
 exit "$fail"

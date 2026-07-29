@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,8 +17,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
-//go:embed web
-var webFS embed.FS
+//go:embed html
+var htmlFS embed.FS
 
 type pageData struct {
 	User     string
@@ -62,6 +63,26 @@ var securityHeaders = map[string]string{
 		"base-uri 'self'",
 		"form-action 'self'",
 	}, "; "),
+}
+
+var hashedAsset = regexp.MustCompile(`\.[0-9a-f]{8}\.(css|js)$`)
+
+// assetCache mirrors what the nginx sites next door serve: content-hashed CSS/JS
+// is immutable, fonts and images get a month, anything else revalidates. Without
+// an explicit header Cloudflare applies its own default browser TTL, which
+// leaves returning browsers running stale JS against freshly rendered HTML.
+func assetCache(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case hashedAsset.MatchString(r.URL.Path):
+			w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+		case strings.HasSuffix(r.URL.Path, ".webp"), strings.HasSuffix(r.URL.Path, ".woff2"):
+			w.Header().Set("Cache-Control", "public, max-age=2592000, immutable")
+		default:
+			w.Header().Set("Cache-Control", "no-cache")
+		}
+		h.ServeHTTP(w, r)
+	})
 }
 
 // userFromRequest reads the identity Authelia handed to ingress-nginx. The
@@ -124,9 +145,9 @@ func main() {
 	}
 	cache := &statsCache{kube: kube, ttl: 15 * time.Second}
 
-	tmpl := template.Must(template.ParseFS(webFS, "web/index.html"))
+	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
 
-	webRoot, err := fs.Sub(webFS, "web")
+	htmlRoot, err := fs.Sub(htmlFS, "html")
 	if err != nil {
 		log.Fatalf("embed sub: %v", err)
 	}
@@ -137,7 +158,7 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
-	mux.Handle("GET /assets/", http.FileServer(http.FS(webRoot)))
+	mux.Handle("GET /assets/", assetCache(http.FileServer(http.FS(htmlRoot))))
 
 	// Read by the apex site at vinnel.cloud to decide whether to offer a login
 	// link or a link straight into the portal. Unauthenticated callers never
@@ -159,6 +180,8 @@ func main() {
 			w.Header().Set(k, v)
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		// The page is rendered per-user and carries the signed-in email.
+		w.Header().Set("Cache-Control", "no-store")
 		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: services}); err != nil {
 			log.Printf("render portal: %v", err)
 		}

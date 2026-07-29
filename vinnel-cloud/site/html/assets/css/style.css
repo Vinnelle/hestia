@@ -136,6 +136,39 @@ a:hover {
   text-decoration: underline;
 }
 
+/* status.html: Better Stack's own page in a frame, so the chrome around it is
+   just enough to keep the host on-brand. */
+.status-page {
+  display: block;
+  padding: 0;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  height: 3.25rem;
+}
+
+.status-bar .wordmark {
+  font-size: 1.1rem;
+  color: var(--fg);
+}
+
+.status-frame {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 3.25rem);
+  border: 0;
+}
+
+.status-fallback {
+  padding: 1.25rem;
+  text-align: center;
+}
+
 @keyframes enter {
   from { opacity: 0; transform: translateY(6px); }
 }

@@ -1,23 +1,24 @@
-// Loaded without defer so the theme lands before first paint — an inline
-// script would need a CSP hash, and script-src is 'self' only. Reads the
-// Domain=.vinnel.cloud cookie shared with vinnel.cloud/auth.vinnel.cloud first,
-// localStorage as the per-origin legacy fallback.
+// Loaded without defer so the theme lands before first paint. One identical
+// copy per site (vinnel.cloud, auth.vinnel.cloud, admin.vinnel.cloud): the
+// choice is shared through a Domain=.vinnel.cloud cookie, read here in
+// preference to localStorage, which is per-origin and only a legacy fallback.
+// Unset means "follow the OS", which the CSS light-dark() palette already does,
+// so nothing is written to the root element in that case.
 (function () {
   var root = document.documentElement;
   try {
     var m = document.cookie.match(/(?:^|; )theme=(dark|light)/);
     var t = (m && m[1]) || localStorage.theme;
-    root.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    if (t) root.dataset.theme = t;
   } catch (e) {}
 
   addEventListener('DOMContentLoaded', function () {
     var opts = Array.prototype.slice.call(document.querySelectorAll('.theme-opt'));
+    var mq = matchMedia('(prefers-color-scheme: dark)');
     function sync() {
-      var active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      var active = root.dataset.theme || (mq.matches ? 'dark' : 'light');
       opts.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.themeChoice === active); });
     }
-    sync();
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
     opts.forEach(function (b) {
       b.addEventListener('click', function () {
         root.dataset.theme = b.dataset.themeChoice;
@@ -26,5 +27,7 @@
         sync();
       });
     });
+    sync();
+    mq.addEventListener('change', sync);
   });
 })();

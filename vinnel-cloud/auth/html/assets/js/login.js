@@ -55,10 +55,14 @@
     });
   }
 
+  function sameSite(target) {
+    return !!target && /^https:\/\/([a-z0-9-]+\.)*vinnel\.cloud([/?#]|$)/.test(target);
+  }
+
   // Same-site targets only; anything else falls back to the "signed in" stage.
   function finish(redirect) {
     var target = redirect || rd;
-    if (target && /^https:\/\/([a-z0-9-]+\.)*vinnel\.cloud([/?#]|$)/.test(target)) {
+    if (sameSite(target)) {
       location.replace(target);
       return;
     }
@@ -81,6 +85,7 @@
       var lvl = res.data.authentication_level || 0;
       if (location.pathname === '/logout') {
         api('POST', '/api/logout', {}).then(function () {
+          if (sameSite(rd)) { location.replace(rd); return; }
           history.replaceState(null, '', '/');
           show('login', 'signed out.');
         });

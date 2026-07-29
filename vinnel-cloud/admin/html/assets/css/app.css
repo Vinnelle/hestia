@@ -1,19 +1,16 @@
 
 
-[data-theme="dark"] {
-  --card-bg:     #131316;
-  --card-border: #1e1e1f;
-  --accent:      #f7b9d1;
-  --accent-dim:  rgba(247, 185, 209, 0.12);
-  --row-hover:   rgba(255, 255, 255, 0.03);
-}
-
-[data-theme="light"] {
-  --card-bg:     #ffffff;
-  --card-border: #e6e0d8;
-  --accent:      #b3466b;
-  --accent-dim:  rgba(179, 70, 107, 0.1);
-  --row-hover:   rgba(0, 0, 0, 0.02);
+/* Surfaces and state colours the shared palette in style.css has no use for.
+   Same light-dark() form, so the toggle drives all of them through
+   color-scheme alone. */
+:root {
+  --card-bg:     light-dark(#ffffff, #131316);
+  --card-border: light-dark(#e6e0d8, #1e1e1f);
+  --accent-dim:  light-dark(rgb(179 70 107 / 0.1), rgb(247 185 209 / 0.12));
+  --row-hover:   light-dark(rgb(0 0 0 / 0.02), rgb(255 255 255 / 0.03));
+  --ok:          light-dark(#2f7a45, #4a9d5f);
+  --warn:        light-dark(#a76a12, #e0a34a);
+  --danger:      light-dark(#b3261e, #f87171);
 }
 
 body {
@@ -294,9 +291,9 @@ a { color: var(--accent); text-decoration: none; }
   background: var(--accent-dim);
 }
 
-.dropdown-item--danger { color: #f87171; }
-.dropdown-item--danger svg { color: #f87171; }
-.dropdown-item--danger:hover { background: rgba(248,113,113,0.1); }
+.dropdown-item--danger { color: var(--danger); }
+.dropdown-item--danger svg { color: var(--danger); }
+.dropdown-item--danger:hover { background: color-mix(in srgb, var(--danger) 10%, transparent); }
 
 .app-main {
   max-width: none;
@@ -461,7 +458,7 @@ a { color: var(--accent); text-decoration: none; }
 .add-user-error {
   min-height: 1.25rem;
   font-size: 0.8rem;
-  color: #f87171;
+  color: var(--danger);
   padding: 0.25rem 1.5rem 0;
 }
 
@@ -516,8 +513,8 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 .btn-remove-user:hover {
-  border-color: #f87171;
-  color: #f87171;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .state-center {
@@ -530,7 +527,7 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 .error-msg {
-  color: #f87171;
+  color: var(--danger);
 }
 
 .fade-in-on-show {
