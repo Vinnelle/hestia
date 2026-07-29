@@ -6,6 +6,7 @@ on:
     paths:
       - "hestia/vinnel-cloud/site/**"
       - "hestia/vinnel-cloud/dashboard/**"
+      - "hestia/vinnel-cloud/admin/**"
       - ".github/workflows/vinnel-cloud-build.yml"
       - ".github/workflows/site-deploy.yml"
       - ".github/actions/**"
@@ -13,6 +14,7 @@ on:
     paths:
       - "hestia/vinnel-cloud/site/**"
       - "hestia/vinnel-cloud/dashboard/**"
+      - "hestia/vinnel-cloud/admin/**"
       - ".github/workflows/vinnel-cloud-build.yml"
       - ".github/workflows/site-deploy.yml"
       - ".github/actions/**"
@@ -36,6 +38,9 @@ jobs:
           "deployment": "vinnel-cloud-site"},
          {"context": "hestia/vinnel-cloud/dashboard",
           "image": "vinnel-cloud/dashboard",
-          "deployment": "vinnel-cloud-dashboard"}]
+          "deployment": "vinnel-cloud-dashboard"},
+         {"context": "hestia/vinnel-cloud/admin",
+          "image": "vinnel-cloud/admin",
+          "deployment": "vinnel-cloud-admin"}]
       purge_zone: vinnel.cloud
     secrets: inherit

@@ -1,0 +1,128 @@
+
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:root {
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --transition-speed: 0.3s;
+  --transition-fn: ease;
+  color-scheme: dark light;
+}
+
+[data-theme="dark"] {
+  --bg: #0c0c0d;
+  --fg: #ededea;
+  --muted: #a9a9a3;
+  --toggle-bg: #18181b;
+  --toggle-knob: #f7b9d1;
+  --toggle-border: #1e1e1f;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #faf8f5;
+  --fg: #161514;
+  --muted: #4a4743;
+  --toggle-bg: #eae8e2;
+  --toggle-knob: #b3466b;
+  --toggle-border: #e6e0d8;
+  color-scheme: light;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--bg);
+  color: var(--fg);
+  transition:
+    background-color var(--transition-speed) var(--transition-fn),
+    color var(--transition-speed) var(--transition-fn);
+}
+
+.wordmark {
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.wordmark .accent {
+  color: var(--toggle-knob);
+}
+
+.toggle {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 24px;
+  background-color: var(--toggle-bg);
+  border: 1px solid var(--toggle-border);
+  border-radius: 99px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  contain: layout style;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.toggle:hover,
+.toggle:focus-visible {
+  border-color: var(--toggle-knob);
+}
+
+.toggle-knob {
+  width: 16px;
+  height: 16px;
+  background-color: var(--toggle-knob);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.3s ease;
+}
+
+[data-theme="light"] .toggle-knob {
+  transform: translateX(20px);
+}
+
+.toggle-knob svg {
+  width: 10px;
+  height: 10px;
+  fill: var(--bg);
+}
+
+.icon-moon,
+.icon-sun {
+  position: absolute;
+}
+
+[data-theme="dark"] .icon-sun,
+[data-theme="light"] .icon-moon {
+  display: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--toggle-knob);
+  outline-offset: 2px;
+}

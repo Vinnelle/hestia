@@ -90,12 +90,21 @@ jobs:
 
       - name: Roll out deployments
         run: |
+          # A brand-new target has no Deployment yet: Terraform creates it from the
+          # digest the build job just recorded, which lands in a later commit. Skip
+          # it this once instead of failing the whole rollout.
           mapfile -t names < <(jq -r '.[].deployment' <<<"$TARGETS")
+          live=()
           for name in "${names[@]}"; do
+            if ! kubectl get "deployment/$name" -n websites >/dev/null 2>&1; then
+              echo "deployment/$name does not exist yet — Terraform will create it from the recorded digest"
+              continue
+            fi
             image=$(jq -re --arg n "$name" '.[$n]' /tmp/images.json)
             kubectl set image "deployment/$name" -n websites "*=$image"
+            live+=("$name")
           done
-          for name in "${names[@]}"; do
+          for name in "${live[@]}"; do
             kubectl rollout status "deployment/$name" -n websites
           done
 
