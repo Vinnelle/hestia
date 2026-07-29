@@ -1,0 +1,754 @@
+{
+  "description": "Chaos Mesh experiment lifecycle and chaos-daemon injection health, from the controller-manager (:10080) and chaos-daemon (:31766) Prometheus endpoints.",
+  "dotMigrated": true,
+  "layout": [
+    {
+      "h": 2,
+      "i": "chaos-experiments-total",
+      "minH": 2,
+      "minW": 2,
+      "moved": false,
+      "static": false,
+      "w": 3,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "h": 2,
+      "i": "chaos-schedules-total",
+      "minH": 2,
+      "minW": 2,
+      "moved": false,
+      "static": false,
+      "w": 3,
+      "x": 3,
+      "y": 0
+    },
+    {
+      "h": 2,
+      "i": "chaos-workflows-total",
+      "minH": 2,
+      "minW": 2,
+      "moved": false,
+      "static": false,
+      "w": 3,
+      "x": 6,
+      "y": 0
+    },
+    {
+      "h": 2,
+      "i": "daemon-bpm-processes",
+      "minH": 2,
+      "minW": 2,
+      "moved": false,
+      "static": false,
+      "w": 3,
+      "x": 9,
+      "y": 0
+    },
+    {
+      "h": 5,
+      "i": "experiments-by-phase",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 0,
+      "y": 2
+    },
+    {
+      "h": 5,
+      "i": "experiments-by-kind",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 6,
+      "y": 2
+    },
+    {
+      "h": 5,
+      "i": "events-by-type",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 0,
+      "y": 7
+    },
+    {
+      "h": 5,
+      "i": "events-by-reason",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 6,
+      "y": 7
+    },
+    {
+      "h": 5,
+      "i": "experiments-by-namespace",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 0,
+      "y": 12
+    },
+    {
+      "h": 5,
+      "i": "daemon-bpm-trend",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 6,
+      "y": 12
+    },
+    {
+      "h": 5,
+      "i": "daemon-grpc-latency",
+      "minH": 5,
+      "minW": 4,
+      "moved": false,
+      "static": false,
+      "w": 6,
+      "x": 0,
+      "y": 17
+    }
+  ],
+  "panelMap": {},
+  "tags": [
+    "chaos-mesh",
+    "chaos-engineering",
+    "reliability",
+    "prometheus"
+  ],
+  "title": "Chaos Mesh",
+  "uploadedGrafana": false,
+  "uuid": "3f8c1d64-7a92-4e05-9b3d-52c6e0a17d48",
+  "variables": {},
+  "version": "v5",
+  "widgets": [
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "All ChaosMesh experiment CRs the controller currently knows about, every phase included.",
+      "id": "chaos-experiments-total",
+      "panelTypes": "value",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_chaos_experiments",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "experiments",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Chaos Experiments",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Schedule CRs. Expect 2: pod-kill-websites and stress-websites.",
+      "id": "chaos-schedules-total",
+      "panelTypes": "value",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_chaos_schedules",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "schedules",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Chaos Schedules",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "",
+      "id": "chaos-workflows-total",
+      "panelTypes": "value",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_chaos_workflows",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "workflows",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Chaos Workflows",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Processes chaos-daemon is currently supervising - the stress-ng workers a StressChaos spawns show up here.",
+      "id": "daemon-bpm-processes",
+      "panelTypes": "value",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_daemon_bpm_controlled_processes",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "processes",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Daemon BPM Processes",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Injecting/Running/Finished/Paused. A phase stuck off Finished is the signal worth chasing.",
+      "id": "experiments-by-phase",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_chaos_experiments",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "isColumn": false,
+                  "key": "phase",
+                  "type": ""
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{phase}}",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Chaos Experiments by Phase",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "PodChaos vs StressChaos vs the kinds nothing here uses yet.",
+      "id": "experiments-by-kind",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_chaos_experiments",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "isColumn": false,
+                  "key": "kind",
+                  "type": ""
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{kind}}",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Chaos Experiments by Kind",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Normal vs Warning. A rising Warning rate means experiments are failing to apply, not that chaos is working.",
+      "id": "events-by-type",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_emitted_event_total",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "isColumn": false,
+                  "key": "type",
+                  "type": ""
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{type}}",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Emitted Events / s by Type",
+      "yAxisUnit": "cps"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Applied/Recovered/Failed/... - the per-reason breakdown behind the type split.",
+      "id": "events-by-reason",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_emitted_event_total",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "isColumn": false,
+                  "key": "reason",
+                  "type": ""
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{reason}}",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Emitted Events / s by Reason",
+      "yAxisUnit": "cps"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Blast radius check: only chaos-mesh (the Schedules) and websites (the spawned experiments) should ever appear.",
+      "id": "experiments-by-namespace",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_controller_manager_chaos_experiments",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "dataType": "string",
+                  "isColumn": false,
+                  "key": "namespace",
+                  "type": ""
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "legend": "{{namespace}}",
+              "queryName": "A",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Chaos Experiments by Namespace",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "A controlled count that never returns to baseline after an experiment ends means leaked stressors.",
+      "id": "daemon-bpm-trend",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_daemon_bpm_controlled_processes",
+                  "reduceTo": "last",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "latest"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "controlled",
+              "queryName": "A",
+              "stepInterval": 60
+            },
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_daemon_bpm_controlled_process_total",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "sum",
+                  "temporality": null,
+                  "timeAggregation": "rate"
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "B",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "started/s",
+              "queryName": "B",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "Daemon BPM Processes over Time",
+      "yAxisUnit": "none"
+    },
+    {
+      "contextLinks": {
+        "linksData": ""
+      },
+      "description": "Controller-manager -> daemon injection calls. Slow here = chaos taking longer to apply than the experiment duration assumes.",
+      "id": "daemon-grpc-latency",
+      "panelTypes": "graph",
+      "query": {
+        "builder": {
+          "queryData": [
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_daemon_grpc_server_handling_seconds.bucket",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "p50",
+                  "temporality": null,
+                  "timeAggregation": ""
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "A",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "p50",
+              "queryName": "A",
+              "stepInterval": 60
+            },
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_daemon_grpc_server_handling_seconds.bucket",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "p90",
+                  "temporality": null,
+                  "timeAggregation": ""
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "B",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "p90",
+              "queryName": "B",
+              "stepInterval": 60
+            },
+            {
+              "aggregations": [
+                {
+                  "metricName": "chaos_daemon_grpc_server_handling_seconds.bucket",
+                  "reduceTo": "avg",
+                  "spaceAggregation": "p99",
+                  "temporality": null,
+                  "timeAggregation": ""
+                }
+              ],
+              "dataSource": "metrics",
+              "disabled": false,
+              "expression": "C",
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "legend": "p99",
+              "queryName": "C",
+              "stepInterval": 60
+            }
+          ],
+          "queryFormulas": []
+        },
+        "queryType": "builder"
+      },
+      "selectedLogFields": [],
+      "selectedTracesFields": [],
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "title": "chaos-daemon gRPC Handling Duration",
+      "yAxisUnit": "s"
+    }
+  ]
+}

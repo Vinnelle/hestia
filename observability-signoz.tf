@@ -22,10 +22,46 @@ resource "helm_release" "k8s_infra" {
     templatefile("${path.module}/helm-values/k8s-infra/values.yaml.tftpl", {
       monitoring_namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
       cluster_name         = var.cluster_name
+      node_ip              = var.node_ip
     })
   ]
 
   depends_on = [helm_release.signoz]
+}
+
+resource "kubernetes_cluster_role_v1" "otel_agent_metrics" {
+  metadata {
+    name = "k8s-infra-otel-agent-metrics"
+  }
+
+  rule {
+    non_resource_urls = ["/metrics"]
+    verbs             = ["get"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["nodes/metrics"]
+    verbs      = ["get"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding_v1" "otel_agent_metrics" {
+  metadata {
+    name = "k8s-infra-otel-agent-metrics"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role_v1.otel_agent_metrics.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = "k8s-infra-otel-agent"
+    namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
+  }
 }
 
 resource "cloudflare_dns_record" "signoz_vinnel_cloud" {
@@ -67,7 +103,7 @@ resource "signoz_rule" "backup_job_failed" {
           type = "promql"
           spec = {
             name  = "A"
-            query = "max(kube_job_status_failed{namespace=\"backup\"})"
+            query = "max({\"k8s.job.failed_pods\",\"k8s.namespace.name\"=\"backup\"})"
           }
         }
       }]
@@ -117,7 +153,7 @@ resource "signoz_rule" "node_not_ready" {
           type = "promql"
           spec = {
             name  = "A"
-            query = "min(kube_node_status_condition{condition=\"Ready\",status=\"true\"})"
+            query = "min({\"k8s.node.condition_ready\"})"
           }
         }
       }]
@@ -167,7 +203,7 @@ resource "signoz_rule" "pvc_almost_full" {
           type = "promql"
           spec = {
             name  = "A"
-            query = "max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes)"
+            query = "max by (\"k8s.namespace.name\",\"k8s.persistentvolumeclaim.name\") (1 - {\"k8s.volume.available\"} / {\"k8s.volume.capacity\"})"
           }
         }
       }]
@@ -267,7 +303,7 @@ resource "signoz_rule" "workload_degraded" {
           type = "promql"
           spec = {
             name  = "A"
-            query = "(kube_deployment_status_replicas_available / clamp_min(kube_deployment_spec_replicas, 1)) or (kube_statefulset_status_replicas_ready / clamp_min(kube_statefulset_replicas, 1))"
+            query = "({\"k8s.deployment.available\"} / clamp_min({\"k8s.deployment.desired\"}, 1)) or ({\"k8s.statefulset.ready_pods\"} / clamp_min({\"k8s.statefulset.desired_pods\"}, 1))"
           }
         }
       }]

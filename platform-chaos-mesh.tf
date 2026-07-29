@@ -18,9 +18,19 @@ resource "helm_release" "chaos_mesh" {
 
   values = [
     yamlencode({
+      controllerManager = {
+        podAnnotations = {
+          "prometheus.io/scrape" = "true"
+          "prometheus.io/port"   = "10080"
+        }
+      }
       chaosDaemon = {
         runtime    = "containerd"
         socketPath = "/run/containerd/containerd.sock"
+        podAnnotations = {
+          "prometheus.io/scrape" = "true"
+          "prometheus.io/port"   = "31766"
+        }
       }
       dashboard = {
         service = { type = "ClusterIP" }

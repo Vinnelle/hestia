@@ -93,6 +93,20 @@ ingress:
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
+name: control-plane-metrics-from-pods
+portSelector:
+  ports:
+    - 2381
+    - 10249
+    - 10257
+    - 10259
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
 name: hubble-peer-from-pods
 portSelector:
   ports:

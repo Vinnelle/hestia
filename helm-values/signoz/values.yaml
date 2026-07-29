@@ -3,8 +3,20 @@ global:
 
 clickhouse:
   replicaCount: 1
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9363"
+    prometheus.io/path: /metrics
   zookeeper:
     replicaCount: 1
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9141"
+      prometheus.io/path: /metrics
+  clickhouseOperator:
+    podAnnotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "8888"
   persistence:
     size: 30Gi
 
@@ -19,6 +31,9 @@ frontend:
 
 otelCollector:
   replicaCount: 1
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8888"
 
 alertmanager:
   replicaCount: 1

@@ -2,7 +2,7 @@ resource "restapi_object" "dashboard" {
   for_each = fileset(path.module, "signoz-dashboards/**/*.json")
 
   path = "/api/v1/dashboards"
-  data = file("${path.module}/${each.value}")
+  data = jsonencode(jsondecode(file("${path.module}/${each.value}")))
 
   lifecycle {
     ignore_changes = [data]
@@ -84,10 +84,6 @@ import {
 import {
   to = restapi_object.dashboard["signoz-dashboards/nginx/ingress-nginx-controller.json"]
   id = "/api/v1/dashboards/019fa952-ca08-7cc0-81f9-e6621427aff7"
-}
-import {
-  to = restapi_object.dashboard["signoz-dashboards/hostmetrics/hostmetrics-k8s.json"]
-  id = "/api/v1/dashboards/019fa952-ce56-76fd-a9a9-a96bae7a6456"
 }
 import {
   to = restapi_object.dashboard["signoz-dashboards/cert-manager/cert-manager-dashboard.json"]
