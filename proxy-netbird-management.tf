@@ -37,6 +37,30 @@ resource "kubernetes_persistent_volume_claim_v1" "netbird_management" {
   }
 }
 
+# ceph-block migration target for kubernetes_persistent_volume_claim_v1.netbird_management
+# above — local-path has no CSI driver, so Kasten K10 can't snapshot-back it up. Not yet
+# referenced by the deployment; cutover happens in a separate, supervised step.
+resource "kubernetes_persistent_volume_claim_v1" "netbird_management_ceph" {
+  metadata {
+    name      = "netbird-management-pvc-ceph"
+    namespace = kubernetes_namespace_v1.services.metadata[0].name
+  }
+  spec {
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "ceph-block"
+    resources {
+      requests = {
+        storage = "5Gi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "kubernetes_deployment_v1" "netbird_management" {
   metadata {
     name      = "netbird-management"

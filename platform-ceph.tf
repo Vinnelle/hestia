@@ -31,6 +31,20 @@ resource "helm_release" "rook_ceph_cluster" {
   depends_on = [helm_release.rook_ceph_operator]
 }
 
+resource "helm_release" "ceph_csi_drivers" {
+  name       = "ceph-csi-drivers"
+  repository = "https://ceph.github.io/ceph-csi-operator"
+  chart      = "ceph-csi-drivers"
+  version    = "1.0.4"
+  namespace  = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+
+  values = [
+    file("${path.module}/helm-values/ceph-csi-drivers/values.yaml")
+  ]
+
+  depends_on = [helm_release.rook_ceph_cluster]
+}
+
 data "kubernetes_secret_v1" "rook_ceph_dashboard_password" {
   depends_on = [helm_release.rook_ceph_cluster]
   metadata {

@@ -277,6 +277,30 @@ resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_dashboard" {
   }
 }
 
+# ceph-block migration target for kubernetes_persistent_volume_claim_v1.vinnel_cloud_dashboard
+# above — local-path has no CSI driver, so Kasten K10 can't snapshot-back it up. Not yet
+# referenced by the deployment; cutover happens in a separate, supervised step.
+resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_dashboard_ceph" {
+  metadata {
+    name      = "vinnel-cloud-dashboard-pvc-ceph"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+  spec {
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "ceph-block"
+    resources {
+      requests = {
+        storage = "1Gi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
 resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_dashboard" {
   metadata {
     name      = "vinnel-cloud-dashboard-pdb"

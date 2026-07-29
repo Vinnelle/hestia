@@ -98,3 +98,9 @@ variable "signoz_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "kasten_license_key" {
+  description = "Kasten K10 license (base64 string from the Kasten portal). Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}

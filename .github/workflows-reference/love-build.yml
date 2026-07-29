@@ -5,10 +5,12 @@ on:
     branches: [prd]
     paths:
       - "love/love.c"
+      - "love/test.sh"
       - ".github/workflows/love-build.yml"
   pull_request:
     paths:
       - "love/love.c"
+      - "love/test.sh"
       - ".github/workflows/love-build.yml"
   workflow_dispatch: {}
 
@@ -28,6 +30,9 @@ jobs:
 
       - name: Compile
         run: cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
+
+      - name: Smoke test
+        run: bash love/test.sh love/love
 
       - if: github.event_name != 'pull_request'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

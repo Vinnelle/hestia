@@ -4,11 +4,9 @@ on:
   push:
     branches: [prd]
     paths-ignore:
-      - "hestia/images.json"
       - "**.md"
   pull_request:
     paths-ignore:
-      - "hestia/images.json"
       - "**.md"
   workflow_dispatch: {}
 
@@ -31,6 +29,9 @@ jobs:
 
       - name: Shellcheck
         run: git ls-files '*.sh' | xargs -r shellcheck -S warning
+
+      - name: Site build.sh unit tests
+        run: bash hestia/tests/site-build/test.sh
 
       - name: Yamllint
         run: git ls-files '*.yaml' | xargs -r yamllint -d relaxed
@@ -63,6 +64,24 @@ jobs:
               go test ./...
             )
           done
+
+  terraform-test:
+    runs-on: arc-runner
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: hestia/tests/images_json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform test
+        run: |
+          terraform init -input=false
+          terraform test
 
   secrets:
     runs-on: arc-runner
