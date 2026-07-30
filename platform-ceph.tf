@@ -75,7 +75,7 @@ resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
         more_clear_headers "X-Frame-Options";
         more_set_headers "Content-Security-Policy: frame-ancestors https://admin.vinnel.cloud";
         if ($http_sec_fetch_dest = "document") {
-          return 302 https://vinnel.cloud/;
+          return 302 https://admin.vinnel.cloud/#ceph;
         }
       EOT
     })

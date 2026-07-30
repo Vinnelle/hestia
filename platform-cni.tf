@@ -29,7 +29,7 @@ resource "kubernetes_ingress_v1" "hubble_vinnel_cloud" {
   metadata {
     name      = "hubble-vinnel-cloud"
     namespace = "kube-system"
-    annotations = merge(local.admin_framed_service_annotations, {
+    annotations = merge(local.admin_framed_service_annotations["hubble"], {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })
   }

@@ -7,9 +7,18 @@ const routed = document.querySelectorAll('.service-link[data-url]');
 function show(slug) {
   let active = null;
   for (const el of routed) {
-    const match = el.dataset.slug === slug;
-    if (match) active = el;
-    el.classList.toggle('active', match);
+    if (el.dataset.slug === slug) active = el;
+  }
+
+  if (active && active.dataset.frame !== '1') {
+    window.open(active.dataset.url, '_blank', 'noopener,noreferrer');
+    history.replaceState(null, '', location.pathname + location.search);
+    active = null;
+    slug = '';
+  }
+
+  for (const el of routed) {
+    el.classList.toggle('active', el.dataset.slug === slug);
   }
 
   if (!active) {

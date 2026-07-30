@@ -10,18 +10,20 @@ locals {
   }
 
   admin_framed_annotations = {
-    "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
-      more_clear_headers "X-Frame-Options";
-      if ($http_sec_fetch_dest = "document") {
-        return 302 https://vinnel.cloud/;
-      }
-    EOT
+    for slug in ["adguard", "signoz", "hubble"] : slug => {
+      "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
+        more_clear_headers "X-Frame-Options";
+        if ($http_sec_fetch_dest = "document") {
+          return 302 https://admin.vinnel.cloud/#${slug};
+        }
+      EOT
+    }
   }
 
-  admin_framed_service_annotations = merge(
-    local.authelia_forward_auth_annotations,
-    local.admin_framed_annotations,
-  )
+  admin_framed_service_annotations = {
+    for slug, ann in local.admin_framed_annotations :
+    slug => merge(local.authelia_forward_auth_annotations, ann)
+  }
 }
 locals {
   images = jsondecode(file("${path.module}/images.json"))

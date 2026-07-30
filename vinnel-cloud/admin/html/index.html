@@ -29,8 +29,8 @@
         </a>
         {{range .Services}}
         <a class="sidebar-link service-link"
-           href="{{if .Frameable}}#{{.Slug}}{{else}}{{.URL}}{{end}}"
-           {{if .Frameable}}data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}"{{else}}target="_blank" rel="noopener noreferrer"{{end}}>
+           href="#{{.Slug}}"
+           data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
           <span class="sidebar-label">{{.Label}}</span>
         </a>
@@ -88,9 +88,8 @@
           <div class="service-grid">
             {{range .Services}}
             <a class="service-tile service-link"
-               href="{{if .Frameable}}#{{.Slug}}{{else}}{{.URL}}{{end}}"
-               data-slug="{{.Slug}}"
-               {{if .Frameable}}data-url="{{.URL}}" data-label="{{.Label}}"{{else}}data-external="1" target="_blank" rel="noopener noreferrer"{{end}}>
+               href="#{{.Slug}}"
+               data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
               <svg class="service-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
               <div class="service-tile-body">
                 <div class="service-tile-label">{{.Label}}{{if not .Frameable}} <span class="service-tile-ext">↗</span>{{end}}</div>
