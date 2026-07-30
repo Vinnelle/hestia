@@ -1,4 +1,6 @@
 resource "restapi_object" "dashboard" {
+  depends_on = [helm_release.signoz]
+
   for_each = fileset(path.module, "signoz-dashboards/**/*.json")
 
   path = "/api/v1/dashboards"
