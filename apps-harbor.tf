@@ -26,8 +26,9 @@ resource "helm_release" "harbor" {
 
   values = [
     templatefile("${path.module}/helm-values/harbor/values.yaml.tftpl", {
-      admin_password = var.harbor_admin_password
-      cluster_issuer = local.vinnel_cloud_cluster_issuer
+      admin_password           = var.harbor_admin_password
+      cluster_issuer           = local.vinnel_cloud_cluster_issuer
+      forward_auth_annotations = local.authelia_forward_auth_annotations
     })
   ]
 }

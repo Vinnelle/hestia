@@ -4,8 +4,8 @@
   "// sites": "site images — updated by site-deploy.yml",
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:ea12b4b23f5924baa129824fcff0d805a34f5f7ce863fbb3563625ede7a18bd9",
   "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:3e8446aa6c976c886fb06d6c420be0bd5fbd3d2fd6593f90604c28140ec89fd8",
-  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:73118e2049d5734be6b216bbf601f958ed480fe7f846a69a4daa69f89e419e75",
-  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:ccd063f30c79dd07bab32da0d5b424bd06ff8abd139022992d70a65290ce66e1",
+  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:78151dba975f47b7460d6cba87ff58df00182d6d61b2edc2dfdda5a500d4889b",
+  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:0bf26059f5b0f80665fddb6ba15f457101491cdb015df475552682a96a54bbd3",
   "// vinnel-cloud-auth": "bootstrap: pinned to the site image (healthy nginx) until the first auth build records its real digest",
-  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:64305a91d222412c0c50ff604b57c0b0fb07fce547a6a76babe328b48d504518"
+  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:1ca40dcb4e1e47f8688068df608185ace97a396df750528cd857edf99fc0408c"
 }

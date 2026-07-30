@@ -15,6 +15,9 @@ expose:
     annotations:
       cert-manager.io/cluster-issuer: "${cluster_issuer}"
       nginx.ingress.kubernetes.io/proxy-body-size: "0"
+%{ for key, value in forward_auth_annotations ~}
+      ${key}: "${value}"
+%{ endfor ~}
       nginx.ingress.kubernetes.io/configuration-snippet: |
         more_clear_headers "X-Frame-Options";
         if ($http_sec_fetch_dest = "document") {

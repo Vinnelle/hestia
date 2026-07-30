@@ -350,3 +350,116 @@ resource "keycloak_saml_user_property_protocol_mapper" "ceph_uid" {
   saml_attribute_name        = "uid"
   saml_attribute_name_format = "Basic"
 }
+
+resource "kubernetes_service_account_v1" "ceph_dashboard_sso_setup" {
+  metadata {
+    name      = "ceph-dashboard-sso-setup"
+    namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+  }
+}
+
+resource "kubernetes_role_v1" "ceph_dashboard_sso_setup" {
+  metadata {
+    name      = "ceph-dashboard-sso-setup"
+    namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments"]
+    verbs      = ["get"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods"]
+    verbs      = ["get", "list"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods/exec"]
+    verbs      = ["create"]
+  }
+}
+
+resource "kubernetes_role_binding_v1" "ceph_dashboard_sso_setup" {
+  metadata {
+    name      = "ceph-dashboard-sso-setup"
+    namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role_v1.ceph_dashboard_sso_setup.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.ceph_dashboard_sso_setup.metadata[0].name
+    namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+  }
+}
+
+locals {
+  ceph_dashboard_sso_script = <<-EOT
+    set -e
+    kubectl -n rook-ceph exec deploy/rook-ceph-mgr-a -c mgr -- sh -c '
+      cd /tmp
+      test -f sp-cert.pem -a -f sp-key.pem || openssl req -x509 -newkey rsa:2048 -keyout sp-key.pem -out sp-cert.pem -days 3650 -nodes -subj "/CN=ceph.vinnel.cloud" 2>/dev/null
+      chmod 644 sp-cert.pem sp-key.pem
+    '
+    kubectl -n rook-ceph exec -i deploy/rook-ceph-tools -- sh -c 'head -c 32 /dev/urandom | base64 | ceph dashboard ac-user-create ida administrator --enabled -i -' || true
+    kubectl -n rook-ceph exec deploy/rook-ceph-tools -- sh -c '
+      curl -sS https://kc.vinnel.cloud/realms/vinnel/protocol/saml/descriptor -o /tmp/idp-metadata.xml
+      ceph dashboard sso setup saml2 https://ceph.vinnel.cloud "$(cat /tmp/idp-metadata.xml)" uid https://kc.vinnel.cloud/realms/vinnel /tmp/sp-cert.pem /tmp/sp-key.pem
+    '
+    kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph mgr module disable dashboard
+    kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph mgr module enable dashboard
+    kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard sso status
+  EOT
+}
+
+resource "kubernetes_job_v1" "ceph_dashboard_sso_setup" {
+  depends_on = [
+    helm_release.rook_ceph_cluster,
+    keycloak_saml_client.ceph_dashboard,
+    keycloak_saml_user_property_protocol_mapper.ceph_uid,
+    kubernetes_role_binding_v1.ceph_dashboard_sso_setup,
+  ]
+
+  metadata {
+    name      = "ceph-dashboard-sso-setup-${substr(sha256(local.ceph_dashboard_sso_script), 0, 8)}"
+    namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
+  }
+
+  spec {
+    backoff_limit = 2
+
+    template {
+      metadata {
+        labels = {
+          app = "ceph-dashboard-sso-setup"
+        }
+      }
+
+      spec {
+        service_account_name = kubernetes_service_account_v1.ceph_dashboard_sso_setup.metadata[0].name
+        restart_policy       = "OnFailure"
+
+        container {
+          name    = "setup"
+          image   = "bitnami/kubectl:1.31"
+          command = ["sh", "-c", local.ceph_dashboard_sso_script]
+        }
+      }
+    }
+  }
+
+  wait_for_completion = true
+
+  timeouts {
+    create = "5m"
+  }
+}

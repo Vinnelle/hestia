@@ -32,8 +32,10 @@ func env(key, def string) string {
 	return def
 }
 
+var extraFrameSrc = []string{"https://kc.vinnel.cloud"}
+
 var frameSrc = func() string {
-	var origins []string
+	origins := append([]string{}, extraFrameSrc...)
 	for _, s := range services {
 		if s.Frameable {
 			origins = append(origins, "https://"+s.Host)
