@@ -46,6 +46,11 @@ provider "signoz" {
   access_token = var.signoz_api_token
 }
 
+resource "random_password" "keycloak_admin_password" {
+  length  = 32
+  special = false
+}
+
 provider "keycloak" {
   client_id = "admin-cli"
   username  = "admin"
