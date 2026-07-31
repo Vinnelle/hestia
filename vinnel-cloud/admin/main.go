@@ -32,7 +32,7 @@ func env(key, def string) string {
 	return def
 }
 
-var extraFrameSrc = []string{"https://kc.vinnel.cloud"}
+var extraFrameSrc = []string{"https://kc.vinnel.cloud", "https://auth.vinnel.cloud"}
 
 var frameSrc = func() string {
 	origins := append([]string{}, extraFrameSrc...)

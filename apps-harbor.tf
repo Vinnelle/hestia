@@ -165,31 +165,6 @@ resource "harbor_robot_account" "ci" {
   }
 }
 
-import {
-  to = harbor_project.vin_moe
-  id = "/projects/5"
-}
-
-import {
-  to = harbor_project.monke_academy
-  id = "/projects/2"
-}
-
-import {
-  to = harbor_project.vinnel_cloud
-  id = "/projects/4"
-}
-
-import {
-  to = harbor_project.ci_runner
-  id = "/projects/3"
-}
-
-import {
-  to = harbor_robot_account.ci
-  id = "/robots/1"
-}
-
 resource "kubernetes_secret_v1" "registry_dockerconfig_arc_runners" {
   metadata {
     name      = "registry-dockerconfig"
