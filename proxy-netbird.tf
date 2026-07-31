@@ -165,7 +165,7 @@ resource "kubernetes_ingress_v1" "netbird_dashboard_http" {
   metadata {
     name      = "netbird-dashboard-http"
     namespace = kubernetes_namespace_v1.services.metadata[0].name
-    annotations = merge(local.authelia_forward_auth_annotations, {
+    annotations = merge(local.admin_framed_service_annotations["proxy"], {
       "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600"
       "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600"

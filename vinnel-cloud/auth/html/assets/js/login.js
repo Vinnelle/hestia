@@ -87,6 +87,7 @@
       return navigator.credentials.get(opts);
     }).then(function (credential) {
       body.response = credential.toJSON();
+      if ('keepMeLoggedIn' in body) body.keepMeLoggedIn = $('login').remember.checked;
       return api('POST', path, withFlow(body));
     }).then(function (res) {
       if (modal) busy = false;

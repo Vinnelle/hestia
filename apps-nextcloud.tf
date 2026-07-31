@@ -176,7 +176,7 @@ resource "kubernetes_ingress_v1" "nextcloud_vinnel_cloud" {
   metadata {
     name      = "nextcloud-vinnel-cloud"
     namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
-    annotations = merge(local.authelia_forward_auth_annotations, {
+    annotations = merge(local.admin_framed_service_annotations["nextcloud"], {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })
   }

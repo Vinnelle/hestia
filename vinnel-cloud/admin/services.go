@@ -29,8 +29,8 @@ var services = []service{
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", true, iconNetwork},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", true, iconShield},
 	{"ceph", "Ceph", "ceph.vinnel.cloud", "Cluster storage", true, iconDisk},
-	{"nextcloud", "Nextcloud", "nextcloud.vinnel.cloud", "Files and sync", false, iconFolder},
+	{"nextcloud", "Nextcloud", "nextcloud.vinnel.cloud", "Files and sync", true, iconFolder},
 	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", true, iconBox},
-	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", false, iconGlobe},
+	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", true, iconGlobe},
 	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", true, iconTerminal},
 }
