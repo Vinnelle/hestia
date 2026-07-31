@@ -295,6 +295,7 @@ resource "kubernetes_ingress_v1" "authelia" {
 
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         more_clear_headers "X-Frame-Options";
+        more_clear_headers "Content-Security-Policy";
         proxy_set_header Accept-Encoding "";
         sub_filter '</head>' '<link rel="stylesheet" href="./brand.css" /></head>';
         sub_filter_once on;
