@@ -419,6 +419,8 @@ locals {
     kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph mgr module enable dashboard
     kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard sso status
   EOT
+
+  ceph_dashboard_sso_setup_image = "rancher/kubectl:v1.31.14"
 }
 
 resource "kubernetes_job_v1" "ceph_dashboard_sso_setup" {
@@ -430,7 +432,7 @@ resource "kubernetes_job_v1" "ceph_dashboard_sso_setup" {
   ]
 
   metadata {
-    name      = "ceph-dashboard-sso-setup-${substr(sha256(local.ceph_dashboard_sso_script), 0, 8)}"
+    name      = "ceph-dashboard-sso-setup-${substr(sha256("${local.ceph_dashboard_sso_script}${local.ceph_dashboard_sso_setup_image}"), 0, 8)}"
     namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
   }
 
@@ -450,7 +452,7 @@ resource "kubernetes_job_v1" "ceph_dashboard_sso_setup" {
 
         container {
           name    = "setup"
-          image   = "bitnami/kubectl:1.31"
+          image   = local.ceph_dashboard_sso_setup_image
           command = ["sh", "-c", local.ceph_dashboard_sso_script]
         }
       }
