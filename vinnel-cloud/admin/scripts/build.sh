@@ -13,6 +13,15 @@ minify_js() {
   done
 }
 
+minify_html() {
+  find . -type f -name '*.html' | while IFS= read -r f; do
+    html-minifier-terser --collapse-whitespace --remove-comments \
+      --remove-redundant-attributes --remove-script-type-attributes \
+      --remove-style-link-type-attributes --use-short-doctype \
+      --minify-css --minify-js -o "$f" "$f"
+  done
+}
+
 hash_and_rewrite() {
   map_file="$(mktemp)"
 
@@ -54,5 +63,6 @@ precompress() {
 
 minify_css
 minify_js
+minify_html
 hash_and_rewrite
 precompress

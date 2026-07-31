@@ -8,7 +8,7 @@ bad() { echo "FAIL: $1" >&2; fail=1; }
 
 shim_dir="$(mktemp -d)"
 trap 'rm -rf "$shim_dir"' EXIT
-for tool in cleancss terser; do
+for tool in cleancss terser html-minifier-terser; do
   printf '#!/bin/sh\ntrue\n' >"$shim_dir/$tool"
   chmod +x "$shim_dir/$tool"
 done

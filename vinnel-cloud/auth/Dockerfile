@@ -17,7 +17,7 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
 
 FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS asset-build
 RUN apk add --no-cache brotli gzip curl
-RUN npm install -g clean-css-cli terser
+RUN npm install -g clean-css-cli terser html-minifier-terser
 
 WORKDIR /app
 COPY scripts/ /build/
