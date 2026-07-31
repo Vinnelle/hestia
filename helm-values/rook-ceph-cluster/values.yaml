@@ -6,7 +6,7 @@ cephClusterSpec:
 
   dashboard:
     enabled: true
-    ssl: false
+    ssl: true
 
   storage:
     useAllNodes: true

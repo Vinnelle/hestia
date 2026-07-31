@@ -69,7 +69,8 @@ resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
     name      = "ceph-dashboard-vinnel-cloud"
     namespace = kubernetes_namespace_v1.rook_ceph.metadata[0].name
     annotations = merge(local.authelia_forward_auth_annotations, {
-      "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
+      "cert-manager.io/cluster-issuer"               = local.vinnel_cloud_cluster_issuer
+      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTPS"
 
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         more_clear_headers "X-Frame-Options";
@@ -99,7 +100,7 @@ resource "kubernetes_ingress_v1" "ceph_dashboard_vinnel_cloud" {
             service {
               name = "rook-ceph-mgr-dashboard"
               port {
-                number = 7000
+                number = 8443
               }
             }
           }
