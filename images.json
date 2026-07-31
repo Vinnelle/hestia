@@ -1,13 +1,12 @@
 {
   "// momus": "server image — updated by momus-build.yml",
   "momus": "registry.vinnel.cloud/vinnel-cloud/momus@sha256:74d920e698fae2dd2d30fcd2ab8e86dcdab74a957131c391b717863f087ed00c",
-  "// sites": "site images — updated by site-deploy.yml",
+  "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:ea12b4b23f5924baa129824fcff0d805a34f5f7ce863fbb3563625ede7a18bd9",
   "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:cb1644c3135226c17101a011306d37a34f82f825f4cb51de35e662d40753990f",
+  "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
   "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:1fcbf797ceb79bfe4cf4cf4bcdef76ec248446ddaa9eb2f7f2922404413a4f62",
   "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:b6e124d8adbe4be08abe29af695bc63cb1a3fea053b1338b963f32e1c4d432b0",
-  "// vinnel-cloud-auth": "bootstrap: pinned to the site image (healthy nginx) until the first auth build records its real digest",
   "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:eb177de2ed18ca8a6f4f5ea970c37eb45b133102ecc474a23ecfb1e8530bbea2",
-  "// vinnel-cloud-shell": "bootstrap: pinned to the site image (unrelated content, but a real pullable image) until the first shell build records its real digest — the shell container's own readiness probe just stays unready until then",
   "vinnel-cloud-shell": "registry.vinnel.cloud/vinnel-cloud/shell@sha256:fe8a4c8eaa15b163c27935c6e31cc87c28d3f04698b9a22e91b013bae9cb1ce9"
 }
