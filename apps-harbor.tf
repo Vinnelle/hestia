@@ -42,6 +42,7 @@ resource "kubernetes_ingress_v1" "registry_vinnel_cloud" {
 
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         more_clear_headers "X-Frame-Options";
+        more_clear_headers "Content-Security-Policy";
         if ($http_sec_fetch_dest = "document") {
           return 302 https://admin.vinnel.cloud/#registry;
         }
