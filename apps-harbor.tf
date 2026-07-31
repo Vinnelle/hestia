@@ -184,6 +184,7 @@ resource "harbor_config_auth" "main" {
   oidc_user_claim               = "preferred_username"
   oidc_verify_cert              = true
   oidc_auto_onboard             = true
+  primary_auth_mode             = true
 }
 
 resource "kubernetes_secret_v1" "registry_dockerconfig_arc_runners" {
