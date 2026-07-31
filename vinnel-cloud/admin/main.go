@@ -32,7 +32,7 @@ func env(key, def string) string {
 	return def
 }
 
-var extraFrameSrc = []string{"https://kc.vinnel.cloud", "https://auth.vinnel.cloud"}
+var extraFrameSrc = []string{"https://auth.vinnel.cloud"}
 
 var frameSrc = func() string {
 	origins := append([]string{}, extraFrameSrc...)
@@ -59,6 +59,13 @@ var securityHeaders = map[string]string{
 		"base-uri 'self'",
 		"form-action 'self'",
 	}, "; "),
+}
+
+func nosniff(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		h.ServeHTTP(w, r)
+	})
 }
 
 var hashedAsset = regexp.MustCompile(`\.[0-9a-f]{8}\.(css|js)$`)
@@ -167,8 +174,9 @@ func main() {
 
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           otelhttp.NewHandler(mux, "http"),
+		Handler:           otelhttp.NewHandler(nosniff(mux), "http"),
 		ReadHeaderTimeout: 5 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 	log.Printf("vinnel-cloud-admin listening on %s", addr)
 	log.Fatal(srv.ListenAndServe())

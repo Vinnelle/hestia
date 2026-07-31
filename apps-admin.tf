@@ -31,12 +31,6 @@ resource "kubernetes_cluster_role_v1" "vinnel_cloud_admin" {
     resources  = ["nodes"]
     verbs      = ["get", "list"]
   }
-
-  rule {
-    api_groups = ["ceph.rook.io"]
-    resources  = ["cephclusters"]
-    verbs      = ["get", "list"]
-  }
 }
 
 resource "kubernetes_cluster_role_binding_v1" "vinnel_cloud_admin" {

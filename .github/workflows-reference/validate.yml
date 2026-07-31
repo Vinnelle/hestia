@@ -30,6 +30,9 @@ jobs:
       - name: Shellcheck
         run: git ls-files '*.sh' | xargs -r shellcheck -S warning
 
+      - name: Javascript syntax
+        run: git ls-files '*.js' | xargs -r -n1 node --check
+
       - name: Site build.sh unit tests
         run: bash hestia/tests/site-build/test.sh
 

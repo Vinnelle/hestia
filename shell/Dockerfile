@@ -1,6 +1,7 @@
-FROM alpine:3.22
+FROM alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce
 
-ARG KUBECTL_VERSION=v1.31.2
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+ARG KUBECTL_VERSION=v1.36.3
 
 RUN apk add --no-cache ttyd bash curl ca-certificates \
     && curl -fsSL -o /usr/local/bin/kubectl \

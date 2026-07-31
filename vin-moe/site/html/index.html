@@ -291,7 +291,7 @@
       </li>
       <li>
         <h3>storage</h3>
-        <p>local-path is the default class, for small sqlite-backed volumes. Rook Ceph runs across three disks for anything replicated, failure domain set to osd rather than host — one node, so disks are the only fault boundary that exists — with encryption at rest handled by Ceph.</p>
+        <p>local-path, the only class on the cluster — host-path volumes provisioned per pod, which is what a single-node box actually has to offer. No separate replicated pool: on one node there's no second fault domain for replication to buy anything.</p>
       </li>
       <li>
         <h3>ingress &amp; tls</h3>

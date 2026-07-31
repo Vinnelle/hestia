@@ -57,14 +57,13 @@
           "response_types": ["code"]
         },
         {
-          "client_id": "keycloak",
-          "client_name": "Keycloak (Ceph SAML bridge)",
-          "client_secret": ${jsonencode(keycloak_client_secret)},
+          "client_id": "harbor",
+          "client_name": "Harbor",
+          "client_secret": ${jsonencode(harbor_client_secret)},
           "public": false,
           "authorization_policy": "two_factor",
-          "consent_mode": "implicit",
           "token_endpoint_auth_method": "client_secret_post",
-          "redirect_uris": ["https://kc.vinnel.cloud/realms/vinnel/broker/authelia/endpoint"],
+          "redirect_uris": ["https://registry.vinnel.cloud/c/oidc/callback"],
           "scopes": ["openid", "email", "profile"],
           "grant_types": ["authorization_code"],
           "response_types": ["code"]

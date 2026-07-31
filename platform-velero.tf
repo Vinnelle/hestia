@@ -25,7 +25,7 @@ import {
 }
 
 resource "helm_release" "velero" {
-  depends_on = [kubectl_manifest.snapshot_controller, kubectl_manifest.ceph_block_snapshot_class]
+  depends_on = [kubectl_manifest.snapshot_controller]
 
   name       = "velero"
   repository = "https://vmware-tanzu.github.io/helm-charts"

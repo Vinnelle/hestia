@@ -109,20 +109,6 @@ async function loadCluster() {
 }
 
 function renderStorage(c) {
-  const ceph = c.ceph || {};
-  if (ceph.present) {
-    text('stat-ceph', pct(ceph.total ? (ceph.used / ceph.total) * 100 : 0));
-    text('stat-ceph-sub', fmtBytes(ceph.used) + ' / ' + fmtBytes(ceph.total));
-    text('stat-ceph-avail', fmtBytes(ceph.available));
-    text('ceph-health', ceph.health
-      ? 'Ceph ' + ceph.health + ' · every persistent volume'
-      : 'Ceph pool and every persistent volume');
-  } else {
-    text('stat-ceph', 'n/a');
-    text('stat-ceph-sub', 'CephCluster status unavailable');
-    text('stat-ceph-avail', 'n/a');
-  }
-
   const vols = c.volumes || [];
   text('stat-vols', vols.length);
   text('stat-vol-bytes', fmtBytes(c.volumeBytes));

@@ -45,7 +45,7 @@ locals {
     oidc_hmac_secret                = random_password.authelia_oidc_hmac_secret.result
     oidc_issuer_private_key         = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
     netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
-    keycloak_client_secret          = random_password.keycloak_oidc_client_secret.bcrypt_hash
+    harbor_client_secret            = random_password.harbor_oidc_client_secret.bcrypt_hash
   })
 
   authelia_users_database_yaml = templatefile("${path.module}/authelia/users_database.yml.tftpl", {
@@ -80,27 +80,6 @@ resource "kubernetes_persistent_volume_claim_v1" "authelia" {
   }
   spec {
     access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "1Gi"
-      }
-    }
-  }
-  wait_until_bound = false
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
-resource "kubernetes_persistent_volume_claim_v1" "authelia_ceph" {
-  metadata {
-    name      = "authelia-pvc-ceph"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
-  }
-  spec {
-    access_modes       = ["ReadWriteOnce"]
-    storage_class_name = "ceph-block"
     resources {
       requests = {
         storage = "1Gi"

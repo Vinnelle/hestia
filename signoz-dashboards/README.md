@@ -19,7 +19,7 @@ Most files are official templates from [SigNoz/dashboards](https://github.com/Si
 | `k8s-infra-metrics/kubernetes-cluster-metrics.json` | Cluster-wide health/uptime | k8s-infra (already deployed) |
 | `k8s-infra-metrics/kubernetes-node-metrics-overall.json` + `-detailed.json` | Node performance | k8s-infra |
 | `k8s-infra-metrics/kubernetes-pod-metrics-overall.json` + `-detailed.json` | Pod performance | k8s-infra |
-| `k8s-infra-metrics/kubernetes-pvc-metrics.json` | Storage (local-path + Ceph PVCs) | k8s-infra |
+| `k8s-infra-metrics/kubernetes-pvc-metrics.json` | Storage (local-path PVCs) | k8s-infra |
 | `k8s-infra-metrics/kubernetes-cronjobs.json` | CronJob activity (pv-backup) | k8s-infra |
 | `k8s-infra-metrics/k8s-events-receiver.json` | Cluster event stream (activity) | k8s-infra's `presets.kubernetesEvents` (already on) |
 | `k8s-infra-metrics/host-metrics.json` | Raw host CPU/mem/disk/net | k8s-infra's `presets.hostMetrics` (already on) |
@@ -33,7 +33,7 @@ Most files are official templates from [SigNoz/dashboards](https://github.com/Si
 
 **Not covered, deliberately:** internal pod-to-pod traffic (Cilium/Hubble) — Hubble already
 has its own UI at `hubble.vinnel.cloud`, a second dashboard for the same data via a metrics
-pipeline wasn't worth building. ARC runners / Harbor / Ceph — no official templates exist;
+pipeline wasn't worth building. ARC runners / Harbor — no official templates exist;
 build custom ones later if wanted, same path `chaos-mesh/` took.
 
 A few panels in the control-plane and cert-manager dashboards query metric names that are **not

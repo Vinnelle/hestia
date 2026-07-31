@@ -19,7 +19,6 @@ const (
 	pvcsPath   = "/api/v1/persistentvolumeclaims"
 	pvsPath    = "/api/v1/persistentvolumes"
 	nodeMetric = "/apis/metrics.k8s.io/v1beta1/nodes"
-	cephPath   = "/apis/ceph.rook.io/v1/namespaces/rook-ceph/cephclusters"
 )
 
 type nodeStat struct {
@@ -45,14 +44,6 @@ type volumeStat struct {
 	Capacity  float64 `json:"capacity"`
 }
 
-type cephStat struct {
-	Available float64 `json:"available"`
-	Used      float64 `json:"used"`
-	Total     float64 `json:"total"`
-	Health    string  `json:"health"`
-	Present   bool    `json:"present"`
-}
-
 type clusterStats struct {
 	Nodes       []nodeStat `json:"nodes"`
 	NodesReady  int        `json:"nodesReady"`
@@ -63,7 +54,6 @@ type clusterStats struct {
 	MemUsed     float64    `json:"memUsed"`
 	MemTotal    float64    `json:"memTotal"`
 
-	Ceph        cephStat     `json:"ceph"`
 	Volumes     []volumeStat `json:"volumes"`
 	VolumeBytes float64      `json:"volumeBytes"`
 
@@ -269,31 +259,6 @@ func (k *kubeClient) stats() clusterStats {
 }
 
 func (out *clusterStats) storage(k *kubeClient) {
-	var cephList struct {
-		Items []struct {
-			Status struct {
-				Ceph struct {
-					Health   string `json:"health"`
-					Capacity struct {
-						BytesAvailable float64 `json:"bytesAvailable"`
-						BytesUsed      float64 `json:"bytesUsed"`
-						BytesTotal     float64 `json:"bytesTotal"`
-					} `json:"capacity"`
-				} `json:"ceph"`
-			} `json:"status"`
-		} `json:"items"`
-	}
-	if err := k.get(cephPath, &cephList); err == nil && len(cephList.Items) > 0 {
-		c := cephList.Items[0].Status.Ceph
-		out.Ceph = cephStat{
-			Available: c.Capacity.BytesAvailable,
-			Used:      c.Capacity.BytesUsed,
-			Total:     c.Capacity.BytesTotal,
-			Health:    c.Health,
-			Present:   true,
-		}
-	}
-
 	type claimKey struct{ ns, name string }
 	claimClass := map[claimKey]string{}
 	var pvcs struct {

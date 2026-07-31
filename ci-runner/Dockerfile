@@ -1,7 +1,10 @@
 FROM ghcr.io/actions/actions-runner:latest@sha256:0cfdcc701ce933c6d243c6b0b2da767366dc9f2e99961d4c3754b0b78084cdda
 
-ARG KUBECTL_VERSION=v1.31.2
+# renovate: datasource=github-releases depName=kubernetes/kubernetes
+ARG KUBECTL_VERSION=v1.36.3
+# renovate: datasource=github-releases depName=terraform-linters/tflint
 ARG TFLINT_VERSION=v0.53.0
+# renovate: datasource=github-releases depName=rhysd/actionlint
 ARG ACTIONLINT_VERSION=1.7.7
 
 USER root

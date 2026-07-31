@@ -165,6 +165,27 @@ resource "harbor_robot_account" "ci" {
   }
 }
 
+resource "random_password" "harbor_oidc_client_secret" {
+  length  = 32
+  special = false
+}
+
+resource "harbor_config_auth" "main" {
+  depends_on = [helm_release.harbor, kubernetes_ingress_v1.registry_api_vinnel_cloud]
+
+  auth_mode = "oidc_auth"
+
+  oidc_name                     = "Authelia"
+  oidc_endpoint                 = "https://auth.vinnel.cloud"
+  oidc_client_id                = "harbor"
+  oidc_client_secret_wo         = random_password.harbor_oidc_client_secret.result
+  oidc_client_secret_wo_version = 1
+  oidc_scope                    = "openid,profile,email"
+  oidc_user_claim               = "preferred_username"
+  oidc_verify_cert              = true
+  oidc_auto_onboard             = true
+}
+
 resource "kubernetes_secret_v1" "registry_dockerconfig_arc_runners" {
   metadata {
     name      = "registry-dockerconfig"
