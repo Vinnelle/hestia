@@ -420,7 +420,7 @@ locals {
     kubectl -n rook-ceph exec deploy/rook-ceph-tools -- ceph dashboard sso status
   EOT
 
-  ceph_dashboard_sso_setup_image = "rancher/kubectl:v1.31.14"
+  ceph_dashboard_sso_setup_image = "alpine/k8s:1.31.13"
 }
 
 resource "kubernetes_job_v1" "ceph_dashboard_sso_setup" {
