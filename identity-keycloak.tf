@@ -368,10 +368,10 @@ resource "keycloak_saml_client" "ceph_dashboard" {
   front_channel_logout      = true
   force_post_binding        = true
 
-  encrypt_assertions        = true
-  encryption_certificate    = tls_self_signed_cert.ceph_dashboard_sp.cert_pem
-  encryption_algorithm      = "AES_128_CBC"
-  encryption_key_algorithm  = "RSA-OAEP-MGF1P"
+  encrypt_assertions       = true
+  encryption_certificate   = tls_self_signed_cert.ceph_dashboard_sp.cert_pem
+  encryption_algorithm     = "AES_128_CBC"
+  encryption_key_algorithm = "RSA-OAEP-MGF1P"
 
   valid_redirect_uris         = ["https://ceph.vinnel.cloud/auth/saml2"]
   assertion_consumer_post_url = "https://ceph.vinnel.cloud/auth/saml2"
