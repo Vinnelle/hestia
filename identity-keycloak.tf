@@ -389,6 +389,13 @@ resource "keycloak_saml_user_property_protocol_mapper" "ceph_uid" {
   saml_attribute_name_format = "Basic"
 }
 
+resource "keycloak_saml_client_default_scopes" "ceph_dashboard" {
+  realm_id  = keycloak_realm.vinnel.id
+  client_id = keycloak_saml_client.ceph_dashboard.id
+
+  default_scopes = []
+}
+
 resource "kubernetes_service_account_v1" "ceph_dashboard_sso_setup" {
   metadata {
     name      = "ceph-dashboard-sso-setup"
