@@ -267,6 +267,18 @@ resource "keycloak_realm" "vinnel" {
 
   realm        = "vinnel"
   display_name = "vinnel.cloud"
+
+  security_defenses {
+    headers {
+      x_frame_options                     = "DENY"
+      content_security_policy             = "frame-src 'self'; frame-ancestors 'self' https://admin.vinnel.cloud; object-src 'none';"
+      content_security_policy_report_only = ""
+      x_content_type_options              = "nosniff"
+      x_robots_tag                        = "none"
+      x_xss_protection                    = "1; mode=block"
+      strict_transport_security           = "max-age=31536000; includeSubDomains"
+    }
+  }
 }
 
 resource "keycloak_oidc_identity_provider" "authelia" {
