@@ -338,6 +338,25 @@ resource "keycloak_authentication_bindings" "vinnel" {
   browser_flow = keycloak_authentication_flow.browser_authelia.alias
 }
 
+resource "tls_private_key" "ceph_dashboard_sp" {
+  algorithm = "RSA"
+  rsa_bits  = 2048
+}
+
+resource "tls_self_signed_cert" "ceph_dashboard_sp" {
+  private_key_pem = tls_private_key.ceph_dashboard_sp.private_key_pem
+
+  subject {
+    common_name = "ceph.vinnel.cloud"
+  }
+
+  validity_period_hours = 87600
+  allowed_uses = [
+    "key_encipherment",
+    "digital_signature",
+  ]
+}
+
 resource "keycloak_saml_client" "ceph_dashboard" {
   realm_id  = keycloak_realm.vinnel.id
   client_id = "https://ceph.vinnel.cloud/auth/saml2/metadata"
@@ -348,6 +367,9 @@ resource "keycloak_saml_client" "ceph_dashboard" {
   client_signature_required = false
   front_channel_logout      = true
   force_post_binding        = true
+
+  encrypt_assertions     = true
+  encryption_certificate = tls_self_signed_cert.ceph_dashboard_sp.cert_pem
 
   valid_redirect_uris         = ["https://ceph.vinnel.cloud/auth/saml2"]
   assertion_consumer_post_url = "https://ceph.vinnel.cloud/auth/saml2"
@@ -417,11 +439,12 @@ resource "kubernetes_role_binding_v1" "ceph_dashboard_sso_setup" {
 locals {
   ceph_dashboard_sso_script = <<-EOT
     set -e
-    kubectl -n rook-ceph exec deploy/rook-ceph-mgr-a -c mgr -- sh -c '
-      cd /tmp
-      test -f sp-cert.pem -a -f sp-key.pem || openssl req -x509 -newkey rsa:2048 -keyout sp-key.pem -out sp-cert.pem -days 3650 -nodes -subj "/CN=ceph.vinnel.cloud" 2>/dev/null
-      chmod 644 sp-cert.pem sp-key.pem
-    '
+    kubectl -n rook-ceph exec -i deploy/rook-ceph-mgr-a -c mgr -- sh -c 'cat > /tmp/sp-cert.pem && chmod 644 /tmp/sp-cert.pem' <<'CERT'
+    ${tls_self_signed_cert.ceph_dashboard_sp.cert_pem}
+    CERT
+    kubectl -n rook-ceph exec -i deploy/rook-ceph-mgr-a -c mgr -- sh -c 'cat > /tmp/sp-key.pem && chmod 644 /tmp/sp-key.pem' <<'KEY'
+    ${tls_private_key.ceph_dashboard_sp.private_key_pem}
+    KEY
     kubectl -n rook-ceph exec -i deploy/rook-ceph-tools -- sh -c 'head -c 32 /dev/urandom | base64 | ceph dashboard ac-user-create ida administrator --enabled -i -' || true
     kubectl -n rook-ceph exec deploy/rook-ceph-tools -- sh -c '
       curl -sS https://kc.vinnel.cloud/realms/vinnel/protocol/saml/descriptor -o /tmp/idp-metadata.xml
