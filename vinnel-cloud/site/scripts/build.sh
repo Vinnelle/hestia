@@ -18,7 +18,7 @@ minify_html() {
     html-minifier-terser --collapse-whitespace --remove-comments \
       --remove-redundant-attributes --remove-script-type-attributes \
       --remove-style-link-type-attributes --use-short-doctype \
-      --minify-css --minify-js -o "$f" "$f"
+      -o "$f" "$f"
   done
 }
 
