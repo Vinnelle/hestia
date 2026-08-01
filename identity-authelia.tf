@@ -47,6 +47,7 @@ locals {
     netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
     harbor_client_secret            = random_password.harbor_oidc_client_secret.bcrypt_hash
     velero_ui_client_secret         = random_password.velero_ui_oidc_client_secret.bcrypt_hash
+    nextcloud_client_secret         = random_password.nextcloud_oidc_client_secret.bcrypt_hash
   })
 
   authelia_users_database_yaml = templatefile("${path.module}/authelia/users_database.yml.tftpl", {

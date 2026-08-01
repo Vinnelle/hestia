@@ -21,6 +21,8 @@ const (
 	iconGlobe    = `<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 010 18a15 15 0 010-18z"/>`
 	iconTerminal = `<polyline points="4 6 9 12 4 18"/><line x1="11" y1="18" x2="20" y2="18"/>`
 	iconArchive  = `<rect x="3" y="3" width="18" height="5" rx="1"/><path d="M4 8v11a1 1 0 001 1h14a1 1 0 001-1V8"/><path d="M10 13h4"/>`
+	iconDatabase = `<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14a9 3 0 0018 0V5"/><path d="M3 12a9 3 0 0018 0"/>`
+	iconCloud    = `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>`
 )
 
 var services = []service{
@@ -31,4 +33,6 @@ var services = []service{
 	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", true, iconGlobe},
 	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", true, iconTerminal},
 	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", true, iconArchive},
+	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", true, iconDatabase},
+	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", true, iconCloud},
 }

@@ -1,0 +1,366 @@
+
+resource "kubernetes_namespace_v1" "seaweedfs" {
+  metadata {
+    name = "seaweedfs"
+  }
+}
+
+resource "cloudflare_dns_record" "s3_vinnel_cloud" {
+  zone_id = data.cloudflare_zone.vinnel_cloud.id
+  name    = "s3.vinnel.cloud"
+  type    = "A"
+  content = var.node_ip
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "seaweed_vinnel_cloud" {
+  zone_id = data.cloudflare_zone.vinnel_cloud.id
+  name    = "seaweed.vinnel.cloud"
+  type    = "A"
+  content = var.node_ip
+  ttl     = 1
+  proxied = true
+}
+
+resource "random_password" "seaweedfs_s3_access_key" {
+  length  = 20
+  special = false
+}
+
+resource "random_password" "seaweedfs_s3_secret_key" {
+  length  = 40
+  special = false
+}
+
+locals {
+  seaweedfs_s3_config_json = jsonencode({
+    identities = [
+      {
+        name = "admin"
+        credentials = [
+          {
+            accessKey = random_password.seaweedfs_s3_access_key.result
+            secretKey = random_password.seaweedfs_s3_secret_key.result
+          }
+        ]
+        actions = ["Admin", "Read", "Write", "List", "Tagging"]
+      }
+    ]
+  })
+
+  seaweedfs_start_sh = <<-EOT
+    #!/bin/sh
+    set -e
+    weed server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
+    SERVER_PID=$!
+    i=0
+    while [ "$i" -lt 30 ]; do
+      if echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>/tmp/bucket-create.log; then
+        break
+      fi
+      i=$((i + 1))
+      sleep 2
+    done
+    wait "$SERVER_PID"
+  EOT
+}
+
+resource "kubernetes_secret_v1" "seaweedfs_s3_config" {
+  metadata {
+    name      = "seaweedfs-s3-config"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  }
+  data = {
+    "s3.json" = local.seaweedfs_s3_config_json
+  }
+}
+
+resource "kubernetes_config_map_v1" "seaweedfs_scripts" {
+  metadata {
+    name      = "seaweedfs-scripts"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  }
+  data = {
+    "start.sh" = local.seaweedfs_start_sh
+  }
+}
+
+resource "kubernetes_persistent_volume_claim_v1" "seaweedfs_data" {
+  metadata {
+    name      = "seaweedfs-data-pvc"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = "200Gi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "kubernetes_deployment_v1" "seaweedfs" {
+  metadata {
+    name      = "seaweedfs"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    labels = {
+      app = "seaweedfs"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "seaweedfs"
+      }
+    }
+
+    strategy {
+      type = "Recreate"
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "seaweedfs"
+        }
+        annotations = {
+          "seaweedfs-config-hash" = sha256("${local.seaweedfs_s3_config_json}${local.seaweedfs_start_sh}")
+        }
+      }
+
+      spec {
+        enable_service_links = false
+
+        container {
+          name    = "seaweedfs"
+          image   = "chrislusf/seaweedfs:3.54"
+          command = ["/bin/sh", "/scripts/start.sh"]
+
+          port {
+            name           = "master"
+            container_port = 9333
+          }
+
+          port {
+            name           = "volume"
+            container_port = 8080
+          }
+
+          port {
+            name           = "filer"
+            container_port = 8888
+          }
+
+          port {
+            name           = "s3"
+            container_port = 8333
+          }
+
+          resources {
+            requests = {
+              cpu    = "50m"
+              memory = "128Mi"
+            }
+            limits = {
+              cpu    = "1000m"
+              memory = "1Gi"
+            }
+          }
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/data"
+          }
+
+          volume_mount {
+            name       = "s3-config"
+            mount_path = "/etc/seaweedfs/s3.json"
+            sub_path   = "s3.json"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "scripts"
+            mount_path = "/scripts"
+            read_only  = true
+          }
+
+          readiness_probe {
+            tcp_socket {
+              port = "filer"
+            }
+            period_seconds    = 10
+            timeout_seconds   = 5
+            failure_threshold = 12
+          }
+
+          liveness_probe {
+            tcp_socket {
+              port = "filer"
+            }
+            period_seconds  = 30
+            timeout_seconds = 5
+          }
+        }
+
+        volume {
+          name = "data"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.seaweedfs_data.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "s3-config"
+          secret {
+            secret_name = kubernetes_secret_v1.seaweedfs_s3_config.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "scripts"
+          config_map {
+            name         = kubernetes_config_map_v1.seaweedfs_scripts.metadata[0].name
+            default_mode = "0555"
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubectl_manifest" "seaweedfs_vpa" {
+  depends_on = [helm_release.vpa, kubernetes_deployment_v1.seaweedfs]
+  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
+    name        = "seaweedfs"
+    namespace   = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    target_kind = "Deployment"
+    target_name = kubernetes_deployment_v1.seaweedfs.metadata[0].name
+    update_mode = "Initial"
+    container_policies = [
+      { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "1Gi" },
+    ]
+  })
+}
+
+resource "kubernetes_service_v1" "seaweedfs" {
+  metadata {
+    name      = "seaweedfs"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  }
+
+  spec {
+    type = "ClusterIP"
+    selector = {
+      app = "seaweedfs"
+    }
+    port {
+      name        = "master"
+      port        = 9333
+      target_port = "master"
+    }
+    port {
+      name        = "volume"
+      port        = 8080
+      target_port = "volume"
+    }
+    port {
+      name        = "filer"
+      port        = 8888
+      target_port = "filer"
+    }
+    port {
+      name        = "s3"
+      port        = 8333
+      target_port = "s3"
+    }
+  }
+}
+
+resource "kubernetes_ingress_v1" "s3_vinnel_cloud" {
+  depends_on = [helm_release.ingress_nginx]
+  metadata {
+    name      = "s3-vinnel-cloud"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    annotations = {
+      "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
+      "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["s3.vinnel.cloud"]
+      secret_name = "s3-vinnel-cloud-tls"
+    }
+
+    rule {
+      host = "s3.vinnel.cloud"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = kubernetes_service_v1.seaweedfs.metadata[0].name
+              port {
+                number = 8333
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_ingress_v1" "seaweed_vinnel_cloud" {
+  depends_on = [helm_release.ingress_nginx]
+  metadata {
+    name      = "seaweed-vinnel-cloud"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    annotations = merge(local.admin_framed_service_annotations["seaweed"], {
+      "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
+      "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
+    })
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["seaweed.vinnel.cloud"]
+      secret_name = "seaweed-vinnel-cloud-tls"
+    }
+
+    rule {
+      host = "seaweed.vinnel.cloud"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = kubernetes_service_v1.seaweedfs.metadata[0].name
+              port {
+                number = 8888
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

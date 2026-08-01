@@ -15,7 +15,7 @@ configuration:
   volumeSnapshotLocation: []
   features: EnableCSI
 
-deployNodeAgent: false
+deployNodeAgent: true
 
 podAnnotations:
   prometheus.io/scrape: "true"
@@ -26,3 +26,4 @@ schedules:
     schedule: "0 3 * * *"
     template:
       ttl: "168h0m0s"
+      defaultVolumesToFsBackup: true

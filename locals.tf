@@ -10,7 +10,7 @@ locals {
   }
 
   admin_framed_annotations = {
-    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero"] : slug => {
+    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud"] : slug => {
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         more_clear_headers "X-Frame-Options";
         more_clear_headers "Content-Security-Policy";
