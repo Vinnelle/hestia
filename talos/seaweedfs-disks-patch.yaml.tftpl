@@ -1,0 +1,47 @@
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: seaweed-hdd1
+provisioning:
+  diskSelector:
+    match: disk.wwid == 'naa.5000cca0bdde08b8'
+  minSize: 10GB
+filesystem:
+  type: xfs
+encryption:
+  provider: luks2
+  keys:
+    - slot: 0
+      static:
+        passphrase: ${encryption_key}
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: seaweed-hdd2
+provisioning:
+  diskSelector:
+    match: disk.wwid == 'naa.5000cca0bddf0142'
+  minSize: 10GB
+filesystem:
+  type: xfs
+encryption:
+  provider: luks2
+  keys:
+    - slot: 0
+      static:
+        passphrase: ${encryption_key}
+---
+apiVersion: v1alpha1
+kind: UserVolumeConfig
+name: seaweed-ssd
+provisioning:
+  diskSelector:
+    match: disk.serial == 'S63CNF0R415489'
+  minSize: 10GB
+filesystem:
+  type: xfs
+encryption:
+  provider: luks2
+  keys:
+    - slot: 0
+      static:
+        passphrase: ${encryption_key}

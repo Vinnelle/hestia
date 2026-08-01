@@ -41,3 +41,8 @@ output "shell_ttyd_password" {
   value     = random_password.shell_ttyd.result
   sensitive = true
 }
+
+output "seaweedfs_disk_encryption_key" {
+  value     = random_password.seaweedfs_disk_encryption_key.result
+  sensitive = true
+}

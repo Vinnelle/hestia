@@ -2,6 +2,11 @@
 resource "kubernetes_namespace_v1" "seaweedfs" {
   metadata {
     name = "seaweedfs"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "privileged"
+      "pod-security.kubernetes.io/audit"   = "privileged"
+      "pod-security.kubernetes.io/warn"    = "privileged"
+    }
   }
 }
 
@@ -33,6 +38,11 @@ resource "random_password" "seaweedfs_s3_secret_key" {
   special = false
 }
 
+resource "random_password" "seaweedfs_disk_encryption_key" {
+  length  = 64
+  special = false
+}
+
 locals {
   seaweedfs_s3_config_json = jsonencode({
     identities = [
@@ -52,7 +62,7 @@ locals {
   seaweedfs_start_sh = <<-EOT
     #!/bin/sh
     set -e
-    weed server -dir=/data -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
+    weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -max=7,0,0,0 -disk=hdd,hdd,hdd,ssd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
     SERVER_PID=$!
     i=0
     while [ "$i" -lt 30 ]; do
@@ -62,7 +72,14 @@ locals {
       i=$((i + 1))
       sleep 2
     done
+    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -diskType=ssd -collection=nextcloud -apply" | weed shell -filer=localhost:8888 2>/tmp/fs-configure.log || true
     wait "$SERVER_PID"
+  EOT
+
+  seaweedfs_tier_move_sh = <<-EOT
+    #!/bin/sh
+    set -e
+    echo "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercentage=95" | weed shell -master=seaweedfs.seaweedfs.svc.cluster.local:9333
   EOT
 }
 
@@ -183,6 +200,21 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
           }
 
           volume_mount {
+            name       = "hdd1"
+            mount_path = "/data-hdd1"
+          }
+
+          volume_mount {
+            name       = "hdd2"
+            mount_path = "/data-hdd2"
+          }
+
+          volume_mount {
+            name       = "ssd"
+            mount_path = "/data-ssd"
+          }
+
+          volume_mount {
             name       = "s3-config"
             mount_path = "/etc/seaweedfs/s3.json"
             sub_path   = "s3.json"
@@ -221,6 +253,30 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
         }
 
         volume {
+          name = "hdd1"
+          host_path {
+            path = "/var/mnt/seaweed-hdd1"
+            type = "Directory"
+          }
+        }
+
+        volume {
+          name = "hdd2"
+          host_path {
+            path = "/var/mnt/seaweed-hdd2"
+            type = "Directory"
+          }
+        }
+
+        volume {
+          name = "ssd"
+          host_path {
+            path = "/var/mnt/seaweed-ssd"
+            type = "Directory"
+          }
+        }
+
+        volume {
           name = "s3-config"
           secret {
             secret_name = kubernetes_secret_v1.seaweedfs_s3_config.metadata[0].name
@@ -232,6 +288,37 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
           config_map {
             name         = kubernetes_config_map_v1.seaweedfs_scripts.metadata[0].name
             default_mode = "0555"
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
+  metadata {
+    name      = "seaweedfs-tier-move"
+    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  }
+
+  spec {
+    schedule                       = "0 4 * * *"
+    concurrency_policy             = "Forbid"
+    successful_jobs_history_limit  = 3
+    failed_jobs_history_limit      = 3
+
+    job_template {
+      metadata {}
+      spec {
+        template {
+          metadata {}
+          spec {
+            restart_policy = "OnFailure"
+            container {
+              name    = "tier-move"
+              image   = "chrislusf/seaweedfs:4.40"
+              command = ["/bin/sh", "-c", local.seaweedfs_tier_move_sh]
+            }
           }
         }
       }

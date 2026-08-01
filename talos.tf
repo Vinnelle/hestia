@@ -13,6 +13,9 @@ data "talos_machine_configuration" "controlplane" {
     templatefile("${path.module}/talos/firewall.yaml.tftpl", {
       node_ip = var.node_ip
     }),
+    templatefile("${path.module}/talos/seaweedfs-disks-patch.yaml.tftpl", {
+      encryption_key = random_password.seaweedfs_disk_encryption_key.result
+    }),
     yamlencode({
       machine = {
         install = {
