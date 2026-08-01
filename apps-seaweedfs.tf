@@ -143,7 +143,7 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
 
         container {
           name    = "seaweedfs"
-          image   = "chrislusf/seaweedfs:3.54"
+          image   = "chrislusf/seaweedfs:4.40"
           command = ["/bin/sh", "/scripts/start.sh"]
 
           port {
