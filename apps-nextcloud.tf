@@ -241,6 +241,10 @@ resource "kubernetes_deployment_v1" "nextcloud" {
             http_get {
               path = "/status.php"
               port = "http"
+              http_header {
+                name  = "Host"
+                value = "cloud.vinnel.cloud"
+              }
             }
             period_seconds    = 10
             timeout_seconds   = 5
@@ -251,6 +255,10 @@ resource "kubernetes_deployment_v1" "nextcloud" {
             http_get {
               path = "/status.php"
               port = "http"
+              http_header {
+                name  = "Host"
+                value = "cloud.vinnel.cloud"
+              }
             }
             period_seconds  = 30
             timeout_seconds = 5

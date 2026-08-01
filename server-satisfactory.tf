@@ -69,6 +69,11 @@ resource "kubernetes_deployment_v1" "satisfactory" {
           name  = "satisfactory"
           image = "wolveix/satisfactory-server:v1.9.10"
 
+          env {
+            name  = "SERVERMESSAGINGPORT"
+            value = "8889"
+          }
+
           port {
             name           = "game-tcp"
             container_port = 7777
@@ -83,7 +88,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 
           port {
             name           = "messaging"
-            container_port = 8888
+            container_port = 8889
             protocol       = "TCP"
           }
 

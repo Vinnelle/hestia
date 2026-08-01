@@ -118,6 +118,29 @@ ingress:
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
+name: satisfactory-game-tcp
+portSelector:
+  ports:
+    - 7777
+    - 8889
+  protocol: tcp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: satisfactory-game-udp
+portSelector:
+  ports:
+    - 7777
+  protocol: udp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
 name: dhcp-client
 portSelector:
   ports:
