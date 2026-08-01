@@ -9,16 +9,48 @@ locals {
     "nginx.ingress.kubernetes.io/auth-response-headers" = "Remote-User,Remote-Groups,Remote-Name,Remote-Email"
   }
 
+  admin_frame_brand_css = <<-EOT
+    :root{color-scheme:light dark;
+      --bg:light-dark(#faf8f5,#0c0c0d);
+      --fg:light-dark(#2a2825,#cececa);
+      --muted:light-dark(#4a4743,#a9a9a3);
+      --dim:light-dark(#625e57,#74746f);
+      --accent:light-dark(#b3466b,#f7b9d1);
+      --accent-strong:light-dark(#8f3355,#fbd3e2);}
+    *{font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace !important;}
+    html,body,#root,#app,#__next{background:var(--bg) !important;color:var(--fg) !important;}
+    a{color:var(--accent) !important;}
+    a:hover{color:var(--accent-strong) !important;}
+  EOT
+
+  admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed"]
+
   admin_framed_annotations = {
-    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud"] : slug => {
-      "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
-        more_clear_headers "X-Frame-Options";
-        more_clear_headers "Content-Security-Policy";
-        if ($http_sec_fetch_dest = "document") {
-          return 302 https://admin.vinnel.cloud/#${slug};
-        }
-      EOT
-    }
+    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud"] : slug => merge(
+      {
+        "nginx.ingress.kubernetes.io/configuration-snippet" = join("\n", compact([
+          "more_clear_headers \"X-Frame-Options\";",
+          "more_clear_headers \"Content-Security-Policy\";",
+          "if ($http_sec_fetch_dest = \"document\") {",
+          "  return 302 https://admin.vinnel.cloud/#${slug};",
+          "}",
+          contains(local.admin_frame_css_slugs, slug) ? join("\n", [
+            "proxy_set_header Accept-Encoding \"\";",
+            "sub_filter '</head>' '<link rel=\"stylesheet\" href=\"/__vinnel-brand.css\" /></head>';",
+            "sub_filter_once on;",
+          ]) : "",
+        ]))
+      },
+      contains(local.admin_frame_css_slugs, slug) ? {
+        "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
+          location = /__vinnel-brand.css {
+            default_type text/css;
+            expires 1h;
+            return 200 "${local.admin_frame_brand_css}";
+          }
+        EOT
+      } : {}
+    )
   }
 
   admin_framed_service_annotations = {

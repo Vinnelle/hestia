@@ -46,6 +46,17 @@ resource "kubernetes_ingress_v1" "registry_vinnel_cloud" {
         if ($http_sec_fetch_dest = "document") {
           return 302 https://admin.vinnel.cloud/#registry;
         }
+        proxy_set_header Accept-Encoding "";
+        sub_filter '</head>' '<link rel="stylesheet" href="/__vinnel-brand.css" /></head>';
+        sub_filter_once on;
+      EOT
+
+      "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
+        location = /__vinnel-brand.css {
+          default_type text/css;
+          expires 1h;
+          return 200 "${local.admin_frame_brand_css}";
+        }
       EOT
     })
   }

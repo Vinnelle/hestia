@@ -34,6 +34,11 @@ locals {
 
     occ app:enable user_oidc || true
 
+    occ theming:config name "vinnel.cloud"
+    occ theming:config primary_color "#b3466b"
+    occ theming:config background_color "#faf8f5"
+    occ theming:config background backgroundColor
+
     if ! occ user_oidc:provider authelia >/dev/null 2>&1; then
       occ user_oidc:provider authelia \
         --clientid="nextcloud" \

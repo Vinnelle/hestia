@@ -77,7 +77,9 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_shell" {
 
           command = ["sh", "-c"]
           args = [<<-EOT
-            exec ttyd -p 7681 -W -c "ida:$(cat /secrets/password)" bash
+            exec ttyd -p 7681 -W -c "ida:$(cat /secrets/password)" \
+              -t 'theme={"background":"#0c0c0d","foreground":"#cececa","cursor":"#f7b9d1"}' \
+              bash
           EOT
           ]
 
