@@ -31,8 +31,8 @@ var services = []service{
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", true, iconShield},
 	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", true, iconBox},
 	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", true, iconGlobe},
-	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", true, iconTerminal},
 	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", true, iconArchive},
 	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", true, iconDatabase},
 	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", true, iconCloud},
+	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", true, iconTerminal},
 }

@@ -46,6 +46,8 @@ locals {
         --discoveryuri="https://auth.vinnel.cloud/.well-known/openid-configuration"
     fi
 
+    occ app:enable files_external || true
+
     if ! occ files_external:list | grep -q "SeaweedFS"; then
       occ files_external:create "SeaweedFS" amazons3 amazons3::accesskey \
         --config bucket="nextcloud" \
