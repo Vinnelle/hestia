@@ -118,6 +118,17 @@ ingress:
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
+name: satisfactory-saves-http-from-pods
+portSelector:
+  ports:
+    - 8080
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
 name: satisfactory-game-tcp
 portSelector:
   ports:
