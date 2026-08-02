@@ -19,7 +19,7 @@
   <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-3MPKF6C22P"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-3MPKF6C22P');</script>
-  <script>try{const m=document.cookie.match(/(?:^|; )theme=(dark|light)/),t=(m&&m[1])||localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+  <script src="/assets/js/theme.js"></script>
   <link rel="preconnect" href="https://www.googletagmanager.com">
   <link rel="icon" type="image/webp" href="assets/images/favicon.webp">
   <link rel="preload" href="assets/css/style.css" as="style">
@@ -56,24 +56,6 @@
       document.getElementById('account-label').textContent = 'admin';
       document.getElementById('account-btn').setAttribute('href', 'https://admin.vinnel.cloud/');
     }).catch(function(){})
-  </script>
-  <script>
-    var root = document.documentElement;
-    var opts = Array.prototype.slice.call(document.querySelectorAll('.theme-opt'));
-    function sync() {
-      var active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      opts.forEach(function(b){ b.setAttribute('aria-pressed', b.dataset.themeChoice === active); });
-    }
-    sync();
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync);
-    opts.forEach(function(b){
-      b.addEventListener('click', function(){
-        root.dataset.theme = b.dataset.themeChoice;
-        try { localStorage.theme = b.dataset.themeChoice; } catch(e) {}
-        document.cookie = 'theme=' + b.dataset.themeChoice + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
-        sync();
-      });
-    });
   </script>
 </body>
 </html>

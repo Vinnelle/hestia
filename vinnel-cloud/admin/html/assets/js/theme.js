@@ -1,9 +1,18 @@
 (function () {
   var root = document.documentElement;
+
+  function persist(t) {
+    try { localStorage.theme = t; } catch (e) {}
+    document.cookie = 'theme=' + t + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
+  }
+
   try {
     var m = document.cookie.match(/(?:^|; )theme=(dark|light)/);
     var t = (m && m[1]) || localStorage.theme;
-    if (t) root.dataset.theme = t;
+    if (t) {
+      root.dataset.theme = t;
+      if (!m) persist(t);
+    }
   } catch (e) {}
 
   addEventListener('DOMContentLoaded', function () {
@@ -16,8 +25,7 @@
     opts.forEach(function (b) {
       b.addEventListener('click', function () {
         root.dataset.theme = b.dataset.themeChoice;
-        try { localStorage.theme = b.dataset.themeChoice; } catch (e) {}
-        document.cookie = 'theme=' + b.dataset.themeChoice + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
+        persist(b.dataset.themeChoice);
         sync();
       });
     });

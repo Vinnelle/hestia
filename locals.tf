@@ -45,16 +45,22 @@ locals {
     ])
   }
 
+  admin_frame_css_href = "/__vinnel-brand.${substr(sha1(local.admin_frame_brand_css), 0, 8)}.css"
+
+  admin_frame_js_href = {
+    for slug, js in local.admin_frame_theme_js : slug => "/__vinnel-brand.${substr(sha1(js), 0, 8)}.js"
+  }
+
   admin_frame_brand_locations = {
     for slug in concat(local.admin_frame_css_slugs, ["registry"]) : slug => <<-EOT
-      location = /__vinnel-brand.css {
+      location = ${local.admin_frame_css_href} {
         default_type text/css;
-        expires 1h;
+        expires max;
         return 200 "${local.admin_frame_brand_css}";
       }
-      location = /__vinnel-brand.js {
+      location = ${local.admin_frame_js_href[slug]} {
         default_type application/javascript;
-        expires 1h;
+        expires max;
         return 200 "${local.admin_frame_theme_js[slug]}";
       }
     EOT
@@ -73,7 +79,7 @@ locals {
           "}",
           contains(local.admin_frame_css_slugs, slug) ? join("\n", [
             "proxy_set_header Accept-Encoding \"\";",
-            "sub_filter '</head>' '<script src=\"/__vinnel-brand.js\"></script><link rel=\"stylesheet\" href=\"/__vinnel-brand.css\" /></head>';",
+            "sub_filter '</head>' '<script src=\"${local.admin_frame_js_href[slug]}\"></script><link rel=\"stylesheet\" href=\"${local.admin_frame_css_href}\" /></head>';",
             "sub_filter_once on;",
           ]) : "",
         ]))

@@ -47,7 +47,7 @@ resource "kubernetes_ingress_v1" "registry_vinnel_cloud" {
           return 302 https://admin.vinnel.cloud/#registry;
         }
         proxy_set_header Accept-Encoding "";
-        sub_filter '</head>' '<script src="/__vinnel-brand.js"></script><link rel="stylesheet" href="/__vinnel-brand.css" /></head>';
+        sub_filter '</head>' '<script src="${local.admin_frame_js_href["registry"]}"></script><link rel="stylesheet" href="${local.admin_frame_css_href}" /></head>';
         sub_filter_once on;
       EOT
 
