@@ -38,7 +38,7 @@ resource "kubernetes_config_map_v1" "satisfactory_saves_http_conf" {
     server {
       listen 8080;
       location / {
-        root /saves;
+        root /config/saved/server;
         autoindex on;
         autoindex_format json;
       }
@@ -147,7 +147,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 
           readiness_probe {
             tcp_socket {
-              port = 7777
+              port = "messaging"
             }
             initial_delay_seconds = 30
             period_seconds        = 15
@@ -156,7 +156,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 
           liveness_probe {
             tcp_socket {
-              port = 7777
+              port = "messaging"
             }
             initial_delay_seconds = 120
             period_seconds        = 30
@@ -182,8 +182,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 
           volume_mount {
             name       = "saves"
-            mount_path = "/saves"
-            sub_path   = "saved/server"
+            mount_path = "/config"
             read_only  = true
           }
 
