@@ -7,7 +7,7 @@ const routed = document.querySelectorAll('.service-link[data-url]');
 const allNavLinks = document.querySelectorAll('.sidebar-link');
 
 const internalPages = {
-  gameservers: { el: satisfactoryPage, title: 'Game Servers', onShow: refreshSatisfactory },
+  'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: refreshSatisfactory },
 };
 
 function show(slug) {

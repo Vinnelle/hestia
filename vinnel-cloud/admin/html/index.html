@@ -27,11 +27,12 @@
           </svg>
           <span class="sidebar-label">Home</span>
         </a>
-        <a class="sidebar-link" href="#gameservers" data-slug="gameservers">
+        <div class="sidebar-section-label">Game Servers</div>
+        <a class="sidebar-link sidebar-link--sub" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <rect x="2" y="7" width="20" height="10" rx="4"/><path d="M6 10v4M4 12h4"/><circle cx="15" cy="10.5" r="1"/><circle cx="18" cy="13.5" r="1"/>
           </svg>
-          <span class="sidebar-label">Game Servers</span>
+          <span class="sidebar-label">Satisfactory</span>
         </a>
         {{range .Services}}
         <a class="sidebar-link service-link"
@@ -176,8 +177,8 @@
         </section>
 
         <section class="app-page" id="page-satisfactory" hidden>
-          <h1 class="page-title">Game Servers</h1>
-          <p class="page-subtitle">Satisfactory dedicated server (factory.vin.moe)</p>
+          <h1 class="page-title">Satisfactory</h1>
+          <p class="page-subtitle">Dedicated server (factory.vin.moe)</p>
 
           <div class="state-center error-msg" id="satisfactory-error" hidden></div>
 
