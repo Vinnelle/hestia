@@ -7,6 +7,7 @@ type service struct {
 	Label     string
 	Host      string
 	Desc      string
+	Group     string
 	Frameable bool
 	Icon      template.HTML
 }
@@ -26,13 +27,33 @@ const (
 )
 
 var services = []service{
-	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", true, iconChart},
-	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", true, iconNetwork},
-	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", true, iconShield},
-	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", true, iconBox},
-	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", true, iconGlobe},
-	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", true, iconArchive},
-	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", true, iconDatabase},
-	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", true, iconCloud},
-	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", true, iconTerminal},
+	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", "Observability", true, iconChart},
+	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", "Observability", true, iconNetwork},
+	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", "Network", true, iconShield},
+	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", "Network", true, iconGlobe},
+	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", "Storage", true, iconDatabase},
+	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", "Storage", true, iconCloud},
+	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", "Storage", true, iconArchive},
+	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", "Platform", true, iconBox},
+	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", "Platform", true, iconTerminal},
+}
+
+type serviceGroup struct {
+	Name     string
+	Services []service
+}
+
+func serviceGroups() []serviceGroup {
+	var groups []serviceGroup
+	index := map[string]int{}
+	for _, s := range services {
+		i, ok := index[s.Group]
+		if !ok {
+			i = len(groups)
+			index[s.Group] = i
+			groups = append(groups, serviceGroup{Name: s.Group})
+		}
+		groups[i].Services = append(groups[i].Services, s)
+	}
+	return groups
 }

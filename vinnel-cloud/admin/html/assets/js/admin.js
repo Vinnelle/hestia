@@ -65,6 +65,14 @@ document.getElementById('sidebar-toggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('sidebar--collapsed');
 });
 
+for (const btn of document.querySelectorAll('.sidebar-section-label')) {
+  btn.addEventListener('click', () => {
+    const expanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!expanded));
+    document.querySelector('.sidebar-section[data-section="' + btn.dataset.section + '"]').hidden = expanded;
+  });
+}
+
 const menuBtn = document.getElementById('user-menu-btn');
 menuBtn.addEventListener('click', () => {
   const expanded = menuBtn.getAttribute('aria-expanded') === 'true';

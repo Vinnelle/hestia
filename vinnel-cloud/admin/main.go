@@ -22,8 +22,9 @@ import (
 var htmlFS embed.FS
 
 type pageData struct {
-	User     string
-	Services []service
+	User          string
+	Services      []service
+	ServiceGroups []serviceGroup
 }
 
 func env(key, def string) string {
@@ -199,7 +200,7 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: services}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: services, ServiceGroups: serviceGroups()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})

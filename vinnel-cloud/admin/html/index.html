@@ -27,20 +27,33 @@
           </svg>
           <span class="sidebar-label">Home</span>
         </a>
-        <div class="sidebar-section-label">Game Servers</div>
-        <a class="sidebar-link sidebar-link--sub" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="2" y="7" width="20" height="10" rx="4"/><path d="M6 10v4M4 12h4"/><circle cx="15" cy="10.5" r="1"/><circle cx="18" cy="13.5" r="1"/>
-          </svg>
-          <span class="sidebar-label">Satisfactory</span>
-        </a>
-        {{range .Services}}
-        <a class="sidebar-link service-link"
-           href="#{{.Slug}}"
-           data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
-          <span class="sidebar-label">{{.Label}}</span>
-        </a>
+        <button class="sidebar-section-label" type="button" data-section="gameservers" aria-expanded="true">
+          <span class="sidebar-section-label-text">Game Servers</span>
+          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="sidebar-section" data-section="gameservers">
+          <a class="sidebar-link sidebar-link--sub" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="2" y="7" width="20" height="10" rx="4"/><path d="M6 10v4M4 12h4"/><circle cx="15" cy="10.5" r="1"/><circle cx="18" cy="13.5" r="1"/>
+            </svg>
+            <span class="sidebar-label">Satisfactory</span>
+          </a>
+        </div>
+        {{range .ServiceGroups}}
+        <button class="sidebar-section-label" type="button" data-section="{{.Name}}" aria-expanded="true">
+          <span class="sidebar-section-label-text">{{.Name}}</span>
+          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="sidebar-section" data-section="{{.Name}}">
+          {{range .Services}}
+          <a class="sidebar-link sidebar-link--sub service-link"
+             href="#{{.Slug}}"
+             data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
+            <span class="sidebar-label">{{.Label}}</span>
+          </a>
+          {{end}}
+        </div>
         {{end}}
       </nav>
       <div class="sidebar-footer">

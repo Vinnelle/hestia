@@ -94,16 +94,51 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 .sidebar-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.25rem;
   padding: 0.6rem 0.75rem 0.1rem;
+  background: none;
+  border: none;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted);
   white-space: nowrap;
   overflow: hidden;
+  cursor: pointer;
+}
+
+.sidebar-section-label:hover {
+  color: var(--fg);
+}
+
+.sidebar-section-chevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.sidebar-section-label[aria-expanded="false"] .sidebar-section-chevron {
+  transform: rotate(-90deg);
 }
 
 .sidebar--collapsed .sidebar-section-label {
   opacity: 0;
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-section[hidden] {
+  display: none;
 }
 
 .sidebar-link--sub {
