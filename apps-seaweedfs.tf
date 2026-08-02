@@ -302,10 +302,10 @@ resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
   }
 
   spec {
-    schedule                       = "0 4 * * *"
-    concurrency_policy             = "Forbid"
-    successful_jobs_history_limit  = 3
-    failed_jobs_history_limit      = 3
+    schedule                      = "0 4 * * *"
+    concurrency_policy            = "Forbid"
+    successful_jobs_history_limit = 3
+    failed_jobs_history_limit     = 3
 
     job_template {
       metadata {}
