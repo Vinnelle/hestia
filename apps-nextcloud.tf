@@ -377,7 +377,7 @@ resource "kubernetes_ingress_v1" "cloud_api_vinnel_cloud" {
       host = "cloud.vinnel.cloud"
       http {
         dynamic "path" {
-          for_each = ["/remote.php/", "/dav/", "/ocs/", "/public.php/", "/s/", "/index.php/s/", "/status.php", "/.well-known/"]
+          for_each = ["/remote.php/", "/dav/", "/ocs/", "/public.php/", "/s/", "/index.php/s/", "/index.php/login/v2", "/status.php", "/.well-known/"]
           content {
             path      = path.value
             path_type = "Prefix"
