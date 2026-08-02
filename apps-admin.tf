@@ -27,8 +27,14 @@ resource "kubernetes_cluster_role_v1" "vinnel_cloud_admin" {
   }
 
   rule {
+    api_groups = [""]
+    resources  = ["pods/log"]
+    verbs      = ["get"]
+  }
+
+  rule {
     api_groups = ["metrics.k8s.io"]
-    resources  = ["nodes"]
+    resources  = ["nodes", "pods"]
     verbs      = ["get", "list"]
   }
 }
@@ -141,6 +147,22 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             value = "signoz-otel-collector.${kubernetes_namespace_v1.monitoring.metadata[0].name}.svc.cluster.local:4317"
           }
 
+          env {
+            name  = "SATISFACTORY_HOST"
+            value = var.node_ip
+          }
+
+          env {
+            name  = "SATISFACTORY_SAVES_DIR"
+            value = "/mnt/satisfactory-saves/saved/server"
+          }
+
+          volume_mount {
+            name       = "satisfactory-saves"
+            mount_path = "/mnt/satisfactory-saves"
+            read_only  = true
+          }
+
           resources {
             requests = {
               cpu    = "50m"
@@ -178,6 +200,14 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             }
             period_seconds  = 10
             timeout_seconds = 2
+          }
+        }
+
+        volume {
+          name = "satisfactory-saves"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.satisfactory_saves.metadata[0].name
+            read_only  = true
           }
         }
       }

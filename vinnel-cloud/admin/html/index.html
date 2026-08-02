@@ -27,6 +27,12 @@
           </svg>
           <span class="sidebar-label">Home</span>
         </a>
+        <a class="sidebar-link" href="#gameservers" data-slug="gameservers">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="7" width="20" height="10" rx="4"/><path d="M6 10v4M4 12h4"/><circle cx="15" cy="10.5" r="1"/><circle cx="18" cy="13.5" r="1"/>
+          </svg>
+          <span class="sidebar-label">Game Servers</span>
+        </a>
         {{range .Services}}
         <a class="sidebar-link service-link"
            href="#{{.Slug}}"
@@ -167,6 +173,72 @@
               <tbody id="volumes-tbody"></tbody>
             </table>
           </div>
+        </section>
+
+        <section class="app-page" id="page-satisfactory" hidden>
+          <h1 class="page-title">Game Servers</h1>
+          <p class="page-subtitle">Satisfactory dedicated server (factory.vin.moe)</p>
+
+          <div class="state-center error-msg" id="satisfactory-error" hidden></div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Status</div>
+              <div class="stat-value" id="sat-status"><span class="dot" id="sat-status-dot"></span><span id="sat-status-text">—</span></div>
+              <div class="stat-sub" id="sat-status-sub"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Players</div>
+              <div class="stat-value" id="sat-players">—</div>
+              <div class="stat-sub" id="sat-tickrate"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">CPU / Memory</div>
+              <div class="stat-value" id="sat-resources">—</div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table>
+              <tbody>
+                <tr><td>Session</td><td id="sat-session" class="dim">—</td></tr>
+                <tr><td>Game phase</td><td id="sat-phase" class="dim">—</td></tr>
+                <tr><td>Tech tier</td><td id="sat-tier" class="dim">—</td></tr>
+                <tr><td>Node</td><td id="sat-node" class="dim">—</td></tr>
+                <tr><td>Image</td><td id="sat-image" class="dim">—</td></tr>
+                <tr><td>Restarts</td><td id="sat-restarts" class="dim">—</td></tr>
+                <tr><td>Pod started</td><td id="sat-started" class="dim">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="section-title">Save &amp; Map</h2>
+          <p class="page-subtitle">Current save file, and a hand-off to satisfactory-calculator.com's interactive map</p>
+
+          <div class="table-card">
+            <table>
+              <tbody>
+                <tr><td>File</td><td id="sat-save-file" class="dim">—</td></tr>
+                <tr><td>Map</td><td id="sat-save-map" class="dim">—</td></tr>
+                <tr><td>Session name</td><td id="sat-save-session" class="dim">—</td></tr>
+                <tr><td>Play time</td><td id="sat-save-playtime" class="dim">—</td></tr>
+                <tr><td>Last saved</td><td id="sat-save-time" class="dim">—</td></tr>
+                <tr><td>Creative mode</td><td id="sat-save-creative" class="dim">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="sat-actions">
+            <a class="btn-action" id="sat-save-download" href="/api/gameservers/satisfactory/save" download>Download current save</a>
+            <a class="btn-action" href="https://satisfactory-calculator.com/en/interactive-map" target="_blank" rel="noopener noreferrer">Open interactive map ↗</a>
+          </div>
+          <p class="sat-hint">There's no in-house building/resource map here — drop the downloaded save into satisfactory-calculator.com's own uploader for that.</p>
+
+          <h2 class="section-title">Logs</h2>
+          <div class="sat-actions">
+            <button class="btn-action" id="sat-logs-refresh" type="button">Refresh</button>
+          </div>
+          <pre class="log-viewer" id="sat-logs">—</pre>
         </section>
 
         <iframe class="service-frame" id="service-frame" title="Service" hidden></iframe>

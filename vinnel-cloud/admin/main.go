@@ -9,7 +9,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -135,6 +137,12 @@ func main() {
 	}
 	cache := &statsCache{kube: kube, ttl: 15 * time.Second}
 
+	satisfactory := &satisfactoryService{
+		kube:     kube,
+		host:     env("SATISFACTORY_HOST", ""),
+		savesDir: env("SATISFACTORY_SAVES_DIR", "/mnt/satisfactory-saves/saved/server"),
+	}
+
 	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
 
 	htmlRoot, err := fs.Sub(htmlFS, "html")
@@ -159,6 +167,35 @@ func main() {
 
 	mux.HandleFunc("GET /api/cluster", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, cache.get())
+	})
+
+	mux.HandleFunc("GET /api/gameservers/satisfactory", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, satisfactory.status())
+	})
+
+	mux.HandleFunc("GET /api/gameservers/satisfactory/logs", func(w http.ResponseWriter, r *http.Request) {
+		lines := 200
+		if v := r.URL.Query().Get("lines"); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 2000 {
+				lines = n
+			}
+		}
+		logs, err := satisfactory.logs(lines)
+		if err != nil {
+			writeJSON(w, map[string]string{"err": err.Error()})
+			return
+		}
+		writeJSON(w, map[string]string{"logs": logs})
+	})
+
+	mux.HandleFunc("GET /api/gameservers/satisfactory/save", func(w http.ResponseWriter, r *http.Request) {
+		path, err := satisfactory.saveFilePath()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Disposition", `attachment; filename="`+filepath.Base(path)+`"`)
+		http.ServeFile(w, r, path)
 	})
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {

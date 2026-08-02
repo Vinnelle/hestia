@@ -1,8 +1,14 @@
 const frame = document.getElementById('service-frame');
 const home = document.getElementById('frame-empty');
+const satisfactoryPage = document.getElementById('page-satisfactory');
 const back = document.getElementById('frame-back');
 const frameTitle = document.getElementById('frame-title');
 const routed = document.querySelectorAll('.service-link[data-url]');
+const allNavLinks = document.querySelectorAll('.sidebar-link');
+
+const internalPages = {
+  gameservers: { el: satisfactoryPage, title: 'Game Servers', onShow: refreshSatisfactory },
+};
 
 function show(slug) {
   let active = null;
@@ -17,21 +23,32 @@ function show(slug) {
     slug = '';
   }
 
-  for (const el of routed) {
+  for (const el of allNavLinks) {
     el.classList.toggle('active', el.dataset.slug === slug);
   }
 
+  const page = internalPages[slug];
+
+  home.hidden = true;
+  satisfactoryPage.hidden = true;
+  frame.hidden = true;
+  back.hidden = true;
+
+  if (page) {
+    page.el.hidden = false;
+    document.title = page.title + ' — vinnel.cloud';
+    page.onShow();
+    return;
+  }
+
   if (!active) {
-    frame.hidden = true;
     frame.removeAttribute('src');
     home.hidden = false;
-    back.hidden = true;
     document.title = 'admin — vinnel.cloud';
     refresh();
     return;
   }
 
-  home.hidden = true;
   frame.hidden = false;
   back.hidden = false;
   frameTitle.textContent = active.dataset.label;
@@ -125,14 +142,108 @@ function renderStorage(c) {
   }).join('');
 }
 
+const fmtDuration = (s) => {
+  s = Math.floor(s || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h) return h + 'h ' + m + 'm';
+  return m + 'm';
+};
+
+async function loadSatisfactoryStatus() {
+  const err = document.getElementById('satisfactory-error');
+  let s;
+  try {
+    s = await (await fetch('/api/gameservers/satisfactory')).json();
+  } catch (e) {
+    err.hidden = false;
+    err.textContent = 'Could not load server status.';
+    return;
+  }
+
+  const problems = [s.podErr, s.apiErr, s.saveErr].filter(Boolean);
+  err.hidden = problems.length === 0;
+  err.textContent = problems.join(' · ');
+
+  const dot = document.getElementById('sat-status-dot');
+  const up = !!(s.api && s.api.healthy);
+  dot.className = 'dot' + (up ? ' dot--ok' : ' dot--bad');
+  text('sat-status-text', up ? 'Online' : 'Offline');
+  text('sat-status-sub', s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || ''));
+
+  if (s.api) {
+    text('sat-players', s.api.connectedPlayers + ' / ' + s.api.playerLimit);
+    text('sat-tickrate', s.api.averageTickRate ? s.api.averageTickRate.toFixed(1) + ' ticks/s' : '');
+    text('sat-session', s.api.sessionName || '—');
+    text('sat-phase', s.api.gamePhase || '—');
+    text('sat-tier', s.api.techTier != null ? String(s.api.techTier) : '—');
+  } else {
+    text('sat-players', '—');
+    text('sat-tickrate', '');
+    text('sat-session', '—');
+    text('sat-phase', '—');
+    text('sat-tier', '—');
+  }
+
+  if (s.pod) {
+    text('sat-resources', s.pod.cpuUsed.toFixed(2) + ' / ' + fmtBytes(s.pod.memUsed));
+    text('sat-node', s.pod.node || '—');
+    text('sat-image', s.pod.image || '—');
+    text('sat-restarts', String(s.pod.restarts));
+    text('sat-started', s.pod.startTime && s.pod.startTime !== '0001-01-01T00:00:00Z' ? new Date(s.pod.startTime).toLocaleString() : '—');
+  } else {
+    text('sat-resources', '—');
+    text('sat-node', '—');
+    text('sat-image', '—');
+    text('sat-restarts', '—');
+    text('sat-started', '—');
+  }
+
+  if (s.save) {
+    text('sat-save-file', s.save.fileName || '—');
+    text('sat-save-map', s.save.mapName || '—');
+    text('sat-save-session', s.save.sessionName || '—');
+    text('sat-save-playtime', fmtDuration(s.save.playDurationSeconds));
+    text('sat-save-time', s.save.savedAt ? new Date(s.save.savedAt).toLocaleString() : '—');
+    text('sat-save-creative', s.save.isCreativeModeEnabled ? 'Yes' : 'No');
+    document.getElementById('sat-save-download').removeAttribute('hidden');
+  } else {
+    text('sat-save-file', '—');
+    text('sat-save-map', '—');
+    text('sat-save-session', '—');
+    text('sat-save-playtime', '—');
+    text('sat-save-time', '—');
+    text('sat-save-creative', '—');
+    document.getElementById('sat-save-download').setAttribute('hidden', '');
+  }
+}
+
+async function loadSatisfactoryLogs() {
+  const pre = document.getElementById('sat-logs');
+  pre.textContent = 'Loading…';
+  try {
+    const r = await (await fetch('/api/gameservers/satisfactory/logs?lines=300')).json();
+    pre.textContent = r.logs || r.err || '(no logs)';
+  } catch (e) {
+    pre.textContent = 'Could not load logs.';
+  }
+}
+
+function refreshSatisfactory() {
+  loadSatisfactoryStatus();
+  loadSatisfactoryLogs();
+}
+
+document.getElementById('sat-logs-refresh').addEventListener('click', loadSatisfactoryLogs);
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
 
 function refresh() {
-  if (home.hidden) return;
-  loadCluster();
+  if (!home.hidden) loadCluster();
+  if (!satisfactoryPage.hidden) loadSatisfactoryStatus();
 }
 
 setInterval(refresh, 30000);
