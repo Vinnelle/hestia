@@ -60,6 +60,22 @@ provider "keycloak" {
   initial_login = false
 }
 
+provider "aws" {
+  alias  = "mega_s4"
+  region = "us-east-1"
+
+  access_key = var.mega_s4_access_key
+  secret_key = var.mega_s4_secret_key
+
+  skip_credentials_validation = true
+  skip_region_validation      = true
+  skip_requesting_account_id  = true
+
+  endpoints {
+    s3 = "https://s3.${var.mega_s4_endpoint_domain}"
+  }
+}
+
 provider "restapi" {
   endpoint = "https://signoz.vinnel.cloud"
   headers = {

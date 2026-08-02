@@ -59,6 +59,24 @@ variable "s3_backup_secret_key" {
   sensitive   = true
 }
 
+variable "mega_s4_access_key" {
+  description = "MEGA S4 access key ID dedicated to Velero's own 'velero' bucket, minted by hand via MEGA's Object Storage -> Keys page (S4's IAM API has no CreateUser/CreateAccessKey endpoint, only policy attach/detach on already-existing users -- see github.com/meganz/s4-specs). Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
+variable "mega_s4_secret_key" {
+  description = "MEGA S4 secret access key paired with mega_s4_access_key. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
+variable "mega_s4_endpoint_domain" {
+  description = "MEGA S4 <endpoint_domain> for this account -- the S3 API lives at s3.<this>, IAM API at iam.<this>, per github.com/meganz/s4-specs. Matches the domain suffix already used in s3_backup_endpoint's default."
+  type        = string
+  default     = "g.megas4.com"
+}
+
 variable "backup_encryption_password" {
   description = "Restic repository password encrypting the pv-backup snapshots client-side before they reach the bucket. Set as a TFC workspace variable, not codified. CRITICAL: also keep a copy offline (with the state exports) — without it every backup is unreadable, and it cannot be recovered from bucket or TFC state loss."
   type        = string

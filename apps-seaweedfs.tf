@@ -62,7 +62,7 @@ locals {
   seaweedfs_start_sh = <<-EOT
     #!/bin/sh
     set -e
-    weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -max=7,0,0,0 -disk=hdd,hdd,hdd,ssd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
+    weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -volume.max=7,0,0,0 -volume.disk=hdd,hdd,hdd,ssd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
     SERVER_PID=$!
     i=0
     while [ "$i" -lt 30 ]; do
@@ -72,6 +72,7 @@ locals {
       i=$((i + 1))
       sleep 2
     done
+    echo "s3.bucket.create -name velero" | weed shell -filer=localhost:8888 2>>/tmp/bucket-create.log || true
     echo "fs.configure -locationPrefix=/buckets/nextcloud/ -diskType=ssd -collection=nextcloud -apply" | weed shell -filer=localhost:8888 2>/tmp/fs-configure.log || true
     wait "$SERVER_PID"
   EOT

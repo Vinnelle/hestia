@@ -5,13 +5,24 @@ credentials:
 configuration:
   backupStorageLocation:
     - name: default
+      default: true
       provider: aws
-      bucket: gaia-backups
-      prefix: velero
+      bucket: velero
       config:
         region: auto
         s3ForcePathStyle: "true"
-        s3Url: "https://${s3_backup_endpoint}"
+        s3Url: "https://velero.s3.${mega_s4_endpoint_domain}"
+    - name: seaweedfs
+      provider: aws
+      bucket: velero
+      credential:
+        name: velero-s3-credentials
+        key: cloud
+      config:
+        region: auto
+        s3ForcePathStyle: "true"
+        s3Url: "http://seaweedfs.seaweedfs.svc.cluster.local:8333"
+        profile: seaweedfs
   volumeSnapshotLocation: []
   features: EnableCSI
 
@@ -27,3 +38,10 @@ schedules:
     template:
       ttl: "168h0m0s"
       defaultVolumesToFsBackup: true
+      storageLocation: default
+  daily-seaweedfs:
+    schedule: "30 3 * * *"
+    template:
+      ttl: "168h0m0s"
+      defaultVolumesToFsBackup: true
+      storageLocation: seaweedfs
