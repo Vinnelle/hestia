@@ -9,8 +9,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -329,30 +327,50 @@ func parseSaveHeader(r io.Reader) (saveHeader, error) {
 	return h, nil
 }
 
-func latestSaveFile(dir string) (string, error) {
-	entries, err := os.ReadDir(dir)
+type remoteSaveFile struct {
+	Name string
+	URL  string
+}
+
+// latestSaveFile lists baseURL (an nginx `autoindex_format json;` directory
+// listing) and picks the most recently modified .sav entry.
+func latestSaveFile(baseURL string) (remoteSaveFile, error) {
+	base := strings.TrimRight(baseURL, "/")
+	resp, err := http.Get(base + "/")
 	if err != nil {
-		return "", err
+		return remoteSaveFile{}, err
 	}
-	var best string
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return remoteSaveFile{}, fmt.Errorf("GET %s/: %s", base, resp.Status)
+	}
+	var entries []struct {
+		Name  string `json:"name"`
+		Type  string `json:"type"`
+		MTime string `json:"mtime"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&entries); err != nil {
+		return remoteSaveFile{}, err
+	}
+	var best remoteSaveFile
 	var bestMod time.Time
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".sav") {
+		if e.Type != "file" || !strings.HasSuffix(e.Name, ".sav") {
 			continue
 		}
-		info, err := e.Info()
+		t, err := time.Parse(http.TimeFormat, e.MTime)
 		if err != nil {
 			continue
 		}
-		if best == "" || info.ModTime().After(bestMod) {
-			best = e.Name()
-			bestMod = info.ModTime()
+		if best.Name == "" || t.After(bestMod) {
+			best = remoteSaveFile{Name: e.Name, URL: base + "/" + e.Name}
+			bestMod = t
 		}
 	}
-	if best == "" {
-		return "", fmt.Errorf("no .sav files in %s", dir)
+	if best.Name == "" {
+		return remoteSaveFile{}, fmt.Errorf("no .sav files at %s", base)
 	}
-	return filepath.Join(dir, best), nil
+	return best, nil
 }
 
 type satisfactoryStatus struct {
@@ -367,7 +385,7 @@ type satisfactoryStatus struct {
 type satisfactoryService struct {
 	kube     *kubeClient
 	host     string
-	savesDir string
+	savesURL string
 }
 
 func (s *satisfactoryService) status() satisfactoryStatus {
@@ -389,19 +407,25 @@ func (s *satisfactoryService) status() satisfactoryStatus {
 		out.API = api
 	}
 
-	if path, err := latestSaveFile(s.savesDir); err != nil {
+	if sf, err := latestSaveFile(s.savesURL); err != nil {
 		out.SaveErr = err.Error()
-	} else if f, err := os.Open(path); err != nil {
+	} else if resp, err := http.Get(sf.URL); err != nil {
 		out.SaveErr = err.Error()
 	} else {
-		h, err := parseSaveHeader(f)
-		f.Close()
-		if err != nil {
-			out.SaveErr = err.Error()
-		} else {
-			h.FileName = filepath.Base(path)
+		func() {
+			defer resp.Body.Close()
+			if resp.StatusCode != http.StatusOK {
+				out.SaveErr = fmt.Sprintf("GET %s: %s", sf.URL, resp.Status)
+				return
+			}
+			h, err := parseSaveHeader(resp.Body)
+			if err != nil {
+				out.SaveErr = err.Error()
+				return
+			}
+			h.FileName = sf.Name
 			out.Save = &h
-		}
+		}()
 	}
 
 	return out
@@ -418,6 +442,23 @@ func (s *satisfactoryService) logs(lines int) (string, error) {
 	return s.kube.podLogs(satisfactoryNamespace, pod.Name, satisfactoryContainer, lines)
 }
 
-func (s *satisfactoryService) saveFilePath() (string, error) {
-	return latestSaveFile(s.savesDir)
+// writeSaveFile streams the latest save through w. Returns an error only if
+// nothing has been written to w yet (headers unset).
+func (s *satisfactoryService) writeSaveFile(w http.ResponseWriter) error {
+	sf, err := latestSaveFile(s.savesURL)
+	if err != nil {
+		return err
+	}
+	resp, err := http.Get(sf.URL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("GET %s: %s", sf.URL, resp.Status)
+	}
+	w.Header().Set("Content-Disposition", `attachment; filename="`+sf.Name+`"`)
+	w.Header().Set("Content-Type", "application/octet-stream")
+	_, err = io.Copy(w, resp.Body)
+	return err
 }

@@ -27,6 +27,43 @@ resource "kubernetes_persistent_volume_claim_v1" "satisfactory_saves" {
   }
 }
 
+resource "kubernetes_config_map_v1" "satisfactory_saves_http_conf" {
+  metadata {
+    name      = "satisfactory-saves-http-conf"
+    namespace = kubernetes_namespace_v1.server.metadata[0].name
+  }
+
+  data = {
+    "default.conf" = <<-EOT
+    server {
+      listen 8080;
+      location / {
+        root /saves;
+        autoindex on;
+        autoindex_format json;
+      }
+    }
+    EOT
+  }
+}
+
+resource "kubernetes_service_v1" "satisfactory_saves" {
+  metadata {
+    name      = "satisfactory-saves"
+    namespace = kubernetes_namespace_v1.server.metadata[0].name
+  }
+
+  spec {
+    selector = {
+      app = "satisfactory"
+    }
+    port {
+      port        = 8080
+      target_port = "saves-http"
+    }
+  }
+}
+
 resource "kubernetes_deployment_v1" "satisfactory" {
   metadata {
     name      = "satisfactory"
@@ -127,10 +164,66 @@ resource "kubernetes_deployment_v1" "satisfactory" {
           }
         }
 
+        container {
+          name  = "saves-http"
+          image = "nginxinc/nginx-unprivileged:1.31-alpine@sha256:59ccf0943b0b8e8d9e6ea9039a39555730f544701a655c596f7df7d096c593f5"
+
+          security_context {
+            allow_privilege_escalation = false
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
+          port {
+            name           = "saves-http"
+            container_port = 8080
+          }
+
+          volume_mount {
+            name       = "saves"
+            mount_path = "/saves"
+            sub_path   = "saved/server"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "saves-http-conf"
+            mount_path = "/etc/nginx/conf.d/default.conf"
+            sub_path   = "default.conf"
+            read_only  = true
+          }
+
+          resources {
+            requests = {
+              cpu    = "10m"
+              memory = "16Mi"
+            }
+            limits = {
+              cpu    = "100m"
+              memory = "64Mi"
+            }
+          }
+
+          readiness_probe {
+            tcp_socket {
+              port = 8080
+            }
+            period_seconds = 10
+          }
+        }
+
         volume {
           name = "saves"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim_v1.satisfactory_saves.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "saves-http-conf"
+          config_map {
+            name = kubernetes_config_map_v1.satisfactory_saves_http_conf.metadata[0].name
           }
         }
       }

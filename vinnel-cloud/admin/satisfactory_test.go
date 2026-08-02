@@ -3,8 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/binary"
-	"os"
-	"path/filepath"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 	"unicode/utf16"
@@ -104,32 +105,38 @@ func TestParseSaveHeaderTruncated(t *testing.T) {
 	}
 }
 
-func TestLatestSaveFile(t *testing.T) {
-	dir := t.TempDir()
-	older := filepath.Join(dir, "autosave_0.sav")
-	newer := filepath.Join(dir, "autosave_1.sav")
-	if err := os.WriteFile(older, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(newer, []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	now := time.Now()
-	os.Chtimes(older, now.Add(-time.Hour), now.Add(-time.Hour))
-	os.Chtimes(newer, now, now)
-	if err := os.WriteFile(filepath.Join(dir, "ignored.txt"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+// jsonAutoindexServer fakes the nginx `autoindex_format json;` listing the
+// satisfactory-saves-http sidecar serves.
+func jsonAutoindexServer(t *testing.T, entries []map[string]string) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(entries)
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
 
-	got, err := latestSaveFile(dir)
+func TestLatestSaveFile(t *testing.T) {
+	now := time.Now().UTC()
+	srv := jsonAutoindexServer(t, []map[string]string{
+		{"name": "autosave_0.sav", "type": "file", "mtime": now.Add(-time.Hour).Format(http.TimeFormat)},
+		{"name": "autosave_1.sav", "type": "file", "mtime": now.Format(http.TimeFormat)},
+		{"name": "ignored.txt", "type": "file", "mtime": now.Format(http.TimeFormat)},
+	})
+
+	got, err := latestSaveFile(srv.URL)
 	if err != nil {
 		t.Fatalf("latestSaveFile: %v", err)
 	}
-	if got != newer {
-		t.Errorf("latestSaveFile = %q, want %q", got, newer)
+	if got.Name != "autosave_1.sav" {
+		t.Errorf("latestSaveFile.Name = %q, want %q", got.Name, "autosave_1.sav")
+	}
+	if want := srv.URL + "/autosave_1.sav"; got.URL != want {
+		t.Errorf("latestSaveFile.URL = %q, want %q", got.URL, want)
 	}
 
-	if _, err := latestSaveFile(t.TempDir()); err == nil {
-		t.Fatal("expected error for directory with no .sav files")
+	empty := jsonAutoindexServer(t, nil)
+	if _, err := latestSaveFile(empty.URL); err == nil {
+		t.Fatal("expected error for listing with no .sav files")
 	}
 }

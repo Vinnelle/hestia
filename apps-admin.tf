@@ -153,14 +153,8 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
-            name  = "SATISFACTORY_SAVES_DIR"
-            value = "/mnt/satisfactory-saves/saved/server"
-          }
-
-          volume_mount {
-            name       = "satisfactory-saves"
-            mount_path = "/mnt/satisfactory-saves"
-            read_only  = true
+            name  = "SATISFACTORY_SAVES_URL"
+            value = "http://${kubernetes_service_v1.satisfactory_saves.metadata[0].name}.${kubernetes_namespace_v1.server.metadata[0].name}.svc.cluster.local:8080"
           }
 
           resources {
@@ -200,14 +194,6 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             }
             period_seconds  = 10
             timeout_seconds = 2
-          }
-        }
-
-        volume {
-          name = "satisfactory-saves"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.satisfactory_saves.metadata[0].name
-            read_only  = true
           }
         }
       }

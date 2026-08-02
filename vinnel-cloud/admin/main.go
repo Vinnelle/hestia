@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -140,7 +139,7 @@ func main() {
 	satisfactory := &satisfactoryService{
 		kube:     kube,
 		host:     env("SATISFACTORY_HOST", ""),
-		savesDir: env("SATISFACTORY_SAVES_DIR", "/mnt/satisfactory-saves/saved/server"),
+		savesURL: env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.server.svc.cluster.local:8080"),
 	}
 
 	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
@@ -189,13 +188,9 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory/save", func(w http.ResponseWriter, r *http.Request) {
-		path, err := satisfactory.saveFilePath()
-		if err != nil {
+		if err := satisfactory.writeSaveFile(w); err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
-			return
 		}
-		w.Header().Set("Content-Disposition", `attachment; filename="`+filepath.Base(path)+`"`)
-		http.ServeFile(w, r, path)
 	})
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
