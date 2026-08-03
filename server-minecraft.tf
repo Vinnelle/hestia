@@ -208,6 +208,11 @@ resource "kubernetes_deployment_v1" "minecraft" {
           }
 
           env {
+            name  = "SERVER_NAME"
+            value = "Chiken NUget"
+          }
+
+          env {
             name  = "TZ"
             value = "Europe/London"
           }
