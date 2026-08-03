@@ -64,16 +64,25 @@ locals {
     set -e
     weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -volume.max=7,0,0,0 -volume.disk=hdd,hdd,hdd,ssd -filer.disk=hdd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
     SERVER_PID=$!
+    # `weed shell` exits 0 even when the command inside it fails, so every wait
+    # and check here tests an observable effect, never an exit status. Wait on
+    # the filer's *gRPC* port (18888), which comes up about a second after its
+    # HTTP port (8888) -- fs.configure needs gRPC, and the old loop waited on
+    # HTTP only, so all three commands below fired into a filer that could not
+    # yet serve them.
     i=0
-    while [ "$i" -lt 30 ]; do
-      if echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>/tmp/bucket-create.log; then
+    while [ "$i" -lt 60 ]; do
+      if echo "fs.configure" | weed shell -filer=localhost:8888 2>&1 | grep -q '"locations"'; then
         break
       fi
       i=$((i + 1))
       sleep 2
     done
-    echo "s3.bucket.create -name velero" | weed shell -filer=localhost:8888 2>>/tmp/bucket-create.log || true
-    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -disk=ssd -collection=nextcloud -apply" | weed shell -filer=localhost:8888 2>&1 || true
+    echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>&1
+    echo "s3.bucket.create -name velero" | weed shell -filer=localhost:8888 2>&1
+    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -disk=ssd -collection=nextcloud -apply" | weed shell -filer=localhost:8888 2>&1
+    echo "fs.configure" | weed shell -filer=localhost:8888 2>&1 | grep -q "/buckets/nextcloud/" ||
+      echo "WARNING: seaweedfs ssd tier rule did not apply; new writes will land on hdd" >&2
     wait "$SERVER_PID"
   EOT
 
