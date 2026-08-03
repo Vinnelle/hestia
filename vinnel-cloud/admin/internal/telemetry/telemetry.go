@@ -1,4 +1,4 @@
-package main
+package telemetry
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
-func setupTracing(ctx context.Context, endpoint string) (func(context.Context) error, error) {
+func Setup(ctx context.Context, endpoint string) (func(context.Context) error, error) {
 	if endpoint == "" {
 		return func(context.Context) error { return nil }, nil
 	}

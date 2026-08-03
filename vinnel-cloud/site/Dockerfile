@@ -1,7 +1,8 @@
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS images
 RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools fontconfig
-COPY src/images/ .
-COPY src/fonts/ /usr/share/fonts/truetype/vinnel-cloud/
+COPY shared/images/ .
+COPY site/src/images/ .
+COPY site/src/fonts/ /usr/share/fonts/truetype/vinnel-cloud/
 RUN fc-cache -f
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp \
  && rsvg-convert -w 1200 -h 630 vinnel-cloud-social.svg | magick png:- vinnel-cloud-social.webp
@@ -23,8 +24,9 @@ RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
 WORKDIR /app
-COPY scripts/ /build/
-COPY html/ .
+COPY shared/scripts/ /build/
+COPY shared/html/ .
+COPY site/html/ .
 COPY --from=images /*.webp assets/images/
 
 RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh
@@ -35,7 +37,7 @@ RUN apk --no-cache upgrade
 USER nginx
 COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
-COPY conf/nginx-main.conf /etc/nginx/nginx.conf
-COPY conf/nginx.conf /etc/nginx/conf.d/default.conf
+COPY shared/conf/nginx-main.conf /etc/nginx/nginx.conf
+COPY site/conf/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080

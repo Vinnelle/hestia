@@ -8,6 +8,8 @@ on:
           JSON array of build targets. Each entry is
           {"context": <build context>, "image": <harbor project/name>,
            "deployment": <deployment name in websites, also the images.json key>}.
+          Optional "dockerfile" overrides the default <context>/Dockerfile, for
+          repos whose apps share files above their own directory.
         required: true
         type: string
       purge_zone:
@@ -45,6 +47,7 @@ jobs:
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: ${{ matrix.target.context }}
+          file: ${{ matrix.target.dockerfile || format('{0}/Dockerfile', matrix.target.context) }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: |
             registry.vinnel.cloud/${{ matrix.target.image }}:latest

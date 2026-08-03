@@ -61,9 +61,7 @@ EOF
 
 for rel in monke-academy/site/build.sh \
            vin-moe/site/scripts/build.sh \
-           vinnel-cloud/site/scripts/build.sh \
-           vinnel-cloud/auth/scripts/build.sh \
-           vinnel-cloud/admin/scripts/build.sh; do
+           vinnel-cloud/shared/scripts/build.sh; do
   test_one "$repo_root/hestia/$rel"
 done
 

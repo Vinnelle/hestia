@@ -1,19 +1,12 @@
-package main
+package cluster
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"os"
 	"strconv"
-	"strings"
-	"time"
+
+	"vinnel-cloud-admin/internal/kube"
 )
 
 const (
-	saDir      = "/var/run/secrets/kubernetes.io/serviceaccount"
 	nodesPath  = "/api/v1/nodes"
 	podsPath   = "/api/v1/pods"
 	pvcsPath   = "/api/v1/persistentvolumeclaims"
@@ -21,7 +14,7 @@ const (
 	nodeMetric = "/apis/metrics.k8s.io/v1beta1/nodes"
 )
 
-type nodeStat struct {
+type NodeStat struct {
 	Name       string  `json:"name"`
 	Ready      bool    `json:"ready"`
 	CPUUsed    float64 `json:"cpuUsed"`  // cores
@@ -35,7 +28,7 @@ type nodeStat struct {
 	MemPercent float64 `json:"memPercent"`
 }
 
-type volumeStat struct {
+type VolumeStat struct {
 	Name      string  `json:"name"`
 	Namespace string  `json:"namespace"`
 	Claim     string  `json:"claim"`
@@ -44,8 +37,8 @@ type volumeStat struct {
 	Capacity  float64 `json:"capacity"`
 }
 
-type clusterStats struct {
-	Nodes       []nodeStat `json:"nodes"`
+type Stats struct {
+	Nodes       []NodeStat `json:"nodes"`
 	NodesReady  int        `json:"nodesReady"`
 	PodsRunning int        `json:"podsRunning"`
 	PodsTotal   int        `json:"podsTotal"`
@@ -54,109 +47,15 @@ type clusterStats struct {
 	MemUsed     float64    `json:"memUsed"`
 	MemTotal    float64    `json:"memTotal"`
 
-	Volumes     []volumeStat `json:"volumes"`
+	Volumes     []VolumeStat `json:"volumes"`
 	VolumeBytes float64      `json:"volumeBytes"`
 
 	Err string `json:"err,omitempty"`
 }
 
-type kubeClient struct {
-	host  string
-	token string
-	http  *http.Client
-}
-
-func newKubeClient() (*kubeClient, error) {
-	host := os.Getenv("KUBERNETES_SERVICE_HOST")
-	port := env("KUBERNETES_SERVICE_PORT", "443")
-	if host == "" {
-		return nil, fmt.Errorf("not running in-cluster: KUBERNETES_SERVICE_HOST unset")
-	}
-	token, err := os.ReadFile(saDir + "/token")
-	if err != nil {
-		return nil, fmt.Errorf("read service account token: %w", err)
-	}
-	ca, err := os.ReadFile(saDir + "/ca.crt")
-	if err != nil {
-		return nil, fmt.Errorf("read service account CA: %w", err)
-	}
-	pool := x509.NewCertPool()
-	if !pool.AppendCertsFromPEM(ca) {
-		return nil, fmt.Errorf("service account CA is not valid PEM")
-	}
-	return &kubeClient{
-		host:  "https://" + host + ":" + port,
-		token: strings.TrimSpace(string(token)),
-		http: &http.Client{
-			Timeout:   10 * time.Second,
-			Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}},
-		},
-	}, nil
-}
-
-func (k *kubeClient) get(path string, out any) error {
-	req, err := http.NewRequest("GET", k.host+path, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+k.token)
-	req.Header.Set("Accept", "application/json")
-	resp, err := k.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GET %s: %s", path, resp.Status)
-	}
-	return json.NewDecoder(resp.Body).Decode(out)
-}
-
-func parseCPU(s string) float64 {
-	if strings.HasSuffix(s, "n") {
-		v, _ := strconv.ParseFloat(strings.TrimSuffix(s, "n"), 64)
-		return v / 1e9
-	}
-	if strings.HasSuffix(s, "u") {
-		v, _ := strconv.ParseFloat(strings.TrimSuffix(s, "u"), 64)
-		return v / 1e6
-	}
-	if strings.HasSuffix(s, "m") {
-		v, _ := strconv.ParseFloat(strings.TrimSuffix(s, "m"), 64)
-		return v / 1e3
-	}
-	v, _ := strconv.ParseFloat(s, 64)
-	return v
-}
-
-var memSuffixes = []struct {
-	suffix string
-	mult   float64
-}{
-	{"Ki", 1 << 10}, {"Mi", 1 << 20}, {"Gi", 1 << 30}, {"Ti", 1 << 40},
-	{"K", 1e3}, {"M", 1e6}, {"G", 1e9}, {"T", 1e12},
-}
-
-func parseMem(s string) float64 {
-	for _, m := range memSuffixes {
-		if strings.HasSuffix(s, m.suffix) {
-			v, _ := strconv.ParseFloat(strings.TrimSuffix(s, m.suffix), 64)
-			return v * m.mult
-		}
-	}
-	v, _ := strconv.ParseFloat(s, 64)
-	return v
-}
-
-func pct(used, total float64) float64 {
-	if total <= 0 {
-		return 0
-	}
-	return used / total * 100
-}
-
-func (k *kubeClient) stats() clusterStats {
-	var out clusterStats
+// Collect gathers one snapshot of node, pod and volume state.
+func Collect(k *kube.Client) Stats {
+	var out Stats
 
 	var nodes struct {
 		Items []struct {
@@ -175,17 +74,17 @@ func (k *kubeClient) stats() clusterStats {
 			} `json:"status"`
 		} `json:"items"`
 	}
-	if err := k.get(nodesPath, &nodes); err != nil {
+	if err := k.Get(nodesPath, &nodes); err != nil {
 		out.Err = err.Error()
 		return out
 	}
 
 	byName := map[string]int{}
 	for _, n := range nodes.Items {
-		s := nodeStat{
+		s := NodeStat{
 			Name:     n.Metadata.Name,
-			CPUTotal: parseCPU(n.Status.Allocatable["cpu"]),
-			MemTotal: parseMem(n.Status.Allocatable["memory"]),
+			CPUTotal: kube.ParseCPU(n.Status.Allocatable["cpu"]),
+			MemTotal: kube.ParseMem(n.Status.Allocatable["memory"]),
 			Kubelet:  n.Status.NodeInfo.KubeletVersion,
 		}
 		if p, err := strconv.Atoi(n.Status.Allocatable["pods"]); err == nil {
@@ -208,13 +107,13 @@ func (k *kubeClient) stats() clusterStats {
 			Usage map[string]string `json:"usage"`
 		} `json:"items"`
 	}
-	if err := k.get(nodeMetric, &usage); err != nil {
+	if err := k.Get(nodeMetric, &usage); err != nil {
 		out.Err = "metrics-server unavailable: " + err.Error()
 	} else {
 		for _, u := range usage.Items {
 			if i, ok := byName[u.Metadata.Name]; ok {
-				out.Nodes[i].CPUUsed = parseCPU(u.Usage["cpu"])
-				out.Nodes[i].MemUsed = parseMem(u.Usage["memory"])
+				out.Nodes[i].CPUUsed = kube.ParseCPU(u.Usage["cpu"])
+				out.Nodes[i].MemUsed = kube.ParseMem(u.Usage["memory"])
 			}
 		}
 	}
@@ -229,7 +128,7 @@ func (k *kubeClient) stats() clusterStats {
 			} `json:"status"`
 		} `json:"items"`
 	}
-	if err := k.get(podsPath, &pods); err == nil {
+	if err := k.Get(podsPath, &pods); err == nil {
 		out.PodsTotal = len(pods.Items)
 		for _, p := range pods.Items {
 			if p.Status.Phase == "Running" {
@@ -258,7 +157,7 @@ func (k *kubeClient) stats() clusterStats {
 	return out
 }
 
-func (out *clusterStats) storage(k *kubeClient) {
+func (out *Stats) storage(k *kube.Client) {
 	type claimKey struct{ ns, name string }
 	claimClass := map[claimKey]string{}
 	var pvcs struct {
@@ -272,7 +171,7 @@ func (out *clusterStats) storage(k *kubeClient) {
 			} `json:"spec"`
 		} `json:"items"`
 	}
-	if err := k.get(pvcsPath, &pvcs); err == nil {
+	if err := k.Get(pvcsPath, &pvcs); err == nil {
 		for _, c := range pvcs.Items {
 			claimClass[claimKey{c.Metadata.Namespace, c.Metadata.Name}] = c.Spec.StorageClassName
 		}
@@ -296,16 +195,16 @@ func (out *clusterStats) storage(k *kubeClient) {
 			} `json:"status"`
 		} `json:"items"`
 	}
-	if err := k.get(pvsPath, &pvs); err != nil {
+	if err := k.Get(pvsPath, &pvs); err != nil {
 		return
 	}
 	for _, p := range pvs.Items {
-		size := parseMem(p.Spec.Capacity["storage"])
+		size := kube.ParseMem(p.Spec.Capacity["storage"])
 		class := p.Spec.StorageClassName
 		if class == "" {
 			class = claimClass[claimKey{p.Spec.ClaimRef.Namespace, p.Spec.ClaimRef.Name}]
 		}
-		out.Volumes = append(out.Volumes, volumeStat{
+		out.Volumes = append(out.Volumes, VolumeStat{
 			Name:      p.Metadata.Name,
 			Namespace: p.Spec.ClaimRef.Namespace,
 			Claim:     p.Spec.ClaimRef.Name,
@@ -315,4 +214,11 @@ func (out *clusterStats) storage(k *kubeClient) {
 		})
 		out.VolumeBytes += size
 	}
+}
+
+func pct(used, total float64) float64 {
+	if total <= 0 {
+		return 0
+	}
+	return used / total * 100
 }

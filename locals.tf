@@ -33,14 +33,26 @@ locals {
 
   admin_frame_theme_js = {
     for slug in concat(local.admin_frame_css_slugs, ["registry"]) : slug => join("", [
-      "(function(){var m=document.cookie.match(/(?:^|; )theme=(dark|light)/);if(!m)return;var t=m[1],d=t==='dark';",
-      "try{document.documentElement.setAttribute('data-vinnel-theme',t);}catch(e){}",
+      "(function(){var t=null,d=false,ls=[],qs=[];",
       "try{var q=window.matchMedia.bind(window);window.matchMedia=function(s){",
-      "if(/prefers-color-scheme/.test(s)){var w=/dark/.test(s)?d:!d;",
-      "return{media:s,matches:w,onchange:null,addListener:function(){},removeListener:function(){},",
-      "addEventListener:function(){},removeEventListener:function(){},dispatchEvent:function(){return false;}};}",
-      "return q(s);};}catch(e){}",
+      "if(t===null||!/prefers-color-scheme/.test(s))return q(s);",
+      "var w=/dark/.test(s),o={media:s,matches:w===d,onchange:null,",
+      "addListener:function(f){ls.push([o,f]);},",
+      "removeListener:function(f){ls=ls.filter(function(x){return x[1]!==f;});},",
+      "addEventListener:function(e,f){if(e==='change')ls.push([o,f]);},",
+      "removeEventListener:function(e,f){ls=ls.filter(function(x){return x[1]!==f;});},",
+      "dispatchEvent:function(){return false;}};qs.push([o,w]);return o;};}catch(e){}",
+      "function ev(o){return{type:'change',media:o.media,matches:o.matches};}",
+      "function a(v){t=v;d=v==='dark';",
+      "try{document.documentElement.setAttribute('data-vinnel-theme',v);}catch(e){}",
       "try{${lookup(local.admin_frame_theme_js_app, slug, "")}}catch(e){}",
+      "qs.forEach(function(x){x[0].matches=x[1]===d;",
+      "if(x[0].onchange)try{x[0].onchange.call(x[0],ev(x[0]));}catch(e){}});",
+      "ls.forEach(function(x){try{x[1].call(x[0],ev(x[0]));}catch(e){}});}",
+      "var m=document.cookie.match(/(?:^|; )theme=(dark|light)/);if(m)a(m[1]);",
+      "addEventListener('message',function(e){if(e.origin!=='https://admin.vinnel.cloud')return;",
+      "var v=e.data&&e.data.vinnelTheme;if(v!==t&&(v==='dark'||v==='light')){a(v);",
+      "${contains(keys(local.admin_frame_theme_js_app), slug) ? "location.reload();" : ""}}});",
       "})();",
     ])
   }

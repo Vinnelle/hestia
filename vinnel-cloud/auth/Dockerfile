@@ -1,6 +1,6 @@
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS images
 RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools
-COPY src/images/ .
+COPY shared/images/ .
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp
 
 FROM nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
@@ -20,8 +20,9 @@ RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
 WORKDIR /app
-COPY scripts/ /build/
-COPY html/ .
+COPY shared/scripts/ /build/
+COPY shared/html/ .
+COPY auth/html/ .
 COPY --from=images /favicon.webp assets/images/
 
 RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh
@@ -32,7 +33,7 @@ RUN apk --no-cache upgrade
 USER nginx
 COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
-COPY conf/nginx-main.conf /etc/nginx/nginx.conf
-COPY conf/nginx.conf /etc/nginx/conf.d/default.conf
+COPY shared/conf/nginx-main.conf /etc/nginx/nginx.conf
+COPY auth/conf/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080

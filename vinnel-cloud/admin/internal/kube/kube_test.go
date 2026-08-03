@@ -1,4 +1,4 @@
-package main
+package kube
 
 import "testing"
 
@@ -11,8 +11,8 @@ func TestParseQuantities(t *testing.T) {
 		{"123456789n", 0.123456789}, {"1500u", 0.0015}, {"", 0},
 	}
 	for _, c := range cpu {
-		if got := parseCPU(c.in); got != c.want {
-			t.Errorf("parseCPU(%q) = %v, want %v", c.in, got, c.want)
+		if got := ParseCPU(c.in); got != c.want {
+			t.Errorf("ParseCPU(%q) = %v, want %v", c.in, got, c.want)
 		}
 	}
 
@@ -24,15 +24,8 @@ func TestParseQuantities(t *testing.T) {
 		{"2Gi", 2 * 1024 * 1024 * 1024}, {"1000000", 1000000}, {"", 0},
 	}
 	for _, m := range mem {
-		if got := parseMem(m.in); got != m.want {
-			t.Errorf("parseMem(%q) = %v, want %v", m.in, got, m.want)
+		if got := ParseMem(m.in); got != m.want {
+			t.Errorf("ParseMem(%q) = %v, want %v", m.in, got, m.want)
 		}
-	}
-
-	if got := pct(0, 0); got != 0 {
-		t.Errorf("pct(0,0) = %v, want 0 (a node reporting no capacity must not divide by zero)", got)
-	}
-	if got := pct(1, 4); got != 25 {
-		t.Errorf("pct(1,4) = %v, want 25", got)
 	}
 }

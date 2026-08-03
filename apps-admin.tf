@@ -157,6 +157,31 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             value = "http://${kubernetes_service_v1.satisfactory_saves.metadata[0].name}.${kubernetes_namespace_v1.server.metadata[0].name}.svc.cluster.local:8080"
           }
 
+          env {
+            name  = "MINECRAFT_HOST"
+            value = var.node_ip
+          }
+
+          env {
+            name  = "MINECRAFT_ADDRESS"
+            value = trimsuffix(cloudflare_dns_record.mc_vin_moe.name, ".")
+          }
+
+          env {
+            name  = "MINECRAFT_RCON_ADDR"
+            value = "${var.node_ip}:25575"
+          }
+
+          env {
+            name = "MINECRAFT_RCON_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.minecraft_rcon_admin.metadata[0].name
+                key  = "RCON_PASSWORD"
+              }
+            }
+          }
+
           resources {
             requests = {
               cpu    = "50m"

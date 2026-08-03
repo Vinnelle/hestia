@@ -4,17 +4,13 @@ on:
   push:
     branches: [prd]
     paths:
-      - "hestia/vinnel-cloud/site/**"
-      - "hestia/vinnel-cloud/admin/**"
-      - "hestia/vinnel-cloud/auth/**"
+      - "hestia/vinnel-cloud/**"
       - ".github/workflows/vinnel-cloud-build.yml"
       - ".github/workflows/site-deploy.yml"
       - ".github/actions/**"
   pull_request:
     paths:
-      - "hestia/vinnel-cloud/site/**"
-      - "hestia/vinnel-cloud/admin/**"
-      - "hestia/vinnel-cloud/auth/**"
+      - "hestia/vinnel-cloud/**"
       - ".github/workflows/vinnel-cloud-build.yml"
       - ".github/workflows/site-deploy.yml"
       - ".github/actions/**"
@@ -33,13 +29,16 @@ jobs:
     uses: ./.github/workflows/site-deploy.yml
     with:
       targets: >-
-        [{"context": "hestia/vinnel-cloud/site",
+        [{"context": "hestia/vinnel-cloud",
+          "dockerfile": "hestia/vinnel-cloud/site/Dockerfile",
           "image": "vinnel-cloud/site",
           "deployment": "vinnel-cloud-site"},
-         {"context": "hestia/vinnel-cloud/admin",
+         {"context": "hestia/vinnel-cloud",
+          "dockerfile": "hestia/vinnel-cloud/admin/Dockerfile",
           "image": "vinnel-cloud/admin",
           "deployment": "vinnel-cloud-admin"},
-         {"context": "hestia/vinnel-cloud/auth",
+         {"context": "hestia/vinnel-cloud",
+          "dockerfile": "hestia/vinnel-cloud/auth/Dockerfile",
           "image": "vinnel-cloud/auth",
           "deployment": "vinnel-cloud-auth"}]
       purge_zone: vinnel.cloud

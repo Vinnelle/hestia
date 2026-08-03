@@ -152,6 +152,17 @@ ingress:
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
+name: minecraft-rcon-from-pods
+portSelector:
+  ports:
+    - 25575
+  protocol: tcp
+ingress:
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
 name: minecraft-game-tcp
 portSelector:
   ports:

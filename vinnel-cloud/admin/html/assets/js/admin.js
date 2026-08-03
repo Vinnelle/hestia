@@ -1,6 +1,7 @@
 const frame = document.getElementById('service-frame');
 const home = document.getElementById('frame-empty');
 const satisfactoryPage = document.getElementById('page-satisfactory');
+const minecraftPage = document.getElementById('page-minecraft');
 const back = document.getElementById('frame-back');
 const frameTitle = document.getElementById('frame-title');
 const routed = document.querySelectorAll('.service-link[data-url]');
@@ -8,6 +9,7 @@ const allNavLinks = document.querySelectorAll('.sidebar-link');
 
 const internalPages = {
   'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: refreshSatisfactory },
+  'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: refreshMinecraft },
 };
 
 function show(slug) {
@@ -31,6 +33,7 @@ function show(slug) {
 
   home.hidden = true;
   satisfactoryPage.hidden = true;
+  minecraftPage.hidden = true;
   frame.hidden = true;
   back.hidden = true;
 
@@ -61,11 +64,15 @@ function show(slug) {
 
 addEventListener('hashchange', () => show(location.hash.slice(1)));
 
-function reloadFrame() {
-  if (frame.getAttribute('src')) frame.src = frame.src;
+function pushTheme() {
+  const src = frame.getAttribute('src');
+  if (!src || !frame.contentWindow) return;
+  const theme = document.documentElement.dataset.theme;
+  if (!theme) return;
+  frame.contentWindow.postMessage({ vinnelTheme: theme }, new URL(src).origin);
 }
 
-new MutationObserver(reloadFrame).observe(document.documentElement, {
+new MutationObserver(pushTheme).observe(document.documentElement, {
   attributes: true,
   attributeFilter: ['data-theme'],
 });
@@ -253,6 +260,130 @@ function refreshSatisfactory() {
 
 document.getElementById('sat-logs-refresh').addEventListener('click', loadSatisfactoryLogs);
 
+async function loadMinecraftStatus() {
+  const err = document.getElementById('minecraft-error');
+  let s;
+  try {
+    s = await (await fetch('/api/gameservers/minecraft')).json();
+  } catch (e) {
+    err.hidden = false;
+    err.textContent = 'Could not load server status.';
+    return;
+  }
+
+  const problems = [s.podErr, s.pingErr].filter(Boolean);
+  err.hidden = problems.length === 0;
+  err.textContent = problems.join(' · ');
+
+  if (s.address) text('mc-address', s.address);
+
+  const up = !!s.ping;
+  document.getElementById('mc-status-dot').className = 'dot' + (up ? ' dot--ok' : ' dot--bad');
+  text('mc-status-text', up ? 'Online' : 'Offline');
+  text('mc-status-sub', s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || ''));
+
+  if (s.ping) {
+    text('mc-players', s.ping.playersOnline + ' / ' + s.ping.playersMax);
+    text('mc-player-names', (s.ping.players || []).join(', '));
+    text('mc-latency', s.ping.latencyMs + ' ms ping');
+    text('mc-motd', s.ping.motd || '—');
+    text('mc-version', s.ping.version ? s.ping.version + ' (protocol ' + s.ping.protocol + ')' : '—');
+  } else {
+    text('mc-players', '—');
+    text('mc-player-names', '');
+    text('mc-latency', '');
+    text('mc-motd', '—');
+    text('mc-version', '—');
+  }
+
+  if (s.pod) {
+    text('mc-resources', s.pod.cpuUsed.toFixed(2) + ' / ' + fmtBytes(s.pod.memUsed));
+    text('mc-node', s.pod.node || '—');
+    text('mc-image', s.pod.image || '—');
+    text('mc-restarts', String(s.pod.restarts));
+    text('mc-started', s.pod.startTime && s.pod.startTime !== '0001-01-01T00:00:00Z' ? new Date(s.pod.startTime).toLocaleString() : '—');
+  } else {
+    text('mc-resources', '—');
+    text('mc-node', '—');
+    text('mc-image', '—');
+    text('mc-restarts', '—');
+    text('mc-started', '—');
+  }
+}
+
+async function loadMinecraftLogs() {
+  const pre = document.getElementById('mc-logs');
+  pre.textContent = 'Loading…';
+  try {
+    const r = await (await fetch('/api/gameservers/minecraft/logs?lines=300')).json();
+    pre.textContent = r.logs || r.err || '(no logs)';
+  } catch (e) {
+    pre.textContent = 'Could not load logs.';
+  }
+}
+
+const mcConsole = document.getElementById('mc-console');
+const mcConsoleForm = document.getElementById('mc-console-form');
+const mcConsoleInput = document.getElementById('mc-console-input');
+const mcConsoleSend = document.getElementById('mc-console-send');
+const mcHistory = [];
+let mcHistoryIndex = 0;
+
+function consoleWrite(cls, s) {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = s;
+  mcConsole.appendChild(line);
+  mcConsole.scrollTop = mcConsole.scrollHeight;
+}
+
+mcConsoleForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cmd = mcConsoleInput.value.trim();
+  if (!cmd) return;
+
+  mcHistory.push(cmd);
+  mcHistoryIndex = mcHistory.length;
+  consoleWrite('console-echo', '> ' + cmd);
+  mcConsoleInput.value = '';
+  mcConsoleInput.disabled = true;
+  mcConsoleSend.disabled = true;
+
+  try {
+    const res = await fetch('/api/gameservers/minecraft/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd }),
+    });
+    const r = await res.json();
+    if (r.err) consoleWrite('console-err', r.err);
+    else consoleWrite(null, r.output && r.output.trim() ? r.output : '(no output)');
+  } catch (e) {
+    consoleWrite('console-err', 'Request failed.');
+  } finally {
+    mcConsoleInput.disabled = false;
+    mcConsoleSend.disabled = false;
+    mcConsoleInput.focus();
+    loadMinecraftStatus();
+  }
+});
+
+mcConsoleInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+  if (!mcHistory.length) return;
+  e.preventDefault();
+  mcHistoryIndex += e.key === 'ArrowUp' ? -1 : 1;
+  mcHistoryIndex = Math.max(0, Math.min(mcHistoryIndex, mcHistory.length));
+  mcConsoleInput.value = mcHistory[mcHistoryIndex] || '';
+});
+
+function refreshMinecraft() {
+  loadMinecraftStatus();
+  loadMinecraftLogs();
+}
+
+document.getElementById('mc-logs-refresh').addEventListener('click', loadMinecraftLogs);
+
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -261,6 +392,7 @@ function escapeHtml(s) {
 function refresh() {
   if (!home.hidden) loadCluster();
   if (!satisfactoryPage.hidden) loadSatisfactoryStatus();
+  if (!minecraftPage.hidden) loadMinecraftStatus();
 }
 
 setInterval(refresh, 30000);

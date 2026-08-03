@@ -1,8 +1,8 @@
-package main
+package portal
 
 import "html/template"
 
-type service struct {
+type Service struct {
 	Slug      string
 	Label     string
 	Host      string
@@ -12,7 +12,7 @@ type service struct {
 	Icon      template.HTML
 }
 
-func (s service) URL() string { return "https://" + s.Host + "/" }
+func (s Service) URL() string { return "https://" + s.Host + "/" }
 
 const (
 	iconChart    = `<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>`
@@ -26,7 +26,7 @@ const (
 	iconCloud    = `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>`
 )
 
-var services = []service{
+var Services = []Service{
 	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", "Observability", true, iconChart},
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", "Observability", true, iconNetwork},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", "Network", true, iconShield},
@@ -38,20 +38,21 @@ var services = []service{
 	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", "Platform", true, iconTerminal},
 }
 
-type serviceGroup struct {
+type Group struct {
 	Name     string
-	Services []service
+	Services []Service
 }
 
-func serviceGroups() []serviceGroup {
-	var groups []serviceGroup
+// Groups returns Services bucketed by their Group field, in first-seen order.
+func Groups() []Group {
+	var groups []Group
 	index := map[string]int{}
-	for _, s := range services {
+	for _, s := range Services {
 		i, ok := index[s.Group]
 		if !ok {
 			i = len(groups)
 			index[s.Group] = i
-			groups = append(groups, serviceGroup{Name: s.Group})
+			groups = append(groups, Group{Name: s.Group})
 		}
 		groups[i].Services = append(groups[i].Services, s)
 	}

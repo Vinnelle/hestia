@@ -188,3 +188,49 @@
   overflow-y: auto;
   margin-bottom: 2rem;
 }
+
+.console-output {
+  min-height: 9rem;
+  max-height: 340px;
+  margin-bottom: 0.6rem;
+}
+
+.console-echo { color: var(--accent); }
+.console-err { color: var(--danger); }
+
+.console-form {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+
+.console-prompt {
+  font-family: var(--mono);
+  color: var(--accent);
+  user-select: none;
+}
+
+.console-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  color: inherit;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  padding: 0.45rem 0.7rem;
+}
+
+.console-input:focus-visible,
+.console-form .btn-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.console-input:disabled,
+.console-form .btn-action:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

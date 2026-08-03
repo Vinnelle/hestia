@@ -38,6 +38,12 @@
             </svg>
             <span class="sidebar-label">Satisfactory</span>
           </a>
+          <a class="sidebar-link sidebar-link--sub" href="#gameservers/minecraft" data-slug="gameservers/minecraft">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 7.5L12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5L12 12l9-4.5M12 12v9"/>
+            </svg>
+            <span class="sidebar-label">Minecraft</span>
+          </a>
         </div>
         {{range .ServiceGroups}}
         <button class="sidebar-section-label" type="button" data-section="{{.Name}}" aria-expanded="true">
@@ -253,6 +259,61 @@
             <button class="btn-action" id="sat-logs-refresh" type="button">Refresh</button>
           </div>
           <pre class="log-viewer" id="sat-logs">—</pre>
+        </section>
+
+        <section class="app-page" id="page-minecraft" hidden>
+          <h1 class="page-title">Minecraft</h1>
+          <p class="page-subtitle">Create: Ultimate Selection 2 — NeoForge 1.21.1 (<span id="mc-address">mc.vin.moe</span>)</p>
+
+          <div class="state-center error-msg" id="minecraft-error" hidden></div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-label">Status</div>
+              <div class="stat-value" id="mc-status"><span class="dot" id="mc-status-dot"></span><span id="mc-status-text">—</span></div>
+              <div class="stat-sub" id="mc-status-sub"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Players</div>
+              <div class="stat-value" id="mc-players">—</div>
+              <div class="stat-sub" id="mc-player-names"></div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">CPU / Memory</div>
+              <div class="stat-value" id="mc-resources">—</div>
+              <div class="stat-sub" id="mc-latency"></div>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <table>
+              <tbody>
+                <tr><td>MOTD</td><td id="mc-motd" class="dim">—</td></tr>
+                <tr><td>Version</td><td id="mc-version" class="dim">—</td></tr>
+                <tr><td>Node</td><td id="mc-node" class="dim">—</td></tr>
+                <tr><td>Image</td><td id="mc-image" class="dim">—</td></tr>
+                <tr><td>Restarts</td><td id="mc-restarts" class="dim">—</td></tr>
+                <tr><td>Pod started</td><td id="mc-started" class="dim">—</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h2 class="section-title">Console</h2>
+          <p class="page-subtitle">Server commands over RCON. Runs with full operator authority — every command is logged.</p>
+
+          <pre class="log-viewer console-output" id="mc-console" aria-live="polite" aria-label="Console output">Type a command below. Try <b>list</b>, <b>tps</b>, <b>seed</b>, or <b>help</b>.</pre>
+          <form class="console-form" id="mc-console-form" autocomplete="off">
+            <label class="console-prompt" for="mc-console-input" aria-hidden="true">&gt;</label>
+            <input class="console-input" id="mc-console-input" name="command" type="text" maxlength="512"
+                   placeholder="list" aria-label="Minecraft server command" spellcheck="false" required>
+            <button class="btn-action" type="submit" id="mc-console-send">Run</button>
+          </form>
+
+          <h2 class="section-title">Logs</h2>
+          <div class="sat-actions">
+            <button class="btn-action" id="mc-logs-refresh" type="button">Refresh</button>
+          </div>
+          <pre class="log-viewer" id="mc-logs">—</pre>
         </section>
 
         <iframe class="service-frame" id="service-frame" title="Service" hidden></iframe>

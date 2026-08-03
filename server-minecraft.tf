@@ -24,6 +24,17 @@ resource "kubernetes_secret_v1" "minecraft" {
   }
 }
 
+resource "kubernetes_secret_v1" "minecraft_rcon_admin" {
+  metadata {
+    name      = "minecraft-rcon"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+
+  data = {
+    RCON_PASSWORD = random_password.minecraft_rcon.result
+  }
+}
+
 locals {
   minecraft_modpack_zip = "/data/.downloads/modpacks/create-ultimate-selection-2-11.1.0.zip"
 

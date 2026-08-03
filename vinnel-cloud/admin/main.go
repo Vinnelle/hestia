@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"html/template"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -16,6 +17,13 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+
+	"vinnel-cloud-admin/internal/cluster"
+	"vinnel-cloud-admin/internal/kube"
+	"vinnel-cloud-admin/internal/minecraft"
+	"vinnel-cloud-admin/internal/portal"
+	"vinnel-cloud-admin/internal/satisfactory"
+	"vinnel-cloud-admin/internal/telemetry"
 )
 
 //go:embed html
@@ -23,8 +31,8 @@ var htmlFS embed.FS
 
 type pageData struct {
 	User          string
-	Services      []service
-	ServiceGroups []serviceGroup
+	Services      []portal.Service
+	ServiceGroups []portal.Group
 }
 
 func env(key, def string) string {
@@ -38,7 +46,7 @@ var extraFrameSrc = []string{"https://auth.vinnel.cloud"}
 
 var frameSrc = func() string {
 	origins := append([]string{}, extraFrameSrc...)
-	for _, s := range services {
+	for _, s := range portal.Services {
 		if s.Frameable {
 			origins = append(origins, "https://"+s.Host)
 		}
@@ -93,6 +101,15 @@ func userFromRequest(r *http.Request) string {
 	return r.Header.Get("Remote-User")
 }
 
+func logLines(r *http.Request) int {
+	if v := r.URL.Query().Get("lines"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 2000 {
+			return n
+		}
+	}
+	return 200
+}
+
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
@@ -103,21 +120,21 @@ func writeJSON(w http.ResponseWriter, v any) {
 type statsCache struct {
 	mu   sync.Mutex
 	at   time.Time
-	val  clusterStats
+	val  cluster.Stats
 	ttl  time.Duration
-	kube *kubeClient
+	kube *kube.Client
 }
 
-func (c *statsCache) get() clusterStats {
+func (c *statsCache) get() cluster.Stats {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.kube == nil {
-		return clusterStats{Err: "kubernetes API unavailable"}
+		return cluster.Stats{Err: "kubernetes API unavailable"}
 	}
 	if time.Since(c.at) < c.ttl {
 		return c.val
 	}
-	c.val = c.kube.stats()
+	c.val = cluster.Collect(c.kube)
 	c.at = time.Now()
 	return c.val
 }
@@ -125,22 +142,35 @@ func (c *statsCache) get() clusterStats {
 func main() {
 	addr := env("LISTEN_ADDR", ":8080")
 
-	shutdownTracing, err := setupTracing(context.Background(), env("OTEL_COLLECTOR_ENDPOINT", ""))
+	shutdownTracing, err := telemetry.Setup(context.Background(), env("OTEL_COLLECTOR_ENDPOINT", ""))
 	if err != nil {
 		log.Fatalf("otel setup: %v", err)
 	}
 	defer shutdownTracing(context.Background())
 
-	kube, err := newKubeClient()
+	kubeClient, err := kube.New()
 	if err != nil {
 		log.Printf("kubernetes client unavailable, cluster stats disabled: %v", err)
 	}
-	cache := &statsCache{kube: kube, ttl: 15 * time.Second}
+	cache := &statsCache{kube: kubeClient, ttl: 15 * time.Second}
 
-	satisfactory := &satisfactoryService{
-		kube:     kube,
-		host:     env("SATISFACTORY_HOST", ""),
-		savesURL: env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.server.svc.cluster.local:8080"),
+	satisfactorySvc := &satisfactory.Service{
+		Kube:     kubeClient,
+		Host:     env("SATISFACTORY_HOST", ""),
+		SavesURL: env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.server.svc.cluster.local:8080"),
+	}
+
+	mcPort, err := strconv.Atoi(env("MINECRAFT_PORT", "25565"))
+	if err != nil {
+		log.Fatalf("MINECRAFT_PORT: %v", err)
+	}
+	minecraftSvc := &minecraft.Service{
+		Kube:         kubeClient,
+		Host:         env("MINECRAFT_HOST", ""),
+		Port:         mcPort,
+		Address:      env("MINECRAFT_ADDRESS", "mc.vin.moe"),
+		RconAddr:     env("MINECRAFT_RCON_ADDR", ""),
+		RconPassword: os.Getenv("MINECRAFT_RCON_PASSWORD"),
 	}
 
 	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
@@ -170,17 +200,11 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, satisfactory.status())
+		writeJSON(w, satisfactorySvc.Status())
 	})
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory/logs", func(w http.ResponseWriter, r *http.Request) {
-		lines := 200
-		if v := r.URL.Query().Get("lines"); v != "" {
-			if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 2000 {
-				lines = n
-			}
-		}
-		logs, err := satisfactory.logs(lines)
+		logs, err := satisfactorySvc.Logs(logLines(r))
 		if err != nil {
 			writeJSON(w, map[string]string{"err": err.Error()})
 			return
@@ -189,9 +213,42 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory/save", func(w http.ResponseWriter, r *http.Request) {
-		if err := satisfactory.writeSaveFile(w); err != nil {
+		if err := satisfactorySvc.WriteSaveFile(w); err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 		}
+	})
+
+	mux.HandleFunc("GET /api/gameservers/minecraft", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, minecraftSvc.Status())
+	})
+
+	mux.HandleFunc("GET /api/gameservers/minecraft/logs", func(w http.ResponseWriter, r *http.Request) {
+		logs, err := minecraftSvc.Logs(logLines(r))
+		if err != nil {
+			writeJSON(w, map[string]string{"err": err.Error()})
+			return
+		}
+		writeJSON(w, map[string]string{"logs": logs})
+	})
+
+	mux.HandleFunc("POST /api/gameservers/minecraft/command", func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Command string `json:"command"`
+		}
+		if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil {
+			writeJSON(w, map[string]string{"err": "malformed request"})
+			return
+		}
+		// Every RCON command runs with full server-operator authority, so who
+		// ran what is recorded before it executes. Authelia is the only thing
+		// gating this endpoint.
+		log.Printf("minecraft rcon: user=%q command=%q", userFromRequest(r), req.Command)
+		out, err := minecraftSvc.Command(req.Command)
+		if err != nil {
+			writeJSON(w, map[string]string{"err": err.Error()})
+			return
+		}
+		writeJSON(w, map[string]string{"output": out})
 	})
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
@@ -200,7 +257,7 @@ func main() {
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: services, ServiceGroups: serviceGroups()}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})
