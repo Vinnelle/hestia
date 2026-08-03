@@ -24,6 +24,13 @@ resource "kubernetes_secret_v1" "minecraft" {
   }
 }
 
+locals {
+  minecraft_config_hash = sha256(join("", [
+    var.curseforge_api_key,
+    random_password.minecraft_rcon.result,
+  ]))
+}
+
 resource "kubernetes_persistent_volume_claim_v1" "minecraft_data" {
   metadata {
     name      = "minecraft-data-pvc"
@@ -70,6 +77,9 @@ resource "kubernetes_deployment_v1" "minecraft" {
       metadata {
         labels = {
           app = "minecraft"
+        }
+        annotations = {
+          "config-hash" = local.minecraft_config_hash
         }
       }
 
