@@ -301,7 +301,7 @@ resource "kubernetes_deployment_v1" "momus" {
   }
 
   spec {
-    replicas = 1
+    replicas = 0
 
     selector {
       match_labels = {

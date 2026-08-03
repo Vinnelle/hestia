@@ -72,28 +72,31 @@ func apiCall(client *http.Client, host, token, fn string, data any) (json.RawMes
 	}
 	dec := json.NewDecoder(io.LimitReader(resp.Body, 1<<20))
 	decErr := dec.Decode(&out)
+	if msg := out.ErrorMessage; msg != "" {
+		return nil, fmt.Errorf("%s: %s", fn, msg)
+	}
+	if out.ErrorCode != "" {
+		return nil, fmt.Errorf("%s: %s", fn, out.ErrorCode)
+	}
 	if resp.StatusCode != http.StatusOK {
-		if out.ErrorMessage != "" {
-			return nil, fmt.Errorf("%s: %s: %s", fn, resp.Status, out.ErrorMessage)
-		}
-		if out.ErrorCode != "" {
-			return nil, fmt.Errorf("%s: %s: %s", fn, resp.Status, out.ErrorCode)
-		}
 		return nil, fmt.Errorf("%s: %s", fn, resp.Status)
 	}
 	if decErr != nil {
 		return nil, decErr
 	}
+	if len(out.Data) == 0 {
+		return nil, fmt.Errorf("%s: response carried no data", fn)
+	}
 	return out.Data, nil
 }
 
-func fetchSatisfactoryAPI(host string) (*satisfactoryAPIInfo, error) {
+func fetchSatisfactoryAPI(host, token string) (*satisfactoryAPIInfo, error) {
 	if _, err := apiCall(apiClient, host, "", "HealthCheck", map[string]string{"ClientCustomData": ""}); err != nil {
 		return nil, err
 	}
 	info := &satisfactoryAPIInfo{Healthy: true}
 
-	data, err := apiCall(apiClient, host, "", "QueryServerState", nil)
+	data, err := apiCall(apiClient, host, token, "QueryServerState", nil)
 	if err != nil {
 		return info, nil
 	}
@@ -198,10 +201,16 @@ func (s *Service) Status() Status {
 
 	if s.Host == "" {
 		out.APIErr = "SATISFACTORY_HOST not configured"
-	} else if api, err := fetchSatisfactoryAPI(s.Host); err != nil {
-		out.APIErr = err.Error()
 	} else {
-		out.API = api
+		var token string
+		if s.AdminPassword != "" {
+			token, _ = s.login()
+		}
+		if api, err := fetchSatisfactoryAPI(s.Host, token); err != nil {
+			out.APIErr = err.Error()
+		} else {
+			out.API = api
+		}
 	}
 
 	if sf, err := latestSaveFile(s.SavesURL); err != nil {

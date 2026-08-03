@@ -60,6 +60,7 @@ func (t rewriteTransport) RoundTrip(r *http.Request) (*http.Response, error) {
 type apiRequest struct {
 	Function string            `json:"function"`
 	Data     map[string]string `json:"data"`
+	Auth     string            `json:"-"`
 }
 
 // fakeAPI serves the Dedicated Server HTTPS API against handle, and points both
@@ -72,9 +73,9 @@ func fakeAPI(t *testing.T, handle func(apiRequest, http.ResponseWriter)) {
 			t.Errorf("decode request: %v", err)
 			return
 		}
-		if call.Function != "HealthCheck" && call.Function != "QueryServerState" &&
-			!strings.HasSuffix(call.Function, "Login") && r.Header.Get("Authorization") == "" {
-			t.Errorf("%s sent no Authorization header", call.Function)
+		call.Auth = r.Header.Get("Authorization")
+		if call.Function == "RunCommand" && call.Auth == "" {
+			t.Error("RunCommand sent no Authorization header")
 		}
 		handle(call, w)
 	}))
@@ -99,13 +100,16 @@ func TestFetchSatisfactoryAPI(t *testing.T) {
 		case "HealthCheck":
 			w.Write([]byte(`{"data":{"health":"healthy"}}`))
 		case "QueryServerState":
+			if call.Auth != "Bearer tok" {
+				t.Errorf("QueryServerState Authorization = %q, want %q", call.Auth, "Bearer tok")
+			}
 			w.Write([]byte(`{"data":{"serverGameState":{"activeSessionName":"Ficsit","numConnectedPlayers":2,"playerLimit":4,"techTier":6,"gamePhase":"Phase3","isGameRunning":true,"averageTickRate":29.5}}}`))
 		default:
 			t.Errorf("unexpected function %q", call.Function)
 		}
 	})
 
-	info, err := fetchSatisfactoryAPI("factory.example")
+	info, err := fetchSatisfactoryAPI("factory.example", "tok")
 	if err != nil {
 		t.Fatalf("fetchSatisfactoryAPI: %v", err)
 	}
@@ -128,8 +132,7 @@ func TestCommand(t *testing.T) {
 		switch call.Function {
 		case "PasswordLogin":
 			if call.Data["Password"] != "hunter2" {
-				w.WriteHeader(http.StatusUnauthorized)
-				w.Write([]byte(`{"errorCode":"wrong_password","errorMessage":"Wrong password"}`))
+				w.Write([]byte(`{"errorCode":"wrong_password","errorMessage":"Provided password did not match either Client or Admin passwords"}`))
 				return
 			}
 			if call.Data["MinimumPrivilegeLevel"] != "Administrator" {
@@ -153,8 +156,25 @@ func TestCommand(t *testing.T) {
 	}
 
 	bad := &Service{Host: "factory.example", AdminPassword: "wrong"}
-	if _, err := bad.Command("help"); err == nil || !strings.Contains(err.Error(), "Wrong password") {
+	if _, err := bad.Command("help"); err == nil || !strings.Contains(err.Error(), "did not match") {
 		t.Errorf("wrong password error = %v, want one mentioning the API error message", err)
+	}
+}
+
+// TestCommandPasswordlessRefused covers the live shape of every API failure:
+// HTTP 200 with an errorCode/errorMessage body and no data field at all.
+func TestCommandPasswordlessRefused(t *testing.T) {
+	fakeAPI(t, func(call apiRequest, w http.ResponseWriter) {
+		if call.Function != "PasswordlessLogin" {
+			t.Errorf("unexpected function %q after a refused login", call.Function)
+		}
+		w.Write([]byte(`{"errorCode":"passwordless_login_not_possible","errorMessage":"Passwordless login is not possible in the current server configuration"}`))
+	})
+
+	svc := &Service{Host: "factory.example"}
+	_, err := svc.Command("help")
+	if err == nil || !strings.Contains(err.Error(), "Passwordless login is not possible") {
+		t.Errorf("Command error = %v, want the API's errorMessage", err)
 	}
 }
 
