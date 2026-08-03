@@ -46,20 +46,6 @@ provider "signoz" {
   access_token = var.signoz_api_token
 }
 
-resource "random_password" "keycloak_admin_password" {
-  length  = 32
-  special = false
-}
-
-provider "keycloak" {
-  client_id = "admin-cli"
-  username  = "admin"
-  password  = random_password.keycloak_admin_password.result
-  url       = "https://kc.vinnel.cloud"
-
-  initial_login = false
-}
-
 provider "aws" {
   alias  = "mega_s4"
   region = "us-east-1"
