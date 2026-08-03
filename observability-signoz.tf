@@ -242,7 +242,7 @@ resource "signoz_rule" "workload_degraded" {
   alert_type     = "METRIC_BASED_ALERT"
   rule_type      = "promql_rule"
   schema_version = "v2alpha1"
-  description    = "A deployment or statefulset has been running below desired replicas for 15m (crashloop, image pull failure, stuck rollout)"
+  description    = "A deployment or statefulset has been running below desired replicas for 15m (crashloop, image pull failure, stuck rollout). Workloads deliberately scaled to 0 are excluded."
 
   condition = {
     composite_query = {
@@ -253,7 +253,7 @@ resource "signoz_rule" "workload_degraded" {
           type = "promql"
           spec = {
             name  = "A"
-            query = "({\"k8s.deployment.available\"} / clamp_min({\"k8s.deployment.desired\"}, 1)) or ({\"k8s.statefulset.ready_pods\"} / clamp_min({\"k8s.statefulset.desired_pods\"}, 1))"
+            query = "({\"k8s.deployment.available\"} / ({\"k8s.deployment.desired\"} > 0)) or ({\"k8s.statefulset.ready_pods\"} / ({\"k8s.statefulset.desired_pods\"} > 0))"
           }
         }
       }]

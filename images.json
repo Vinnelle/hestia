@@ -5,8 +5,8 @@
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:c0fd11a369da5d39e9ca2b33cd337cb46f81438109c825b3128618e8246551ec",
   "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:cc9670453224bf7db583730698c87858d3f2e21655ccc2518cf8c9c3725002a3",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:eb22cc2ca55168cd039821a46b5bd9784aebb9a969d51b71bbccd0a68cad34c1",
-  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:a4b0571b12fb59b641701d1f79a78c7bc28d906c89952e8189c3dce5e8490192",
-  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:c71188282d4488547231d0d9df9a98a44f08086c6b0945acb9ff284cec5f606f",
+  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:07c188a1faba3acf288a7bcbc88915d72a1c90b69c893947e94254dbc1b36cff",
+  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:fcd0474bf07347e48768b8f3561e12712617fdbd2f69cc562760311377439fd5",
+  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:d6a0c550d62f3165ad13f0628e0b2c19e98029d3f84b027c5e1ed64e75c32bd5",
   "vinnel-cloud-shell": "registry.vinnel.cloud/vinnel-cloud/shell@sha256:fe8a4c8eaa15b163c27935c6e31cc87c28d3f04698b9a22e91b013bae9cb1ce9"
 }
