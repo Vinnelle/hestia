@@ -3,7 +3,7 @@ RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools
 COPY shared/images/ .
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp
 
-FROM node:24-alpine@sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd AS asset-build
+FROM node:24-alpine@sha256:f70403e87646dc51b45295f4b8b70cdad0b63d2297c4c9899119b03f7af7a6b3 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
