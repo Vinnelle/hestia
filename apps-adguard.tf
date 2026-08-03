@@ -64,10 +64,11 @@ resource "kubernetes_config_map_v1" "adguard_config_template" {
 }
 
 resource "netbird_setup_key" "adguard" {
-  for_each       = local.adguard_ordinals
-  name           = "adguard-${each.key}"
-  type           = "one-off"
-  expiry_seconds = 3600
+  for_each = local.adguard_ordinals
+  name     = "adguard-${each.key}"
+  type     = "one-off"
+  # See server-momus.tf: 86400 is the API's documented minimum for expires_in.
+  expiry_seconds = 86400
   ephemeral      = false
   usage_limit    = 1
 }

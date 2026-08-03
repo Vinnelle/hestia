@@ -30,9 +30,11 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_server" {
 }
 
 resource "netbird_setup_key" "momus" {
-  name           = "momus"
-  type           = "one-off"
-  expiry_seconds = 3600
+  name = "momus"
+  type = "one-off"
+  # Netbird's API documents expires_in as >=86400 and <=31536000; 86400 is the
+  # floor, not a preference. The previous 3600 was below the minimum.
+  expiry_seconds = 86400
   ephemeral      = false
   usage_limit    = 1
 }
