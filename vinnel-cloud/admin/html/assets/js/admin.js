@@ -322,60 +322,65 @@ async function loadMinecraftLogs() {
   }
 }
 
-const mcConsole = document.getElementById('mc-console');
-const mcConsoleForm = document.getElementById('mc-console-form');
-const mcConsoleInput = document.getElementById('mc-console-input');
-const mcConsoleSend = document.getElementById('mc-console-send');
-const mcHistory = [];
-let mcHistoryIndex = 0;
+function wireConsole(prefix, endpoint, after) {
+  const out = document.getElementById(prefix + '-console');
+  const form = document.getElementById(prefix + '-console-form');
+  const input = document.getElementById(prefix + '-console-input');
+  const send = document.getElementById(prefix + '-console-send');
+  const history = [];
+  let historyIndex = 0;
 
-function consoleWrite(cls, s) {
-  const line = document.createElement('div');
-  if (cls) line.className = cls;
-  line.textContent = s;
-  mcConsole.appendChild(line);
-  mcConsole.scrollTop = mcConsole.scrollHeight;
+  const write = (cls, s) => {
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = s;
+    out.appendChild(line);
+    out.scrollTop = out.scrollHeight;
+  };
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cmd = input.value.trim();
+    if (!cmd) return;
+
+    history.push(cmd);
+    historyIndex = history.length;
+    write('console-echo', '> ' + cmd);
+    input.value = '';
+    input.disabled = true;
+    send.disabled = true;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd }),
+      });
+      const r = await res.json();
+      if (r.err) write('console-err', r.err);
+      else write(null, r.output && r.output.trim() ? r.output : '(no output)');
+    } catch (e) {
+      write('console-err', 'Request failed.');
+    } finally {
+      input.disabled = false;
+      send.disabled = false;
+      input.focus();
+      after();
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    if (!history.length) return;
+    e.preventDefault();
+    historyIndex += e.key === 'ArrowUp' ? -1 : 1;
+    historyIndex = Math.max(0, Math.min(historyIndex, history.length));
+    input.value = history[historyIndex] || '';
+  });
 }
 
-mcConsoleForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const cmd = mcConsoleInput.value.trim();
-  if (!cmd) return;
-
-  mcHistory.push(cmd);
-  mcHistoryIndex = mcHistory.length;
-  consoleWrite('console-echo', '> ' + cmd);
-  mcConsoleInput.value = '';
-  mcConsoleInput.disabled = true;
-  mcConsoleSend.disabled = true;
-
-  try {
-    const res = await fetch('/api/gameservers/minecraft/command', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command: cmd }),
-    });
-    const r = await res.json();
-    if (r.err) consoleWrite('console-err', r.err);
-    else consoleWrite(null, r.output && r.output.trim() ? r.output : '(no output)');
-  } catch (e) {
-    consoleWrite('console-err', 'Request failed.');
-  } finally {
-    mcConsoleInput.disabled = false;
-    mcConsoleSend.disabled = false;
-    mcConsoleInput.focus();
-    loadMinecraftStatus();
-  }
-});
-
-mcConsoleInput.addEventListener('keydown', (e) => {
-  if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-  if (!mcHistory.length) return;
-  e.preventDefault();
-  mcHistoryIndex += e.key === 'ArrowUp' ? -1 : 1;
-  mcHistoryIndex = Math.max(0, Math.min(mcHistoryIndex, mcHistory.length));
-  mcConsoleInput.value = mcHistory[mcHistoryIndex] || '';
-});
+wireConsole('mc', '/api/gameservers/minecraft/command', loadMinecraftStatus);
+wireConsole('sat', '/api/gameservers/satisfactory/command', loadSatisfactoryStatus);
 
 function refreshMinecraft() {
   loadMinecraftStatus();

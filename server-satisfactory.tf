@@ -7,6 +7,17 @@ resource "cloudflare_dns_record" "factory_vin_moe" {
   proxied = false
 }
 
+resource "kubernetes_secret_v1" "satisfactory_admin" {
+  metadata {
+    name      = "satisfactory-admin"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+
+  data = {
+    ADMIN_PASSWORD = var.satisfactory_admin_password
+  }
+}
+
 resource "kubernetes_persistent_volume_claim_v1" "satisfactory_saves" {
   metadata {
     name      = "satisfactory-saves-pvc"

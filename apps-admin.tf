@@ -158,6 +158,16 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
+            name = "SATISFACTORY_ADMIN_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.satisfactory_admin.metadata[0].name
+                key  = "ADMIN_PASSWORD"
+              }
+            }
+          }
+
+          env {
             name  = "MINECRAFT_HOST"
             value = var.node_ip
           }

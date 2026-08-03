@@ -254,6 +254,17 @@
           </div>
           <p class="sat-hint">There's no in-house building/resource map here — drop the downloaded save into satisfactory-calculator.com's own uploader for that.</p>
 
+          <h2 class="section-title">Console</h2>
+          <p class="page-subtitle">Server commands over the Dedicated Server HTTPS API. Runs with full administrator authority — every command is logged.</p>
+
+          <pre class="log-viewer console-output" id="sat-console" aria-live="polite" aria-label="Console output">Type a command below. Try <b>help</b>.</pre>
+          <form class="console-form" id="sat-console-form" autocomplete="off">
+            <label class="console-prompt" for="sat-console-input" aria-hidden="true">&gt;</label>
+            <input class="console-input" id="sat-console-input" name="command" type="text" maxlength="512"
+                   placeholder="help" aria-label="Satisfactory server command" spellcheck="false" required>
+            <button class="btn-action" type="submit" id="sat-console-send">Run</button>
+          </form>
+
           <h2 class="section-title">Logs</h2>
           <div class="sat-actions">
             <button class="btn-action" id="sat-logs-refresh" type="button">Refresh</button>

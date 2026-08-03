@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 	"testing"
 	"time"
 )
@@ -41,5 +43,159 @@ func TestLatestSaveFile(t *testing.T) {
 	empty := jsonAutoindexServer(t, nil)
 	if _, err := latestSaveFile(empty.URL); err == nil {
 		t.Fatal("expected error for listing with no .sav files")
+	}
+}
+
+// rewriteTransport redirects the fixed https://<host>:7777/api/v1 endpoint at a
+// local test server.
+type rewriteTransport struct{ target *url.URL }
+
+func (t rewriteTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	c := r.Clone(r.Context())
+	c.URL.Scheme = t.target.Scheme
+	c.URL.Host = t.target.Host
+	return http.DefaultTransport.RoundTrip(c)
+}
+
+type apiRequest struct {
+	Function string            `json:"function"`
+	Data     map[string]string `json:"data"`
+}
+
+// fakeAPI serves the Dedicated Server HTTPS API against handle, and points both
+// package clients at it for the duration of the test.
+func fakeAPI(t *testing.T, handle func(apiRequest, http.ResponseWriter)) {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var call apiRequest
+		if err := json.NewDecoder(r.Body).Decode(&call); err != nil {
+			t.Errorf("decode request: %v", err)
+			return
+		}
+		if call.Function != "HealthCheck" && call.Function != "QueryServerState" &&
+			!strings.HasSuffix(call.Function, "Login") && r.Header.Get("Authorization") == "" {
+			t.Errorf("%s sent no Authorization header", call.Function)
+		}
+		handle(call, w)
+	}))
+	t.Cleanup(srv.Close)
+
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatalf("parse test server URL: %v", err)
+	}
+	oldAPI, oldCommand := apiClient.Transport, commandClient.Transport
+	apiClient.Transport = rewriteTransport{u}
+	commandClient.Transport = rewriteTransport{u}
+	t.Cleanup(func() {
+		apiClient.Transport = oldAPI
+		commandClient.Transport = oldCommand
+	})
+}
+
+func TestFetchSatisfactoryAPI(t *testing.T) {
+	fakeAPI(t, func(call apiRequest, w http.ResponseWriter) {
+		switch call.Function {
+		case "HealthCheck":
+			w.Write([]byte(`{"data":{"health":"healthy"}}`))
+		case "QueryServerState":
+			w.Write([]byte(`{"data":{"serverGameState":{"activeSessionName":"Ficsit","numConnectedPlayers":2,"playerLimit":4,"techTier":6,"gamePhase":"Phase3","isGameRunning":true,"averageTickRate":29.5}}}`))
+		default:
+			t.Errorf("unexpected function %q", call.Function)
+		}
+	})
+
+	info, err := fetchSatisfactoryAPI("factory.example")
+	if err != nil {
+		t.Fatalf("fetchSatisfactoryAPI: %v", err)
+	}
+	if !info.Healthy {
+		t.Error("Healthy = false, want true")
+	}
+	if info.SessionName != "Ficsit" {
+		t.Errorf("SessionName = %q, want %q", info.SessionName, "Ficsit")
+	}
+	if info.ConnectedPlayers != 2 || info.PlayerLimit != 4 {
+		t.Errorf("players = %d/%d, want 2/4", info.ConnectedPlayers, info.PlayerLimit)
+	}
+	if info.TechTier != 6 || info.GamePhase != "Phase3" || info.AverageTickRate != 29.5 {
+		t.Errorf("state = %+v, want tier 6 / Phase3 / 29.5 ticks", info)
+	}
+}
+
+func TestCommand(t *testing.T) {
+	fakeAPI(t, func(call apiRequest, w http.ResponseWriter) {
+		switch call.Function {
+		case "PasswordLogin":
+			if call.Data["Password"] != "hunter2" {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(`{"errorCode":"wrong_password","errorMessage":"Wrong password"}`))
+				return
+			}
+			if call.Data["MinimumPrivilegeLevel"] != "Administrator" {
+				t.Errorf("MinimumPrivilegeLevel = %q", call.Data["MinimumPrivilegeLevel"])
+			}
+			w.Write([]byte(`{"data":{"authenticationToken":"tok"}}`))
+		case "RunCommand":
+			w.Write([]byte(`{"data":{"commandResult":"Tick Rate: 30","returnValue":true}}`))
+		default:
+			t.Errorf("unexpected function %q", call.Function)
+		}
+	})
+
+	svc := &Service{Host: "factory.example", AdminPassword: "hunter2"}
+	out, err := svc.Command("  /FG.NetworkQuality  ")
+	if err != nil {
+		t.Fatalf("Command: %v", err)
+	}
+	if out != "Tick Rate: 30" {
+		t.Errorf("Command output = %q, want %q", out, "Tick Rate: 30")
+	}
+
+	bad := &Service{Host: "factory.example", AdminPassword: "wrong"}
+	if _, err := bad.Command("help"); err == nil || !strings.Contains(err.Error(), "Wrong password") {
+		t.Errorf("wrong password error = %v, want one mentioning the API error message", err)
+	}
+}
+
+func TestCommandPasswordlessFallback(t *testing.T) {
+	fakeAPI(t, func(call apiRequest, w http.ResponseWriter) {
+		switch call.Function {
+		case "PasswordlessLogin":
+			if _, ok := call.Data["Password"]; ok {
+				t.Error("PasswordlessLogin sent a Password field")
+			}
+			w.Write([]byte(`{"data":{"authenticationToken":"tok"}}`))
+		case "RunCommand":
+			w.Write([]byte(`{"data":{"commandResult":"","returnValue":true}}`))
+		default:
+			t.Errorf("unexpected function %q", call.Function)
+		}
+	})
+
+	svc := &Service{Host: "factory.example"}
+	if _, err := svc.Command("help"); err != nil {
+		t.Fatalf("Command: %v", err)
+	}
+}
+
+func TestCommandRejectsBadInput(t *testing.T) {
+	svc := &Service{Host: "factory.example"}
+	cases := map[string]string{
+		"empty":           "   ",
+		"control char":    "say hi\nstop",
+		"too long":        strings.Repeat("a", satisfactoryMaxCommand+1),
+		"no host":         "help",
+		"null byte":       "say hi\x00stop",
+		"carriage return": "say hi\rstop",
+	}
+	for name, cmd := range cases {
+		s := svc
+		if name == "no host" {
+			s = &Service{}
+		}
+		if _, err := s.Command(cmd); err == nil {
+			t.Errorf("%s: expected an error", name)
+		}
 	}
 }

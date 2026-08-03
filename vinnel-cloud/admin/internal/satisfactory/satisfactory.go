@@ -30,41 +30,70 @@ type satisfactoryAPIInfo struct {
 	AverageTickRate   float64 `json:"averageTickRate"`
 }
 
-func fetchSatisfactoryAPI(host string) (*satisfactoryAPIInfo, error) {
-	client := &http.Client{
-		Timeout:   5 * time.Second,
+func newAPIClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout:   timeout,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
-	call := func(fn string) (map[string]json.RawMessage, error) {
-		body, _ := json.Marshal(map[string]string{"function": fn})
-		req, err := http.NewRequest("POST", "https://"+host+":7777/api/v1", bytes.NewReader(body))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("Content-Type", "application/json")
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("%s: %s", fn, resp.Status)
-		}
-		var out struct {
-			Data map[string]json.RawMessage `json:"data"`
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-			return nil, err
-		}
-		return out.Data, nil
-	}
+}
 
-	if _, err := call("HealthCheck"); err != nil {
+var (
+	apiClient     = newAPIClient(5 * time.Second)
+	commandClient = newAPIClient(30 * time.Second)
+)
+
+func apiCall(client *http.Client, host, token, fn string, data any) (json.RawMessage, error) {
+	payload := map[string]any{"function": fn}
+	if data != nil {
+		payload["data"] = data
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest("POST", "https://"+host+":7777/api/v1", bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var out struct {
+		Data         json.RawMessage `json:"data"`
+		ErrorCode    string          `json:"errorCode"`
+		ErrorMessage string          `json:"errorMessage"`
+	}
+	dec := json.NewDecoder(io.LimitReader(resp.Body, 1<<20))
+	decErr := dec.Decode(&out)
+	if resp.StatusCode != http.StatusOK {
+		if out.ErrorMessage != "" {
+			return nil, fmt.Errorf("%s: %s: %s", fn, resp.Status, out.ErrorMessage)
+		}
+		if out.ErrorCode != "" {
+			return nil, fmt.Errorf("%s: %s: %s", fn, resp.Status, out.ErrorCode)
+		}
+		return nil, fmt.Errorf("%s: %s", fn, resp.Status)
+	}
+	if decErr != nil {
+		return nil, decErr
+	}
+	return out.Data, nil
+}
+
+func fetchSatisfactoryAPI(host string) (*satisfactoryAPIInfo, error) {
+	if _, err := apiCall(apiClient, host, "", "HealthCheck", map[string]string{"ClientCustomData": ""}); err != nil {
 		return nil, err
 	}
 	info := &satisfactoryAPIInfo{Healthy: true}
 
-	data, err := call("QueryServerState")
+	data, err := apiCall(apiClient, host, "", "QueryServerState", nil)
 	if err != nil {
 		return info, nil
 	}
@@ -80,8 +109,8 @@ func fetchSatisfactoryAPI(host string) (*satisfactoryAPIInfo, error) {
 			AverageTickRate     float64 `json:"averageTickRate"`
 		} `json:"serverGameState"`
 	}
-	if raw, ok := data["serverGameState"]; ok {
-		_ = json.Unmarshal(raw, &state)
+	if err := json.Unmarshal(data, &state); err != nil {
+		return info, nil
 	}
 	info.SessionName = state.ServerGameState.ActiveSessionName
 	info.ConnectedPlayers = state.ServerGameState.NumConnectedPlayers
@@ -150,9 +179,10 @@ type Status struct {
 }
 
 type Service struct {
-	Kube     *kube.Client
-	Host     string
-	SavesURL string
+	Kube          *kube.Client
+	Host          string
+	SavesURL      string
+	AdminPassword string
 }
 
 func (s *Service) Status() Status {

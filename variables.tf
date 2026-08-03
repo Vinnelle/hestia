@@ -128,3 +128,10 @@ variable "curseforge_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "satisfactory_admin_password" {
+  description = "Admin password set by hand through the Satisfactory Server Manager UI when the server was claimed. Used by admin.vinnel.cloud's Satisfactory console to PasswordLogin for an Administrator token before each RunCommand. Set as a TFC workspace variable, not codified. Leave empty to fall back to PasswordlessLogin, which only works on an unclaimed server."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

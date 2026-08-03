@@ -110,6 +110,25 @@ func logLines(r *http.Request) int {
 	return 200
 }
 
+func commandHandler(audit string, run func(string) (string, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req struct {
+			Command string `json:"command"`
+		}
+		if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil {
+			writeJSON(w, map[string]string{"err": "malformed request"})
+			return
+		}
+		log.Printf("%s: user=%q command=%q", audit, userFromRequest(r), req.Command)
+		out, err := run(req.Command)
+		if err != nil {
+			writeJSON(w, map[string]string{"err": err.Error()})
+			return
+		}
+		writeJSON(w, map[string]string{"output": out})
+	}
+}
+
 func writeJSON(w http.ResponseWriter, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(v); err != nil {
@@ -155,9 +174,10 @@ func main() {
 	cache := &statsCache{kube: kubeClient, ttl: 15 * time.Second}
 
 	satisfactorySvc := &satisfactory.Service{
-		Kube:     kubeClient,
-		Host:     env("SATISFACTORY_HOST", ""),
-		SavesURL: env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.server.svc.cluster.local:8080"),
+		Kube:          kubeClient,
+		Host:          env("SATISFACTORY_HOST", ""),
+		SavesURL:      env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.server.svc.cluster.local:8080"),
+		AdminPassword: os.Getenv("SATISFACTORY_ADMIN_PASSWORD"),
 	}
 
 	mcPort, err := strconv.Atoi(env("MINECRAFT_PORT", "25565"))
@@ -231,25 +251,9 @@ func main() {
 		writeJSON(w, map[string]string{"logs": logs})
 	})
 
-	mux.HandleFunc("POST /api/gameservers/minecraft/command", func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Command string `json:"command"`
-		}
-		if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil {
-			writeJSON(w, map[string]string{"err": "malformed request"})
-			return
-		}
-		// Every RCON command runs with full server-operator authority, so who
-		// ran what is recorded before it executes. Authelia is the only thing
-		// gating this endpoint.
-		log.Printf("minecraft rcon: user=%q command=%q", userFromRequest(r), req.Command)
-		out, err := minecraftSvc.Command(req.Command)
-		if err != nil {
-			writeJSON(w, map[string]string{"err": err.Error()})
-			return
-		}
-		writeJSON(w, map[string]string{"output": out})
-	})
+	mux.HandleFunc("POST /api/gameservers/minecraft/command", commandHandler("minecraft rcon", minecraftSvc.Command))
+
+	mux.HandleFunc("POST /api/gameservers/satisfactory/command", commandHandler("satisfactory api", satisfactorySvc.Command))
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range securityHeaders {
