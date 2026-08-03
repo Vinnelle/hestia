@@ -83,58 +83,6 @@ resource "kubernetes_secret_v1" "adguard_netbird_setup_keys" {
   }
 }
 
-resource "kubernetes_persistent_volume_claim_v1" "adguard_conf" {
-  metadata {
-    name      = "adguard-conf-pvc"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "256Mi"
-      }
-    }
-  }
-  wait_until_bound = false
-}
-
-resource "kubernetes_persistent_volume_claim_v1" "adguard_work" {
-  metadata {
-    name      = "adguard-work-pvc"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "2Gi"
-      }
-    }
-  }
-  wait_until_bound = false
-}
-
-resource "kubernetes_persistent_volume_claim_v1" "adguard_netbird_state" {
-  metadata {
-    name      = "adguard-netbird-state-pvc"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
-  }
-  spec {
-    access_modes = ["ReadWriteOnce"]
-    resources {
-      requests = {
-        storage = "64Mi"
-      }
-    }
-  }
-  wait_until_bound = false
-
-  lifecycle {
-    prevent_destroy = true
-  }
-}
-
 resource "kubernetes_service_v1" "adguard_headless" {
   metadata {
     name      = "adguard-headless"

@@ -4,7 +4,7 @@ credentials:
 
 configuration:
   backupStorageLocation:
-    - name: default
+    - name: mega
       default: true
       provider: aws
       bucket: velero
@@ -41,12 +41,12 @@ podAnnotations:
   prometheus.io/port: "8085"
 
 schedules:
-  daily:
+  daily-mega:
     schedule: "0 3 * * *"
     template:
       ttl: "168h0m0s"
       defaultVolumesToFsBackup: true
-      storageLocation: default
+      storageLocation: mega
   daily-seaweedfs:
     schedule: "30 3 * * *"
     template:
