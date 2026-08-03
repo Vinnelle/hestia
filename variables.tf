@@ -116,3 +116,9 @@ variable "signoz_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "curseforge_api_key" {
+  description = "CurseForge Eternal API key, minted at https://console.curseforge.com/ (Account -> API Keys), used by the itzg/minecraft-server image's AUTO_CURSEFORGE installer to resolve and download the modpack. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}

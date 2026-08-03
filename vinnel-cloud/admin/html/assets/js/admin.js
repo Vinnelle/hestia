@@ -61,6 +61,15 @@ function show(slug) {
 
 addEventListener('hashchange', () => show(location.hash.slice(1)));
 
+function reloadFrame() {
+  if (frame.getAttribute('src')) frame.src = frame.src;
+}
+
+new MutationObserver(reloadFrame).observe(document.documentElement, {
+  attributes: true,
+  attributeFilter: ['data-theme'],
+});
+
 document.getElementById('sidebar-toggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('sidebar--collapsed');
 });
