@@ -1,8 +1,10 @@
 package minecraft
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 	"vinnel-cloud-admin/internal/kube"
@@ -67,6 +69,17 @@ func (m *Service) Logs(lines int) (string, error) {
 		return "", err
 	}
 	return m.Kube.PodLogs(minecraftNamespace, pod.Name, minecraftContainer, lines)
+}
+
+func (m *Service) LogStream(ctx context.Context, lines int) (io.ReadCloser, error) {
+	if m.Kube == nil {
+		return nil, errors.New("kubernetes API unavailable")
+	}
+	pod, err := m.Kube.PodByLabel(minecraftNamespace, minecraftLabel)
+	if err != nil {
+		return nil, err
+	}
+	return m.Kube.PodLogStream(ctx, minecraftNamespace, pod.Name, minecraftContainer, lines)
 }
 
 // command opens a fresh RCON connection per command. Reconnecting costs one

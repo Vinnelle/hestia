@@ -1,6 +1,9 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -75,5 +78,50 @@ func TestUserFromRequestPrefersEmail(t *testing.T) {
 	r.Header.Set("Remote-Email", "a@vin.moe")
 	if got := userFromRequest(r); got != "a@vin.moe" {
 		t.Errorf("Remote-Email set: got %q", got)
+	}
+}
+
+func TestStreamHandlerFramesLinesAsSSE(t *testing.T) {
+	srv := httptest.NewServer(streamHandler(func(ctx context.Context, lines int) (io.ReadCloser, error) {
+		if lines != 12 {
+			t.Errorf("lines = %d, want 12 (from the ?lines= query)", lines)
+		}
+		return io.NopCloser(strings.NewReader("first\r\nsecond\n")), nil
+	}))
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL + "?lines=12")
+	if err != nil {
+		t.Fatalf("GET: %v", err)
+	}
+	defer resp.Body.Close()
+	if ct := resp.Header.Get("Content-Type"); ct != "text/event-stream" {
+		t.Errorf("Content-Type = %q, want text/event-stream", ct)
+	}
+	if b := resp.Header.Get("X-Accel-Buffering"); b != "no" {
+		t.Errorf("X-Accel-Buffering = %q, want no — nginx buffers the stream without it", b)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("read body: %v", err)
+	}
+	if want := "data: first\n\ndata: second\n\n"; string(body) != want {
+		t.Errorf("body = %q, want %q", body, want)
+	}
+}
+
+func TestStreamHandlerReportsOpenFailure(t *testing.T) {
+	srv := httptest.NewServer(streamHandler(func(context.Context, int) (io.ReadCloser, error) {
+		return nil, errors.New("no pod matching \"app=minecraft\"")
+	}))
+	defer srv.Close()
+
+	resp, err := http.Get(srv.URL)
+	if err != nil {
+		t.Fatalf("GET: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusBadGateway {
+		t.Errorf("status = %d, want %d", resp.StatusCode, http.StatusBadGateway)
 	}
 }

@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -28,6 +30,8 @@ import (
 
 //go:embed html
 var htmlFS embed.FS
+
+const streamHeartbeat = 20 * time.Second
 
 type pageData struct {
 	User          string
@@ -126,6 +130,60 @@ func commandHandler(audit string, run func(string) (string, error)) http.Handler
 			return
 		}
 		writeJSON(w, map[string]string{"output": out})
+	}
+}
+
+func streamHandler(open func(context.Context, int) (io.ReadCloser, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		src, err := open(r.Context(), logLines(r))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadGateway)
+			return
+		}
+		defer src.Close()
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Accel-Buffering", "no")
+		w.WriteHeader(http.StatusOK)
+		ctrl := http.NewResponseController(w)
+		ctrl.Flush()
+
+		lines := make(chan string, 256)
+		go func() {
+			defer close(lines)
+			sc := bufio.NewScanner(src)
+			sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
+			for sc.Scan() {
+				select {
+				case lines <- sc.Text():
+				case <-r.Context().Done():
+					return
+				}
+			}
+		}()
+
+		beat := time.NewTicker(streamHeartbeat)
+		defer beat.Stop()
+		for {
+			select {
+			case <-r.Context().Done():
+				return
+			case line, ok := <-lines:
+				if !ok {
+					return
+				}
+				if _, err := fmt.Fprintf(w, "data: %s\n\n", strings.TrimRight(line, "\r")); err != nil {
+					return
+				}
+				ctrl.Flush()
+			case <-beat.C:
+				if _, err := io.WriteString(w, ": beat\n\n"); err != nil {
+					return
+				}
+				ctrl.Flush()
+			}
+		}
 	}
 }
 
@@ -231,6 +289,10 @@ func main() {
 		}
 		writeJSON(w, map[string]string{"logs": logs})
 	})
+
+	mux.HandleFunc("GET /api/gameservers/satisfactory/logs/stream", streamHandler(satisfactorySvc.LogStream))
+
+	mux.HandleFunc("GET /api/gameservers/minecraft/logs/stream", streamHandler(minecraftSvc.LogStream))
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory/save", func(w http.ResponseWriter, r *http.Request) {
 		if err := satisfactorySvc.WriteSaveFile(w); err != nil {

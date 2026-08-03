@@ -2,6 +2,7 @@ package satisfactory
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -246,6 +247,17 @@ func (s *Service) Logs(lines int) (string, error) {
 		return "", err
 	}
 	return s.Kube.PodLogs(satisfactoryNamespace, pod.Name, satisfactoryContainer, lines)
+}
+
+func (s *Service) LogStream(ctx context.Context, lines int) (io.ReadCloser, error) {
+	if s.Kube == nil {
+		return nil, fmt.Errorf("kubernetes API unavailable")
+	}
+	pod, err := s.Kube.PodByLabel(satisfactoryNamespace, satisfactoryLabel)
+	if err != nil {
+		return nil, err
+	}
+	return s.Kube.PodLogStream(ctx, satisfactoryNamespace, pod.Name, satisfactoryContainer, lines)
 }
 
 // writeSaveFile streams the latest save through w. Returns an error only if

@@ -1,6 +1,7 @@
 package kube
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -17,9 +18,10 @@ import (
 const saDir = "/var/run/secrets/kubernetes.io/serviceaccount"
 
 type Client struct {
-	host  string
-	token string
-	http  *http.Client
+	host   string
+	token  string
+	http   *http.Client
+	stream *http.Client
 }
 
 func New() (*Client, error) {
@@ -43,13 +45,12 @@ func New() (*Client, error) {
 	if !pool.AppendCertsFromPEM(ca) {
 		return nil, fmt.Errorf("service account CA is not valid PEM")
 	}
+	transport := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}}
 	return &Client{
-		host:  "https://" + host + ":" + port,
-		token: strings.TrimSpace(string(token)),
-		http: &http.Client{
-			Timeout:   10 * time.Second,
-			Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}},
-		},
+		host:   "https://" + host + ":" + port,
+		token:  strings.TrimSpace(string(token)),
+		http:   &http.Client{Timeout: 10 * time.Second, Transport: transport},
+		stream: &http.Client{Transport: transport},
 	}, nil
 }
 
@@ -207,4 +208,24 @@ func (k *Client) PodLogs(ns, pod, container string, tailLines int) (string, erro
 		return "", err
 	}
 	return string(b), nil
+}
+
+// PodLogStream follows a container's log. The caller closes the reader, and
+// cancelling ctx is what ends the request.
+func (k *Client) PodLogStream(ctx context.Context, ns, pod, container string, tailLines int) (io.ReadCloser, error) {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log?container=%s&tailLines=%d&follow=true", ns, pod, container, tailLines)
+	req, err := http.NewRequestWithContext(ctx, "GET", k.host+path, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+k.token)
+	resp, err := k.stream.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("GET %s: %s", path, resp.Status)
+	}
+	return resp.Body, nil
 }

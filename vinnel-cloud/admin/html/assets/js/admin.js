@@ -37,6 +37,11 @@ function show(slug) {
   frame.hidden = true;
   back.hidden = true;
 
+  for (const [consoleSlug, c] of Object.entries(consoles)) {
+    if (consoleSlug === slug) c.start();
+    else c.stop();
+  }
+
   if (page) {
     page.el.hidden = false;
     document.title = page.title + ' — vinnel.cloud';
@@ -322,20 +327,63 @@ async function loadMinecraftLogs() {
   }
 }
 
-function wireConsole(prefix, endpoint, after) {
+const CONSOLE_MAX_LINES = 500;
+
+function wireConsole(prefix, endpoint, streamUrl, after) {
   const out = document.getElementById(prefix + '-console');
   const form = document.getElementById(prefix + '-console-form');
   const input = document.getElementById(prefix + '-console-input');
   const send = document.getElementById(prefix + '-console-send');
+  const followBtn = document.getElementById(prefix + '-console-follow');
   const history = [];
   let historyIndex = 0;
+  let stream = null;
+  let streamBroken = false;
+  let follow = true;
+
+  const setFollow = (on) => {
+    follow = on;
+    followBtn.setAttribute('aria-pressed', String(on));
+    followBtn.textContent = on ? 'Following' : 'Paused';
+    if (on) out.scrollTop = out.scrollHeight;
+  };
 
   const write = (cls, s) => {
     const line = document.createElement('div');
     if (cls) line.className = cls;
     line.textContent = s;
     out.appendChild(line);
-    out.scrollTop = out.scrollHeight;
+    while (out.childElementCount > CONSOLE_MAX_LINES) out.removeChild(out.firstElementChild);
+    if (follow) out.scrollTop = out.scrollHeight;
+  };
+
+  followBtn.addEventListener('click', () => setFollow(!follow));
+
+  out.addEventListener('scroll', () => {
+    const atBottom = out.scrollHeight - out.scrollTop - out.clientHeight < 40;
+    if (atBottom !== follow) setFollow(atBottom);
+  });
+
+  const start = () => {
+    if (stream) return;
+    setFollow(true);
+    stream = new EventSource(streamUrl);
+    stream.addEventListener('open', () => {
+      if (streamBroken) write('console-log', '— reconnected —');
+      streamBroken = false;
+    });
+    stream.addEventListener('message', (e) => write('console-log', e.data));
+    stream.addEventListener('error', () => {
+      if (streamBroken) return;
+      streamBroken = true;
+      write('console-err', '— log stream lost, reconnecting —');
+    });
+  };
+
+  const stop = () => {
+    if (!stream) return;
+    stream.close();
+    stream = null;
   };
 
   form.addEventListener('submit', async (e) => {
@@ -377,10 +425,14 @@ function wireConsole(prefix, endpoint, after) {
     historyIndex = Math.max(0, Math.min(historyIndex, history.length));
     input.value = history[historyIndex] || '';
   });
+
+  return { start, stop };
 }
 
-wireConsole('mc', '/api/gameservers/minecraft/command', loadMinecraftStatus);
-wireConsole('sat', '/api/gameservers/satisfactory/command', loadSatisfactoryStatus);
+const consoles = {
+  'gameservers/minecraft': wireConsole('mc', '/api/gameservers/minecraft/command', '/api/gameservers/minecraft/logs/stream?lines=200', loadMinecraftStatus),
+  'gameservers/satisfactory': wireConsole('sat', '/api/gameservers/satisfactory/command', '/api/gameservers/satisfactory/logs/stream?lines=200', loadSatisfactoryStatus),
+};
 
 function refreshMinecraft() {
   loadMinecraftStatus();

@@ -197,6 +197,7 @@
 
 .console-echo { color: var(--accent); }
 .console-err { color: var(--danger); }
+.console-log { color: var(--dim); }
 
 .console-form {
   display: flex;

@@ -204,12 +204,12 @@ resource "kubernetes_deployment_v1" "minecraft" {
 
           env {
             name  = "MOTD"
-            value = "Create: Ultimate Selection 2"
+            value = "WakaWakaWakaWakaWakaWakaWakaWaka"
           }
 
           env {
             name  = "TZ"
-            value = "Europe/Amsterdam"
+            value = "Europe/London"
           }
 
           env {
