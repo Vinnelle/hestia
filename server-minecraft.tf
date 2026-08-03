@@ -25,8 +25,12 @@ resource "kubernetes_secret_v1" "minecraft" {
 }
 
 locals {
+  minecraft_modpack_zip = "/data/.downloads/modpacks/create-ultimate-selection-2-11.1.0.zip"
+
   minecraft_config_hash = sha256(join("", [
     var.curseforge_api_key,
+    var.minecraft_modpack_zip_url,
+    local.minecraft_modpack_zip,
     random_password.minecraft_rcon.result,
   ]))
 }
@@ -93,6 +97,51 @@ resource "kubernetes_deployment_v1" "minecraft" {
           fs_group = 1000
         }
 
+        init_container {
+          name  = "fetch-modpack"
+          image = "curlimages/curl:8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13"
+
+          command = ["/bin/sh", "-c", <<-EOT
+            set -eu
+            if [ -s "${local.minecraft_modpack_zip}" ]; then exit 0; fi
+            mkdir -p "$(dirname "${local.minecraft_modpack_zip}")"
+            curl -fsSL --retry 3 -o "${local.minecraft_modpack_zip}.part" "$MODPACK_ZIP_URL"
+            head -c 2 "${local.minecraft_modpack_zip}.part" | grep -q PK || { rm -f "${local.minecraft_modpack_zip}.part"; exit 1; }
+            mv "${local.minecraft_modpack_zip}.part" "${local.minecraft_modpack_zip}"
+            EOT
+          ]
+
+          env {
+            name  = "MODPACK_ZIP_URL"
+            value = var.minecraft_modpack_zip_url
+          }
+
+          security_context {
+            run_as_user                = 1000
+            run_as_group               = 1000
+            allow_privilege_escalation = false
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/data"
+          }
+
+          resources {
+            requests = {
+              cpu    = "10m"
+              memory = "32Mi"
+            }
+            limits = {
+              cpu    = "500m"
+              memory = "128Mi"
+            }
+          }
+        }
+
         container {
           name  = "minecraft"
           image = "itzg/minecraft-server:java21@sha256:6f2db1af7f424006b8a5b2b9bec4224bd682eb81213f39b28ba731d81aa63e49"
@@ -108,13 +157,8 @@ resource "kubernetes_deployment_v1" "minecraft" {
           }
 
           env {
-            name  = "CF_SLUG"
-            value = "create-ultimate-selection-2"
-          }
-
-          env {
-            name  = "CF_FILENAME_MATCHER"
-            value = "11.1.0"
+            name  = "CF_MODPACK_ZIP"
+            value = local.minecraft_modpack_zip
           }
 
           env {

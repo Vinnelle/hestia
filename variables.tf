@@ -117,6 +117,12 @@ variable "signoz_api_token" {
   sensitive   = true
 }
 
+variable "minecraft_modpack_zip_url" {
+  description = "URL the fetch-modpack init container downloads the Create: Ultimate Selection 2 client zip from. Required because the modpack's authors set allowModDistribution=false, so the CurseForge API refuses to serve the pack archive and it has to be downloaded by hand once and self-hosted. Any URL the cluster can reach works (seaweedfs/S3 presigned, a GitHub release asset, momus). Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
 variable "curseforge_api_key" {
   description = "CurseForge Eternal API key, minted at https://console.curseforge.com/ (Account -> API Keys), used by the itzg/minecraft-server image's AUTO_CURSEFORGE installer to resolve and download the modpack. Set as a TFC workspace variable, not codified."
   type        = string
