@@ -62,7 +62,7 @@ locals {
   seaweedfs_start_sh = <<-EOT
     #!/bin/sh
     set -e
-    weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -volume.max=7,0,0,0 -volume.disk=hdd,hdd,hdd,ssd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
+    weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -volume.max=7,0,0,0 -volume.disk=hdd,hdd,hdd,ssd -filer.disk=hdd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
     SERVER_PID=$!
     i=0
     while [ "$i" -lt 30 ]; do
@@ -73,14 +73,14 @@ locals {
       sleep 2
     done
     echo "s3.bucket.create -name velero" | weed shell -filer=localhost:8888 2>>/tmp/bucket-create.log || true
-    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -diskType=ssd -collection=nextcloud -apply" | weed shell -filer=localhost:8888 2>/tmp/fs-configure.log || true
+    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -disk=ssd -collection=nextcloud -apply" | weed shell -filer=localhost:8888 2>&1 || true
     wait "$SERVER_PID"
   EOT
 
   seaweedfs_tier_move_sh = <<-EOT
     #!/bin/sh
     set -e
-    echo "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercentage=95" | weed shell -master=seaweedfs.seaweedfs.svc.cluster.local:9333
+    echo "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercent=95" | weed shell -master=seaweedfs.seaweedfs.svc.cluster.local:9333
   EOT
 }
 
