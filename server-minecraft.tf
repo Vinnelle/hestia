@@ -213,6 +213,11 @@ resource "kubernetes_deployment_v1" "minecraft" {
           }
 
           env {
+            name  = "ALLOW_FLIGHT"
+            value = "true"
+          }
+
+          env {
             name  = "TZ"
             value = "Europe/London"
           }
