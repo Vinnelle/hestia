@@ -281,15 +281,6 @@ func main() {
 		writeJSON(w, satisfactorySvc.Status())
 	})
 
-	mux.HandleFunc("GET /api/gameservers/satisfactory/logs", func(w http.ResponseWriter, r *http.Request) {
-		logs, err := satisfactorySvc.Logs(logLines(r))
-		if err != nil {
-			writeJSON(w, map[string]string{"err": err.Error()})
-			return
-		}
-		writeJSON(w, map[string]string{"logs": logs})
-	})
-
 	mux.HandleFunc("GET /api/gameservers/satisfactory/logs/stream", streamHandler(satisfactorySvc.LogStream))
 
 	mux.HandleFunc("GET /api/gameservers/minecraft/logs/stream", streamHandler(minecraftSvc.LogStream))
@@ -302,15 +293,6 @@ func main() {
 
 	mux.HandleFunc("GET /api/gameservers/minecraft", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, minecraftSvc.Status())
-	})
-
-	mux.HandleFunc("GET /api/gameservers/minecraft/logs", func(w http.ResponseWriter, r *http.Request) {
-		logs, err := minecraftSvc.Logs(logLines(r))
-		if err != nil {
-			writeJSON(w, map[string]string{"err": err.Error()})
-			return
-		}
-		writeJSON(w, map[string]string{"logs": logs})
 	})
 
 	mux.HandleFunc("POST /api/gameservers/minecraft/command", commandHandler("minecraft rcon", minecraftSvc.Command))

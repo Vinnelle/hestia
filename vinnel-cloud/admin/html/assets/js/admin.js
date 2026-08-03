@@ -8,8 +8,8 @@ const routed = document.querySelectorAll('.service-link[data-url]');
 const allNavLinks = document.querySelectorAll('.sidebar-link');
 
 const internalPages = {
-  'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: refreshSatisfactory },
-  'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: refreshMinecraft },
+  'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: loadSatisfactoryStatus },
+  'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: loadMinecraftStatus },
 };
 
 function show(slug) {
@@ -247,24 +247,6 @@ async function loadSatisfactoryStatus() {
   }
 }
 
-async function loadSatisfactoryLogs() {
-  const pre = document.getElementById('sat-logs');
-  pre.textContent = 'Loading…';
-  try {
-    const r = await (await fetch('/api/gameservers/satisfactory/logs?lines=300')).json();
-    pre.textContent = r.logs || r.err || '(no logs)';
-  } catch (e) {
-    pre.textContent = 'Could not load logs.';
-  }
-}
-
-function refreshSatisfactory() {
-  loadSatisfactoryStatus();
-  loadSatisfactoryLogs();
-}
-
-document.getElementById('sat-logs-refresh').addEventListener('click', loadSatisfactoryLogs);
-
 async function loadMinecraftStatus() {
   const err = document.getElementById('minecraft-error');
   let s;
@@ -313,17 +295,6 @@ async function loadMinecraftStatus() {
     text('mc-image', '—');
     text('mc-restarts', '—');
     text('mc-started', '—');
-  }
-}
-
-async function loadMinecraftLogs() {
-  const pre = document.getElementById('mc-logs');
-  pre.textContent = 'Loading…';
-  try {
-    const r = await (await fetch('/api/gameservers/minecraft/logs?lines=300')).json();
-    pre.textContent = r.logs || r.err || '(no logs)';
-  } catch (e) {
-    pre.textContent = 'Could not load logs.';
   }
 }
 
@@ -433,13 +404,6 @@ const consoles = {
   'gameservers/minecraft': wireConsole('mc', '/api/gameservers/minecraft/command', '/api/gameservers/minecraft/logs/stream?lines=200', loadMinecraftStatus),
   'gameservers/satisfactory': wireConsole('sat', '/api/gameservers/satisfactory/command', '/api/gameservers/satisfactory/logs/stream?lines=200', loadSatisfactoryStatus),
 };
-
-function refreshMinecraft() {
-  loadMinecraftStatus();
-  loadMinecraftLogs();
-}
-
-document.getElementById('mc-logs-refresh').addEventListener('click', loadMinecraftLogs);
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>

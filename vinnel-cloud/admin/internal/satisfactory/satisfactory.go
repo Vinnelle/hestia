@@ -238,17 +238,6 @@ func (s *Service) Status() Status {
 	return out
 }
 
-func (s *Service) Logs(lines int) (string, error) {
-	if s.Kube == nil {
-		return "", fmt.Errorf("kubernetes API unavailable")
-	}
-	pod, err := s.Kube.PodByLabel(satisfactoryNamespace, satisfactoryLabel)
-	if err != nil {
-		return "", err
-	}
-	return s.Kube.PodLogs(satisfactoryNamespace, pod.Name, satisfactoryContainer, lines)
-}
-
 func (s *Service) LogStream(ctx context.Context, lines int) (io.ReadCloser, error) {
 	if s.Kube == nil {
 		return nil, fmt.Errorf("kubernetes API unavailable")

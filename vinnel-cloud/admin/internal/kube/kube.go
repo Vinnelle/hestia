@@ -184,32 +184,6 @@ func (k *Client) PodByLabel(ns, labelSelector string) (PodSummary, error) {
 	return out, nil
 }
 
-func (k *Client) GetRaw(path string) ([]byte, error) {
-	req, err := http.NewRequest("GET", k.host+path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+k.token)
-	resp, err := k.http.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GET %s: %s", path, resp.Status)
-	}
-	return io.ReadAll(resp.Body)
-}
-
-func (k *Client) PodLogs(ns, pod, container string, tailLines int) (string, error) {
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log?container=%s&tailLines=%d&timestamps=true", ns, pod, container, tailLines)
-	b, err := k.GetRaw(path)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
 // PodLogStream follows a container's log. The caller closes the reader, and
 // cancelling ctx is what ends the request.
 func (k *Client) PodLogStream(ctx context.Context, ns, pod, container string, tailLines int) (io.ReadCloser, error) {

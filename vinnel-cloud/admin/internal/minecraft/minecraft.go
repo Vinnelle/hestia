@@ -60,17 +60,6 @@ func (m *Service) Status() Status {
 	return out
 }
 
-func (m *Service) Logs(lines int) (string, error) {
-	if m.Kube == nil {
-		return "", errors.New("kubernetes API unavailable")
-	}
-	pod, err := m.Kube.PodByLabel(minecraftNamespace, minecraftLabel)
-	if err != nil {
-		return "", err
-	}
-	return m.Kube.PodLogs(minecraftNamespace, pod.Name, minecraftContainer, lines)
-}
-
 func (m *Service) LogStream(ctx context.Context, lines int) (io.ReadCloser, error) {
 	if m.Kube == nil {
 		return nil, errors.New("kubernetes API unavailable")
