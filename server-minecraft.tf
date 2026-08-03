@@ -157,6 +157,11 @@ resource "kubernetes_deployment_v1" "minecraft" {
           }
 
           env {
+            name  = "CF_SLUG"
+            value = "create-ultimate-selection-2"
+          }
+
+          env {
             name  = "CF_MODPACK_ZIP"
             value = local.minecraft_modpack_zip
           }
