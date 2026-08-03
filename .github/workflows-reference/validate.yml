@@ -71,9 +71,6 @@ jobs:
   terraform-test:
     runs-on: arc-runner
     timeout-minutes: 10
-    defaults:
-      run:
-        working-directory: hestia/tests/images_json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -83,8 +80,13 @@ jobs:
 
       - name: Terraform test
         run: |
-          terraform init -input=false
-          terraform test
+          mapfile -t dirs < <(find hestia/tests -name '*.tftest.hcl' -printf '%h\n' | sort -u)
+          for dir in "${dirs[@]}"; do
+            echo "::group::$dir"
+            terraform -chdir="$dir" init -input=false
+            terraform -chdir="$dir" test
+            echo "::endgroup::"
+          done
 
   secrets:
     runs-on: arc-runner

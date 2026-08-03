@@ -8,7 +8,8 @@ spec:
     apiVersion: apps/v1
     kind: ${target_kind}
     name: ${target_name}
-  updateMode: ${update_mode}
+  updatePolicy:
+    updateMode: ${update_mode}
   resourcePolicy:
     containerPolicies:
 %{ for cp in container_policies ~}
