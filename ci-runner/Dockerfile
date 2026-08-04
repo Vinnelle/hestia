@@ -15,6 +15,9 @@ RUN rm -f /usr/bin/dockerd /usr/bin/containerd /usr/bin/containerd-shim-runc-v2 
       /usr/bin/ctr /usr/bin/docker-init /usr/bin/docker-proxy \
       /usr/local/lib/docker/cli-plugins/docker-buildx
 
+RUN /home/runner/externals/node20/bin/node /home/runner/externals/node20/bin/npm install -g npm@^10 \
+    && /home/runner/externals/node24/bin/node /home/runner/externals/node24/bin/npm install -g npm@latest
+
 ARG CACHEBUST=0
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       ca-certificates \
