@@ -89,12 +89,6 @@ variable "netbird_api_token" {
   sensitive   = true
 }
 
-variable "debian_server_ssh_public_key" {
-  description = "Legacy single SSH public key for the momus 'ida' user. Prefer adding keys to hestia/momus/ssh/authorized_keys (committed, supports multiple keys). Kept for compatibility and merged with that file; leave empty once your keys live in the file. Set as a TFC workspace variable, not codified."
-  type        = string
-  default     = ""
-}
-
 variable "gh_app_id" {
   description = "App ID of the GitHub App installed on Vinnelle/gaia for actions-runner-controller. Not secret (visible in the GitHub App's UI), but set as a TFC workspace variable to keep it alongside the other GH App vars."
   type        = string
