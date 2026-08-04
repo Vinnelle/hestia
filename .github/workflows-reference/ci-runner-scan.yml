@@ -32,6 +32,7 @@ jobs:
         with:
           image: registry.vinnel.cloud/ci-runner/ci-runner:latest
           severity-cutoff: high
+          output-format: table
 
       - name: Trigger ci-runner rebuild
         if: steps.scan.outcome == 'failure'
