@@ -8,7 +8,6 @@ on:
 permissions:
   contents: read
   actions: write
-  security-events: write
 
 concurrency:
   group: ${{ github.workflow }}
@@ -33,12 +32,6 @@ jobs:
         with:
           image: registry.vinnel.cloud/ci-runner/ci-runner:latest
           severity-cutoff: high
-
-      - name: Upload Grype scan results to GitHub Security
-        if: always() && (steps.scan.outcome == 'success' || steps.scan.outcome == 'failure')
-        uses: github/codeql-action/upload-sarif@f205ea1c3313d32999d8d6a48b4f6530d4437b38 # v4
-        with:
-          sarif_file: ${{ steps.scan.outputs.sarif }}
 
       - name: Trigger ci-runner rebuild
         if: steps.scan.outcome == 'failure'
