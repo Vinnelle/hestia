@@ -23,20 +23,6 @@ output "authelia_admin_password" {
   sensitive = true
 }
 
-output "momus_ssh_address" {
-  value = "ssh -p 2222 ida@${data.netbird_peer.momus.ip}"
-}
-
-output "momus_root_password" {
-  value     = random_password.momus_root.result
-  sensitive = true
-}
-
-output "momus_ida_sudo_password" {
-  value     = random_password.momus_ida_sudo.result
-  sensitive = true
-}
-
 output "shell_ttyd_password" {
   value     = random_password.shell_ttyd.result
   sensitive = true

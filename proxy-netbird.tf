@@ -48,29 +48,6 @@ resource "netbird_group" "adguard" {
   peers      = [for ordinal in sort(keys(data.netbird_peer.adguard)) : data.netbird_peer.adguard[ordinal].id]
 }
 
-resource "netbird_group" "servers" {
-  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "Servers"
-  peers      = [data.netbird_peer.momus.id]
-}
-
-resource "netbird_policy" "devices_ssh_to_services" {
-  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
-  name       = "devices-ssh-to-services"
-  enabled    = true
-
-  rule {
-    name          = "devices-ssh-to-services"
-    description   = "momus sshd"
-    action        = "accept"
-    bidirectional = false
-    protocol      = "tcp"
-    ports         = ["2222"]
-    sources       = [netbird_group.devices.id]
-    destinations  = [netbird_group.servers.id]
-  }
-}
-
 resource "netbird_policy" "devices_dns_udp_to_services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "devices-dns-udp-to-services"
@@ -112,7 +89,6 @@ data "netbird_group" "all" {
 
 resource "netbird_policy" "default" {
   depends_on = [
-    netbird_policy.devices_ssh_to_services,
     netbird_policy.devices_dns_udp_to_services,
     netbird_policy.devices_dns_tcp_to_services,
   ]
