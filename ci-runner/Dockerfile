@@ -21,7 +21,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
       curl \
       jq \
       rsync \
-      nodejs \
       build-essential \
       shellcheck \
       yamllint \
@@ -31,9 +30,14 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     && chmod a+r /etc/apt/keyrings/docker.asc \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
       > /etc/apt/sources.list.d/docker.list \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /etc/apt/keyrings/nodesource.asc \
+    && chmod a+r /etc/apt/keyrings/nodesource.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main" \
+      > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends docker-ce-cli \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends docker-ce-cli nodejs \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g npm@latest
 
 RUN curl -fsSL -o /usr/local/bin/kubectl \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
