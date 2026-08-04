@@ -11,6 +11,10 @@ ARG GH_VERSION=2.97.0
 
 USER root
 
+RUN rm -f /usr/bin/dockerd /usr/bin/containerd /usr/bin/containerd-shim-runc-v2 \
+      /usr/bin/docker-init /usr/bin/docker-proxy \
+      /usr/local/lib/docker/cli-plugins/docker-buildx
+
 ARG CACHEBUST=0
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       ca-certificates \
