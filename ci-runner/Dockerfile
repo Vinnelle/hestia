@@ -6,6 +6,8 @@ ARG KUBECTL_VERSION=v1.36.3
 ARG TFLINT_VERSION=v0.64.0
 # renovate: datasource=github-releases depName=rhysd/actionlint
 ARG ACTIONLINT_VERSION=1.7.12
+# renovate: datasource=github-releases depName=cli/cli
+ARG GH_VERSION=2.97.0
 
 USER root
 
@@ -25,12 +27,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     && chmod a+r /etc/apt/keyrings/docker.asc \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
       > /etc/apt/sources.list.d/docker.list \
-    && curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg -o /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
-      > /etc/apt/sources.list.d/github-cli.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends docker-ce-cli gh \
+    && apt-get install -y --no-install-recommends docker-ce-cli \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL -o /usr/local/bin/kubectl \
@@ -46,5 +44,10 @@ RUN curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONL
     && tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint \
     && chmod 0755 /usr/local/bin/actionlint \
     && rm /tmp/actionlint.tar.gz
+
+RUN curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o /tmp/gh.tar.gz \
+    && tar -xzf /tmp/gh.tar.gz -C /tmp \
+    && install -m 0755 "/tmp/gh_${GH_VERSION}_linux_amd64/bin/gh" /usr/local/bin/gh \
+    && rm -rf /tmp/gh.tar.gz "/tmp/gh_${GH_VERSION}_linux_amd64"
 
 USER runner
