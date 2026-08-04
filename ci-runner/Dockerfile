@@ -9,6 +9,7 @@ ARG ACTIONLINT_VERSION=1.7.7
 
 USER root
 
+ARG CACHEBUST=0
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       docker.io \
       gh \

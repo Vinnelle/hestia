@@ -43,6 +43,8 @@ jobs:
           context: hestia/ci-runner
           load: true
           tags: ${{ env.IMAGE }}:${{ github.sha }}
+          build-args: |
+            CACHEBUST=${{ github.run_id }}
           cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
           labels: |
