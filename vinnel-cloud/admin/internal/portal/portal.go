@@ -37,7 +37,7 @@ var Services = []Service{
 	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", "Storage", true, iconArchive},
 	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", "Platform", true, iconBox},
 	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", "Platform", true, iconTerminal},
-	{"harness", "Harness", "harness.vinnel.cloud", "Git + CI/CD pipelines", "Platform", true, iconGitBranch},
+	{"harness", "Harness", "harness.vinnel.cloud", "Git + CI/CD pipelines", "Platform", false, iconGitBranch},
 }
 
 type Group struct {

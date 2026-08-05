@@ -462,9 +462,10 @@ resource "kubernetes_ingress_v1" "harness_vinnel_cloud" {
   metadata {
     name      = "harness-vinnel-cloud"
     namespace = kubernetes_namespace_v1.harness.metadata[0].name
-    annotations = merge(local.admin_framed_service_annotations["harness"], {
-      "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
-    })
+    annotations = {
+      "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
+      "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
+    }
   }
 
   spec {
@@ -486,47 +487,6 @@ resource "kubernetes_ingress_v1" "harness_vinnel_cloud" {
               name = kubernetes_service_v1.harness.metadata[0].name
               port {
                 number = 80
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-resource "kubernetes_ingress_v1" "harness_api_vinnel_cloud" {
-  depends_on = [helm_release.ingress_nginx, kubernetes_ingress_v1.harness_vinnel_cloud]
-  metadata {
-    name      = "harness-api-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.harness.metadata[0].name
-    annotations = {
-      "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
-    }
-  }
-
-  spec {
-    ingress_class_name = "nginx"
-
-    tls {
-      hosts       = ["harness.vinnel.cloud"]
-      secret_name = "harness-vinnel-cloud-tls"
-    }
-
-    rule {
-      host = "harness.vinnel.cloud"
-      http {
-        dynamic "path" {
-          for_each = ["/git/", "/api/v1/", "/api/webhook/"]
-          content {
-            path      = path.value
-            path_type = "Prefix"
-            backend {
-              service {
-                name = kubernetes_service_v1.harness.metadata[0].name
-                port {
-                  number = 80
-                }
               }
             }
           }
