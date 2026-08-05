@@ -293,10 +293,6 @@ resource "kubernetes_deployment_v1" "harness" {
             value = "https://harness.vinnel.cloud"
           }
           env {
-            name  = "DRONE_DOCKER_CONFIG"
-            value = "/root/.docker/config.json"
-          }
-          env {
             name  = "GITNESS_DATABASE_DRIVER"
             value = "postgres"
           }
@@ -345,12 +341,6 @@ resource "kubernetes_deployment_v1" "harness" {
           volume_mount {
             name       = "docker-socket"
             mount_path = "/var/run"
-          }
-
-          volume_mount {
-            name       = "docker-config"
-            mount_path = "/root/.docker"
-            read_only  = true
           }
 
           readiness_probe {
@@ -410,17 +400,6 @@ resource "kubernetes_deployment_v1" "harness" {
         volume {
           name = "docker-socket"
           empty_dir {}
-        }
-
-        volume {
-          name = "docker-config"
-          secret {
-            secret_name = kubernetes_secret_v1.registry_dockerconfig_harness.metadata[0].name
-            items {
-              key  = ".dockerconfigjson"
-              path = "config.json"
-            }
-          }
         }
       }
     }

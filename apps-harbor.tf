@@ -142,6 +142,7 @@ resource "harbor_project" "vinnel_cloud" {
 resource "harbor_project" "ci_runner" {
   depends_on = [helm_release.harbor, kubernetes_ingress_v1.registry_api_vinnel_cloud]
   name       = "ci-runner"
+  public     = true
 }
 
 resource "random_password" "harbor_robot" {
