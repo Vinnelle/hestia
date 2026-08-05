@@ -421,6 +421,65 @@ resource "kubectl_manifest" "harness_vpa" {
   })
 }
 
+resource "kubernetes_network_policy_v1" "harness_egress" {
+  depends_on = [helm_release.cilium, kubernetes_deployment_v1.harness]
+
+  metadata {
+    name      = "harness-egress"
+    namespace = kubernetes_namespace_v1.harness.metadata[0].name
+  }
+
+  spec {
+    pod_selector {}
+    policy_types = ["Egress"]
+
+    egress {
+      to {
+        namespace_selector {
+          match_labels = {
+            "kubernetes.io/metadata.name" = "kube-system"
+          }
+        }
+        pod_selector {
+          match_labels = { "k8s-app" = "kube-dns" }
+        }
+      }
+      ports {
+        port     = 53
+        protocol = "UDP"
+      }
+      ports {
+        port     = 53
+        protocol = "TCP"
+      }
+    }
+
+    egress {
+      to {
+        pod_selector {
+          match_labels = { app = "harness-postgres" }
+        }
+      }
+      ports {
+        port     = 5432
+        protocol = "TCP"
+      }
+    }
+
+    egress {
+      to {
+        ip_block {
+          cidr = "0.0.0.0/0"
+          except = [
+            "10.244.0.0/16",
+            "10.96.0.0/12",
+          ]
+        }
+      }
+    }
+  }
+}
+
 resource "kubectl_manifest" "harness_egress_host" {
   depends_on = [helm_release.cilium, kubernetes_deployment_v1.harness]
   yaml_body = yamlencode({
