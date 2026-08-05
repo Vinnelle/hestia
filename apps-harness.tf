@@ -70,6 +70,9 @@ resource "kubernetes_persistent_volume_claim_v1" "harness_postgres_data" {
   metadata {
     name      = "harness-postgres-data-pvc"
     namespace = kubernetes_namespace_v1.harness.metadata[0].name
+    annotations = {
+      "volumeType" = "hostPath"
+    }
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -90,6 +93,9 @@ resource "kubernetes_persistent_volume_claim_v1" "harness_data" {
   metadata {
     name      = "harness-data-pvc"
     namespace = kubernetes_namespace_v1.harness.metadata[0].name
+    annotations = {
+      "volumeType" = "hostPath"
+    }
   }
   spec {
     access_modes = ["ReadWriteOnce"]
