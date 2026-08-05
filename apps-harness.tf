@@ -293,6 +293,10 @@ resource "kubernetes_deployment_v1" "harness" {
             value = "https://harness.vinnel.cloud"
           }
           env {
+            name  = "DRONE_DOCKER_CONFIG"
+            value = "/root/.docker/config.json"
+          }
+          env {
             name  = "GITNESS_DATABASE_DRIVER"
             value = "postgres"
           }
