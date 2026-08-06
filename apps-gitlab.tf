@@ -114,7 +114,8 @@ resource "kubernetes_deployment_v1" "gitlab" {
   }
 
   spec {
-    replicas = 1
+    replicas                  = 1
+    progress_deadline_seconds = 1200
 
     selector {
       match_labels = {
