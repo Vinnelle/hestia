@@ -32,8 +32,3 @@ output "seaweedfs_disk_encryption_key" {
   value     = random_password.seaweedfs_disk_encryption_key.result
   sensitive = true
 }
-
-output "harness_admin_password" {
-  value     = random_password.harness_admin_password.result
-  sensitive = true
-}
