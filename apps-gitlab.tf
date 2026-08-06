@@ -23,6 +23,10 @@ locals {
     "external_url 'https://gitlab.vinnel.cloud'",
     "registry['enable'] = false",
     "gitlab_rails['gitlab_shell_ssh_port'] = 2222",
+    "letsencrypt['enable'] = false",
+    "nginx['listen_port'] = 80",
+    "nginx['listen_https'] = false",
+    "nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
   ])
 
   gitlab_config_hash = sha256(join("", [
@@ -230,6 +234,11 @@ resource "kubernetes_deployment_v1" "gitlab" {
         }
       }
     }
+  }
+
+  timeouts {
+    create = "20m"
+    update = "20m"
   }
 }
 
