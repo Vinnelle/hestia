@@ -32,3 +32,8 @@ output "seaweedfs_disk_encryption_key" {
   value     = random_password.seaweedfs_disk_encryption_key.result
   sensitive = true
 }
+
+output "gitlab_root_password" {
+  value     = random_password.gitlab_root_password.result
+  sensitive = true
+}
