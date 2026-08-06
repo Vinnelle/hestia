@@ -188,7 +188,7 @@ resource "kubernetes_deployment_v1" "gitlab" {
 
           startup_probe {
             http_get {
-              path = "/-/readiness"
+              path = "/-/health"
               port = "http"
             }
             period_seconds        = 15
