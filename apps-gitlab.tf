@@ -429,6 +429,7 @@ locals {
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
         image              = "alpine:3.22"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
+        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud"] }]
   EOT
 
   gitlab_runner_config_hash = sha256(local.gitlab_runner_config_toml)
@@ -553,6 +554,22 @@ resource "gitlab_project_variable" "tfc_api_token" {
   project   = gitlab_project.gaia.id
   key       = "TF_TOKEN_app_terraform_io"
   value     = var.gitlab_tfc_api_token
+  masked    = true
+  protected = false
+}
+
+resource "gitlab_project_variable" "harbor_username" {
+  project   = gitlab_project.gaia.id
+  key       = "HARBOR_USERNAME"
+  value     = harbor_robot_account.ci.full_name
+  masked    = true
+  protected = false
+}
+
+resource "gitlab_project_variable" "harbor_password" {
+  project   = gitlab_project.gaia.id
+  key       = "HARBOR_PASSWORD"
+  value     = random_password.harbor_robot.result
   masked    = true
   protected = false
 }
