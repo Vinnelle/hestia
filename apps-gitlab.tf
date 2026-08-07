@@ -190,6 +190,10 @@ resource "kubernetes_deployment_v1" "gitlab" {
             http_get {
               path = "/-/health"
               port = "http"
+              http_header {
+                name  = "Host"
+                value = "gitlab.vinnel.cloud"
+              }
             }
             period_seconds        = 15
             failure_threshold     = 80
@@ -200,6 +204,10 @@ resource "kubernetes_deployment_v1" "gitlab" {
             http_get {
               path = "/-/readiness"
               port = "http"
+              http_header {
+                name  = "Host"
+                value = "gitlab.vinnel.cloud"
+              }
             }
             period_seconds  = 10
             timeout_seconds = 5
@@ -209,6 +217,10 @@ resource "kubernetes_deployment_v1" "gitlab" {
             http_get {
               path = "/-/liveness"
               port = "http"
+              http_header {
+                name  = "Host"
+                value = "gitlab.vinnel.cloud"
+              }
             }
             period_seconds  = 30
             timeout_seconds = 5
