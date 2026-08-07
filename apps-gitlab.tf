@@ -538,6 +538,7 @@ resource "gitlab_project" "gaia" {
   description            = "Talos/k8s homelab IaC -- canonical source, migrated from GitHub"
   visibility_level       = "private"
   initialize_with_readme = false
+  default_branch         = "prd"
 }
 
 resource "gitlab_project_variable" "gh_api_token" {
