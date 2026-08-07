@@ -170,7 +170,7 @@ resource "kubernetes_deployment_v1" "gitlab" {
             }
             limits = {
               cpu    = "4000m"
-              memory = "12Gi"
+              memory = "20Gi"
             }
           }
 
@@ -253,7 +253,7 @@ resource "kubectl_manifest" "gitlab_vpa" {
     target_name = kubernetes_deployment_v1.gitlab.metadata[0].name
     update_mode = "Initial"
     container_policies = [
-      { container_name = "gitlab", min_memory = "4Gi", max_memory = "12Gi" },
+      { container_name = "gitlab", min_memory = "4Gi", max_memory = "20Gi" },
     ]
   })
 }
