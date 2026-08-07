@@ -51,10 +51,8 @@ resource "kubernetes_secret_v1" "ci_deployer_token" {
   wait_for_service_account_token = true
 }
 
-output "ci_kubeconfig" {
-  description = "Namespace-scoped kubeconfig for GitHub Actions (KUBECONFIG secret)."
-  sensitive   = true
-  value = yamlencode({
+locals {
+  ci_kubeconfig = yamlencode({
     apiVersion = "v1"
     kind       = "Config"
     clusters = [{
@@ -78,4 +76,10 @@ output "ci_kubeconfig" {
     }]
     current-context = var.cluster_name
   })
+}
+
+output "ci_kubeconfig" {
+  description = "Namespace-scoped kubeconfig for GitHub Actions (KUBECONFIG secret)."
+  sensitive   = true
+  value       = local.ci_kubeconfig
 }

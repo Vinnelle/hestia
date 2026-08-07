@@ -689,15 +689,15 @@ resource "gitlab_project_variable" "harbor_auth_b64" {
   protected = false
 }
 
-resource "gitlab_pipeline_trigger" "ci_runner_rebuild" {
+resource "gitlab_pipeline_trigger" "reconcile" {
   project     = gitlab_project.gaia.id
-  description = "ci_runner_scan: trigger a rebuild on Grype scan failure"
+  description = "generic: re-trigger a pipeline after a bot commit (image digest record, ci-runner rebuild, etc.) that job-token pushes might not fire automatically"
 }
 
-resource "gitlab_project_variable" "ci_runner_rebuild_trigger_token" {
+resource "gitlab_project_variable" "reconcile_trigger_token" {
   project   = gitlab_project.gaia.id
-  key       = "CI_RUNNER_REBUILD_TRIGGER_TOKEN"
-  value     = gitlab_pipeline_trigger.ci_runner_rebuild.token
+  key       = "RECONCILE_TRIGGER_TOKEN"
+  value     = gitlab_pipeline_trigger.reconcile.token
   masked    = true
   protected = false
 }
@@ -709,4 +709,21 @@ resource "gitlab_pipeline_schedule" "ci_runner_scan" {
   cron          = "0 6 * * *"
   cron_timezone = "UTC"
   active        = true
+}
+
+resource "gitlab_project_variable" "site_deploy_kubeconfig" {
+  project       = gitlab_project.gaia.id
+  key           = "SITE_DEPLOY_KUBECONFIG"
+  value         = local.ci_kubeconfig
+  variable_type = "file"
+  masked        = false
+  protected     = false
+}
+
+resource "gitlab_project_variable" "cf_api_token" {
+  project   = gitlab_project.gaia.id
+  key       = "CF_API_TOKEN"
+  value     = var.cloudflare_api_token
+  masked    = true
+  protected = false
 }
