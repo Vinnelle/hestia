@@ -147,3 +147,15 @@ variable "satisfactory_admin_password" {
   sensitive   = true
   default     = ""
 }
+
+variable "docker_hub_username" {
+  description = "Docker Hub account used solely to authenticate harbor_registry.docker_hub's upstream pull-through connection -- never exposed to CI, never stored as a GitLab/GitHub secret. Anonymous proxy pulls share the node's egress IP with every other anonymous Docker Hub client on this host and hit the same per-IP rate limit as a direct anonymous pull would; an authenticated free account gets its own per-account limit instead. Mint/reuse a free Docker Hub account and set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
+variable "docker_hub_access_token" {
+  description = "Docker Hub access token (Account Settings -> Security -> Personal access tokens, Public Repo Read-only scope is enough) paired with docker_hub_username. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}

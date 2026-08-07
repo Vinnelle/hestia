@@ -235,7 +235,9 @@ resource "harbor_registry" "docker_hub" {
   provider_name = "docker-hub"
   name          = "docker-hub"
   endpoint_url  = "https://hub.docker.com"
-  description   = "anonymous, unauthenticated -- proxy-cache only, no credential needed"
+  access_id     = var.docker_hub_username
+  access_secret = var.docker_hub_access_token
+  description   = "proxy-cache upstream, authenticated -- anonymous pull-through shares the node's egress IP with every other anonymous Docker Hub client, hitting the same per-IP rate limit a direct pull would (confirmed live 2026-08-07: a digest-pinned pull through the freshly-created proxy 429'd immediately, same egress IP already exhausted by repeated pipeline test runs earlier the same day). An authenticated free account gets its own per-account limit instead of sharing the anonymous per-IP one."
 }
 
 resource "harbor_project" "docker_hub_proxy" {
