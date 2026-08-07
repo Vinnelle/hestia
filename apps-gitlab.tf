@@ -688,3 +688,25 @@ resource "gitlab_project_variable" "harbor_auth_b64" {
   masked    = true
   protected = false
 }
+
+resource "gitlab_pipeline_trigger" "ci_runner_rebuild" {
+  project     = gitlab_project.gaia.id
+  description = "ci_runner_scan: trigger a rebuild on Grype scan failure"
+}
+
+resource "gitlab_project_variable" "ci_runner_rebuild_trigger_token" {
+  project   = gitlab_project.gaia.id
+  key       = "CI_RUNNER_REBUILD_TRIGGER_TOKEN"
+  value     = gitlab_pipeline_trigger.ci_runner_rebuild.token
+  masked    = true
+  protected = false
+}
+
+resource "gitlab_pipeline_schedule" "ci_runner_scan" {
+  project       = gitlab_project.gaia.id
+  description   = "Nightly ci-runner image vulnerability scan"
+  ref           = "refs/heads/prd"
+  cron          = "0 6 * * *"
+  cron_timezone = "UTC"
+  active        = true
+}
