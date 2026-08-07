@@ -724,7 +724,7 @@ resource "gitlab_project_variable" "site_deploy_kubeconfig" {
 resource "gitlab_project_variable" "cf_api_token" {
   project   = gitlab_project.gaia.id
   key       = "CF_API_TOKEN"
-  value     = var.cloudflare_api_token
+  value     = var.cloudflare_cache_purge_token
   masked    = true
   protected = false
 }

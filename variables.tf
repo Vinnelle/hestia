@@ -35,6 +35,12 @@ variable "cloudflare_api_token" {
   sensitive   = true
 }
 
+variable "cloudflare_cache_purge_token" {
+  description = "Cloudflare API token (Zone:Zone:Read, Zone:Cache Purge:Purge) used by .gitlab-ci.yml's site-deploy jobs to purge the CDN cache after a rollout -- deliberately separate from cloudflare_api_token, which only carries DNS:Edit and is not scoped for cache purging. Same split the original .github/workflows/site-deploy.yml already had (a dedicated CLOUDFLARE_API_TOKEN Actions secret, distinct from whatever token Terraform itself used) -- can be minted fresh or reuse that secret's value if still known. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
 variable "harbor_admin_password" {
   description = "Harbor admin password (registry.vinnel.cloud). Set as a TFC workspace variable, not codified."
   type        = string
