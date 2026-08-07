@@ -656,13 +656,14 @@ resource "gitlab_group" "vinnel_cloud" {
 }
 
 resource "gitlab_project" "gaia" {
-  name                   = "gaia"
-  path                   = "gaia"
-  namespace_id           = gitlab_group.vinnel_cloud.id
-  description            = "Talos/k8s homelab IaC -- canonical source, migrated from GitHub"
-  visibility_level       = "private"
-  initialize_with_readme = false
-  default_branch         = "prd"
+  name                                     = "gaia"
+  path                                     = "gaia"
+  namespace_id                             = gitlab_group.vinnel_cloud.id
+  description                              = "Talos/k8s homelab IaC -- canonical source, migrated from GitHub"
+  visibility_level                         = "private"
+  initialize_with_readme                   = false
+  default_branch                           = "prd"
+  ci_push_repository_for_job_token_allowed = true
 }
 
 resource "gitlab_project_variable" "gh_api_token" {
