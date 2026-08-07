@@ -548,3 +548,11 @@ resource "gitlab_project_variable" "gh_api_token" {
   masked    = true
   protected = false
 }
+
+resource "gitlab_project_variable" "tfc_api_token" {
+  project   = gitlab_project.gaia.id
+  key       = "TF_TOKEN_app_terraform_io"
+  value     = var.gitlab_tfc_api_token
+  masked    = true
+  protected = false
+}

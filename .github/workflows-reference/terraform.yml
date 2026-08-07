@@ -1,23 +1,6 @@
 name: Terraform Plan/Apply
 
 on:
-  push:
-    branches: [prd]
-    paths-ignore:
-      - "hestia/monke-academy/**"
-      - "hestia/vin-moe/**"
-      - "hestia/vinnel-cloud/**"
-      - "hestia/ci-runner/**"
-      - "love/**"
-      - "**.md"
-  pull_request:
-    paths-ignore:
-      - "hestia/monke-academy/**"
-      - "hestia/vin-moe/**"
-      - "hestia/vinnel-cloud/**"
-      - "hestia/ci-runner/**"
-      - "love/**"
-      - "**.md"
   workflow_dispatch: {}
 
 permissions:
@@ -25,7 +8,7 @@ permissions:
 
 concurrency:
   group: terraform-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: false
 
 jobs:
   plan-apply:
@@ -71,5 +54,5 @@ jobs:
           [ "$exit_code" -ne 1 ]
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/prd' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && steps.plan.outputs.exitcode == '2'
+        if: github.ref == 'refs/heads/prd' && steps.plan.outputs.exitcode == '2'
         run: terraform apply -input=false tfplan
