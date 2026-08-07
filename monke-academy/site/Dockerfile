@@ -1,4 +1,4 @@
-FROM nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
+FROM registry.vinnel.cloud/dockerhub/library/nginx:1.31-alpine@sha256:4a73073bd557c65b759505da037898b61f1be6cbcc3c2c3aeac22d2a470c1752 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
  && NGINX_VERSION=$(nginx -v 2>&1 | sed 's/.*\///') \
@@ -10,7 +10,7 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_filter_module.so /ngx_http_brotli_filter_module.so \
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
-FROM node:24-alpine@sha256:f70403e87646dc51b45295f4b8b70cdad0b63d2297c4c9899119b03f7af7a6b3 AS asset-build
+FROM registry.vinnel.cloud/dockerhub/library/node:24-alpine@sha256:f70403e87646dc51b45295f4b8b70cdad0b63d2297c4c9899119b03f7af7a6b3 AS asset-build
 RUN apk add --no-cache brotli gzip
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
@@ -19,7 +19,7 @@ COPY build.sh .
 COPY html/ .
 RUN sh build.sh
 
-FROM nginxinc/nginx-unprivileged:1.31-alpine@sha256:59ccf0943b0b8e8d9e6ea9039a39555730f544701a655c596f7df7d096c593f5
+FROM registry.vinnel.cloud/dockerhub/nginxinc/nginx-unprivileged:1.31-alpine@sha256:59ccf0943b0b8e8d9e6ea9039a39555730f544701a655c596f7df7d096c593f5
 USER root
 RUN apk --no-cache upgrade
 USER nginx

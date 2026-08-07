@@ -230,3 +230,16 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_websites" {
     })
   }
 }
+
+resource "harbor_registry" "docker_hub" {
+  provider_name = "docker-hub"
+  name          = "docker-hub"
+  endpoint_url  = "https://hub.docker.com"
+  description   = "anonymous, unauthenticated -- proxy-cache only, no credential needed"
+}
+
+resource "harbor_project" "docker_hub_proxy" {
+  depends_on  = [helm_release.harbor, kubernetes_ingress_v1.registry_api_vinnel_cloud]
+  name        = "dockerhub"
+  registry_id = harbor_registry.docker_hub.registry_id
+}
