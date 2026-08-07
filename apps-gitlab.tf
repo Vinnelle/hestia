@@ -1,6 +1,9 @@
 resource "kubernetes_namespace_v1" "gitlab" {
   metadata {
     name = "gitlab"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "privileged"
+    }
   }
 }
 
@@ -516,6 +519,126 @@ resource "kubectl_manifest" "gitlab_runner_vpa" {
     namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
     target_kind = "Deployment"
     target_name = kubernetes_deployment_v1.gitlab_runner.metadata[0].name
+    update_mode = "Initial"
+    container_policies = [
+      { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
+    ]
+  })
+}
+
+# --- Second runner: privileged, image builds only ---
+
+resource "gitlab_user_runner" "gaia_privileged_build" {
+  runner_type = "instance_type"
+  description = "gaia in-cluster Kubernetes executor - privileged, image builds only (apps-gitlab.tf)"
+  tag_list    = ["kubernetes", "privileged-build"]
+  untagged    = false
+}
+
+locals {
+  gitlab_runner_privileged_config_toml = <<-EOT
+    concurrent     = 2
+    check_interval = 3
+
+    [[runners]]
+      name     = "gaia-k8s-privileged-build"
+      url      = "https://gitlab.vinnel.cloud"
+      token    = "${gitlab_user_runner.gaia_privileged_build.token}"
+      executor = "kubernetes"
+
+      [runners.kubernetes]
+        namespace          = "${kubernetes_namespace_v1.gitlab.metadata[0].name}"
+        service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
+        image              = "alpine:3.22"
+        image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
+        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud"] }]
+        privileged         = true
+  EOT
+
+  gitlab_runner_privileged_config_hash = sha256(local.gitlab_runner_privileged_config_toml)
+}
+
+resource "kubernetes_secret_v1" "gitlab_runner_privileged_config" {
+  metadata {
+    name      = "gitlab-runner-privileged-config"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+  data = {
+    "config.toml" = local.gitlab_runner_privileged_config_toml
+  }
+}
+
+resource "kubernetes_deployment_v1" "gitlab_runner_privileged" {
+  metadata {
+    name      = "gitlab-runner-privileged-build"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    labels = {
+      app = "gitlab-runner-privileged-build"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "gitlab-runner-privileged-build"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "gitlab-runner-privileged-build"
+        }
+        annotations = {
+          "config-hash" = local.gitlab_runner_privileged_config_hash
+        }
+      }
+
+      spec {
+        service_account_name = kubernetes_service_account_v1.gitlab_runner.metadata[0].name
+
+        container {
+          name  = "gitlab-runner"
+          image = "gitlab/gitlab-runner:v18.11.4@sha256:96fbcefea955010d39e22408abd71e76c4da0c732bc200506fbef1c001c4d1c6"
+
+          resources {
+            requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            limits = {
+              cpu    = "500m"
+              memory = "512Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "config"
+            mount_path = "/etc/gitlab-runner/config.toml"
+            sub_path   = "config.toml"
+          }
+        }
+
+        volume {
+          name = "config"
+          secret {
+            secret_name = kubernetes_secret_v1.gitlab_runner_privileged_config.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubectl_manifest" "gitlab_runner_privileged_vpa" {
+  depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab_runner_privileged]
+  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
+    name        = "gitlab-runner-privileged-build"
+    namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+    target_kind = "Deployment"
+    target_name = kubernetes_deployment_v1.gitlab_runner_privileged.metadata[0].name
     update_mode = "Initial"
     container_policies = [
       { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
