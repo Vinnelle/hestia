@@ -111,6 +111,12 @@ variable "signoz_api_token" {
   sensitive   = true
 }
 
+variable "gitlab_api_token" {
+  description = "GitLab Personal/Admin Access Token (api scope), minted by hand as root at https://gitlab.vinnel.cloud once GitLab itself is up (two-apply bootstrap, same shape as harbor_admin_password). Used by the gitlab Terraform provider. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
 variable "minecraft_modpack_zip_url" {
   description = "URL the fetch-modpack init container downloads the Create: Ultimate Selection 2 client zip from. Required because the modpack's authors set allowModDistribution=false, so the CurseForge API refuses to serve the pack archive and it has to be downloaded by hand once and self-hosted. Any URL the cluster can reach works (seaweedfs/S3 presigned, a GitHub release asset, momus). Set as a TFC workspace variable, not codified."
   type        = string

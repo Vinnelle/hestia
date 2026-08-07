@@ -46,6 +46,11 @@ provider "signoz" {
   access_token = var.signoz_api_token
 }
 
+provider "gitlab" {
+  base_url = "https://gitlab.vinnel.cloud/api/v4/"
+  token    = var.gitlab_api_token
+}
+
 provider "aws" {
   alias  = "mega_s4"
   region = "us-east-1"

@@ -315,3 +315,209 @@ resource "kubernetes_ingress_v1" "gitlab_vinnel_cloud" {
     }
   }
 }
+
+# --- Phase B: GitLab Runner, Kubernetes executor ---
+
+resource "kubernetes_service_account_v1" "gitlab_runner" {
+  metadata {
+    name      = "gitlab-runner"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+}
+
+resource "kubernetes_role_v1" "gitlab_runner" {
+  metadata {
+    name      = "gitlab-runner"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods"]
+    verbs      = ["create", "delete", "get", "list", "watch"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["pods/attach"]
+    verbs      = ["create", "delete", "get", "patch"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["pods/exec"]
+    verbs      = ["create", "delete", "get", "patch"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["pods/log"]
+    verbs      = ["get", "list"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["create", "delete", "get", "update"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["services"]
+    verbs      = ["create", "get"]
+  }
+  rule {
+    api_groups = [""]
+    resources  = ["serviceaccounts"]
+    verbs      = ["get"]
+  }
+}
+
+resource "kubernetes_role_binding_v1" "gitlab_runner" {
+  metadata {
+    name      = "gitlab-runner"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role_v1.gitlab_runner.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.gitlab_runner.metadata[0].name
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+}
+
+resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "registry.vinnel.cloud" = {
+          username = harbor_robot_account.ci.full_name
+          password = random_password.harbor_robot.result
+          auth     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
+        }
+      }
+    })
+  }
+}
+
+resource "gitlab_user_runner" "gaia" {
+  runner_type = "instance_type"
+  description = "gaia in-cluster Kubernetes executor (apps-gitlab.tf)"
+  tag_list    = ["kubernetes", "gaia"]
+  untagged    = true
+}
+
+locals {
+  gitlab_runner_config_toml = <<-EOT
+    concurrent     = 4
+    check_interval = 3
+
+    [[runners]]
+      name     = "gaia-k8s"
+      url      = "https://gitlab.vinnel.cloud"
+      token    = "${gitlab_user_runner.gaia.token}"
+      executor = "kubernetes"
+
+      [runners.kubernetes]
+        namespace          = "${kubernetes_namespace_v1.gitlab.metadata[0].name}"
+        service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
+        image              = "alpine:3.22"
+        image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
+  EOT
+
+  gitlab_runner_config_hash = sha256(local.gitlab_runner_config_toml)
+}
+
+resource "kubernetes_secret_v1" "gitlab_runner_config" {
+  metadata {
+    name      = "gitlab-runner-config"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+  data = {
+    "config.toml" = local.gitlab_runner_config_toml
+  }
+}
+
+resource "kubernetes_deployment_v1" "gitlab_runner" {
+  metadata {
+    name      = "gitlab-runner"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    labels = {
+      app = "gitlab-runner"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    selector {
+      match_labels = {
+        app = "gitlab-runner"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "gitlab-runner"
+        }
+        annotations = {
+          "config-hash" = local.gitlab_runner_config_hash
+        }
+      }
+
+      spec {
+        service_account_name = kubernetes_service_account_v1.gitlab_runner.metadata[0].name
+
+        container {
+          name  = "gitlab-runner"
+          image = "gitlab/gitlab-runner:v18.11.4@sha256:96fbcefea955010d39e22408abd71e76c4da0c732bc200506fbef1c001c4d1c6"
+
+          resources {
+            requests = {
+              cpu    = "100m"
+              memory = "128Mi"
+            }
+            limits = {
+              cpu    = "500m"
+              memory = "512Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "config"
+            mount_path = "/etc/gitlab-runner/config.toml"
+            sub_path   = "config.toml"
+          }
+        }
+
+        volume {
+          name = "config"
+          secret {
+            secret_name = kubernetes_secret_v1.gitlab_runner_config.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubectl_manifest" "gitlab_runner_vpa" {
+  depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab_runner]
+  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
+    name        = "gitlab-runner"
+    namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+    target_kind = "Deployment"
+    target_name = kubernetes_deployment_v1.gitlab_runner.metadata[0].name
+    update_mode = "Initial"
+    container_policies = [
+      { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
+    ]
+  })
+}
