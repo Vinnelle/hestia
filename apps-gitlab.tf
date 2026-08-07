@@ -27,6 +27,7 @@ locals {
     "nginx['listen_port'] = 80",
     "nginx['listen_https'] = false",
     "nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
+    "gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '10.244.0.0/16']",
   ])
 
   gitlab_config_hash = sha256(join("", [
@@ -190,10 +191,6 @@ resource "kubernetes_deployment_v1" "gitlab" {
             http_get {
               path = "/-/health"
               port = "http"
-              http_header {
-                name  = "Host"
-                value = "gitlab.vinnel.cloud"
-              }
             }
             period_seconds        = 15
             failure_threshold     = 80
@@ -204,10 +201,6 @@ resource "kubernetes_deployment_v1" "gitlab" {
             http_get {
               path = "/-/readiness"
               port = "http"
-              http_header {
-                name  = "Host"
-                value = "gitlab.vinnel.cloud"
-              }
             }
             period_seconds  = 10
             timeout_seconds = 5
@@ -217,10 +210,6 @@ resource "kubernetes_deployment_v1" "gitlab" {
             http_get {
               path = "/-/liveness"
               port = "http"
-              http_header {
-                name  = "Host"
-                value = "gitlab.vinnel.cloud"
-              }
             }
             period_seconds  = 30
             timeout_seconds = 5
