@@ -521,3 +521,21 @@ resource "kubectl_manifest" "gitlab_runner_vpa" {
     ]
   })
 }
+
+# --- Phase C: git migration + outbound mirrors ---
+
+resource "gitlab_project" "gaia" {
+  name                   = "gaia"
+  path                   = "gaia"
+  description            = "Talos/k8s homelab IaC -- canonical source, migrated from GitHub"
+  visibility_level       = "private"
+  initialize_with_readme = false
+}
+
+resource "gitlab_project_variable" "gh_api_token" {
+  project   = gitlab_project.gaia.id
+  key       = "GH_API_TOKEN"
+  value     = var.gitlab_mirror_github_pat
+  masked    = true
+  protected = false
+}

@@ -117,6 +117,12 @@ variable "gitlab_api_token" {
   sensitive   = true
 }
 
+variable "gitlab_mirror_github_pat" {
+  description = "GitHub PAT with push access to Vinnelle/gaia, hestia, love, vin.moe -- used by .gitlab-ci.yml's outbound mirror jobs to keep GitHub in sync as gaia's backup/public-mirror source now that GitLab is canonical. Same scope as the existing GH_API_TOKEN GitHub Actions secret; can be the same value or a freshly minted one. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
 variable "minecraft_modpack_zip_url" {
   description = "URL the fetch-modpack init container downloads the Create: Ultimate Selection 2 client zip from. Required because the modpack's authors set allowModDistribution=false, so the CurseForge API refuses to serve the pack archive and it has to be downloaded by hand once and self-hosted. Any URL the cluster can reach works (seaweedfs/S3 presigned, a GitHub release asset, momus). Set as a TFC workspace variable, not codified."
   type        = string
