@@ -562,7 +562,7 @@ resource "gitlab_project_variable" "harbor_username" {
   project   = gitlab_project.gaia.id
   key       = "HARBOR_USERNAME"
   value     = harbor_robot_account.ci.full_name
-  masked    = true
+  masked    = false
   protected = false
 }
 
