@@ -681,18 +681,10 @@ resource "gitlab_project_variable" "tfc_api_token" {
   protected = false
 }
 
-resource "gitlab_project_variable" "harbor_username" {
+resource "gitlab_project_variable" "harbor_auth_b64" {
   project   = gitlab_project.gaia.id
-  key       = "HARBOR_USERNAME"
-  value     = harbor_robot_account.ci.full_name
-  masked    = false
-  protected = false
-}
-
-resource "gitlab_project_variable" "harbor_password" {
-  project   = gitlab_project.gaia.id
-  key       = "HARBOR_PASSWORD"
-  value     = random_password.harbor_robot.result
+  key       = "HARBOR_AUTH_B64"
+  value     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
   masked    = true
   protected = false
 }
