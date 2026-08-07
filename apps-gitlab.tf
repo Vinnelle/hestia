@@ -524,17 +524,17 @@ resource "kubectl_manifest" "gitlab_runner_vpa" {
 
 # --- Phase C: git migration + outbound mirrors ---
 
-resource "gitlab_group" "vinnelle" {
-  name             = "vinnelle"
-  path             = "vinnelle"
-  description      = "Vinnelle homelab projects"
+resource "gitlab_group" "vinnel_cloud" {
+  name             = "vinnel.cloud"
+  path             = "vinnel-cloud"
+  description      = "vinnel.cloud homelab projects"
   visibility_level = "private"
 }
 
 resource "gitlab_project" "gaia" {
   name                   = "gaia"
   path                   = "gaia"
-  namespace_id           = gitlab_group.vinnelle.id
+  namespace_id           = gitlab_group.vinnel_cloud.id
   description            = "Talos/k8s homelab IaC -- canonical source, migrated from GitHub"
   visibility_level       = "private"
   initialize_with_readme = false
