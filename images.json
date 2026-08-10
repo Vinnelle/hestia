@@ -1,12 +1,12 @@
 {
   "// momus": "server image — updated by momus-build.yml",
-  "momus": "registry.vinnel.cloud/vinnel-cloud/momus@sha256:2b88168d76cc64b93c8fa46eedef1293edb81b93b4a13bb70dc5d84afcbffef9",
+  "momus": "registry.vinnel.cloud/vinnel-cloud/momus@sha256:cf9106556cd30970e830a7964815f0eceeeb7a3d24f4827ebfe5e9f3b8f39705",
   "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
-  "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:98751ea3aa24b5d2971ad668d398cf50bc2a7fc9706a1c8fc09b3fce3833b1c5",
-  "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:db8f2a3c9dd8c1574a0789152d13d651986da19b93aca827c442406da754acd8",
+  "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:1eff60e63bbb84e9698d6d349ec683225fb968a3a421b3f8cebca6f70d2f3eb7",
+  "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:1dd54ccffa2853409f61d4b8232732a5c377bd6ac8f07065df66b8d04b003548",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:674a346dee6b664d1d00984e1b654b92928fdda0689c13899a3da42ec7d72d2f",
-  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:4b42d0f4256ded9f9a2150d29873066ef27cac3719906b96d31c74811c143a92",
-  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:73cae021c9974349cb43a7b6626c09acfaf03e8b6698afd007e921d43d345096",
-  "vinnel-cloud-shell": "registry.vinnel.cloud/vinnel-cloud/shell@sha256:039fe9f83028dedafb763d6b181d243e10d2da32d2809d4dee9a3b188529b98a"
+  "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:2e0c5dae8bcc4fe627ec9650d9fbdef1ac826f2be48b0ec75215d4b0d6eede7e",
+  "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:1f0ca535bd47f1be7bfaf870f2cef88ff25f69fa724734b5ef3ff3bc28a8b5c1",
+  "vinnel-cloud-auth": "registry.vinnel.cloud/vinnel-cloud/auth@sha256:226f08e69da2abe341068ec7fb22ba7d65a4a9a5cffb5805b4c16b35073375a3",
+  "vinnel-cloud-shell": "registry.vinnel.cloud/vinnel-cloud/shell@sha256:d75f38928f48423f3a587317b8cd952b2213c1d195f4c8027a8586b754e8f12a"
 }
