@@ -4,6 +4,7 @@ const satisfactoryPage = document.getElementById('page-satisfactory');
 const minecraftPage = document.getElementById('page-minecraft');
 const back = document.getElementById('frame-back');
 const frameTitle = document.getElementById('frame-title');
+const fullscreenBtn = document.getElementById('frame-fullscreen');
 const routed = document.querySelectorAll('.service-link[data-url]');
 const allNavLinks = document.querySelectorAll('.sidebar-link');
 
@@ -31,11 +32,14 @@ function show(slug) {
 
   const page = internalPages[slug];
 
+  if (document.fullscreenElement) document.exitFullscreen();
+
   home.hidden = true;
   satisfactoryPage.hidden = true;
   minecraftPage.hidden = true;
   frame.hidden = true;
   back.hidden = true;
+  fullscreenBtn.hidden = true;
 
   for (const [consoleSlug, c] of Object.entries(consoles)) {
     if (consoleSlug === slug) c.start();
@@ -59,6 +63,7 @@ function show(slug) {
 
   frame.hidden = false;
   back.hidden = false;
+  fullscreenBtn.hidden = false;
   frameTitle.textContent = active.dataset.label;
   document.title = active.dataset.label + ' — vinnel.cloud';
 
@@ -84,6 +89,18 @@ new MutationObserver(pushTheme).observe(document.documentElement, {
 
 document.getElementById('sidebar-toggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('sidebar--collapsed');
+});
+
+fullscreenBtn.addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else frame.requestFullscreen().catch(() => {});
+});
+
+document.addEventListener('fullscreenchange', () => {
+  const active = document.fullscreenElement === frame;
+  fullscreenBtn.querySelector('.icon-expand').hidden = active;
+  fullscreenBtn.querySelector('.icon-collapse').hidden = !active;
+  fullscreenBtn.setAttribute('aria-pressed', String(active));
 });
 
 for (const btn of document.querySelectorAll('.sidebar-section-label')) {
