@@ -14,9 +14,10 @@ import (
 )
 
 const (
-	satisfactoryNamespace = "server"
-	satisfactoryLabel     = "app=satisfactory"
-	satisfactoryContainer = "satisfactory"
+	satisfactoryNamespace  = "server"
+	satisfactoryDeployment = "satisfactory"
+	satisfactoryLabel      = "app=satisfactory"
+	satisfactoryContainer  = "satisfactory"
 )
 
 type satisfactoryAPIInfo struct {
@@ -180,6 +181,7 @@ type Status struct {
 	APIErr  string               `json:"apiErr,omitempty"`
 	Save    *saveHeader          `json:"save,omitempty"`
 	SaveErr string               `json:"saveErr,omitempty"`
+	Desired *int32               `json:"desired,omitempty"`
 }
 
 type Service struct {
@@ -194,10 +196,15 @@ func (s *Service) Status() Status {
 
 	if s.Kube == nil {
 		out.PodErr = "kubernetes API unavailable"
-	} else if pod, err := s.Kube.PodByLabel(satisfactoryNamespace, satisfactoryLabel); err != nil {
-		out.PodErr = err.Error()
 	} else {
-		out.Pod = &pod
+		if desired, err := s.Kube.DeploymentDesired(satisfactoryNamespace, satisfactoryDeployment); err == nil {
+			out.Desired = &desired
+		}
+		if pod, err := s.Kube.PodByLabel(satisfactoryNamespace, satisfactoryLabel); err != nil {
+			out.PodErr = err.Error()
+		} else {
+			out.Pod = &pod
+		}
 	}
 
 	if s.Host == "" {
@@ -236,6 +243,26 @@ func (s *Service) Status() Status {
 	}
 
 	return out
+}
+
+// Start and Stop scale the Deployment itself (1 or 0 replicas) — the "free
+// the node's RAM" control. Unlike minecraft, there's no in-game "stop"
+// command this could be confused with: RunCommand (command.go) has no
+// equivalent, the Dedicated Server API's own shutdown path is behind
+// PasswordlessLogin, which server-satisfactory.tf's own notes already flag
+// as unusable once the server is claimed.
+func (s *Service) Start() error {
+	if s.Kube == nil {
+		return fmt.Errorf("kubernetes API unavailable")
+	}
+	return s.Kube.ScaleDeployment(satisfactoryNamespace, satisfactoryDeployment, 1)
+}
+
+func (s *Service) Stop() error {
+	if s.Kube == nil {
+		return fmt.Errorf("kubernetes API unavailable")
+	}
+	return s.Kube.ScaleDeployment(satisfactoryNamespace, satisfactoryDeployment, 0)
 }
 
 func (s *Service) LogStream(ctx context.Context, lines int) (io.ReadCloser, error) {

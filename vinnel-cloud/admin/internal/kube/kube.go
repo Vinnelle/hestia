@@ -1,6 +1,7 @@
 package kube
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -70,6 +71,54 @@ func (k *Client) Get(path string, out any) error {
 		return fmt.Errorf("GET %s: %s", path, resp.Status)
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+// ScaleDeployment sets a Deployment's replica count via the `scale`
+// subresource rather than patching the Deployment itself — narrower RBAC
+// (a caller granted only `deployments/scale` can change replica count and
+// nothing else about the spec) for a control reachable from a browser
+// button. Content-Type merge-patch+json + a bare `{spec:{replicas}}` body is
+// the documented shape for this subresource.
+func (k *Client) ScaleDeployment(ns, name string, replicas int32) error {
+	body, err := json.Marshal(map[string]any{"spec": map[string]any{"replicas": replicas}})
+	if err != nil {
+		return err
+	}
+	path := fmt.Sprintf("/apis/apps/v1/namespaces/%s/deployments/%s/scale", ns, name)
+	req, err := http.NewRequest("PATCH", k.host+path, bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+k.token)
+	req.Header.Set("Content-Type", "application/merge-patch+json")
+	req.Header.Set("Accept", "application/json")
+	resp, err := k.http.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		detail, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("PATCH %s: %s: %s", path, resp.Status, strings.TrimSpace(string(detail)))
+	}
+	return nil
+}
+
+// DeploymentDesired reads a Deployment's desired replica count off the same
+// `scale` subresource ScaleDeployment writes to — same narrow RBAC, and lets
+// the caller tell "stopped on purpose" (desired 0) apart from "should be
+// running but isn't" without needing the base `deployments` get rule too.
+func (k *Client) DeploymentDesired(ns, name string) (int32, error) {
+	var out struct {
+		Spec struct {
+			Replicas int32 `json:"replicas"`
+		} `json:"spec"`
+	}
+	path := fmt.Sprintf("/apis/apps/v1/namespaces/%s/deployments/%s/scale", ns, name)
+	if err := k.Get(path, &out); err != nil {
+		return 0, err
+	}
+	return out.Spec.Replicas, nil
 }
 
 func ParseCPU(s string) float64 {

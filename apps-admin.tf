@@ -57,6 +57,38 @@ resource "kubernetes_cluster_role_binding_v1" "vinnel_cloud_admin" {
   }
 }
 
+resource "kubernetes_role_v1" "vinnel_cloud_admin_gameserver_scale" {
+  metadata {
+    name      = "vinnel-cloud-admin-gameserver-scale"
+    namespace = kubernetes_namespace_v1.server.metadata[0].name
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments/scale"]
+    verbs      = ["get", "patch"]
+  }
+}
+
+resource "kubernetes_role_binding_v1" "vinnel_cloud_admin_gameserver_scale" {
+  metadata {
+    name      = "vinnel-cloud-admin-gameserver-scale"
+    namespace = kubernetes_namespace_v1.server.metadata[0].name
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role_v1.vinnel_cloud_admin_gameserver_scale.metadata[0].name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+}
+
 resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_admin" {
   metadata {
     name      = "vinnel-cloud-admin-pdb"

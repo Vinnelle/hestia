@@ -218,6 +218,12 @@
             </div>
           </div>
 
+          <div class="sat-actions">
+            <button class="btn-action" id="sat-power-start" type="button" hidden>Start server</button>
+            <button class="btn-action btn-action--danger" id="sat-power-stop" type="button" hidden>Stop server</button>
+          </div>
+          <p class="sat-hint" id="sat-power-hint" hidden>Stopping frees the node's RAM/CPU for everything else. Players are disconnected; the world is exactly as it was last saved.</p>
+
           <div class="table-card">
             <table>
               <tbody>
@@ -292,6 +298,12 @@
               <div class="stat-sub" id="mc-latency"></div>
             </div>
           </div>
+
+          <div class="sat-actions">
+            <button class="btn-action" id="mc-power-start" type="button" hidden>Start server</button>
+            <button class="btn-action btn-action--danger" id="mc-power-stop" type="button" hidden>Stop server</button>
+          </div>
+          <p class="sat-hint" id="mc-power-hint" hidden>Stopping frees the node's RAM/CPU for everything else. Players are disconnected; the world is exactly as it was at the last autosave.</p>
 
           <div class="table-card">
             <table>

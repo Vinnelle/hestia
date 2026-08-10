@@ -133,6 +133,17 @@ func commandHandler(audit string, run func(string) (string, error)) http.Handler
 	}
 }
 
+func scaleHandler(audit string, run func() error) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("%s: user=%q", audit, userFromRequest(r))
+		if err := run(); err != nil {
+			writeJSON(w, map[string]string{"err": err.Error()})
+			return
+		}
+		writeJSON(w, map[string]string{"ok": "true"})
+	}
+}
+
 func streamHandler(open func(context.Context, int) (io.ReadCloser, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		src, err := open(r.Context(), logLines(r))
@@ -298,6 +309,12 @@ func main() {
 	mux.HandleFunc("POST /api/gameservers/minecraft/command", commandHandler("minecraft rcon", minecraftSvc.Command))
 
 	mux.HandleFunc("POST /api/gameservers/satisfactory/command", commandHandler("satisfactory api", satisfactorySvc.Command))
+
+	mux.HandleFunc("POST /api/gameservers/minecraft/start", scaleHandler("minecraft start", minecraftSvc.Start))
+	mux.HandleFunc("POST /api/gameservers/minecraft/stop", scaleHandler("minecraft stop", minecraftSvc.Stop))
+
+	mux.HandleFunc("POST /api/gameservers/satisfactory/start", scaleHandler("satisfactory start", satisfactorySvc.Start))
+	mux.HandleFunc("POST /api/gameservers/satisfactory/stop", scaleHandler("satisfactory stop", satisfactorySvc.Stop))
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range securityHeaders {

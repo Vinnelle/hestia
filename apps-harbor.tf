@@ -193,25 +193,6 @@ resource "harbor_config_auth" "main" {
   primary_auth_mode             = true
 }
 
-resource "kubernetes_secret_v1" "registry_dockerconfig_arc_runners" {
-  metadata {
-    name      = "registry-dockerconfig"
-    namespace = kubernetes_namespace_v1.arc_runners.metadata[0].name
-  }
-  type = "kubernetes.io/dockerconfigjson"
-  data = {
-    ".dockerconfigjson" = jsonencode({
-      auths = {
-        "registry.vinnel.cloud" = {
-          username = harbor_robot_account.ci.full_name
-          password = random_password.harbor_robot.result
-          auth     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
-        }
-      }
-    })
-  }
-}
-
 resource "kubernetes_secret_v1" "registry_dockerconfig_websites" {
   metadata {
     name      = "registry-dockerconfig"

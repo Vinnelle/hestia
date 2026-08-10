@@ -190,15 +190,17 @@ async function loadSatisfactoryStatus() {
     return;
   }
 
-  const problems = [s.podErr, s.apiErr, s.saveErr].filter(Boolean);
+  const stopped = renderPower('sat', s.desired);
+
+  const problems = stopped ? [] : [s.podErr, s.apiErr, s.saveErr].filter(Boolean);
   err.hidden = problems.length === 0;
   err.textContent = problems.join(' · ');
 
   const dot = document.getElementById('sat-status-dot');
   const up = !!(s.api && s.api.healthy);
-  dot.className = 'dot' + (up ? ' dot--ok' : ' dot--bad');
-  text('sat-status-text', up ? 'Online' : 'Offline');
-  text('sat-status-sub', s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || ''));
+  dot.className = 'dot' + (stopped ? '' : up ? ' dot--ok' : ' dot--bad');
+  text('sat-status-text', stopped ? 'Stopped' : (up ? 'Online' : 'Offline'));
+  text('sat-status-sub', stopped ? 'Scaled to 0 replicas' : (s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || '')));
 
   if (s.api) {
     text('sat-players', s.api.connectedPlayers + ' / ' + s.api.playerLimit);
@@ -258,16 +260,18 @@ async function loadMinecraftStatus() {
     return;
   }
 
-  const problems = [s.podErr, s.pingErr].filter(Boolean);
+  const stopped = renderPower('mc', s.desired);
+
+  const problems = stopped ? [] : [s.podErr, s.pingErr].filter(Boolean);
   err.hidden = problems.length === 0;
   err.textContent = problems.join(' · ');
 
   if (s.address) text('mc-address', s.address);
 
   const up = !!s.ping;
-  document.getElementById('mc-status-dot').className = 'dot' + (up ? ' dot--ok' : ' dot--bad');
-  text('mc-status-text', up ? 'Online' : 'Offline');
-  text('mc-status-sub', s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || ''));
+  document.getElementById('mc-status-dot').className = 'dot' + (stopped ? '' : up ? ' dot--ok' : ' dot--bad');
+  text('mc-status-text', stopped ? 'Stopped' : (up ? 'Online' : 'Offline'));
+  text('mc-status-sub', stopped ? 'Scaled to 0 replicas' : (s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || '')));
 
   if (s.ping) {
     text('mc-players', s.ping.playersOnline + ' / ' + s.ping.playersMax);
@@ -297,6 +301,43 @@ async function loadMinecraftStatus() {
     text('mc-started', '—');
   }
 }
+
+function renderPower(prefix, desired) {
+  const stopped = desired === 0;
+  const known = desired === 0 || desired === 1;
+  document.getElementById(prefix + '-power-start').hidden = !known || !stopped;
+  document.getElementById(prefix + '-power-stop').hidden = !known || stopped;
+  document.getElementById(prefix + '-power-hint').hidden = !stopped;
+  return stopped;
+}
+
+function wirePower(prefix, startUrl, stopUrl, statusLoader) {
+  const startBtn = document.getElementById(prefix + '-power-start');
+  const stopBtn = document.getElementById(prefix + '-power-stop');
+
+  async function call(url) {
+    startBtn.disabled = true;
+    stopBtn.disabled = true;
+    try {
+      const r = await (await fetch(url, { method: 'POST' })).json();
+      if (r.err) alert(r.err);
+    } catch (e) {
+      alert('Request failed.');
+    } finally {
+      startBtn.disabled = false;
+      stopBtn.disabled = false;
+      statusLoader();
+    }
+  }
+
+  startBtn.addEventListener('click', () => call(startUrl));
+  stopBtn.addEventListener('click', () => {
+    if (confirm('Stop the server? Connected players will be disconnected.')) call(stopUrl);
+  });
+}
+
+wirePower('sat', '/api/gameservers/satisfactory/start', '/api/gameservers/satisfactory/stop', loadSatisfactoryStatus);
+wirePower('mc', '/api/gameservers/minecraft/start', '/api/gameservers/minecraft/stop', loadMinecraftStatus);
 
 const CONSOLE_MAX_LINES = 500;
 
