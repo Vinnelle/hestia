@@ -664,6 +664,47 @@ resource "gitlab_project" "gaia" {
   initialize_with_readme                   = false
   default_branch                           = "prd"
   ci_push_repository_for_job_token_allowed = true
+
+  only_allow_merge_if_pipeline_succeeds            = true
+  allow_merge_on_skipped_pipeline                  = false
+  merge_method                                     = "merge"
+  remove_source_branch_after_merge                 = true
+  only_allow_merge_if_all_discussions_are_resolved = false
+}
+
+resource "gitlab_branch" "pre" {
+  project = gitlab_project.gaia.id
+  name    = "pre"
+  ref     = gitlab_project.gaia.default_branch
+}
+
+import {
+  to = gitlab_branch_protection.prd
+  id = "vinnel-cloud/gaia:prd"
+}
+
+resource "gitlab_branch_protection" "prd" {
+  project            = gitlab_project.gaia.id
+  branch             = gitlab_project.gaia.default_branch
+  push_access_level  = "maintainer"
+  merge_access_level = "maintainer"
+  allow_force_push   = false
+}
+
+resource "gitlab_project_access_token" "ci_bot" {
+  project      = gitlab_project.gaia.id
+  name         = "gaia-ci-bot"
+  scopes       = ["api", "write_repository"]
+  access_level = "maintainer"
+  expires_at   = "2027-08-01"
+}
+
+resource "gitlab_project_variable" "ci_bot_token" {
+  project   = gitlab_project.gaia.id
+  key       = "CI_BOT_TOKEN"
+  value     = gitlab_project_access_token.ci_bot.token
+  masked    = true
+  protected = false
 }
 
 resource "gitlab_project_variable" "gh_api_token" {
