@@ -3,7 +3,7 @@
   "momus": "registry.vinnel.cloud/vinnel-cloud/momus@sha256:a9ff347d09f8ff918b37a74a092a55ba2957986098380de065dd5821fb9354eb",
   "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
   "monke-academy-site": "registry.vinnel.cloud/monke-academy/site@sha256:acd8a5ed43400ed023b852c8a2ae97138134df40c0f4231fec00dfd93e12d61b",
-  "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:9b2017ce701ccab630191cb9d38420bca543609b971f58888b97b6e72c8b49f1",
+  "vin-moe-site": "registry.vinnel.cloud/vin-moe/site@sha256:7cb0832d6d16cf8332978c7668f2c83d12a680fce1971e415ed059909a0b7672",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
   "vinnel-cloud-site": "registry.vinnel.cloud/vinnel-cloud/site@sha256:8d913d67aef3a545407f6f74bcd0fac7891a6fa1e3416a84a49aea21eb3e7875",
   "vinnel-cloud-admin": "registry.vinnel.cloud/vinnel-cloud/admin@sha256:38ecdd9e12247392e64dff3f51aa9b5bd8622c216b6a2897547f18d2d30b4707",
