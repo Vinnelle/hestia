@@ -7,6 +7,10 @@ const frameTitle = document.getElementById('frame-title');
 const fullscreenBtn = document.getElementById('frame-fullscreen');
 const routed = document.querySelectorAll('.service-link[data-url]');
 const allNavLinks = document.querySelectorAll('.sidebar-link');
+const sidebar = document.getElementById('sidebar');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+const mobileSidebarQuery = matchMedia('(max-width: 640px)');
 
 const internalPages = {
   'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: loadSatisfactoryStatus },
@@ -87,9 +91,16 @@ new MutationObserver(pushTheme).observe(document.documentElement, {
   attributeFilter: ['data-theme'],
 });
 
-document.getElementById('sidebar-toggle').addEventListener('click', () => {
-  document.getElementById('sidebar').classList.toggle('sidebar--collapsed');
-});
+function setSidebarCollapsed(collapsed) {
+  sidebar.classList.toggle('sidebar--collapsed', collapsed);
+  sidebarToggle.setAttribute('aria-pressed', String(collapsed));
+  sidebarBackdrop.classList.toggle('active', !collapsed && mobileSidebarQuery.matches);
+}
+
+setSidebarCollapsed(mobileSidebarQuery.matches);
+sidebarToggle.addEventListener('click', () => setSidebarCollapsed(!sidebar.classList.contains('sidebar--collapsed')));
+sidebarBackdrop.addEventListener('click', () => setSidebarCollapsed(true));
+mobileSidebarQuery.addEventListener('change', (e) => setSidebarCollapsed(e.matches));
 
 fullscreenBtn.addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen();
@@ -469,11 +480,13 @@ function escapeHtml(s) {
 }
 
 function refresh() {
+  if (document.hidden) return;
   if (!home.hidden) loadCluster();
   if (!satisfactoryPage.hidden) loadSatisfactoryStatus();
   if (!minecraftPage.hidden) loadMinecraftStatus();
 }
 
 setInterval(refresh, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
 
 show(location.hash.slice(1));
