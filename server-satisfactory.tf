@@ -239,6 +239,10 @@ resource "kubernetes_deployment_v1" "satisfactory" {
       }
     }
   }
+
+  lifecycle {
+    ignore_changes = [spec[0].replicas]
+  }
 }
 
 resource "kubectl_manifest" "satisfactory_vpa" {
