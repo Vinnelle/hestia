@@ -139,7 +139,8 @@ a { color: var(--accent); text-decoration: none; }
   transform: rotate(-90deg);
 }
 
-.sidebar--collapsed .sidebar-section-label {
+.sidebar--collapsed .sidebar-section-label-text,
+.sidebar--collapsed .sidebar-section-chevron {
   opacity: 0;
 }
 
