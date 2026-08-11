@@ -490,6 +490,11 @@ resource "kubernetes_deployment_v1" "wwv_data_engine" {
             value = "/app/data/engine.db"
           }
 
+          env {
+            name  = "WWV_SKIP_WS_AUTH"
+            value = "true"
+          }
+
           resources {
             requests = {
               cpu    = "200m"
