@@ -86,6 +86,9 @@ resource "kubernetes_persistent_volume_claim_v1" "wwv_postgres" {
   metadata {
     name      = "wwv-postgres-pvc"
     namespace = kubernetes_namespace_v1.worldwideview.metadata[0].name
+    annotations = {
+      "volumeType" = "hostPath"
+    }
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -106,6 +109,9 @@ resource "kubernetes_persistent_volume_claim_v1" "wwv_app_data" {
   metadata {
     name      = "wwv-app-data-pvc"
     namespace = kubernetes_namespace_v1.worldwideview.metadata[0].name
+    annotations = {
+      "volumeType" = "hostPath"
+    }
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -126,6 +132,9 @@ resource "kubernetes_persistent_volume_claim_v1" "wwv_engine_data" {
   metadata {
     name      = "wwv-engine-data-pvc"
     namespace = kubernetes_namespace_v1.worldwideview.metadata[0].name
+    annotations = {
+      "volumeType" = "hostPath"
+    }
   }
   spec {
     access_modes = ["ReadWriteOnce"]
