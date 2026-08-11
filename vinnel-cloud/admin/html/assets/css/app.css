@@ -257,6 +257,7 @@ a { color: var(--accent); text-decoration: none; }
   display: flex;
   align-items: center;
   justify-self: start;
+  margin-left: -0.75rem;
 }
 
 .nav-logo-center {
