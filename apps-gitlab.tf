@@ -686,7 +686,7 @@ import {
 resource "gitlab_branch_protection" "prd" {
   project            = gitlab_project.gaia.id
   branch             = gitlab_project.gaia.default_branch
-  push_access_level  = "no one"
+  push_access_level  = "maintainer"
   merge_access_level = "maintainer"
   allow_force_push   = false
 }
