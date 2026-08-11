@@ -145,6 +145,10 @@ a { color: var(--accent); text-decoration: none; }
   padding-left: 1.75rem;
 }
 
+.sidebar--collapsed .sidebar-link--sub {
+  padding-left: 0.75rem;
+}
+
 .sidebar-label {
   overflow: hidden;
   transition: opacity 0.15s;
