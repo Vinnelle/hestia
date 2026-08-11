@@ -17,6 +17,16 @@ const internalPages = {
   'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: loadMinecraftStatus },
 };
 
+function expandSectionFor(slug) {
+  if (!slug) return;
+  const link = allNavLinks.length && Array.from(allNavLinks).find((el) => el.dataset.slug === slug);
+  const section = link && link.closest('.sidebar-section');
+  if (!section) return;
+  section.hidden = false;
+  const btn = document.querySelector('.sidebar-section-label[data-section="' + section.dataset.section + '"]');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+}
+
 function show(slug) {
   let active = null;
   for (const el of routed) {
@@ -33,6 +43,8 @@ function show(slug) {
   for (const el of allNavLinks) {
     el.classList.toggle('active', el.dataset.slug === slug);
   }
+
+  expandSectionFor(slug);
 
   const page = internalPages[slug];
 
