@@ -26,6 +26,16 @@ const (
 	iconCloud    = `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9z"/>`
 )
 
+// groupIcons gives each sidebar category (both portal.Services groups and the
+// hardcoded "Game Servers" section in index.html) its own icon, distinct from
+// any one service's icon.
+var groupIcons = map[string]template.HTML{
+	"Observability": iconChart,
+	"Network":       iconGlobe,
+	"Storage":       iconDatabase,
+	"Platform":      iconBox,
+}
+
 var Services = []Service{
 	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", "Observability", true, iconChart},
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", "Observability", true, iconNetwork},
@@ -40,6 +50,7 @@ var Services = []Service{
 
 type Group struct {
 	Name     string
+	Icon     template.HTML
 	Services []Service
 }
 
@@ -52,7 +63,7 @@ func Groups() []Group {
 		if !ok {
 			i = len(groups)
 			index[s.Group] = i
-			groups = append(groups, Group{Name: s.Group})
+			groups = append(groups, Group{Name: s.Group, Icon: groupIcons[s.Group]})
 		}
 		groups[i].Services = append(groups[i].Services, s)
 	}
