@@ -37,3 +37,13 @@ output "gitlab_root_password" {
   value     = random_password.gitlab_root_password.result
   sensitive = true
 }
+
+output "wwv_postgres_password" {
+  value     = random_password.wwv_postgres_password.result
+  sensitive = true
+}
+
+output "wwv_redis_password" {
+  value     = random_password.wwv_redis_password.result
+  sensitive = true
+}

@@ -149,3 +149,38 @@ variable "docker_hub_access_token" {
   type        = string
   sensitive   = true
 }
+
+variable "wwv_cesium_ion_token" {
+  description = "Cesium Ion access token (https://ion.cesium.com/), passed to the wwv app as NEXT_PUBLIC_CESIUM_ION_TOKEN. Set as a TFC workspace variable, not codified. Optional -- unverified whether this NEXT_PUBLIC_* var actually reaches the client once set only as a runtime env var against the prebuilt ghcr.io/silvertakana/worldwideview image (it's normally inlined at build time per that repo's own Dockerfile); check live after deploy."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "wwv_bing_maps_key" {
+  description = "Bing Maps API key (https://www.bingmapsportal.com/), passed to the wwv app as NEXT_PUBLIC_BING_MAPS_KEY. Set as a TFC workspace variable, not codified. Optional -- same NEXT_PUBLIC_* runtime-vs-build-time caveat as wwv_cesium_ion_token."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "wwv_openweathermap_api_key" {
+  description = "OpenWeatherMap API key (https://openweathermap.org/api, free tier), passed to the wwv app as OPENWEATHERMAP_API_KEY for weather radar tile overlays. Set as a TFC workspace variable, not codified. Optional -- feature is dormant without it."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "wwv_acled_email" {
+  description = "ACLED account email (https://developer.acleddata.com/, free for non-commercial use), passed to the wwv app as ACLED_EMAIL for civil-unrest/conflict data. Set as a TFC workspace variable, not codified. Optional -- feature is dormant without it."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "wwv_acled_password" {
+  description = "ACLED account password, paired with wwv_acled_email. Set as a TFC workspace variable, not codified. Optional -- feature is dormant without it."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
