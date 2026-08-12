@@ -178,11 +178,7 @@ resource "kubernetes_storage_class_v1" "local_path" {
     name = "local-path"
     annotations = {
       "storageclass.kubernetes.io/is-default-class" = "true"
-      # local-path-provisioner emits hostPath PVs by default, and Velero's
-      # node-agent refuses to fs-backup hostPath volumes (see CLAUDE.md,
-      # "local-path volumes have no backup at all"). "local" PVs (with
-      # nodeAffinity) are what node-agent can actually reach. Only affects
-      # PVCs provisioned after this change -- existing PVs stay hostPath.
+      # Why "local" not the default hostPath: see wiki, Terraform Rationale > platform-storage.tf.
       "defaultVolumeType" = "local"
     }
   }

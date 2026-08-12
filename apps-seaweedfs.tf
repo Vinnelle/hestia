@@ -173,7 +173,7 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
 
         container {
           name    = "seaweedfs"
-          image   = "chrislusf/seaweedfs:4.40"
+          image   = "chrislusf/seaweedfs:4.41"
           command = ["/bin/sh", "/scripts/start.sh"]
 
           port {
@@ -329,7 +329,7 @@ resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
             restart_policy = "OnFailure"
             container {
               name    = "tier-move"
-              image   = "chrislusf/seaweedfs:4.40"
+              image   = "chrislusf/seaweedfs:4.41"
               command = ["/bin/sh", "-c", local.seaweedfs_tier_move_sh]
             }
           }
