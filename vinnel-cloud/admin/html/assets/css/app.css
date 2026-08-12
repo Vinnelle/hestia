@@ -118,6 +118,7 @@ a { color: var(--accent); text-decoration: none; }
   white-space: nowrap;
   overflow: hidden;
   cursor: pointer;
+  text-align: left;
 }
 
 .sidebar-section-label:hover {
