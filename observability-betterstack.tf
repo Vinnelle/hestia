@@ -34,7 +34,7 @@ resource "kubernetes_ingress_v1" "status_vinnel_cloud" {
           path_type = "Prefix"
           backend {
             service {
-              name = kubernetes_service_v1.vinnel_cloud_site.metadata[0].name
+              name = module.vinnel_cloud_site.service_name
               port {
                 number = 80
               }

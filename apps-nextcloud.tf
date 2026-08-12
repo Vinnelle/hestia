@@ -284,18 +284,19 @@ resource "kubernetes_deployment_v1" "nextcloud" {
   }
 }
 
-resource "kubectl_manifest" "nextcloud_vpa" {
+module "nextcloud_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.nextcloud]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "nextcloud"
-    namespace   = kubernetes_namespace_v1.nextcloud.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.nextcloud.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "nextcloud", min_memory = "256Mi", max_memory = "1Gi" },
-    ]
-  })
+
+  name        = "nextcloud"
+  namespace   = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.nextcloud.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "nextcloud", min_memory = "256Mi", max_memory = "1Gi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "nextcloud" {

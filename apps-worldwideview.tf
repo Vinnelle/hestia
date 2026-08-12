@@ -258,18 +258,19 @@ resource "kubernetes_deployment_v1" "wwv_postgres" {
   }
 }
 
-resource "kubectl_manifest" "wwv_postgres_vpa" {
+module "wwv_postgres_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.wwv_postgres]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "wwv-postgres"
-    namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.wwv_postgres.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "postgres", min_memory = "256Mi", max_memory = "1Gi" },
-    ]
-  })
+
+  name        = "wwv-postgres"
+  namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.wwv_postgres.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "postgres", min_memory = "256Mi", max_memory = "1Gi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "wwv_postgres" {
@@ -385,18 +386,19 @@ resource "kubernetes_deployment_v1" "wwv_redis" {
   }
 }
 
-resource "kubectl_manifest" "wwv_redis_vpa" {
+module "wwv_redis_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.wwv_redis]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "wwv-redis"
-    namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.wwv_redis.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "redis", min_memory = "128Mi", max_memory = "512Mi" },
-    ]
-  })
+
+  name        = "wwv-redis"
+  namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.wwv_redis.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "redis", min_memory = "128Mi", max_memory = "512Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "wwv_redis" {
@@ -547,18 +549,19 @@ resource "kubernetes_deployment_v1" "wwv_data_engine" {
   }
 }
 
-resource "kubectl_manifest" "wwv_data_engine_vpa" {
+module "wwv_data_engine_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.wwv_data_engine]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "wwv-data-engine"
-    namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.wwv_data_engine.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "wwv-data-engine", min_memory = "512Mi", max_memory = "1536Mi" },
-    ]
-  })
+
+  name        = "wwv-data-engine"
+  namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.wwv_data_engine.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "wwv-data-engine", min_memory = "512Mi", max_memory = "1536Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "wwv_data_engine" {
@@ -809,18 +812,19 @@ resource "kubernetes_deployment_v1" "wwv" {
   }
 }
 
-resource "kubectl_manifest" "wwv_vpa" {
+module "wwv_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.wwv]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "wwv"
-    namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.wwv.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "wwv", min_memory = "512Mi", max_memory = "1536Mi" },
-    ]
-  })
+
+  name        = "wwv"
+  namespace   = kubernetes_namespace_v1.worldwideview.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.wwv.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "wwv", min_memory = "512Mi", max_memory = "1536Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "wwv" {

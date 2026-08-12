@@ -3,7 +3,7 @@ terraform {
 }
 
 locals {
-  rendered = yamldecode(templatefile("${path.module}/../../manifests/vpa/vpa.yaml.tftpl", {
+  rendered = yamldecode(templatefile("${path.module}/../../modules/vpa/vpa.yaml.tftpl", {
     name        = "example"
     namespace   = "server"
     target_kind = "Deployment"

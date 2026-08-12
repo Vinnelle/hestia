@@ -245,16 +245,17 @@ resource "kubernetes_deployment_v1" "satisfactory" {
   }
 }
 
-resource "kubectl_manifest" "satisfactory_vpa" {
+module "satisfactory_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.satisfactory]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "satisfactory"
-    namespace   = kubernetes_namespace_v1.server.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.satisfactory.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "satisfactory", min_memory = "16Gi", max_memory = "28Gi" },
-    ]
-  })
+
+  name        = "satisfactory"
+  namespace   = kubernetes_namespace_v1.server.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.satisfactory.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "satisfactory", min_memory = "16Gi", max_memory = "28Gi" },
+  ]
 }

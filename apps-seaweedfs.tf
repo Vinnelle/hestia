@@ -339,18 +339,19 @@ resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
   }
 }
 
-resource "kubectl_manifest" "seaweedfs_vpa" {
+module "seaweedfs_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.seaweedfs]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "seaweedfs"
-    namespace   = kubernetes_namespace_v1.seaweedfs.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.seaweedfs.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "1Gi" },
-    ]
-  })
+
+  name        = "seaweedfs"
+  namespace   = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.seaweedfs.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "1Gi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "seaweedfs" {

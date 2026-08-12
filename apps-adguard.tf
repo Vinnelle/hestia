@@ -347,19 +347,20 @@ resource "kubernetes_pod_disruption_budget_v1" "adguard" {
   }
 }
 
-resource "kubectl_manifest" "adguard_vpa" {
+module "adguard_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_stateful_set_v1.adguard]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "adguard"
-    namespace   = kubernetes_namespace_v1.adguard.metadata[0].name
-    target_kind = "StatefulSet"
-    target_name = kubernetes_stateful_set_v1.adguard.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "adguard", min_memory = "64Mi", max_memory = "512Mi" },
-      { container_name = "netbird", min_memory = "16Mi", max_memory = "128Mi" },
-    ]
-  })
+
+  name        = "adguard"
+  namespace   = kubernetes_namespace_v1.adguard.metadata[0].name
+  target_kind = "StatefulSet"
+  target_name = kubernetes_stateful_set_v1.adguard.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "adguard", min_memory = "64Mi", max_memory = "512Mi" },
+    { container_name = "netbird", min_memory = "16Mi", max_memory = "128Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "adguard" {

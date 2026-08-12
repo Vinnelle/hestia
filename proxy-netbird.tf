@@ -48,6 +48,17 @@ resource "netbird_group" "adguard" {
   peers      = [for ordinal in sort(keys(data.netbird_peer.adguard)) : data.netbird_peer.adguard[ordinal].id]
 }
 
+data "netbird_peer" "tv_1" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "tv-1"
+}
+
+resource "netbird_group" "iot" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "IoT"
+  peers      = [data.netbird_peer.tv_1.id]
+}
+
 resource "netbird_policy" "devices_dns_udp_to_services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "devices-dns-udp-to-services"

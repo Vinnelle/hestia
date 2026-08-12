@@ -292,18 +292,19 @@ resource "kubernetes_secret_v1" "velero_ui_secrets" {
   }
 }
 
-resource "kubectl_manifest" "velero_ui_vpa" {
+module "velero_ui_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.velero_ui]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "velero-ui"
-    namespace   = kubernetes_namespace_v1.velero.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.velero_ui.metadata[0].name
-    update_mode = "Auto"
-    container_policies = [
-      { container_name = "velero-ui", min_memory = "64Mi", max_memory = "256Mi" },
-    ]
-  })
+
+  name        = "velero-ui"
+  namespace   = kubernetes_namespace_v1.velero.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.velero_ui.metadata[0].name
+  update_mode = "Auto"
+  container_policies = [
+    { container_name = "velero-ui", min_memory = "64Mi", max_memory = "256Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "velero_ui" {

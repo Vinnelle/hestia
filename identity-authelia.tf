@@ -222,18 +222,19 @@ resource "kubernetes_deployment_v1" "authelia" {
   }
 }
 
-resource "kubectl_manifest" "authelia_vpa" {
+module "authelia_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.authelia]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "authelia"
-    namespace   = kubernetes_namespace_v1.services.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.authelia.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "authelia", min_memory = "64Mi", max_memory = "256Mi" },
-    ]
-  })
+
+  name        = "authelia"
+  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.authelia.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "authelia", min_memory = "64Mi", max_memory = "256Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "authelia" {

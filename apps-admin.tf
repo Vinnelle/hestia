@@ -268,18 +268,19 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   }
 }
 
-resource "kubectl_manifest" "vinnel_cloud_admin_vpa" {
+module "vinnel_cloud_admin_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.vinnel_cloud_admin]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "vinnel-cloud-admin"
-    namespace   = kubernetes_namespace_v1.websites.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.vinnel_cloud_admin.metadata[0].name
-    update_mode = "Auto"
-    container_policies = [
-      { container_name = "admin", min_memory = "32Mi", max_memory = "128Mi" },
-    ]
-  })
+
+  name        = "vinnel-cloud-admin"
+  namespace   = kubernetes_namespace_v1.websites.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.vinnel_cloud_admin.metadata[0].name
+  update_mode = "Auto"
+  container_policies = [
+    { container_name = "admin", min_memory = "32Mi", max_memory = "128Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "vinnel_cloud_admin" {

@@ -145,18 +145,19 @@ resource "kubernetes_deployment_v1" "netbird_management" {
   }
 }
 
-resource "kubectl_manifest" "netbird_management_vpa" {
+module "netbird_management_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.netbird_management]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "netbird-management"
-    namespace   = kubernetes_namespace_v1.services.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.netbird_management.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "management", min_memory = "64Mi", max_memory = "256Mi" },
-    ]
-  })
+
+  name        = "netbird-management"
+  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.netbird_management.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "management", min_memory = "64Mi", max_memory = "256Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "netbird_management" {

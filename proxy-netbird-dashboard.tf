@@ -138,18 +138,19 @@ resource "kubernetes_deployment_v1" "netbird_dashboard" {
   }
 }
 
-resource "kubectl_manifest" "netbird_dashboard_vpa" {
+module "netbird_dashboard_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.netbird_dashboard]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "netbird-dashboard"
-    namespace   = kubernetes_namespace_v1.services.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.netbird_dashboard.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "dashboard", min_memory = "32Mi", max_memory = "128Mi" },
-    ]
-  })
+
+  name        = "netbird-dashboard"
+  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.netbird_dashboard.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "dashboard", min_memory = "32Mi", max_memory = "128Mi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "netbird_dashboard" {

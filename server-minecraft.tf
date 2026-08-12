@@ -296,16 +296,17 @@ resource "kubernetes_deployment_v1" "minecraft" {
   }
 }
 
-resource "kubectl_manifest" "minecraft_vpa" {
+module "minecraft_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.minecraft]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "minecraft"
-    namespace   = kubernetes_namespace_v1.server.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.minecraft.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "minecraft", min_memory = "18Gi", max_memory = "20Gi" },
-    ]
-  })
+
+  name        = "minecraft"
+  namespace   = kubernetes_namespace_v1.server.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.minecraft.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "minecraft", min_memory = "18Gi", max_memory = "20Gi" },
+  ]
 }

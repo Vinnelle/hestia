@@ -258,18 +258,19 @@ resource "kubernetes_deployment_v1" "gitlab" {
   }
 }
 
-resource "kubectl_manifest" "gitlab_vpa" {
+module "gitlab_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "gitlab"
-    namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.gitlab.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "gitlab", min_memory = "4Gi", max_memory = "20Gi" },
-    ]
-  })
+
+  name        = "gitlab"
+  namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.gitlab.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "gitlab", min_memory = "4Gi", max_memory = "20Gi" },
+  ]
 }
 
 resource "kubernetes_service_v1" "gitlab" {
@@ -523,18 +524,19 @@ resource "kubernetes_deployment_v1" "gitlab_runner" {
   }
 }
 
-resource "kubectl_manifest" "gitlab_runner_vpa" {
+module "gitlab_runner_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab_runner]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "gitlab-runner"
-    namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.gitlab_runner.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
-    ]
-  })
+
+  name        = "gitlab-runner"
+  namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.gitlab_runner.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
+  ]
 }
 
 # --- Second runner: privileged, image builds only ---
@@ -643,18 +645,19 @@ resource "kubernetes_deployment_v1" "gitlab_runner_privileged" {
   }
 }
 
-resource "kubectl_manifest" "gitlab_runner_privileged_vpa" {
+module "gitlab_runner_privileged_vpa" {
+  source = "./modules/vpa"
+
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab_runner_privileged]
-  yaml_body = templatefile("${path.module}/manifests/vpa/vpa.yaml.tftpl", {
-    name        = "gitlab-runner-privileged-build"
-    namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
-    target_kind = "Deployment"
-    target_name = kubernetes_deployment_v1.gitlab_runner_privileged.metadata[0].name
-    update_mode = "Initial"
-    container_policies = [
-      { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
-    ]
-  })
+
+  name        = "gitlab-runner-privileged-build"
+  namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.gitlab_runner_privileged.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "gitlab-runner", min_memory = "64Mi", max_memory = "512Mi" },
+  ]
 }
 
 # --- Phase C: git migration + outbound mirrors ---
