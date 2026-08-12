@@ -138,7 +138,7 @@ resource "kubernetes_deployment_v1" "local_path_provisioner" {
 
         container {
           name              = "local-path-provisioner"
-          image             = "docker.io/rancher/local-path-provisioner:v0.0.36"
+          image             = "docker.io/rancher/local-path-provisioner:v0.0.37"
           image_pull_policy = "IfNotPresent"
           command           = ["local-path-provisioner", "--debug", "start", "--config", "/etc/config/config.json"]
 

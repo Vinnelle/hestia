@@ -22,7 +22,7 @@ resource "helm_release" "vpa" {
   name       = "vpa"
   repository = "https://charts.fairwinds.com/stable"
   chart      = "vpa"
-  version    = "4.12.4"
+  version    = "4.12.5"
   namespace  = kubernetes_namespace_v1.vpa.metadata[0].name
 
   values = [

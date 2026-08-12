@@ -21,7 +21,7 @@ resource "helm_release" "harbor" {
   name       = "harbor"
   repository = "https://helm.goharbor.io"
   chart      = "harbor"
-  version    = "1.19.1"
+  version    = "1.19.2"
   namespace  = kubernetes_namespace_v1.harbor.metadata[0].name
 
   values = [

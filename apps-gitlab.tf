@@ -189,6 +189,10 @@ resource "kubernetes_deployment_v1" "gitlab" {
             name       = "data"
             mount_path = "/var/opt/gitlab"
           }
+          volume_mount {
+            name       = "dshm"
+            mount_path = "/dev/shm"
+          }
 
           startup_probe {
             http_get {
@@ -235,6 +239,13 @@ resource "kubernetes_deployment_v1" "gitlab" {
           name = "data"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim_v1.gitlab_data.metadata[0].name
+          }
+        }
+        volume {
+          name = "dshm"
+          empty_dir {
+            medium     = "Memory"
+            size_limit = "512Mi"
           }
         }
       }
