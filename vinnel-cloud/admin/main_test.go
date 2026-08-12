@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"html/template"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -63,6 +64,22 @@ func TestRegistryIsConsistentWithCSP(t *testing.T) {
 	}
 	if !strings.Contains(securityHeaders["Content-Security-Policy"], "frame-ancestors 'none'") {
 		t.Error("the portal must not be frameable — it frames every service")
+	}
+}
+
+func TestServicesHaveExactlyOneIconSource(t *testing.T) {
+	for _, s := range portal.Services {
+		if (s.IconURL == "") == (s.Icon == "") {
+			t.Errorf("%s: exactly one of Icon (fallback) or IconURL (real logo) must be set, not both/neither", s.Slug)
+		}
+	}
+}
+
+func TestIndexTemplateRenders(t *testing.T) {
+	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
+	data := pageData{User: "test@example.com", Services: portal.Services, ServiceGroups: portal.Groups()}
+	if err := tmpl.Execute(io.Discard, data); err != nil {
+		t.Fatalf("index.html failed to render: %v", err)
 	}
 }
 
