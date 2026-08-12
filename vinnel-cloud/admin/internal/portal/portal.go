@@ -9,8 +9,8 @@ type Service struct {
 	Desc      string
 	Group     string
 	Frameable bool
-	Icon      template.HTML // fallback inline icon, used only when IconURL is empty
-	IconURL   string        // real logo, pulled from the service's own site
+	Icon      template.HTML
+	IconURL   string
 }
 
 func (s Service) URL() string { return "https://" + s.Host + "/" }
@@ -33,18 +33,15 @@ var groupIcons = map[string]template.HTML{
 	"Platform":      iconBox,
 }
 
-// IconURL is each service's own logo, pulled from its official site (curl-verified
-// 2026-08-12). Shell has no real product/logo to pull — it keeps the generic
-// terminal glyph via Icon instead.
 var Services = []Service{
-	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", "Observability", true, "", "https://signoz.io/static/favicons/favicon-96x96.png"},
-	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", "Observability", true, "", "https://cdn.jsdelivr.net/gh/cilium/hubble@main/Documentation/images/hubble_logo.png"},
-	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", "Network", true, "", "https://st2.adguardcdn.com/favicons/adguard/favicon.svg"},
-	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", "Network", true, "", "https://netbird.io/icon.png"},
-	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", "Storage", true, "", "https://seaweedfs.com/images/seaweed-logo.png"},
-	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", "Storage", true, "", "https://nextcloud.com/c/uploads/2022/03/favicon.png"},
-	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", "Storage", true, "", "https://velero.io/favicon.ico"},
-	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", "Platform", true, "", "https://goharbor.io/favicon.svg"},
+	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Metrics, logs and traces", "Observability", true, "", "/assets/images/services/signoz.png"},
+	{"hubble", "Hubble", "hubble.vinnel.cloud", "Cilium network flows", "Observability", true, "", "/assets/images/services/hubble.png"},
+	{"adguard", "AdGuard", "adguard.vinnel.cloud", "DNS filtering", "Network", true, "", "/assets/images/services/adguard.svg"},
+	{"proxy", "Netbird", "proxy.vinnel.cloud", "Mesh VPN", "Network", true, "", "/assets/images/services/netbird.png"},
+	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", "Storage", true, "", "/assets/images/services/seaweedfs.png"},
+	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", "Storage", true, "", "/assets/images/services/nextcloud.png"},
+	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", "Storage", true, "", "/assets/images/services/velero.ico"},
+	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", "Platform", true, "", "/assets/images/services/harbor.svg"},
 	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", "Platform", true, iconTerminal, ""},
 }
 

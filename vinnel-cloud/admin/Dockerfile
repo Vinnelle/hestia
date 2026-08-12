@@ -13,7 +13,7 @@ COPY shared/html/ .
 COPY admin/html/ .
 COPY --from=images /favicon.webp assets/images/
 
-RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh \
+RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/fetch-service-icons.sh assets/images/services && sh /build/build.sh \
  && find . \( -name '*.gz' -o -name '*.br' \) -delete
 
 FROM registry.vinnel.cloud/dockerhub/library/golang:1.26-alpine@sha256:0178a641fbb4858c5f1b48e34bdaabe0350a330a1b1149aabd498d0699ff5fb2 AS build
