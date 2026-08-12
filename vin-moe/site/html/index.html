@@ -70,7 +70,7 @@
       </div>
       <div>
         <div class="k"># pgp</div>
-        <span class="accent">7871 AE42 DDF5 468C 77A3 CB76 E30B E7D8 F265 3542</span>
+        <button type="button" class="accent pgp-copy">7871 AE42 DDF5 468C 77A3 CB76 E30B E7D8 F265 3542</button>
       </div>
     </div>
   </section>
@@ -304,6 +304,20 @@ for (const b of themeOpts) {
     b.classList.add('pop');
   });
   b.addEventListener('animationend', () => b.classList.remove('pop'));
+}
+
+const pgpBtn = document.querySelector('.pgp-copy');
+if (pgpBtn) {
+  const original = pgpBtn.textContent;
+  pgpBtn.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(original);
+      pgpBtn.textContent = 'copied';
+      pgpBtn.classList.add('pop');
+      setTimeout(() => { pgpBtn.textContent = original; }, 1200);
+    } catch {} // clipboard can be blocked; button still shows the key
+  });
+  pgpBtn.addEventListener('animationend', () => pgpBtn.classList.remove('pop'));
 }
 </script>
 </body>
