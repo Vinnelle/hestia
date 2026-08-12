@@ -100,6 +100,8 @@ h2 { color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing:
   margin-top: 1.25rem;
 }
 .links .k { color: var(--faint); font-size: 0.8rem; margin-bottom: 0.35rem; }
+.accent { color: var(--accent); }
+.links .accent { font-size: 0.82rem; }
 
 .list {
   list-style: none;
