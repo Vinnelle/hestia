@@ -313,7 +313,7 @@ if (pgpBtn) {
   pgpBtn.addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(pgpKey);
-      pgpStatus.textContent = ' copied';
+      pgpStatus.textContent = 'copied';
       pgpBtn.classList.add('pop');
       setTimeout(() => { pgpStatus.textContent = ''; }, 1200);
     } catch {} // clipboard can be blocked; key stays selectable either way
