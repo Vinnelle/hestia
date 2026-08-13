@@ -3,7 +3,7 @@ resource "helm_release" "signoz" {
   name       = "signoz"
   repository = "https://charts.signoz.io"
   chart      = "signoz"
-  version    = "0.135.1"
+  version    = "0.136.1"
   namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
 
   values = [
@@ -15,7 +15,7 @@ resource "helm_release" "k8s_infra" {
   name       = "k8s-infra"
   repository = "https://charts.signoz.io"
   chart      = "k8s-infra"
-  version    = "0.16.0"
+  version    = "0.17.0"
   namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
 
   values = [
