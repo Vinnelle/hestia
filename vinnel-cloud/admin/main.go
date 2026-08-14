@@ -311,6 +311,7 @@ func main() {
 	mux.HandleFunc("POST /api/gameservers/satisfactory/command", commandHandler("satisfactory api", satisfactorySvc.Command))
 
 	mux.HandleFunc("POST /api/gameservers/minecraft/start", scaleHandler("minecraft start", minecraftSvc.Start))
+
 	mux.HandleFunc("POST /api/gameservers/minecraft/stop", scaleHandler("minecraft stop", minecraftSvc.Stop))
 
 	mux.HandleFunc("POST /api/gameservers/satisfactory/start", scaleHandler("satisfactory start", satisfactorySvc.Start))

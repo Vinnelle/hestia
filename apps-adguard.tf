@@ -439,3 +439,4 @@ resource "netbird_nameserver_group" "adguard_devices" {
     }
   ]
 }
+
