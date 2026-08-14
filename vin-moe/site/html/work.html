@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>things i’ve done — vin.moe</title>
+<meta name="description" content="Things Finlay has built, fixed, and improved — at work and on my own. GCP alerting, health-check pipelines, a self-hosted homelab and network.">
+<link rel="canonical" href="https://vin.moe/work">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/jetbrains-mono.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://vin.moe/work">
+<meta property="og:title" content="things i’ve done — vin.moe">
+<meta property="og:description" content="Things Finlay has built, fixed, and improved — at work and on my own.">
+<meta property="og:image" content="https://vin.moe/favicon.png">
+<meta property="og:site_name" content="vin.moe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="things i’ve done — vin.moe">
+<meta name="twitter:description" content="Things Finlay has built, fixed, and improved — at work and on my own.">
+<meta name="twitter:image" content="https://vin.moe/favicon.png">
+</head>
+<body>
+<main class="page">
+  <a class="back" href="/">Finlay</a>
+
+  <header>
+    <h1>things i’ve done</h1>
+    <p class="tagline">built, fixed, and improved — at work and on my own</p>
+  </header>
+
+  <div class="label"># work</div>
+  <ul class="list">
+    <li>Custom alerting for RHEL servers on GCE, targeting LDAP/S authentication failures.</li>
+    <li>Reworked the platform health-check pipelines: 58s faster, 200 fewer lines, wired into GCP SLOs.</li>
+    <li>Observability SME for the department.</li>
+  </ul>
+
+  <div class="label"># personal</div>
+  <ul class="list last">
+    <li>Ran a fully code-managed GCP stack before moving to dedicated hardware.</li>
+    <li>Migrated off GCP to self-hosted, with minimal downtime.</li>
+    <li>Every service on the server sits behind SSO, a mesh VPN, or both.</li>
+    <li>Built and maintain a homelab and Ubiquiti network — servers, storage arrays, switches, WAPs, gateways, a UPS, a firewall, and a Pi running network analysis, SIEM, ad-blocking and DNS.</li>
+  </ul>
+
+  <div class="more">
+    <a href="/runs">how this site runs</a>
+  </div>
+
+  <footer>
+    <span>vin.moe</span>
+    <div class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
+    </div>
+  </footer>
+</main>
+
+<script>
+const root = document.documentElement;
+const themeOpts = [...document.querySelectorAll('.theme-opt')];
+const syncTheme = () => {
+  const active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  for (const b of themeOpts) b.setAttribute('aria-pressed', b.dataset.themeChoice === active);
+};
+syncTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme);
+
+for (const b of themeOpts) {
+  b.addEventListener('click', () => {
+    root.dataset.theme = b.dataset.themeChoice;
+    try { localStorage.theme = b.dataset.themeChoice; } catch {}
+    syncTheme();
+    b.classList.add('pop');
+  });
+  b.addEventListener('animationend', () => b.classList.remove('pop'));
+}
+</script>
+</body>
+</html>

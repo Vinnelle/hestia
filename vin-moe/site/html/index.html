@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Finlay — vin.moe</title>
-<meta name="description" content="Finlay — infrastructure, DevOps, and software. Notes on running a Talos/Kubernetes homelab, GCP observability work, and how this site itself is built and deployed.">
+<meta name="description" content="Finlay — infrastructure, DevOps, and software. Infrastructure engineer working on GCP observability, running a Talos/Kubernetes homelab.">
 <link rel="canonical" href="https://vin.moe/">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
@@ -39,209 +39,33 @@
 </script>
 </head>
 <body>
-<main>
+<main class="card">
   <header>
     <h1>Finlay</h1>
     <p class="tagline">infrastructure &middot; devops &middot; software</p>
   </header>
 
-  <nav role="tablist" aria-label="Sections">
-    <button class="tab" role="tab" id="tab-about" aria-selected="true" aria-controls="about" data-tab="about">about</button>
-    <span class="sep" aria-hidden="true">/</span>
-    <button class="tab" role="tab" id="tab-work" aria-selected="false" aria-controls="work" tabindex="-1" data-tab="work">things i’ve done</button>
-    <span class="sep" aria-hidden="true">/</span>
-    <button class="tab" role="tab" id="tab-runs" aria-selected="false" aria-controls="runs" tabindex="-1" data-tab="runs">how this site runs</button>
-  </nav>
+  <h2 class="sec">contact</h2>
+  <dl class="gutter">
+    <dt>github</dt>
+    <dd><a href="https://tr.ee/vin">tr.ee/vin</a></dd>
+    <dt>email</dt>
+    <dd><a href="mailto:a@vin.moe">a@vin.moe</a></dd>
+    <dt class="wide">pgp</dt>
+    <dd class="wide"><button type="button" class="pgp-copy"><span class="pgp-key">7871 AE42 DDF5 468C 77A3 CB76 E30B E7D8 F265 3542</span><span class="pgp-status" aria-live="polite"></span></button></dd>
+  </dl>
 
-  <section class="panel active" id="about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
-    <p class="lead">Hello, my name is Finlay.</p>
-    <p class="muted">I’ve been working with computers since I was 11 — game mods, QoL tools, operating systems, and whatever else looked interesting at the time.</p>
-    <p class="muted">Now an infrastructure engineer at a large financial institution, working on GCP. I’m the observability SME for the department, and the person people come to when something needs building.</p>
-    <p class="lead">Looking forward to seeing how far this goes.</p>
+  <h2 class="sec">about</h2>
+  <p class="muted">I’ve been working with computers since I was 11 — game mods, QoL tools, operating systems, and whatever else looked interesting at the time.</p>
+  <p class="muted">Now an infrastructure engineer at a large financial institution, working on GCP. I’m the observability SME for the department, and the person people come to when something needs building.</p>
+  <p class="lead">Looking forward to seeing how far this goes.</p>
 
-    <div class="links">
-      <div>
-        <div class="k"># github</div>
-        <a href="https://tr.ee/vin">tr.ee/vin</a>
-      </div>
-      <div>
-        <div class="k"># email</div>
-        <a href="mailto:a@vin.moe">a@vin.moe</a>
-      </div>
-      <div>
-        <div class="k"># pgp</div>
-        <button type="button" class="accent pgp-copy"><span class="pgp-key">7871 AE42 DDF5 468C 77A3 CB76 E30B E7D8 F265 3542</span><span class="pgp-status" aria-live="polite"></span></button>
-      </div>
-    </div>
-  </section>
-
-  <section class="panel" id="work" role="tabpanel" aria-labelledby="tab-work" tabindex="0">
-    <p class="muted" style="margin-bottom:2.2rem;">Things I’ve built, fixed, and improved — at work and on my own.</p>
-
-    <div class="label"># work</div>
-    <ul class="list">
-      <li>Custom alerting for RHEL servers on GCE, targeting LDAP/S authentication failures.</li>
-      <li>Reworked the platform health-check pipelines: 58s faster, 200 fewer lines, wired into GCP SLOs.</li>
-      <li>Observability SME for the department.</li>
-    </ul>
-
-    <div class="label"># personal</div>
-    <ul class="list last">
-      <li>Ran a fully code-managed GCP stack before moving to dedicated hardware.</li>
-      <li>Migrated off GCP to self-hosted, with minimal downtime.</li>
-      <li>Every service on the server sits behind SSO, a mesh VPN, or both.</li>
-      <li>Built and maintain a homelab and Ubiquiti network — servers, storage arrays, switches, WAPs, gateways, a UPS, a firewall, and a Pi running network analysis, SIEM, ad-blocking and DNS.</li>
-    </ul>
-  </section>
-
-  <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
-    <p class="muted">Node config, cluster, CNI, storage, ingress, TLS, DNS, registry, this image’s build and this Deployment’s spec: all Terraform, ~6k lines of it, applied by self-hosted runners against an HCP Terraform workspace. The repo is canonical — nothing gets changed by hand against the cluster.</p>
-    <p class="lead">Push to merge, live in ~44 seconds.</p>
-    <p class="dim">one node &middot; no shell on it &middot; no managed Kubernetes &middot; no load balancer &middot; every image, Action and provider pinned by digest</p>
-    <p class="dim" style="margin-bottom:0.4rem;"><em>AI wrote the HTML/CSS on this page. I do infrastructure, not frontend.</em></p>
-
-    <h2 style="margin-top:2.2rem;">platform</h2>
-    <ol class="topics">
-      <li>
-        <h3>the node</h3>
-        <p>Talos Linux on dedicated hardware. No shell, no SSH, no package manager — every change is a declarative machine config applied over an mTLS API. Ephemeral and state partitions are LUKS2. Boot media comes from an Image Factory schematic pinned by content hash, and the installer image has to be that same schematic; point it at the stock one and Talos drops every extension at disk-write time.</p>
-      </li>
-      <li>
-        <h3>cluster</h3>
-        <p>One node, control plane and worker (allowSchedulingOnControlPlanes). Terraform generates the machine secrets, applies the config, bootstraps etcd, and holds the resulting kubeconfig in state.</p>
-      </li>
-      <li>
-        <h3>network</h3>
-        <p>Cilium as CNI, enforcing NetworkPolicy in eBPF, with identity-based policy on top — a rule can select the node's own host identity, something a CIDR ipBlock can never match. Hubble's flow UI sits behind SSO.</p>
-      </li>
-      <li>
-        <h3>storage</h3>
-        <p>local-path, the only class on the cluster — host-path volumes provisioned per pod, which is what a single-node box actually has to offer. No separate replicated pool: on one node there's no second fault domain for replication to buy anything.</p>
-      </li>
-      <li>
-        <h3>ingress &amp; tls</h3>
-        <p>ingress-nginx as a DaemonSet on hostNetwork, bound to the node’s public IP. No load balancer. Per-domain cert-manager ClusterIssuers solve DNS-01 against Cloudflare, and every zone is strict SSL, so TLS is independently valid on both hops: browser→edge and edge→origin.</p>
-      </li>
-      <li>
-        <h3>registry</h3>
-        <p>Self-hosted Harbor on the same cluster, one project per site. Pushes and pulls go through a robot account whose password is a Terraform random_password — generated, never typed — mounted as an imagePullSecret.</p>
-      </li>
-    </ol>
-
-    <h2>the site</h2>
-    <ol class="topics">
-      <li>
-        <h3>the image</h3>
-        <p>Four build stages, every base pinned by sha256. One rasterizes the source PNG into a multi-resolution .ico and an apple-touch icon. One compiles ngx_brotli against the exact nginx version of the base image, since upstream ships no compatible release. One builds the assets. The last is nginx-unprivileged, running non-root.</p>
-      </li>
-      <li>
-        <h3>assets</h3>
-        <p>The webfont is fetched at build time and self-hosted, so nothing third-party loads at runtime and the CSP stays default-src 'self'. CSS and JS are minified, renamed to include a hash of their own contents, and every reference rewritten to match — that's what the one-year immutable cache header is keyed against. Everything text-shaped is pre-compressed once: gzip -9, brotli -q 11.</p>
-      </li>
-      <li>
-        <h3>serving</h3>
-        <p>nginx serves those pre-compressed files directly, so the runtime never spends a cycle compressing per request. Hashed assets get immutable cache headers and open_file_cache keeps hot descriptors around. Every response carries HSTS, CSP, nosniff, frame and referrer policy. /healthz is plaintext for the probes; .html URLs redirect to their extensionless form.</p>
-      </li>
-      <li>
-        <h3>the page itself</h3>
-        <p>No framework, no bundler, no runtime dependency. One document with its CSS and JS inlined; the font is the only other request. Themes are one palette through light-dark(), so the toggle flips a single property. The numbers here are a CSS counter. Tabs are an ARIA tablist with arrow-key navigation, deep-linkable by fragment, animated by the View Transitions API where it exists and plain where it doesn't. With JS off, the nav hides and every panel renders.</p>
-      </li>
-      <li>
-        <h3>deployment</h3>
-        <p>Two replicas behind a ClusterIP Service. 50m/16Mi requested, 200m/64Mi limit. Non-root, every capability dropped, no privilege escalation, RuntimeDefault seccomp. Startup, readiness and liveness probes hit /healthz. Rollouts surge to 100% with zero unavailable plus a pre-stop drain, a PodDisruptionBudget keeps one replica serving, and a VerticalPodAutoscaler tunes memory inside that band.</p>
-      </li>
-      <li>
-        <h3>dns &amp; cdn</h3>
-        <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic ever reaches the origin — only Cloudflare needs to see its cert. A Terraform-managed cache ruleset caches everything on this hostname, HTML included, so most requests never reach the cluster.</p>
-      </li>
-      <li>
-        <h3>mirror</h3>
-        <p>After a successful deploy, a job rsyncs the site source and its workflow to a public GitHub repo through a scoped token, committing only if something changed. Private monorepo to build from, public mirror to read.</p>
-      </li>
-    </ol>
-
-    <h2>hardening</h2>
-    <ol class="topics">
-      <li>
-        <h3>the front door</h3>
-        <p>Talos host firewall, default deny. 80/443 accept only Cloudflare’s published edge ranges, so scans against the origin IP are dropped before nginx sees them. The Kubernetes and Talos APIs stay world-reachable on purpose: both are certificate-gated with no password surface, CI and Terraform have no pinnable egress IPs, and the Talos API is the recovery path for the firewall itself.</p>
-      </li>
-      <li>
-        <h3>defense in depth</h3>
-        <p>Admin surfaces sit behind Authelia 2FA. The dev box is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets are Terraform-generated and live in state, never the repo. CI authenticates with a token scoped to patching Deployments in one namespace. Workloads run under Pod Security Standards; the exception is the runner pods, which need privileged for docker-in-docker, so a Cilium policy limits their egress to DNS and the internet and blocks pod-to-pod reach into every other namespace.</p>
-      </li>
-      <li>
-        <h3>supply chain</h3>
-        <p>Base images and Terraform providers are pinned by digest or lockfile, so a moved tag can’t change what ships. Every push runs go vet and tests, shellcheck, yamllint, and gitleaks over full history; terraform fmt and tflint run in front of the plan they gate. Trivy scans the runner image on a schedule and anything critical or high triggers a rebuild. Renovate raises the version bumps, grouped so a dozen digest bumps arrive as one reviewable merge request instead of a dozen pipelines, and majors wait for a human.</p>
-      </li>
-    </ol>
-
-    <h2>observability</h2>
-    <ol class="topics">
-      <li>
-        <h3>signoz</h3>
-        <p>One ClickHouse-backed stack for metrics, logs and traces. An OpenTelemetry collector discovers targets by pod annotation, so a new workload becomes observable by adding two labels, with no scrape config to edit. ingress-nginx exports OTLP spans, so a slow request and the logs behind it are one trace.</p>
-      </li>
-      <li>
-        <h3>alerting</h3>
-        <p>Alert rules are Terraform resources, not clicks in a UI: backup failure, node NotReady, PVC over 85%, certificate under 14 days, workload below desired replicas. They fan out to self-hosted ntfy and to Slack, renotifying every 4h while still firing. Dashboards go through the same API. A single node that stops answering also stops alerting — that failure mode has to be caught from outside the cluster, not by anything running on it.</p>
-      </li>
-      <li>
-        <h3>chaos &amp; recovery</h3>
-        <p>Chaos Mesh kills a random site pod every 30 minutes and stresses one hourly, exercising the disruption budget and probes above against real failures rather than assumptions. Scoped to the websites namespace only — never auth, the mesh, or the alerting meant to catch it. restic snapshots the volumes nightly, encrypted and deduplicated client-side so object storage holds only ciphertext, on 7-day rolling retention with an integrity check each run.</p>
-      </li>
-    </ol>
-
-    <h2>ci/cd runners</h2>
-    <ol class="topics">
-      <li>
-        <h3>gitlab runner, kubernetes executor</h3>
-        <p>Two gitlab-runner Deployments live in-cluster, both the Kubernetes executor, no shared docker socket: a general runner (concurrent 4, untagged jobs land here) and a second runner that only picks up jobs tagged privileged-build, so an ordinary lint or test job can never land on a pod carrying privileged: true. Each job gets its own pod built from whatever image it declares — no dind, no daemon surviving between jobs to leak state. Runner config is a Secret; a config-hash pod annotation restarts the Deployment the moment it changes.</p>
-      </li>
-      <li>
-        <h3>the runner image</h3>
-        <p>Custom image on the stock actions-runner base with the toolchain pre-baked — docker, gh, jq, rsync, kubectl, tflint, actionlint, build-essential — so jobs stop apt-get installing the same packages every run. Pods pull it on every start rather than trusting a cached tag: with one node and a mutable :latest, the kubelet otherwise keeps the first copy it ever saw and silently ignores every rebuild, including the ones the vulnerability scan triggers. That makes the tag load-bearing, so a rebuild is smoke-tested — every baked binary actually runs — before it is allowed to become :latest. A broken runner image takes CI down and CI cannot fix it.</p>
-      </li>
-      <li>
-        <h3>registry access from runner pods</h3>
-        <p>registry.vinnel.cloud stays Cloudflare-proxied for public traffic, but the proxy caps request bodies below this image’s own base layer. The hostAliases entry routing straight to the node’s ingress lives on the runner’s own executor config, not the job — every job pod inherits it regardless of which image it declares, paired with a firewall rule opening the web ports to the pod network. BuildKit and kubectl end up resolving the same hostname the same way, from the same pod.</p>
-      </li>
-    </ol>
-
-    <h2>deploying vin.moe</h2>
-    <ol class="topics">
-      <li>
-        <h3>prove it builds</h3>
-        <p>A merge request touching a site runs the shared build-script test suite: the asset-hashing and cache-busting logic every site’s build.sh has in common gets exercised against a synthetic page, so a change to that shared logic is provable without touching the registry. Nothing else starts: the infrastructure plan skips the paths Terraform demonstrably never reads, so editing HTML no longer queues an apply on the one node that also serves the page.</p>
-      </li>
-      <li>
-        <h3>build &amp; pin the digest</h3>
-        <p>buildctl pushes :latest and the commit SHA against a registry-hosted layer cache, so unchanged stages — the compiled nginx module included — are pulled, not rebuilt. The sha256 digest it returns, not the mutable tag, is merged into a shared image manifest and committed by the job that built it. On a push race the retry re-merges onto whatever landed first rather than replaying a fixed commit: sites deploying at once write neighbouring lines of the same JSON file, and a rebase would hit the identical conflict on every attempt until it gave up.</p>
-      </li>
-      <li>
-        <h3>roll out &amp; purge</h3>
-        <p>The rollout reads the digest back out of git at the remote tip — deploy what was recorded, not what a job variable remembered. Then kubectl set image to that exact digest and wait on rollout status. Cloudflare’s cache is purged only once the new pods are serving — purge first and the CDN re-caches the build on its way out.</p>
-      </li>
-      <li>
-        <h3>reconcile &amp; mirror</h3>
-        <p>Terraform apply only needs the digest-recording step, not the rollout — both read the same committed image manifest, so the imperative kubectl rollout and the declarative apply converge on the identical reference no matter which finishes first. Commits authored by CI push with the project’s job token, which GitLab excludes from triggering a new pipeline by default; a [skip ci] marker on the commit is belt-and-braces, in case that credential ever changes. The public mirror syncs last.</p>
-      </li>
-    </ol>
-
-    <div class="links" style="margin-top:0.2rem;">
-      <div>
-        <div class="k"># site source</div>
-        <a href="https://github.com/Vinnelle/vin.moe">github.com/Vinnelle/vin.moe</a>
-      </div>
-      <div>
-        <div class="k"># infra source</div>
-        <a href="https://github.com/Vinnelle/hestia">github.com/Vinnelle/hestia</a>
-      </div>
-    </div>
-  </section>
+  <div class="more">
+    <a href="/work">things i’ve done</a>
+    <a href="/runs">how this site runs</a>
+  </div>
 
   <footer>
-    <span>vin.moe</span>
     <div class="theme-toggle" role="group" aria-label="Theme">
       <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
       <span class="sep" aria-hidden="true">/</span>
@@ -252,42 +76,6 @@
 
 <script>
 const root = document.documentElement;
-const tabs = [...document.querySelectorAll('.tab')];
-const panels = [...document.querySelectorAll('.panel')];
-
-const render = (tab) => {
-  for (const t of tabs) {
-    const on = t === tab;
-    t.setAttribute('aria-selected', on);
-    t.tabIndex = on ? 0 : -1;
-  }
-  for (const p of panels) p.classList.toggle('active', p.id === tab.dataset.tab);
-};
-
-const show = (tab, { focus = false } = {}) => {
-  if (!tab || tab.getAttribute('aria-selected') === 'true') return;
-  const name = tab.dataset.tab;
-  history.replaceState(null, '', name === 'about' ? location.pathname + location.search : '#' + name);
-  document.startViewTransition ? document.startViewTransition(() => render(tab)) : render(tab);
-  if (focus) tab.focus();
-};
-
-const byName = (name) => tabs.find((t) => t.dataset.tab === name);
-
-document.querySelector('nav').addEventListener('click', (e) => show(e.target.closest('.tab')));
-
-document.querySelector('nav').addEventListener('keydown', (e) => {
-  const i = tabs.indexOf(e.target);
-  if (i < 0) return;
-  const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
-  if (next === undefined) return;
-  e.preventDefault();
-  show(tabs[(next + tabs.length) % tabs.length], { focus: true });
-});
-
-addEventListener('hashchange', () => show(byName(location.hash.slice(1))));
-if (location.hash) show(byName(location.hash.slice(1)));
-
 const themeOpts = [...document.querySelectorAll('.theme-opt')];
 const syncTheme = () => {
   const active = root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -299,7 +87,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncTheme)
 for (const b of themeOpts) {
   b.addEventListener('click', () => {
     root.dataset.theme = b.dataset.themeChoice;
-    try { localStorage.theme = b.dataset.themeChoice; } catch {} // storage can be blocked; the toggle still works
+    try { localStorage.theme = b.dataset.themeChoice; } catch {}
     syncTheme();
     b.classList.add('pop');
   });
@@ -316,7 +104,7 @@ if (pgpBtn) {
       pgpStatus.textContent = 'copied';
       pgpBtn.classList.add('copied');
       setTimeout(() => { pgpBtn.classList.remove('copied'); }, 1200);
-    } catch {} // clipboard can be blocked; key stays selectable either way
+    } catch {}
   });
 }
 </script>
