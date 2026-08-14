@@ -10,6 +10,8 @@
   --border:        light-dark(#e6e0d8, #1e1e1f);
   --accent:        light-dark(#b3466b, #f7b9d1);
   --accent-strong: light-dark(#8f3355, #fbd3e2);
+  --accent2:       light-dark(#2f7a6e, #7fd9c4);
+  --accent2-strong:light-dark(#1f5f53, #b3ecd9);
   --select-bg:     light-dark(rgb(179 70 107 / 0.18), rgb(247 185 209 / 0.25));
   --select-fg:     light-dark(#161514, #fff);
 }
@@ -30,6 +32,19 @@ body {
   overflow-wrap: break-word;
   word-break: break-word;
   transition: background-color 0.2s ease, color 0.2s ease;
+  position: relative;
+}
+/* duotone glow + grain: fixed, behind content, purely decorative */
+body::before, body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+body::before {
+  background:
+    radial-gradient(560px 320px at 38% 0%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%),
+    radial-gradient(560px 320px at 68% 0%, color-mix(in oklab, var(--accent2) 10%, transparent), transparent 70%);
+}
+body::after {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.035;
+  mix-blend-mode: overlay;
 }
 ::selection { background: var(--select-bg); color: var(--select-fg); }
 a {
@@ -41,7 +56,15 @@ main { max-width: 680px; width: 100%; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 
 header { margin-bottom: 2.4rem; animation: enter 420ms ease-out both; }
-h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0.01em; color: var(--fg-strong); margin: 0 0 0.3rem; text-wrap: balance; }
+h1 { font-size: 1.65rem; font-weight: 700; letter-spacing: 0.01em; color: var(--fg-strong); margin: 0 0 0.3rem; text-wrap: balance; }
+@supports (background-clip: text) or (-webkit-background-clip: text) {
+  h1 {
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
 .tagline { margin: 0; color: var(--dim); font-size: 0.9rem; }
 
 nav {
@@ -89,7 +112,7 @@ p { line-height: 1.75; margin: 0 0 1.15rem; text-wrap: pretty; }
 .dim { color: var(--dim); font-size: 0.9rem; }
 .label { color: var(--faint); font-size: 0.8rem; margin-bottom: 0.2rem; }
 
-h2 { color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin: 2.8rem 0 0.6rem; }
+h2 { color: var(--accent2); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; margin: 2.8rem 0 0.6rem; }
 
 .links {
   border-top: 1px solid var(--border);
@@ -137,25 +160,56 @@ h2 { color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing:
 .list li::before { content: "–"; color: var(--fainter); }
 .list li:hover { transform: translateX(3px); }
 
+.group {
+  border-top: 1px solid var(--border);
+  transition: background-color 0.15s ease;
+}
+.group summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.2rem 0.6rem;
+  margin: 0 -0.6rem;
+  border-radius: 6px;
+}
+.group summary::-webkit-details-marker { display: none; }
+.group summary h2 { margin: 0; }
+.group summary::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-left: auto;
+  border-right: 1.5px solid var(--accent2);
+  border-bottom: 1.5px solid var(--accent2);
+  transform: rotate(-45deg);
+  transition: transform 180ms ease;
+}
+.group[open] summary::after { transform: rotate(45deg); }
+.group[open] { background: color-mix(in oklab, var(--accent2) 5%, transparent); border-radius: 8px; }
+
 .topics {
   list-style: none;
-  padding: 0;
+  padding: 0 0.6rem 1.3rem;
   margin: 0;
+  counter-reset: topic;
 }
 .topics li {
   border-top: 1px solid var(--border);
   padding: 1.4rem 0;
 }
+.topics li:first-child { border-top: none; }
 .topics li::before {
   counter-increment: topic;
   content: counter(topic, decimal-leading-zero);
-  color: var(--fainter);
+  color: var(--accent2);
+  font-weight: 700;
   font-size: 0.85rem;
   margin-right: 0.7rem;
 }
 .topics h3 { display: inline; font-size: 0.95rem; font-weight: 700; color: var(--fg-strong); margin: 0; }
 .topics p { color: var(--muted); font-size: 0.92rem; margin: 0.55rem 0 0; }
-#runs { counter-reset: topic; }
 
 footer {
   margin-top: 3rem;
