@@ -1,0 +1,96 @@
+.lint_changes: &lint_changes
+  - "**/*.sh"
+  - "**/*.js"
+  - "**/*.yaml"
+  - "hestia/tests/site-build/**/*"
+
+.go_changes: &go_changes
+  - "**/*.go"
+  - "**/go.mod"
+  - "**/go.sum"
+
+.terraform_test_changes: &terraform_test_changes
+  - "hestia/**/*.tf"
+  - "hestia/**/*.tftpl"
+  - "hestia/.terraform.lock.hcl"
+  - "hestia/tests/**/*.tftest.hcl"
+
+lint:
+  stage: validate
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: *lint_changes
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *lint_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "validate"'
+  script:
+    - git ls-files '*.sh' | xargs -r shellcheck -S warning
+    - git ls-files '*.js' | xargs -r -n1 node --check
+    - bash hestia/tests/site-build/test.sh
+    - git ls-files '*.yaml' | xargs -r yamllint -d relaxed
+
+go:
+  stage: validate
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: *go_changes
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *go_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "validate"'
+  before_script:
+    - curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tar.gz
+    - tar -C /tmp -xzf /tmp/go.tar.gz
+    - export PATH="/tmp/go/bin:${PATH}"
+  script:
+    - |
+      for mod in $(git ls-files '*go.mod'); do
+        dir=$(dirname "$mod")
+        echo "== $dir =="
+        (
+          cd "$dir"
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "gofmt needed in $dir: $unformatted"
+            exit 1
+          fi
+          go vet ./...
+          go test ./...
+        )
+      done
+
+terraform_test:
+  stage: validate
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: *terraform_test_changes
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *terraform_test_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "validate"'
+  before_script:
+    - !reference [.terraform_install, script]
+  script:
+    - |
+      for dir in $(find hestia/tests -name '*.tftest.hcl' -printf '%h\n' | sort -u); do
+        echo "== $dir =="
+        terraform -chdir="$dir" init -input=false
+        terraform -chdir="$dir" test
+      done
+
+secrets_scan:
+  stage: validate
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "validate"'
+  before_script:
+    - mkdir -p /tmp/bin
+    - curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o /tmp/gitleaks.tar.gz
+    - tar -C /tmp/bin -xzf /tmp/gitleaks.tar.gz gitleaks
+    - export PATH="/tmp/bin:${PATH}"
+  script:
+    - sleep 10
+    - gitleaks git -v --no-banner .

@@ -1,0 +1,196 @@
+.site_build:
+  stage: build
+  tags: ["privileged-build"]
+  image:
+    name: moby/buildkit:v${BUILDKIT_VERSION}
+    entrypoint: [""]
+  before_script:
+    - apk add --no-cache jq curl
+    - mkdir -p ~/.docker
+    - printf '{"auths":{"registry.vinnel.cloud":{"auth":"%s"}}}' "$HARBOR_AUTH_B64" > ~/.docker/config.json
+  script:
+    - |
+      buildctl-daemonless.sh build \
+        --frontend dockerfile.v0 \
+        --local context=${SITE_CONTEXT} \
+        --local dockerfile=${SITE_DOCKERFILE} \
+        --opt label:org.opencontainers.image.source=https://gitlab.vinnel.cloud/vinnel-cloud/gaia \
+        --opt label:org.opencontainers.image.revision=${CI_COMMIT_SHA} \
+        --import-cache type=registry,ref=registry.vinnel.cloud/${SITE_IMAGE}:buildcache \
+        --export-cache type=registry,ref=registry.vinnel.cloud/${SITE_IMAGE}:buildcache,mode=max \
+        --metadata-file /tmp/meta.json \
+        --output "type=image,\"name=registry.vinnel.cloud/${SITE_IMAGE}:${CI_COMMIT_SHA},registry.vinnel.cloud/${SITE_IMAGE}:latest\",push=true"
+      digest=$(jq -r '.["containerimage.digest"]' /tmp/meta.json)
+      sh .gitlab-ci/scripts/record-image-digest.sh "${SITE_DEPLOYMENT}" "registry.vinnel.cloud/${SITE_IMAGE}@${digest}"
+
+.site_deploy:
+  stage: deploy
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  before_script:
+    - mkdir -p ~/.kube
+    - cp "$SITE_DEPLOY_KUBECONFIG" ~/.kube/config
+
+.site_changes_vin_moe: &site_changes_vin_moe
+  - "hestia/vin-moe/site/**/*"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/site-deploy.sh"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+.site_changes_monke_academy: &site_changes_monke_academy
+  - "hestia/monke-academy/site/**/*"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/site-deploy.sh"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+.site_changes_vinnel_cloud: &site_changes_vinnel_cloud
+  - "hestia/vinnel-cloud/**/*"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/site-deploy.sh"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+vin_moe_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_vin_moe
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "vin_moe"'
+  variables:
+    SITE_CONTEXT: hestia/vin-moe/site
+    SITE_DOCKERFILE: hestia/vin-moe/site
+    SITE_IMAGE: vin-moe/site
+    SITE_DEPLOYMENT: vin-moe-site
+
+vin_moe_deploy:
+  extends: .site_deploy
+  needs:
+    - vin_moe_build
+    - job: lint
+      optional: true
+    - job: secrets_scan
+      optional: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_vin_moe
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "vin_moe"'
+  script:
+    - sh .gitlab-ci/scripts/site-deploy.sh vin-moe-site --zone vin.moe
+
+monke_academy_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_monke_academy
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "monke_academy"'
+  variables:
+    SITE_CONTEXT: hestia/monke-academy/site
+    SITE_DOCKERFILE: hestia/monke-academy/site
+    SITE_IMAGE: monke-academy/site
+    SITE_DEPLOYMENT: monke-academy-site
+
+monke_academy_deploy:
+  extends: .site_deploy
+  needs:
+    - monke_academy_build
+    - job: lint
+      optional: true
+    - job: secrets_scan
+      optional: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_monke_academy
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "monke_academy"'
+  script:
+    - sh .gitlab-ci/scripts/site-deploy.sh monke-academy-site --zone monke.academy
+
+vinnel_cloud_site_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_vinnel_cloud
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "vinnel_cloud"'
+  variables:
+    SITE_CONTEXT: hestia/vinnel-cloud
+    SITE_DOCKERFILE: hestia/vinnel-cloud/site
+    SITE_IMAGE: vinnel-cloud/site
+    SITE_DEPLOYMENT: vinnel-cloud-site
+
+vinnel_cloud_admin_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_vinnel_cloud
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "vinnel_cloud"'
+  variables:
+    SITE_CONTEXT: hestia/vinnel-cloud
+    SITE_DOCKERFILE: hestia/vinnel-cloud/admin
+    SITE_IMAGE: vinnel-cloud/admin
+    SITE_DEPLOYMENT: vinnel-cloud-admin
+
+vinnel_cloud_auth_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_vinnel_cloud
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "vinnel_cloud"'
+  variables:
+    SITE_CONTEXT: hestia/vinnel-cloud
+    SITE_DOCKERFILE: hestia/vinnel-cloud/auth
+    SITE_IMAGE: vinnel-cloud/auth
+    SITE_DEPLOYMENT: vinnel-cloud-auth
+
+vinnel_cloud_deploy:
+  extends: .site_deploy
+  needs:
+    - vinnel_cloud_site_build
+    - vinnel_cloud_admin_build
+    - vinnel_cloud_auth_build
+    - job: lint
+      optional: true
+    - job: go
+      optional: true
+    - job: secrets_scan
+      optional: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *site_changes_vinnel_cloud
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "vinnel_cloud"'
+  script:
+    - sh .gitlab-ci/scripts/site-deploy.sh vinnel-cloud-site vinnel-cloud-admin vinnel-cloud-auth --zone vinnel.cloud
+
+.shell_changes: &shell_changes
+  - "hestia/shell/Dockerfile"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+shell_build:
+  stage: build
+  tags: ["privileged-build"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *shell_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "shell"'
+  image:
+    name: moby/buildkit:v${BUILDKIT_VERSION}
+    entrypoint: [""]
+  before_script:
+    - apk add --no-cache jq curl
+    - mkdir -p ~/.docker
+    - printf '{"auths":{"registry.vinnel.cloud":{"auth":"%s"}}}' "$HARBOR_AUTH_B64" > ~/.docker/config.json
+  script:
+    - |
+      buildctl-daemonless.sh build \
+        --frontend dockerfile.v0 \
+        --local context=. \
+        --local dockerfile=hestia/shell \
+        --opt label:org.opencontainers.image.source=https://gitlab.vinnel.cloud/vinnel-cloud/gaia \
+        --opt label:org.opencontainers.image.revision=${CI_COMMIT_SHA} \
+        --import-cache type=registry,ref=registry.vinnel.cloud/vinnel-cloud/shell:buildcache \
+        --export-cache type=registry,ref=registry.vinnel.cloud/vinnel-cloud/shell:buildcache,mode=max \
+        --metadata-file /tmp/meta.json \
+        --output type=image,name=registry.vinnel.cloud/vinnel-cloud/shell:${CI_COMMIT_SHA},push=true
+      digest=$(jq -r '.["containerimage.digest"]' /tmp/meta.json)
+      sh .gitlab-ci/scripts/record-image-digest.sh vinnel-cloud-shell "registry.vinnel.cloud/vinnel-cloud/shell@${digest}"

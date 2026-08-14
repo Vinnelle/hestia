@@ -1,0 +1,63 @@
+.hestia_changes: &hestia_changes
+  - "hestia/**/*"
+  - ".gitlab-ci/**/*"
+  - ".gitlab-ci.yml"
+
+.love_mirror_changes: &love_mirror_changes
+  - "love/love.c"
+
+.vin_moe_mirror_changes: &vin_moe_mirror_changes
+  - "hestia/vin-moe/site/**/*"
+
+mirror_gaia:
+  stage: sync
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "mirror"'
+  script:
+    - git fetch origin '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' --prune
+    - git push "https://oauth2:${GH_API_TOKEN}@github.com/Vinnelle/gaia.git" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' --prune
+
+mirror_hestia:
+  stage: sync
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *hestia_changes
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "mirror"'
+  script:
+    - git clone "https://oauth2:${GH_API_TOKEN}@github.com/Vinnelle/hestia.git" hestia-mirror
+    - rsync -a --delete --exclude='.git' hestia/ hestia-mirror/
+    - rsync -a --delete --exclude='.git' .gitlab-ci/ hestia-mirror/.gitlab-ci/
+    - cp .gitlab-ci.yml hestia-mirror/.gitlab-ci.yml
+    - 'sh .gitlab-ci/scripts/mirror-push.sh hestia-mirror "sync: mirror gaia@${CI_COMMIT_SHA}"'
+
+mirror_love:
+  stage: sync
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *love_mirror_changes
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "mirror"'
+  script:
+    - git clone "https://oauth2:${GH_API_TOKEN}@github.com/Vinnelle/love.git" love-mirror
+    - cp love/love.c love-mirror/love.c
+    - 'sh .gitlab-ci/scripts/mirror-push.sh love-mirror "sync: mirror love.c from gaia@${CI_COMMIT_SHA}"'
+
+mirror_vin_moe:
+  stage: sync
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *vin_moe_mirror_changes
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "mirror"'
+  script:
+    - git clone "https://oauth2:${GH_API_TOKEN}@github.com/Vinnelle/vin.moe.git" vin-moe-mirror
+    - mkdir -p vin-moe-mirror/site-image
+    - rsync -a --delete --exclude='.git' hestia/vin-moe/site/ vin-moe-mirror/site-image/
+    - 'sh .gitlab-ci/scripts/mirror-push.sh vin-moe-mirror "sync: mirror vin-moe site from gaia@${CI_COMMIT_SHA}"'

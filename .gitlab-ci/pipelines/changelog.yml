@@ -1,0 +1,12 @@
+changelog_generate:
+  stage: sync
+  rules:
+    - if: '$CI_COMMIT_TAG'
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  script:
+    - >
+      curl -fsS -H "PRIVATE-TOKEN: ${CI_BOT_TOKEN}" -X POST
+      --data-urlencode "version=${CI_COMMIT_TAG}"
+      --data-urlencode "branch=prd"
+      --data-urlencode "message=chore: changelog for ${CI_COMMIT_TAG} [skip ci]"
+      "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/repository/changelogs"

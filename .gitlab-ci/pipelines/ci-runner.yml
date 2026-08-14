@@ -1,0 +1,100 @@
+.ci_runner_changes: &ci_runner_changes
+  - "hestia/ci-runner/Dockerfile"
+
+.ci_runner_rules:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *ci_runner_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "ci_runner"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $TRIGGER_REASON == "ci_runner_rebuild"'
+
+ci_runner_build:
+  extends: .ci_runner_rules
+  stage: build
+  tags: ["privileged-build"]
+  image:
+    name: moby/buildkit:v${BUILDKIT_VERSION}
+    entrypoint: [""]
+  variables:
+    CI_RUNNER_IMAGE: registry.vinnel.cloud/ci-runner/ci-runner
+  before_script:
+    - mkdir -p ~/.docker
+    - printf '{"auths":{"registry.vinnel.cloud":{"auth":"%s"}}}' "$HARBOR_AUTH_B64" > ~/.docker/config.json
+  script:
+    - |
+      buildctl-daemonless.sh build \
+        --frontend dockerfile.v0 \
+        --local context=hestia/ci-runner \
+        --local dockerfile=hestia/ci-runner \
+        --opt build-arg:CACHEBUST=${CI_PIPELINE_ID} \
+        --opt label:org.opencontainers.image.source=https://gitlab.vinnel.cloud/vinnel-cloud/gaia \
+        --opt label:org.opencontainers.image.revision=${CI_COMMIT_SHA} \
+        --import-cache type=registry,ref=${CI_RUNNER_IMAGE}:buildcache \
+        --export-cache type=registry,ref=${CI_RUNNER_IMAGE}:buildcache,mode=max \
+        --output type=image,name=${CI_RUNNER_IMAGE}:${CI_COMMIT_SHA},push=true
+
+ci_runner_smoke_test:
+  extends: .ci_runner_rules
+  stage: build
+  needs: ["ci_runner_build"]
+  image: registry.vinnel.cloud/ci-runner/ci-runner:${CI_COMMIT_SHA}
+  script:
+    - kubectl version --client
+    - tflint --version
+    - actionlint -version
+    - shellcheck --version
+    - yamllint --version
+    - gh --version
+    - jq --version
+    - rsync --version
+    - docker --version
+    - cc --version
+
+ci_runner_publish:
+  stage: deploy
+  needs: ["ci_runner_smoke_test"]
+  resource_group: ci_runner_publish
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *ci_runner_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "ci_runner"'
+    - if: '$CI_PIPELINE_SOURCE == "trigger" && $TRIGGER_REASON == "ci_runner_rebuild"'
+  image:
+    name: quay.io/skopeo/stable:v${SKOPEO_VERSION}
+    entrypoint: [""]
+  variables:
+    CI_RUNNER_IMAGE: registry.vinnel.cloud/ci-runner/ci-runner
+  before_script:
+    - mkdir -p ~/.docker
+    - printf '{"auths":{"registry.vinnel.cloud":{"auth":"%s"}}}' "$HARBOR_AUTH_B64" > ~/.docker/config.json
+  script:
+    - |
+      skopeo copy \
+        --authfile ~/.docker/config.json \
+        "docker://${CI_RUNNER_IMAGE}:${CI_COMMIT_SHA}" \
+        "docker://${CI_RUNNER_IMAGE}:latest"
+
+ci_runner_scan:
+  stage: validate
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "ci_runner_scan"'
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  before_script:
+    - mkdir -p /tmp/bin ~/.docker
+    - printf '{"auths":{"registry.vinnel.cloud":{"auth":"%s"}}}' "$HARBOR_AUTH_B64" > ~/.docker/config.json
+    - curl -fsSL --retry 5 --retry-all-errors --retry-delay 3 "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz" -o /tmp/grype.tar.gz
+    - tar -C /tmp/bin -xzf /tmp/grype.tar.gz grype
+    - export PATH="/tmp/bin:${PATH}"
+  script:
+    - |
+      if ! grype "registry:registry.vinnel.cloud/ci-runner/ci-runner:latest" --fail-on high -o table; then
+        echo "vulnerabilities found in ci-runner image, triggering a rebuild"
+        curl --fail -X POST \
+          -F token="${RECONCILE_TRIGGER_TOKEN}" \
+          -F ref=prd \
+          -F "variables[TRIGGER_REASON]=ci_runner_rebuild" \
+          "https://gitlab.vinnel.cloud/api/v4/projects/${CI_PROJECT_ID}/trigger/pipeline"
+        exit 1
+      fi

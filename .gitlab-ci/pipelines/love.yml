@@ -1,0 +1,41 @@
+.love_changes: &love_changes
+  - "love/love.c"
+  - "love/test.sh"
+
+love_build:
+  stage: build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: *love_changes
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *love_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "love"'
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  script:
+    - cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
+    - bash love/test.sh love/love
+  artifacts:
+    paths:
+      - love/love
+    expire_in: 1 day
+
+love_release:
+  stage: deploy
+  needs: ["love_build"]
+  resource_group: love_release
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *love_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "love"'
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  variables:
+    GH_TOKEN: "${GH_API_TOKEN}"
+  script:
+    - |
+      last=$(gh api repos/Vinnelle/love/tags --jq '[.[].name | ltrimstr("v") | select(test("^[0-9]{1,6}$")) | tonumber] | max // 0')
+      tag="v$((last + 1))"
+      if gh release view "$tag" --repo Vinnelle/love >/dev/null 2>&1; then
+        echo "release $tag already exists"
+        exit 0
+      fi
+      gh release create "$tag" love/love --repo Vinnelle/love --title "$tag" --notes "compiled from gaia@${CI_COMMIT_SHA}"

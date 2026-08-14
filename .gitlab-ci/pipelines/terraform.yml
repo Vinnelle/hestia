@@ -1,0 +1,106 @@
+.terraform_changes: &terraform_changes
+  - "hestia/**/*.tf"
+  - "hestia/**/*.tftpl"
+  - "hestia/.terraform.lock.hcl"
+  - "hestia/manifests/**/*"
+  - "hestia/helm-values/**/*"
+  - "hestia/images.json"
+
+.terraform_install:
+  script:
+    - mkdir -p /tmp/bin
+    - curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -o /tmp/terraform.zip
+    - unzip -q /tmp/terraform.zip -d /tmp/bin
+    - chmod 0755 /tmp/bin/terraform
+    - export PATH="/tmp/bin:${PATH}"
+
+.terraform_base:
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  retry: 2
+  before_script:
+    - !reference [.terraform_install, script]
+    - mkdir -p "${TF_PLUGIN_CACHE_DIR}"
+    - cd hestia
+  cache:
+    key:
+      files:
+        - hestia/.terraform.lock.hcl
+    paths:
+      - .terraform-plugin-cache
+    when: always
+
+terraform_plan:
+  extends: .terraform_base
+  stage: validate
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      changes: *terraform_changes
+  script:
+    - terraform fmt -check -diff -recursive
+    - tflint --recursive
+    - terraform init -input=false
+    - |
+      set +e
+      terraform plan -input=false -detailed-exitcode
+      exit_code=$?
+      set -e
+      # -detailed-exitcode returns 2 when the plan has changes, which is the normal
+      # case for a merge request. Only a real error (1) fails the job.
+      [ "$exit_code" -ne 1 ]
+
+terraform_plan_apply:
+  extends: .terraform_base
+  stage: deploy
+  resource_group: terraform
+  needs:
+    - job: vin_moe_build
+      optional: true
+    - job: monke_academy_build
+      optional: true
+    - job: vinnel_cloud_site_build
+      optional: true
+    - job: vinnel_cloud_admin_build
+      optional: true
+    - job: vinnel_cloud_auth_build
+      optional: true
+    - job: shell_build
+      optional: true
+    - job: lint
+      optional: true
+    - job: secrets_scan
+      optional: true
+    - job: terraform_test
+      optional: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *terraform_changes
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "terraform"'
+  script:
+    - git -C "$CI_PROJECT_DIR" fetch --depth=1 origin "$CI_COMMIT_REF_NAME"
+    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/images.json
+    - terraform fmt -check -diff -recursive
+    - tflint --recursive
+    - terraform init -input=false
+    - |
+      set +e
+      terraform plan -input=false -out=tfplan -detailed-exitcode
+      exit_code=$?
+      set -e
+      if [ "$exit_code" -eq 1 ]; then exit 1; fi
+      if [ "$exit_code" -eq 2 ]; then terraform apply -input=false tfplan; fi
+
+terraform_provider_mirror_sync:
+  extends: .terraform_base
+  stage: sync
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes:
+        - "hestia/.terraform.lock.hcl"
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "terraform_mirror"'
+  script:
+    - terraform init -input=false -backend=false
+    - terraform providers mirror /tmp/provider-mirror
+    - curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/bin/mc
+    - chmod 0755 /tmp/bin/mc
+    - mc alias set mega "https://s3.${MEGA_S4_ENDPOINT_DOMAIN}" "${MEGA_S4_ACCESS_KEY}" "${MEGA_S4_SECRET_KEY}"
+    - mc mirror --overwrite /tmp/provider-mirror mega/providers

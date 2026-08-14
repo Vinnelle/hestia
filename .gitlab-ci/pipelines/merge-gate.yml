@@ -1,0 +1,51 @@
+open_merge_request:
+  stage: sync
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "pre" && $CI_PIPELINE_SOURCE == "push"'
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  script:
+    - sh .gitlab-ci/scripts/open-merge-request.sh
+
+sync_pre:
+  stage: sync
+  needs:
+    - job: lint
+      optional: true
+    - job: go
+      optional: true
+    - job: secrets_scan
+      optional: true
+    - job: terraform_test
+      optional: true
+    - job: mirror_gaia
+      optional: true
+    - job: mirror_hestia
+      optional: true
+    - job: mirror_love
+      optional: true
+    - job: mirror_vin_moe
+      optional: true
+    - job: terraform_plan_apply
+      optional: true
+    - job: ci_runner_publish
+      optional: true
+    - job: vin_moe_deploy
+      optional: true
+    - job: monke_academy_deploy
+      optional: true
+    - job: vinnel_cloud_deploy
+      optional: true
+    - job: shell_build
+      optional: true
+    - job: love_release
+      optional: true
+  resource_group: sync_pre
+  allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  script:
+    # No --depth: a shallow FETCH_HEAD has no ancestry graph, so git cannot prove the
+    # push is a fast-forward and rejects it as non-fast-forward.
+    - git fetch origin prd
+    - git push origin FETCH_HEAD:refs/heads/pre

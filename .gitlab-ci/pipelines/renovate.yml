@@ -1,0 +1,15 @@
+renovate:
+  stage: sync
+  allow_failure: true
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "renovate"'
+  image: registry.vinnel.cloud/dockerhub/renovate/renovate:44.23.3@sha256:818f93d52ee1bb05d56be9577a17ecbe049ccd0e8b3950f5b5ce6ef056c7265c
+  variables:
+    RENOVATE_PLATFORM: gitlab
+    RENOVATE_ENDPOINT: https://gitlab.vinnel.cloud/api/v4
+    RENOVATE_TOKEN: "${CI_BOT_TOKEN}"
+    RENOVATE_REPOSITORIES: vinnel-cloud/gaia
+    RENOVATE_AUTODISCOVER: "false"
+  script:
+    - renovate

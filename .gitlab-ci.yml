@@ -1,0 +1,54 @@
+stages:
+  - validate
+  - build
+  - deploy
+  - sync
+
+variables:
+  RUN:
+    value: "validate"
+    options:
+      - "validate"
+      - "terraform"
+      - "mirror"
+      - "vin_moe"
+      - "monke_academy"
+      - "vinnel_cloud"
+      - "shell"
+      - "ci_runner"
+      - "ci_runner_scan"
+      - "love"
+      - "renovate"
+      - "terraform_mirror"
+    description: "Which workflow a manual (Run pipeline) run should execute. One value only -- this is the GitLab equivalent of dispatching a single GitHub Actions workflow."
+  GIT_DEPTH: "0"
+  GIT_CONFIG_COUNT: "1"
+  GIT_CONFIG_KEY_0: "safe.directory"
+  GIT_CONFIG_VALUE_0: "*"
+  TF_IN_AUTOMATION: "1"
+  TF_PLUGIN_CACHE_DIR: "${CI_PROJECT_DIR}/.terraform-plugin-cache"
+  TF_REGISTRY_CLIENT_TIMEOUT: "30"
+  MEGA_S4_ENDPOINT_DOMAIN: "g.megas4.com"
+  # renovate: datasource=github-releases depName=hashicorp/terraform
+  TERRAFORM_VERSION: "1.15.8"
+  # renovate: datasource=golang-version depName=golang
+  GO_VERSION: "1.26.5"
+  # renovate: datasource=github-releases depName=gitleaks/gitleaks
+  GITLEAKS_VERSION: "8.30.1"
+  # renovate: datasource=github-releases depName=moby/buildkit
+  BUILDKIT_VERSION: "0.32.2"
+  # renovate: datasource=docker depName=quay.io/skopeo/stable extractVersion=^v(?<version>.+)$
+  SKOPEO_VERSION: "1.22.2"
+  # renovate: datasource=github-releases depName=anchore/grype
+  GRYPE_VERSION: "0.116.1"
+
+include:
+  - local: '.gitlab-ci/pipelines/merge-gate.yml'
+  - local: '.gitlab-ci/pipelines/mirrors.yml'
+  - local: '.gitlab-ci/pipelines/terraform.yml'
+  - local: '.gitlab-ci/pipelines/validate.yml'
+  - local: '.gitlab-ci/pipelines/ci-runner.yml'
+  - local: '.gitlab-ci/pipelines/renovate.yml'
+  - local: '.gitlab-ci/pipelines/love.yml'
+  - local: '.gitlab-ci/pipelines/sites.yml'
+  - local: '.gitlab-ci/pipelines/changelog.yml'
