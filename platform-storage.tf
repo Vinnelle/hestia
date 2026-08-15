@@ -186,3 +186,15 @@ resource "kubernetes_storage_class_v1" "local_path" {
   volume_binding_mode = "WaitForFirstConsumer"
   reclaim_policy      = "Delete"
 }
+
+resource "kubernetes_storage_class_v1" "local_path_bulk" {
+  metadata {
+    name = "local-path-bulk"
+    annotations = {
+      "defaultVolumeType" = "hostPath"
+    }
+  }
+  storage_provisioner = "rancher.io/local-path"
+  volume_binding_mode = "WaitForFirstConsumer"
+  reclaim_policy      = "Retain"
+}

@@ -97,6 +97,20 @@
           "response_types": ["code"]
         },
         {
+          "client_id": "sure",
+          "client_name": "Sure",
+          "client_secret": ${jsonencode(sure_client_secret)},
+          "public": false,
+          "authorization_policy": "two_factor",
+          "consent_mode": "implicit",
+          "token_endpoint_auth_method": "client_secret_basic",
+          "pkce_challenge_method": "S256",
+          "redirect_uris": ["https://sure.vinnel.cloud/auth/openid_connect/callback"],
+          "scopes": ["openid", "email", "profile"],
+          "grant_types": ["authorization_code"],
+          "response_types": ["code"]
+        },
+        {
           "client_id": "netbird-cli",
           "client_name": "Netbird CLI",
           "public": true,
