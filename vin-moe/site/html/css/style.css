@@ -103,21 +103,6 @@ h2 { color: var(--accent); font-size: 0.78rem; font-weight: 700; letter-spacing:
 .links .k { color: var(--faint); font-size: 0.8rem; margin-bottom: 0.35rem; }
 .accent { color: var(--accent); }
 .links .accent { font-size: 0.82rem; }
-.pgp-copy { position: relative; display: inline-block; font: inherit; background: none; border: none; padding: 0; cursor: pointer; }
-.pgp-copy:hover .pgp-key { color: var(--accent-strong); }
-.pgp-key { transition: opacity 150ms ease-out, filter 150ms ease-out; }
-.pgp-copy.copied .pgp-key { opacity: 0.25; filter: blur(3px); }
-.pgp-status {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 150ms ease-out;
-  color: var(--fg);
-}
-.pgp-copy.copied .pgp-status { opacity: 1; }
 
 .list {
   list-style: none;

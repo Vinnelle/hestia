@@ -70,7 +70,7 @@
       </div>
       <div>
         <div class="k"># pgp</div>
-        <button type="button" class="accent pgp-copy"><span class="pgp-key">43B0 BED0 F544 6DF5 4FD0  D966 C568 F432 345E C5F4</span><span class="pgp-status" aria-live="polite"></span></button>
+        <a class="accent" href="https://keys.openpgp.org/vks/v1/by-fingerprint/43B0BED0F5446DF54FD0D966C568F432345EC5F4">43B0 BED0 F544 6DF5 4FD0  D966 C568 F432 345E C5F4</a>
       </div>
     </div>
   </section>
@@ -304,20 +304,6 @@ for (const b of themeOpts) {
     b.classList.add('pop');
   });
   b.addEventListener('animationend', () => b.classList.remove('pop'));
-}
-
-const pgpBtn = document.querySelector('.pgp-copy');
-if (pgpBtn) {
-  const pgpKey = pgpBtn.querySelector('.pgp-key').textContent;
-  const pgpStatus = pgpBtn.querySelector('.pgp-status');
-  pgpBtn.addEventListener('click', async () => {
-    try {
-      await navigator.clipboard.writeText(pgpKey);
-      pgpStatus.textContent = 'copied';
-      pgpBtn.classList.add('copied');
-      setTimeout(() => { pgpBtn.classList.remove('copied'); }, 1200);
-    } catch {} // clipboard can be blocked; key stays selectable either way
-  });
 }
 </script>
 </body>
