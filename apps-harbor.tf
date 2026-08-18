@@ -43,7 +43,11 @@ resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
     backoff_limit = 2
 
     template {
-      metadata {}
+      metadata {
+        annotations = {
+          "attempt" = "2"
+        }
+      }
       spec {
         restart_policy = "Never"
 
