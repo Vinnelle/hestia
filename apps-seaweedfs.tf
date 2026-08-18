@@ -209,7 +209,7 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
             }
             limits = {
               cpu    = "1000m"
-              memory = "1Gi"
+              memory = "4Gi"
             }
           }
 
@@ -356,7 +356,7 @@ module "seaweedfs_vpa" {
   target_name = kubernetes_deployment_v1.seaweedfs.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "1Gi" },
+    { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "4Gi" },
   ]
 }
 

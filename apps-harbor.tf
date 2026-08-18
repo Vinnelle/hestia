@@ -54,7 +54,7 @@ resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
 
           env {
             name  = "RUN_ATTEMPT"
-            value = "3"
+            value = "4"
           }
 
           volume_mount {
