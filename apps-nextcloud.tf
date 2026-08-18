@@ -172,7 +172,7 @@ resource "kubernetes_job_v1" "nextcloud_verify_migration" {
   wait_for_completion = true
 
   timeouts {
-    create = "5m"
+    create = "10m"
   }
 }
 
