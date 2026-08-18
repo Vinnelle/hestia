@@ -1,17 +1,19 @@
 <?php
-$dataRoot = '/var/www/html/data/ida';
+// Confirmed empirically via nextcloud-diagnose-db (2026-08-18): the real
+// datadirectory is /var/www/html/data/data, not /var/www/html/data --
+// nested one level deeper than the mount path itself.
+$dbPath   = '/var/www/html/data/data/nextcloud.db';
+$dataRoot = '/var/www/html/data/data/ida';
 $user     = 'ida';
 $homeId   = 'home::' . $user;
 $objId    = 'object::user:' . $user;
 $bucket   = 'nextcloud-primary';
 $filer    = 'http://seaweedfs.seaweedfs.svc.cluster.local:8888';
 
-$candidates = glob('/var/www/html/data/*.db');
-if (count($candidates) !== 1) {
-    fwrite(STDERR, "expected exactly one *.db file under /var/www/html/data, found: " . implode(', ', $candidates) . "\n");
+if (!is_file($dbPath)) {
+    fwrite(STDERR, "expected database at $dbPath, not found\n");
     exit(1);
 }
-$dbPath = $candidates[0];
 echo "using database: $dbPath\n";
 
 $pdo = new PDO('sqlite:' . $dbPath);

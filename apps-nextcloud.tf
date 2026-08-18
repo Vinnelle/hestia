@@ -111,13 +111,15 @@ resource "kubernetes_config_map_v1" "nextcloud_migration" {
     namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
   }
   data = {
-    "diagnose.php" = file("${path.module}/nextcloud-migration/diagnose.php")
+    "migrate.php" = file("${path.module}/nextcloud-migration/migrate.php")
   }
 }
 
-resource "kubernetes_job_v1" "nextcloud_diagnose_db" {
+resource "kubernetes_job_v1" "nextcloud_migrate_to_seaweedfs" {
+  depends_on = [kubernetes_deployment_v1.nextcloud]
+
   metadata {
-    name      = "nextcloud-diagnose-db"
+    name      = "nextcloud-migrate-to-seaweedfs"
     namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
   }
 
@@ -130,19 +132,18 @@ resource "kubernetes_job_v1" "nextcloud_diagnose_db" {
         restart_policy = "Never"
 
         container {
-          name    = "diagnose"
+          name    = "migrate"
           image   = "nextcloud:34-apache"
-          command = ["php", "/migration/diagnose.php"]
+          command = ["php", "/migration/migrate.php"]
 
           env {
             name  = "SCRIPT_HASH"
-            value = filesha256("${path.module}/nextcloud-migration/diagnose.php")
+            value = filesha256("${path.module}/nextcloud-migration/migrate.php")
           }
 
           volume_mount {
             name       = "data"
             mount_path = "/var/www/html/data"
-            read_only  = true
           }
 
           volume_mount {
@@ -156,7 +157,6 @@ resource "kubernetes_job_v1" "nextcloud_diagnose_db" {
           name = "data"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim_v1.nextcloud.metadata[0].name
-            read_only  = true
           }
         }
 
@@ -173,7 +173,7 @@ resource "kubernetes_job_v1" "nextcloud_diagnose_db" {
   wait_for_completion = true
 
   timeouts {
-    create = "5m"
+    create = "30m"
   }
 }
 
@@ -187,7 +187,7 @@ resource "kubernetes_deployment_v1" "nextcloud" {
   }
 
   spec {
-    replicas = 1
+    replicas = 0
 
     selector {
       match_labels = {
