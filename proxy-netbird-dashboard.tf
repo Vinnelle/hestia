@@ -31,7 +31,7 @@ resource "kubernetes_deployment_v1" "netbird_dashboard" {
       spec {
         container {
           name  = "dashboard"
-          image = "netbirdio/dashboard:v2.91.0"
+          image = "netbirdio/dashboard:v2.91.1"
 
           env {
             name  = "NETBIRD_MGMT_API_ENDPOINT"
