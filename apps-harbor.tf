@@ -61,7 +61,7 @@ resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
         container {
           name    = "rclone"
           image   = "rclone/rclone:1.68"
-          command = ["rclone", "sync", "/source", "seaweedfs:harbor", "--s3-provider=Other", "--s3-endpoint=https://s3.vinnel.cloud", "--s3-force-path-style=true", "--progress"]
+          command = ["rclone", "sync", "/source", "seaweedfs:harbor", "--s3-provider=Other", "--s3-region=us-east-1", "--s3-endpoint=https://s3.vinnel.cloud", "--s3-force-path-style=true", "--progress"]
 
           env {
             name  = "RCLONE_CONFIG_SEAWEEDFS_TYPE"
