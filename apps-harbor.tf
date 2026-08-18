@@ -27,6 +27,8 @@ resource "helm_release" "harbor" {
   values = [
     templatefile("${path.module}/helm-values/harbor/values.yaml.tftpl", {
       admin_password = var.harbor_admin_password
+      s3_access_key  = random_password.seaweedfs_s3_access_key.result
+      s3_secret_key  = random_password.seaweedfs_s3_secret_key.result
     })
   ]
 }

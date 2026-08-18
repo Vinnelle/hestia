@@ -8,6 +8,16 @@ expose:
 
 persistence:
   enabled: true
-  persistentVolumeClaim:
-    registry:
-      size: 20Gi
+  imageChartStorage:
+    disableredirect: true
+    type: s3
+    s3:
+      region: us-east-1
+      bucket: harbor
+      regionendpoint: http://seaweedfs.seaweedfs.svc.cluster.local:8333
+      accesskey: ${jsonencode(s3_access_key)}
+      secretkey: ${jsonencode(s3_secret_key)}
+      secure: false
+      v4auth: true
+      forcepathstyle: true
+      rootdirectory: /source
