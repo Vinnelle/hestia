@@ -248,7 +248,7 @@ resource "kubernetes_deployment_v1" "nextcloud" {
   }
 
   spec {
-    replicas = 0
+    replicas = 1
 
     selector {
       match_labels = {
@@ -339,6 +339,56 @@ resource "kubernetes_deployment_v1" "nextcloud" {
 
           env {
             name = "S3_SECRET_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "s3-secret-key"
+              }
+            }
+          }
+
+          env {
+            name  = "OBJECTSTORE_S3_BUCKET"
+            value = "nextcloud-primary"
+          }
+
+          env {
+            name  = "OBJECTSTORE_S3_HOST"
+            value = "seaweedfs.seaweedfs.svc.cluster.local"
+          }
+
+          env {
+            name  = "OBJECTSTORE_S3_PORT"
+            value = "8333"
+          }
+
+          env {
+            name  = "OBJECTSTORE_S3_SSL"
+            value = "false"
+          }
+
+          env {
+            name  = "OBJECTSTORE_S3_USEPATH_STYLE"
+            value = "true"
+          }
+
+          env {
+            name  = "OBJECTSTORE_S3_REGION"
+            value = "us-east-1"
+          }
+
+          env {
+            name = "OBJECTSTORE_S3_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "s3-access-key"
+              }
+            }
+          }
+
+          env {
+            name = "OBJECTSTORE_S3_SECRET"
             value_from {
               secret_key_ref {
                 name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
