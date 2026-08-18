@@ -193,6 +193,11 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
           }
 
           port {
+            name           = "filer-grpc"
+            container_port = 18888
+          }
+
+          port {
             name           = "s3"
             container_port = 8333
           }
@@ -380,6 +385,11 @@ resource "kubernetes_service_v1" "seaweedfs" {
       name        = "filer"
       port        = 8888
       target_port = "filer"
+    }
+    port {
+      name        = "filer-grpc"
+      port        = 18888
+      target_port = "filer-grpc"
     }
     port {
       name        = "s3"
