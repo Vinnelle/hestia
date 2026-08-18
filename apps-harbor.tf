@@ -31,6 +31,84 @@ resource "helm_release" "harbor" {
   ]
 }
 
+resource "kubernetes_secret_v1" "harbor_seaweedfs_migration" {
+  metadata {
+    name      = "harbor-seaweedfs-migration"
+    namespace = kubernetes_namespace_v1.harbor.metadata[0].name
+  }
+  data = {
+    access-key = random_password.seaweedfs_s3_access_key.result
+    secret-key = random_password.seaweedfs_s3_secret_key.result
+  }
+}
+
+resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
+  depends_on = [helm_release.harbor, kubernetes_deployment_v1.seaweedfs]
+
+  metadata {
+    name      = "harbor-registry-to-seaweedfs"
+    namespace = kubernetes_namespace_v1.harbor.metadata[0].name
+  }
+
+  spec {
+    backoff_limit = 2
+
+    template {
+      metadata {}
+      spec {
+        restart_policy = "Never"
+
+        container {
+          name    = "rclone"
+          image   = "rclone/rclone:1.68"
+          command = ["rclone", "sync", "/source", "seaweedfs:harbor", "--s3-provider=Other", "--s3-endpoint=https://s3.vinnel.cloud", "--s3-force-path-style=true", "--progress"]
+
+          env {
+            name  = "RCLONE_CONFIG_SEAWEEDFS_TYPE"
+            value = "s3"
+          }
+
+          env {
+            name = "RCLONE_CONFIG_SEAWEEDFS_ACCESS_KEY_ID"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.harbor_seaweedfs_migration.metadata[0].name
+                key  = "access-key"
+              }
+            }
+          }
+
+          env {
+            name = "RCLONE_CONFIG_SEAWEEDFS_SECRET_ACCESS_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.harbor_seaweedfs_migration.metadata[0].name
+                key  = "secret-key"
+              }
+            }
+          }
+
+          volume_mount {
+            name       = "source"
+            mount_path = "/source"
+            read_only  = true
+          }
+        }
+
+        volume {
+          name = "source"
+          persistent_volume_claim {
+            claim_name = "harbor-registry"
+            read_only  = true
+          }
+        }
+      }
+    }
+  }
+
+  wait_for_completion = false
+}
+
 resource "kubernetes_ingress_v1" "registry_vinnel_cloud" {
   depends_on = [helm_release.harbor, helm_release.ingress_nginx]
   metadata {

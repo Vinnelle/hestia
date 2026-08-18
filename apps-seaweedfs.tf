@@ -80,6 +80,7 @@ locals {
     done
     echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>&1
     echo "s3.bucket.create -name velero" | weed shell -filer=localhost:8888 2>&1
+    echo "s3.bucket.create -name harbor" | weed shell -filer=localhost:8888 2>&1
     # No -collection here: an S3 bucket is already 1:1 with a collection named
     # after it, and passing one makes the whole command fail with
     # "one s3 bucket goes to one collection and not customizable".

@@ -19,7 +19,7 @@ data "talos_machine_configuration" "controlplane" {
     yamlencode({
       machine = {
         install = {
-          disk  = "/dev/nvme0n1"
+          disk  = "/dev/nvme1n1"
           image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.13.7"
         }
       }
