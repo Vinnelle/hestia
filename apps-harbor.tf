@@ -43,11 +43,7 @@ resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
     backoff_limit = 2
 
     template {
-      metadata {
-        annotations = {
-          "attempt" = "2"
-        }
-      }
+      metadata {}
       spec {
         restart_policy = "Never"
 
@@ -55,6 +51,11 @@ resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
           name    = "weed"
           image   = "chrislusf/seaweedfs:4.41"
           command = ["weed", "filer.copy", "/source", "http://seaweedfs.seaweedfs.svc.cluster.local:8888/buckets/harbor/"]
+
+          env {
+            name  = "RUN_ATTEMPT"
+            value = "3"
+          }
 
           volume_mount {
             name       = "source"
