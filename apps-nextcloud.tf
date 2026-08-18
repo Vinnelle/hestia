@@ -112,6 +112,67 @@ resource "kubernetes_config_map_v1" "nextcloud_migration" {
   }
   data = {
     "migrate.php" = file("${path.module}/nextcloud-migration/migrate.php")
+    "verify.php"  = file("${path.module}/nextcloud-migration/verify.php")
+  }
+}
+
+resource "kubernetes_job_v1" "nextcloud_verify_migration" {
+  metadata {
+    name      = "nextcloud-verify-migration"
+    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  }
+
+  spec {
+    backoff_limit = 0
+
+    template {
+      metadata {}
+      spec {
+        restart_policy = "Never"
+
+        container {
+          name    = "verify"
+          image   = "nextcloud:34-apache"
+          command = ["php", "/migration/verify.php"]
+
+          env {
+            name  = "SCRIPT_HASH"
+            value = filesha256("${path.module}/nextcloud-migration/verify.php")
+          }
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/var/www/html/data"
+          }
+
+          volume_mount {
+            name       = "migration"
+            mount_path = "/migration"
+            read_only  = true
+          }
+        }
+
+        volume {
+          name = "data"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.nextcloud.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "migration"
+          config_map {
+            name = kubernetes_config_map_v1.nextcloud_migration.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+
+  wait_for_completion = true
+
+  timeouts {
+    create = "5m"
   }
 }
 
