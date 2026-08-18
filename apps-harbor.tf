@@ -50,7 +50,7 @@ resource "kubernetes_job_v1" "harbor_registry_to_seaweedfs" {
         container {
           name    = "weed"
           image   = "chrislusf/seaweedfs:4.41"
-          command = ["weed", "filer.copy", "/source", "seaweedfs.seaweedfs.svc.cluster.local:8888/buckets/harbor/"]
+          command = ["weed", "filer.copy", "/source", "http://seaweedfs.seaweedfs.svc.cluster.local:8888/buckets/harbor/"]
 
           volume_mount {
             name       = "source"
