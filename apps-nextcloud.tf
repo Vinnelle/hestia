@@ -105,6 +105,73 @@ resource "kubernetes_persistent_volume_claim_v1" "nextcloud" {
   }
 }
 
+resource "kubernetes_config_map_v1" "nextcloud_migration" {
+  metadata {
+    name      = "nextcloud-migration"
+    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  }
+  data = {
+    "diagnose.php" = file("${path.module}/nextcloud-migration/diagnose.php")
+  }
+}
+
+resource "kubernetes_job_v1" "nextcloud_diagnose_db" {
+  metadata {
+    name      = "nextcloud-diagnose-db"
+    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  }
+
+  spec {
+    backoff_limit = 0
+
+    template {
+      metadata {}
+      spec {
+        restart_policy = "Never"
+
+        container {
+          name    = "diagnose"
+          image   = "nextcloud:34-apache"
+          command = ["php", "/migration/diagnose.php"]
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/var/www/html/data"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "migration"
+            mount_path = "/migration"
+            read_only  = true
+          }
+        }
+
+        volume {
+          name = "data"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.nextcloud.metadata[0].name
+            read_only  = true
+          }
+        }
+
+        volume {
+          name = "migration"
+          config_map {
+            name = kubernetes_config_map_v1.nextcloud_migration.metadata[0].name
+          }
+        }
+      }
+    }
+  }
+
+  wait_for_completion = true
+
+  timeouts {
+    create = "5m"
+  }
+}
+
 resource "kubernetes_deployment_v1" "nextcloud" {
   metadata {
     name      = "nextcloud"
