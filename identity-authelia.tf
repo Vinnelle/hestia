@@ -45,7 +45,6 @@ locals {
     oidc_hmac_secret                = random_password.authelia_oidc_hmac_secret.result
     oidc_issuer_private_key         = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
     netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
-    harbor_client_secret            = random_password.harbor_oidc_client_secret.bcrypt_hash
     velero_ui_client_secret         = random_password.velero_ui_oidc_client_secret.bcrypt_hash
     nextcloud_client_secret         = random_password.nextcloud_oidc_client_secret.bcrypt_hash
     sure_client_secret              = random_password.sure_oidc_client_secret.bcrypt_hash

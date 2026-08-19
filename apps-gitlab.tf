@@ -482,11 +482,25 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
   data = {
     ".dockerconfigjson" = jsonencode({
       auths = {
-        "registry.vinnel.cloud" = {
-          username = harbor_robot_account.ci.full_name
-          password = random_password.harbor_robot.result
-          auth     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
+        "artifacts.vinnel.cloud" = {
+          username = gitlab_project_deploy_token.registry.username
+          password = gitlab_project_deploy_token.registry.token
+          auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
         }
+      }
+    })
+  }
+}
+
+resource "kubernetes_secret_v1" "registry_dockerconfig_websites" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
         "artifacts.vinnel.cloud" = {
           username = gitlab_project_deploy_token.registry.username
           password = gitlab_project_deploy_token.registry.token
@@ -816,14 +830,6 @@ resource "gitlab_project_variable" "tfc_api_token" {
   project   = gitlab_project.gaia.id
   key       = "TF_TOKEN_app_terraform_io"
   value     = var.gitlab_tfc_api_token
-  masked    = true
-  protected = false
-}
-
-resource "gitlab_project_variable" "harbor_auth_b64" {
-  project   = gitlab_project.gaia.id
-  key       = "HARBOR_AUTH_B64"
-  value     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
   masked    = true
   protected = false
 }

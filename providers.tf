@@ -28,12 +28,6 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
-provider "harbor" {
-  url      = "https://registry.vinnel.cloud"
-  username = "admin"
-  password = var.harbor_admin_password
-}
-
 provider "tls" {}
 
 provider "netbird" {

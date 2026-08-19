@@ -15,7 +15,7 @@ resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_auth" {
 }
 
 resource "kubernetes_deployment_v1" "vinnel_cloud_auth" {
-  depends_on = [helm_release.harbor, harbor_project.vinnel_cloud, kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_websites]
+  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_websites]
 
   metadata {
     name      = "vinnel-cloud-auth"

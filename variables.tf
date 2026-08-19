@@ -41,12 +41,6 @@ variable "cloudflare_cache_purge_token" {
   sensitive   = true
 }
 
-variable "harbor_admin_password" {
-  description = "Harbor admin password (registry.vinnel.cloud). Set as a TFC workspace variable, not codified."
-  type        = string
-  sensitive   = true
-}
-
 variable "s3_backup_access_key" {
   description = "S3-compatible access key ID for the gaia-backups bucket. Set as a TFC workspace variable, not codified."
   type        = string
@@ -114,7 +108,7 @@ variable "signoz_api_token" {
 }
 
 variable "gitlab_api_token" {
-  description = "GitLab Personal/Admin Access Token (api scope), minted by hand as root at https://gitlab.vinnel.cloud once GitLab itself is up (two-apply bootstrap, same shape as harbor_admin_password). Used by the gitlab Terraform provider. Set as a TFC workspace variable, not codified."
+  description = "GitLab Personal/Admin Access Token (api scope), minted by hand as root at https://gitlab.vinnel.cloud once GitLab itself is up (two-apply bootstrap: GitLab has to exist before it can mint its own token). Used by the gitlab Terraform provider. Set as a TFC workspace variable, not codified."
   type        = string
   sensitive   = true
 }
@@ -151,7 +145,7 @@ variable "satisfactory_admin_password" {
 }
 
 variable "docker_hub_username" {
-  description = "Docker Hub account used solely to authenticate harbor_registry.docker_hub's upstream pull-through connection -- never exposed to CI, never stored as a GitLab/GitHub secret. Anonymous proxy pulls share the node's egress IP with every other anonymous Docker Hub client on this host and hit the same per-IP rate limit as a direct anonymous pull would; an authenticated free account gets its own per-account limit instead. Mint/reuse a free Docker Hub account and set as a TFC workspace variable, not codified."
+  description = "Docker Hub account used solely to authenticate gitlab_group_dependency_proxy.vinnel_cloud's upstream pull-through connection -- never exposed to CI, never stored as a GitLab/GitHub secret. Anonymous proxy pulls share the node's egress IP with every other anonymous Docker Hub client on this host and hit the same per-IP rate limit as a direct anonymous pull would; an authenticated free account gets its own per-account limit instead. Mint/reuse a free Docker Hub account and set as a TFC workspace variable, not codified."
   type        = string
   sensitive   = true
 }

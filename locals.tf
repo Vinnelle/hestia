@@ -26,13 +26,12 @@ locals {
   EOT
 
   admin_frame_theme_js_app = {
-    adguard  = "localStorage.setItem('account_theme',t);"
-    signoz   = "localStorage.setItem('THEME',t);localStorage.setItem('THEME_AUTO_SWITCH','false');"
-    registry = "localStorage.setItem('styleModeLocal',d?'DARK':'LIGHT');"
+    adguard = "localStorage.setItem('account_theme',t);"
+    signoz  = "localStorage.setItem('THEME',t);localStorage.setItem('THEME_AUTO_SWITCH','false');"
   }
 
   admin_frame_theme_js = {
-    for slug in concat(local.admin_frame_css_slugs, ["registry"]) : slug => join("", [
+    for slug in local.admin_frame_css_slugs : slug => join("", [
       "(function(){var t=null,d=false,ls=[],qs=[];",
       "try{var q=window.matchMedia.bind(window);window.matchMedia=function(s){",
       "if(t===null||!/prefers-color-scheme/.test(s))return q(s);",
@@ -64,7 +63,7 @@ locals {
   }
 
   admin_frame_brand_locations = {
-    for slug in concat(local.admin_frame_css_slugs, ["registry"]) : slug => <<-EOT
+    for slug in local.admin_frame_css_slugs : slug => <<-EOT
       location = ${local.admin_frame_css_href} {
         default_type text/css;
         expires max;

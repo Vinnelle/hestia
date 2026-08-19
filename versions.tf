@@ -32,10 +32,6 @@ terraform {
       source  = "hashicorp/random"
       version = "~> 3.9"
     }
-    harbor = {
-      source  = "goharbor/harbor"
-      version = "~> 3.12"
-    }
     tls = {
       source  = "hashicorp/tls"
       version = "~> 4.3"

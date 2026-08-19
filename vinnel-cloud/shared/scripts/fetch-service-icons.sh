@@ -19,4 +19,3 @@ fetch netbird.png https://netbird.io/icon.png
 fetch seaweedfs.png https://seaweedfs.com/images/seaweed-logo.png
 fetch nextcloud.png https://nextcloud.com/c/uploads/2022/03/favicon.png
 fetch velero.ico https://velero.io/favicon.ico
-fetch harbor.svg https://goharbor.io/favicon.svg

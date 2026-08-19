@@ -41,7 +41,6 @@ var Services = []Service{
 	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Object storage", "Storage", true, "", "/assets/images/services/seaweedfs.png"},
 	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Files & photos", "Storage", true, "", "/assets/images/services/nextcloud.png"},
 	{"velero", "Velero", "velero.vinnel.cloud", "Backup & restore", "Storage", true, "", "/assets/images/services/velero.ico"},
-	{"registry", "Harbor", "registry.vinnel.cloud", "Container registry", "Platform", true, "", "/assets/images/services/harbor.svg"},
 	{"shell", "Shell", "shell.vinnel.cloud", "Cluster shell (kubectl)", "Platform", true, iconTerminal, ""},
 }
 

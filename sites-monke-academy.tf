@@ -5,8 +5,6 @@ module "monke_academy_site" {
   depends_on = [
     helm_release.cert_manager,
     helm_release.ingress_nginx,
-    helm_release.harbor,
-    harbor_project.monke_academy,
     kubernetes_deployment_v1.gitlab,
     kubernetes_secret_v1.cloudflare_api_token,
     kubernetes_secret_v1.registry_dockerconfig_websites,
