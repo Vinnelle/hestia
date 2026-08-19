@@ -24,7 +24,12 @@ resource "random_password" "gitlab_root_password" {
 locals {
   gitlab_omnibus_config = join("\n", [
     "external_url 'https://gitlab.vinnel.cloud'",
-    "registry['enable'] = false",
+    "registry_external_url 'http://gitlab.gitlab.svc.cluster.local:5050'",
+    "registry['enable'] = true",
+    "registry['storage'] = { 's3' => { 'accesskey' => '${random_password.seaweedfs_s3_access_key.result}', 'secretkey' => '${random_password.seaweedfs_s3_secret_key.result}', 'bucket' => 'gitlab-registry', 'region' => 'us-east-1', 'regionendpoint' => 'http://seaweedfs.seaweedfs.svc.cluster.local:8333', 'secure' => false, 'v4auth' => true, 'forcepathstyle' => true }, 'redirect' => { 'disable' => true } }",
+    "registry_nginx['enable'] = true",
+    "registry_nginx['listen_https'] = false",
+    "registry_nginx['listen_port'] = 5050",
     "gitlab_rails['gitlab_shell_ssh_port'] = 2222",
     "letsencrypt['enable'] = false",
     "nginx['listen_port'] = 80",
@@ -165,6 +170,10 @@ resource "kubernetes_deployment_v1" "gitlab" {
             name           = "http"
             container_port = 80
           }
+          port {
+            name           = "registry"
+            container_port = 5050
+          }
 
           resources {
             requests = {
@@ -285,8 +294,14 @@ resource "kubernetes_service_v1" "gitlab" {
       app = "gitlab"
     }
     port {
+      name        = "http"
       port        = 80
       target_port = "http"
+    }
+    port {
+      name        = "registry"
+      port        = 5050
+      target_port = "registry"
     }
   }
 }
@@ -402,6 +417,12 @@ resource "kubernetes_role_binding_v1" "gitlab_runner" {
   }
 }
 
+resource "gitlab_project_deploy_token" "registry" {
+  project = gitlab_project.gaia.id
+  name    = "registry-pull"
+  scopes  = ["read_registry"]
+}
+
 resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
   metadata {
     name      = "registry-dockerconfig"
@@ -415,6 +436,11 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
           username = harbor_robot_account.ci.full_name
           password = random_password.harbor_robot.result
           auth     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
+        }
+        "gitlab.gitlab.svc.cluster.local:5050" = {
+          username = gitlab_project_deploy_token.registry.username
+          password = gitlab_project_deploy_token.registry.token
+          auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
         }
       }
     })
