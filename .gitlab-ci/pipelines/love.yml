@@ -8,7 +8,7 @@ love_build:
     - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
       changes: *love_changes
     - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "love"'
-  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
   script:
     - cc -O3 -D_FORTIFY_SOURCE=3 -fstack-protector-strong -fPIE -pie -Wl,-z,relro,-z,now -o love/love love/love.c
     - bash love/test.sh love/love
@@ -25,7 +25,7 @@ love_release:
     - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
       changes: *love_changes
     - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "love"'
-  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
   variables:
     GH_TOKEN: "${GH_API_TOKEN}"
   script:

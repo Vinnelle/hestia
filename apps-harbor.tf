@@ -256,6 +256,11 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_websites" {
           password = random_password.harbor_robot.result
           auth     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
         }
+        "artifacts.vinnel.cloud" = {
+          username = gitlab_project_deploy_token.registry.username
+          password = gitlab_project_deploy_token.registry.token
+          auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
+        }
       }
     })
   }

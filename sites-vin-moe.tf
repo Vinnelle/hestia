@@ -7,6 +7,7 @@ module "vin_moe_site" {
     helm_release.ingress_nginx,
     helm_release.harbor,
     harbor_project.vin_moe,
+    kubernetes_deployment_v1.gitlab,
     kubernetes_secret_v1.cloudflare_api_token,
     kubernetes_secret_v1.registry_dockerconfig_websites,
   ]

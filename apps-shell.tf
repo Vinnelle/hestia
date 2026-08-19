@@ -24,7 +24,7 @@ resource "kubernetes_secret_v1" "shell_ttyd_credentials" {
 }
 
 resource "kubernetes_deployment_v1" "vinnel_cloud_shell" {
-  depends_on = [helm_release.harbor, harbor_project.vinnel_cloud, kubernetes_secret_v1.registry_dockerconfig_websites]
+  depends_on = [helm_release.harbor, harbor_project.vinnel_cloud, kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_websites]
 
   metadata {
     name      = "vinnel-cloud-shell"

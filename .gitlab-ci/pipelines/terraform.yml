@@ -15,7 +15,7 @@
     - export PATH="/tmp/bin:${PATH}"
 
 .terraform_base:
-  image: registry.vinnel.cloud/ci-runner/ci-runner:latest
+  image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
   retry: 2
   before_script:
     - !reference [.terraform_install, script]
