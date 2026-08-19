@@ -1,6 +1,30 @@
+warm_dependency_proxy:
+  stage: .pre
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && ($RUN == "vin_moe" || $RUN == "monke_academy" || $RUN == "vinnel_cloud" || $RUN == "shell")'
+  image:
+    name: quay.io/skopeo/stable:v${SKOPEO_VERSION}
+    entrypoint: [""]
+  script:
+    - |
+      # The dependency proxy has no locking on a cold cache: concurrent site builds racing to
+      # resolve the same uncached base image digest can 404 each other (confirmed 2026-08-19 --
+      # same digest works fine pulled alone, fails only under concurrent burst). Pulling every
+      # base image once, sequentially, here means the parallel build jobs always hit a warm
+      # cache instead of racing to fill it.
+      for ref in $(grep -rhoE 'FROM gitlab\.vinnel\.cloud/vinnel-cloud/dependency_proxy/containers/[^ ]+' hestia/*/Dockerfile hestia/*/*/Dockerfile 2>/dev/null | awk '{print $2}' | sort -u); do
+        # skopeo refuses a combined tag+digest reference ("both a tag and digest are
+        # currently not supported") -- strip the tag, the digest alone still pins exactly.
+        ref=$(echo "$ref" | sed -E 's/:[^:@]+@/@/')
+        echo "warming ${ref}"
+        skopeo inspect --raw --creds "${CI_DEPENDENCY_PROXY_USER}:${CI_DEPENDENCY_PROXY_PASSWORD}" "docker://${ref}" >/dev/null
+      done
+
 .site_build:
   stage: build
   tags: ["privileged-build"]
+  retry: 2
   image:
     name: moby/buildkit:v${BUILDKIT_VERSION}
     entrypoint: [""]
@@ -169,6 +193,7 @@ vinnel_cloud_deploy:
 shell_build:
   stage: build
   tags: ["privileged-build"]
+  retry: 2
   rules:
     - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
       changes: *shell_changes
