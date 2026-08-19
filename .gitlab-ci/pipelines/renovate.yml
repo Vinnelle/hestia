@@ -3,7 +3,7 @@ renovate:
   allow_failure: true
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "renovate"'
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "renovate"'
   image: gitlab.vinnel.cloud/vinnel-cloud/dependency_proxy/containers/renovate/renovate:44.23.3@sha256:818f93d52ee1bb05d56be9577a17ecbe049ccd0e8b3950f5b5ce6ef056c7265c
   variables:
     RENOVATE_PLATFORM: gitlab
