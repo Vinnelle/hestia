@@ -473,10 +473,12 @@ resource "gitlab_project_deploy_token" "registry" {
   scopes  = ["read_registry"]
 }
 
-resource "gitlab_group_deploy_token" "dependency_proxy" {
-  group  = gitlab_group.vinnel_cloud.id
-  name   = "dependency-proxy-pull"
-  scopes = ["read_registry"]
+resource "gitlab_group_access_token" "dependency_proxy" {
+  group        = gitlab_group.vinnel_cloud.id
+  name         = "dependency-proxy-pull"
+  access_level = "guest"
+  scopes       = ["read_registry"]
+  expires_at   = "2027-08-01"
 }
 
 resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
@@ -499,9 +501,9 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
           auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
         }
         "gitlab.vinnel.cloud" = {
-          username = gitlab_group_deploy_token.dependency_proxy.username
-          password = gitlab_group_deploy_token.dependency_proxy.token
-          auth     = base64encode("${gitlab_group_deploy_token.dependency_proxy.username}:${gitlab_group_deploy_token.dependency_proxy.token}")
+          username = "dependency-proxy-pull"
+          password = gitlab_group_access_token.dependency_proxy.token
+          auth     = base64encode("dependency-proxy-pull:${gitlab_group_access_token.dependency_proxy.token}")
         }
       }
     })
