@@ -40,6 +40,7 @@ locals {
     "registry_nginx['listen_https'] = false",
     "registry_nginx['listen_port'] = 5050",
     "registry_nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
+    "gitlab_rails['dependency_proxy_enabled'] = true",
     "gitlab_rails['gitlab_shell_ssh_port'] = 2222",
     "letsencrypt['enable'] = false",
     "nginx['listen_port'] = 80",
@@ -472,6 +473,12 @@ resource "gitlab_project_deploy_token" "registry" {
   scopes  = ["read_registry"]
 }
 
+resource "gitlab_group_deploy_token" "dependency_proxy" {
+  group  = gitlab_group.vinnel_cloud.id
+  name   = "dependency-proxy-pull"
+  scopes = ["read_registry"]
+}
+
 resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
   metadata {
     name      = "registry-dockerconfig"
@@ -491,9 +498,21 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
           password = gitlab_project_deploy_token.registry.token
           auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
         }
+        "gitlab.vinnel.cloud" = {
+          username = gitlab_group_deploy_token.dependency_proxy.username
+          password = gitlab_group_deploy_token.dependency_proxy.token
+          auth     = base64encode("${gitlab_group_deploy_token.dependency_proxy.username}:${gitlab_group_deploy_token.dependency_proxy.token}")
+        }
       }
     })
   }
+}
+
+resource "gitlab_group_dependency_proxy" "vinnel_cloud" {
+  group    = gitlab_group.vinnel_cloud.id
+  enabled  = true
+  identity = var.docker_hub_username
+  secret   = var.docker_hub_access_token
 }
 
 resource "gitlab_user_runner" "gaia" {
