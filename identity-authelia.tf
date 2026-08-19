@@ -75,6 +75,16 @@ resource "kubernetes_secret_v1" "authelia_users_database" {
   }
 }
 
+resource "kubernetes_secret_v1" "authelia_smtp_credentials" {
+  metadata {
+    name      = "authelia-smtp-credentials"
+    namespace = kubernetes_namespace_v1.services.metadata[0].name
+  }
+  data = {
+    "smtp-password" = var.resend_api_key
+  }
+}
+
 resource "kubernetes_persistent_volume_claim_v1" "authelia" {
   metadata {
     name      = "authelia-pvc"
@@ -125,6 +135,7 @@ resource "kubernetes_deployment_v1" "authelia" {
         annotations = {
           "checksum/config"         = sha256(local.authelia_configuration_yaml)
           "checksum/users-database" = sha256(local.authelia_users_database_yaml)
+          "checksum/smtp-password"  = sha256(var.resend_api_key)
           "prometheus.io/scrape"    = "true"
           "prometheus.io/port"      = "9959"
         }
@@ -145,6 +156,11 @@ resource "kubernetes_deployment_v1" "authelia" {
           port {
             name           = "metrics"
             container_port = 9959
+          }
+
+          env {
+            name  = "AUTHELIA_NOTIFIER_SMTP_PASSWORD_FILE"
+            value = "/secrets/smtp-password"
           }
 
           resources {
@@ -175,6 +191,13 @@ resource "kubernetes_deployment_v1" "authelia" {
           volume_mount {
             name       = "data"
             mount_path = "/config/data"
+          }
+
+          volume_mount {
+            name       = "smtp-password"
+            mount_path = "/secrets/smtp-password"
+            sub_path   = "smtp-password"
+            read_only  = true
           }
 
           readiness_probe {
@@ -215,6 +238,13 @@ resource "kubernetes_deployment_v1" "authelia" {
           name = "data"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim_v1.authelia.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "smtp-password"
+          secret {
+            secret_name = kubernetes_secret_v1.authelia_smtp_credentials.metadata[0].name
           }
         }
       }

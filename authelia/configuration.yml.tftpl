@@ -22,7 +22,12 @@
     "local": { "path": "/config/data/db.sqlite3" }
   },
   "notifier": {
-    "filesystem": { "filename": "/config/data/notification.txt" }
+    "smtp": {
+      "address": "submission://smtp.resend.com:587",
+      "sender": "Authelia <alerts@vinnel.cloud>",
+      "identifier": "vinnel.cloud",
+      "username": "resend"
+    }
   },
   "telemetry": {
     "metrics": { "enabled": true }

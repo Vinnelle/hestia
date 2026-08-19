@@ -42,6 +42,17 @@ locals {
     "registry_nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
     "gitlab_rails['dependency_proxy_enabled'] = true",
     "gitlab_rails['gitlab_shell_ssh_port'] = 2222",
+    "gitlab_rails['smtp_enable'] = true",
+    "gitlab_rails['smtp_address'] = 'smtp.resend.com'",
+    "gitlab_rails['smtp_port'] = 587",
+    "gitlab_rails['smtp_user_name'] = 'resend'",
+    "gitlab_rails['smtp_password'] = ENV['GITLAB_SMTP_PASSWORD']",
+    "gitlab_rails['smtp_domain'] = 'vinnel.cloud'",
+    "gitlab_rails['smtp_authentication'] = 'login'",
+    "gitlab_rails['smtp_enable_starttls_auto'] = true",
+    "gitlab_rails['smtp_tls'] = false",
+    "gitlab_rails['gitlab_email_from'] = 'alerts@vinnel.cloud'",
+    "gitlab_rails['gitlab_email_reply_to'] = 'alerts@vinnel.cloud'",
     "letsencrypt['enable'] = false",
     "nginx['listen_port'] = 80",
     "nginx['listen_https'] = false",
@@ -51,8 +62,20 @@ locals {
 
   gitlab_config_hash = sha256(join("", [
     random_password.gitlab_root_password.result,
+    var.resend_api_key,
     local.gitlab_omnibus_config,
   ]))
+}
+
+resource "kubernetes_secret_v1" "gitlab_credentials" {
+  metadata {
+    name      = "gitlab-credentials"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+  }
+  data = {
+    root-password = random_password.gitlab_root_password.result
+    smtp-password = var.resend_api_key
+  }
 }
 
 resource "kubernetes_persistent_volume_claim_v1" "gitlab_config" {
@@ -173,8 +196,22 @@ resource "kubernetes_deployment_v1" "gitlab" {
             value = var.acme_email_vin_moe
           }
           env {
-            name  = "GITLAB_ROOT_PASSWORD"
-            value = random_password.gitlab_root_password.result
+            name = "GITLAB_ROOT_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.gitlab_credentials.metadata[0].name
+                key  = "root-password"
+              }
+            }
+          }
+          env {
+            name = "GITLAB_SMTP_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.gitlab_credentials.metadata[0].name
+                key  = "smtp-password"
+              }
+            }
           }
 
           port {

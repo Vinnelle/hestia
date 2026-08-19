@@ -89,6 +89,12 @@ variable "mega_import_pass" {
   sensitive   = true
 }
 
+variable "resend_api_key" {
+  description = "Resend API key used as the SMTP password for outbound mail (GitLab notifications etc.), authenticated as alerts@vinnel.cloud via the mail.vinnel.cloud DNS records. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
 variable "backup_encryption_password" {
   description = "Restic repository password encrypting the pv-backup snapshots client-side before they reach the bucket. Set as a TFC workspace variable, not codified. CRITICAL: also keep a copy offline (with the state exports) — without it every backup is unreadable, and it cannot be recovered from bucket or TFC state loss."
   type        = string
@@ -154,39 +160,4 @@ variable "docker_hub_access_token" {
   description = "Docker Hub access token (Account Settings -> Security -> Personal access tokens, Public Repo Read-only scope is enough) paired with docker_hub_username. Set as a TFC workspace variable, not codified."
   type        = string
   sensitive   = true
-}
-
-variable "wwv_cesium_ion_token" {
-  description = "Cesium Ion access token (https://ion.cesium.com/), passed to the wwv app as NEXT_PUBLIC_CESIUM_ION_TOKEN. Set as a TFC workspace variable, not codified. Optional -- unverified whether this NEXT_PUBLIC_* var actually reaches the client once set only as a runtime env var against the prebuilt ghcr.io/silvertakana/worldwideview image (it's normally inlined at build time per that repo's own Dockerfile); check live after deploy."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "wwv_bing_maps_key" {
-  description = "Bing Maps API key (https://www.bingmapsportal.com/), passed to the wwv app as NEXT_PUBLIC_BING_MAPS_KEY. Set as a TFC workspace variable, not codified. Optional -- same NEXT_PUBLIC_* runtime-vs-build-time caveat as wwv_cesium_ion_token."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "wwv_openweathermap_api_key" {
-  description = "OpenWeatherMap API key (https://openweathermap.org/api, free tier), passed to the wwv app as OPENWEATHERMAP_API_KEY for weather radar tile overlays. Set as a TFC workspace variable, not codified. Optional -- feature is dormant without it."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "wwv_acled_email" {
-  description = "ACLED account email (https://developer.acleddata.com/, free for non-commercial use), passed to the wwv app as ACLED_EMAIL for civil-unrest/conflict data. Set as a TFC workspace variable, not codified. Optional -- feature is dormant without it."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "wwv_acled_password" {
-  description = "ACLED account password, paired with wwv_acled_email. Set as a TFC workspace variable, not codified. Optional -- feature is dormant without it."
-  type        = string
-  sensitive   = true
-  default     = ""
 }

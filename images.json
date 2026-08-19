@@ -1,10 +1,10 @@
 {
   "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
-  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:cb827dccdf19a87d58db1aa57f3543fd238b4a60838d11f3a8498cd3f2698a19",
-  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:ef14d9aa75b90913a6eb2f37d1f2579cd2428d89b22cb167dca24517478ae10e",
+  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:d384fb6728de98bbab1db8f2b07cb8d7069d14d91ad869370441a4a9ef526a7d",
+  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:6ea5f08fbc892a1800eb79968e3cc26a4fded031c45e4a7403341ff4f6b523dc",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:fe9ebad3f52ded3c0a32cd9eb63b9bc77b7f70f255e90e090f90b0bff7dd5926",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:ff2024ab279701ad4a42531c411d4a31aaad59e02684927f6c0fcd4f261b1d2e",
-  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:738df94d28da5c69e3b71d774ba007c693b3e6dd296ed8f698a11d236dff757b",
-  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:0a9a28b489e2347fdd356589ac5bb03a2e13611b73cfe19d7c83a78b65b451f2"
+  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:63f4da739ac8597791af92e9ce782412d720466dd22005ff9aa51f583348a4d7",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:ef54323586372883deceadec6ce7cd44ae57b80456b5f7f4c17125557ded12fd",
+  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:238f1cd26b489a962461eef628b36238895dfd85efb3d0d91344933e5c30a44d",
+  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:c7928bf5e98696c650225f5ec60fd03e2b1ad6fb6f6081d02bfb5ab20c46cb7f"
 }
