@@ -1,10 +1,10 @@
 {
   "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
-  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:d384fb6728de98bbab1db8f2b07cb8d7069d14d91ad869370441a4a9ef526a7d",
-  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:6ea5f08fbc892a1800eb79968e3cc26a4fded031c45e4a7403341ff4f6b523dc",
+  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:ae19ee0d04073d82e3b695db4b32a1e3c6c4417f413112ead6cba91b5954a8b0",
+  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:85716c97853a8d7e686b7a2d39eff376b04bd4e308c4537695316d2578fea74b",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:63f4da739ac8597791af92e9ce782412d720466dd22005ff9aa51f583348a4d7",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:ef54323586372883deceadec6ce7cd44ae57b80456b5f7f4c17125557ded12fd",
-  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:238f1cd26b489a962461eef628b36238895dfd85efb3d0d91344933e5c30a44d",
-  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:c7928bf5e98696c650225f5ec60fd03e2b1ad6fb6f6081d02bfb5ab20c46cb7f"
+  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:3a2151f6e1617ba2db21d208a71dc0f383e09bf36f2114854c897f4aee622619",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:88083e23357f61fec9a83b25a667c7f05593509ff3aa92b9bbd76c3b96fdaf35",
+  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:c663c3a80de7c8e0585b2225bbf0a35026651781ef1d181dbea049b6b1b7fe47",
+  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:2e41aa3c0ad60de19ccccaea411dbea22282682f7df0105588873d0eb2633fde"
 }

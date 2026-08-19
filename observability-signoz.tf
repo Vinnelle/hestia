@@ -74,7 +74,7 @@ resource "cloudflare_dns_record" "signoz_vinnel_cloud" {
 }
 
 locals {
-  signoz_alert_channels = ["ntfy", "slack"]
+  signoz_alert_channels = ["slack"]
 
   signoz_notification_settings = {
     group_by = ["alertname"]

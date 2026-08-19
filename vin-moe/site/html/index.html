@@ -184,7 +184,7 @@
       </li>
       <li>
         <h3>alerting</h3>
-        <p>Alert rules are Terraform resources, not clicks in a UI: backup failure, node NotReady, PVC over 85%, certificate under 14 days, workload below desired replicas. They fan out to self-hosted ntfy and to Slack, renotifying every 4h while still firing. Dashboards go through the same API. A single node that stops answering also stops alerting — that failure mode has to be caught from outside the cluster, not by anything running on it.</p>
+        <p>Alert rules are Terraform resources, not clicks in a UI: backup failure, node NotReady, PVC over 85%, certificate under 14 days, workload below desired replicas. They fan out to Slack, renotifying every 4h while still firing. Dashboards go through the same API. A single node that stops answering also stops alerting — that failure mode has to be caught from outside the cluster, not by anything running on it.</p>
       </li>
       <li>
         <h3>chaos &amp; recovery</h3>

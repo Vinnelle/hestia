@@ -49,6 +49,20 @@ locals {
         "1.0.0.1",
       ]
     }
+    filters = [
+      {
+        enabled = true
+        url     = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"
+        name    = "AdGuard DNS filter"
+        id      = 1
+      },
+      {
+        enabled = true
+        url     = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_3.txt"
+        name    = "Peter Lowe's Blocklist"
+        id      = 3
+      },
+    ]
   })
   adguard_config_template_hash = sha256(local.adguard_config_template_yaml)
 }
