@@ -82,6 +82,8 @@ resource "kubernetes_secret_v1" "nextcloud_secrets" {
     "oidc-client-secret" = random_password.nextcloud_oidc_client_secret.result
     "s3-access-key"      = random_password.seaweedfs_s3_access_key.result
     "s3-secret-key"      = random_password.seaweedfs_s3_secret_key.result
+    "mega-import-user"   = var.mega_import_user
+    "mega-import-pass"   = var.mega_import_pass
   }
 }
 
@@ -102,139 +104,6 @@ resource "kubernetes_persistent_volume_claim_v1" "nextcloud" {
 
   lifecycle {
     prevent_destroy = true
-  }
-}
-
-resource "kubernetes_config_map_v1" "nextcloud_migration" {
-  metadata {
-    name      = "nextcloud-migration"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
-  }
-  data = {
-    "migrate.php" = file("${path.module}/nextcloud-migration/migrate.php")
-    "verify.php"  = file("${path.module}/nextcloud-migration/verify.php")
-  }
-}
-
-resource "kubernetes_job_v1" "nextcloud_verify_migration" {
-  metadata {
-    name      = "nextcloud-verify-migration"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
-  }
-
-  spec {
-    backoff_limit = 0
-
-    template {
-      metadata {}
-      spec {
-        restart_policy = "Never"
-
-        container {
-          name    = "verify"
-          image   = "nextcloud:34-apache"
-          command = ["php", "/migration/verify.php"]
-
-          env {
-            name  = "SCRIPT_HASH"
-            value = filesha256("${path.module}/nextcloud-migration/verify.php")
-          }
-
-          volume_mount {
-            name       = "data"
-            mount_path = "/var/www/html/data"
-          }
-
-          volume_mount {
-            name       = "migration"
-            mount_path = "/migration"
-            read_only  = true
-          }
-        }
-
-        volume {
-          name = "data"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.nextcloud.metadata[0].name
-          }
-        }
-
-        volume {
-          name = "migration"
-          config_map {
-            name = kubernetes_config_map_v1.nextcloud_migration.metadata[0].name
-          }
-        }
-      }
-    }
-  }
-
-  wait_for_completion = true
-
-  timeouts {
-    create = "8m"
-  }
-}
-
-resource "kubernetes_job_v1" "nextcloud_migrate_to_seaweedfs" {
-  depends_on = [kubernetes_deployment_v1.nextcloud]
-
-  metadata {
-    name      = "nextcloud-migrate-to-seaweedfs"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
-  }
-
-  spec {
-    backoff_limit = 0
-
-    template {
-      metadata {}
-      spec {
-        restart_policy = "Never"
-
-        container {
-          name    = "migrate"
-          image   = "nextcloud:34-apache"
-          command = ["php", "/migration/migrate.php"]
-
-          env {
-            name  = "SCRIPT_HASH"
-            value = filesha256("${path.module}/nextcloud-migration/migrate.php")
-          }
-
-          volume_mount {
-            name       = "data"
-            mount_path = "/var/www/html/data"
-          }
-
-          volume_mount {
-            name       = "migration"
-            mount_path = "/migration"
-            read_only  = true
-          }
-        }
-
-        volume {
-          name = "data"
-          persistent_volume_claim {
-            claim_name = kubernetes_persistent_volume_claim_v1.nextcloud.metadata[0].name
-          }
-        }
-
-        volume {
-          name = "migration"
-          config_map {
-            name = kubernetes_config_map_v1.nextcloud_migration.metadata[0].name
-          }
-        }
-      }
-    }
-  }
-
-  wait_for_completion = true
-
-  timeouts {
-    create = "30m"
   }
 }
 
@@ -537,6 +406,94 @@ resource "kubernetes_ingress_v1" "cloud_vinnel_cloud" {
       }
     }
   }
+}
+
+locals {
+  nextcloud_mega_import_sh = <<-EOT
+    set -eu
+    cat > /tmp/rclone.conf <<CONF
+    [mega-src]
+    type = mega
+    user = $MEGA_USER
+    pass = $(rclone obscure "$MEGA_PASS")
+
+    [nextcloud-dst]
+    type = webdav
+    url = $NEXTCLOUD_URL
+    vendor = nextcloud
+    user = $NEXTCLOUD_USER
+    pass = $(rclone obscure "$NEXTCLOUD_PASS")
+    CONF
+    rclone sync mega-src: nextcloud-dst:/mega-import --config /tmp/rclone.conf --transfers 8 --checkers 16
+  EOT
+}
+
+resource "kubernetes_job_v1" "nextcloud_mega_import" {
+  depends_on = [kubernetes_ingress_v1.cloud_api_vinnel_cloud]
+
+  metadata {
+    name      = "nextcloud-mega-import"
+    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  }
+
+  spec {
+    backoff_limit = 0
+
+    template {
+      metadata {}
+      spec {
+        restart_policy = "Never"
+
+        container {
+          name    = "import"
+          image   = "rclone/rclone:1.68.2"
+          command = ["sh", "-c", local.nextcloud_mega_import_sh]
+
+          env {
+            name = "MEGA_USER"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "mega-import-user"
+              }
+            }
+          }
+
+          env {
+            name = "MEGA_PASS"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "mega-import-pass"
+              }
+            }
+          }
+
+          env {
+            name  = "NEXTCLOUD_URL"
+            value = "https://cloud.vinnel.cloud/remote.php/dav/files/ida"
+          }
+
+          env {
+            name  = "NEXTCLOUD_USER"
+            value = "ida"
+          }
+
+          env {
+            name = "NEXTCLOUD_PASS"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "admin-password"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  wait_for_completion = false
 }
 
 resource "kubernetes_ingress_v1" "cloud_api_vinnel_cloud" {

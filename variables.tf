@@ -83,6 +83,18 @@ variable "mega_s4_endpoint_domain" {
   default     = "g.megas4.com"
 }
 
+variable "mega_import_user" {
+  description = "MEGA.nz account email for the one-time nextcloud-mega-import job that pulls the user's existing MEGA drive into Nextcloud. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
+variable "mega_import_pass" {
+  description = "MEGA.nz account password paired with mega_import_user. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}
+
 variable "backup_encryption_password" {
   description = "Restic repository password encrypting the pv-backup snapshots client-side before they reach the bucket. Set as a TFC workspace variable, not codified. CRITICAL: also keep a copy offline (with the state exports) — without it every backup is unreadable, and it cannot be recovered from bucket or TFC state loss."
   type        = string
