@@ -22,7 +22,7 @@ resource "cloudflare_dns_record" "artifacts_vinnel_cloud" {
   type    = "A"
   content = var.node_ip
   ttl     = 1
-  proxied = true
+  proxied = false
 }
 
 resource "random_password" "gitlab_root_password" {
