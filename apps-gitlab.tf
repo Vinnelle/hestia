@@ -16,6 +16,15 @@ resource "cloudflare_dns_record" "gitlab_vinnel_cloud" {
   proxied = true
 }
 
+resource "cloudflare_dns_record" "artifacts_vinnel_cloud" {
+  zone_id = data.cloudflare_zone.vinnel_cloud.id
+  name    = "artifacts.vinnel.cloud"
+  type    = "A"
+  content = var.node_ip
+  ttl     = 1
+  proxied = true
+}
+
 resource "random_password" "gitlab_root_password" {
   length  = 32
   special = false
@@ -24,12 +33,13 @@ resource "random_password" "gitlab_root_password" {
 locals {
   gitlab_omnibus_config = join("\n", [
     "external_url 'https://gitlab.vinnel.cloud'",
-    "registry_external_url 'http://gitlab.gitlab.svc.cluster.local:5050'",
+    "registry_external_url 'https://artifacts.vinnel.cloud'",
     "registry['enable'] = true",
     "registry['storage'] = { 's3' => { 'accesskey' => '${random_password.seaweedfs_s3_access_key.result}', 'secretkey' => '${random_password.seaweedfs_s3_secret_key.result}', 'bucket' => 'gitlab-registry', 'region' => 'us-east-1', 'regionendpoint' => 'http://seaweedfs.seaweedfs.svc.cluster.local:8333', 'secure' => false, 'v4auth' => true, 'forcepathstyle' => true }, 'redirect' => { 'disable' => true } }",
     "registry_nginx['enable'] = true",
     "registry_nginx['listen_https'] = false",
     "registry_nginx['listen_port'] = 5050",
+    "registry_nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
     "gitlab_rails['gitlab_shell_ssh_port'] = 2222",
     "letsencrypt['enable'] = false",
     "nginx['listen_port'] = 80",
@@ -348,6 +358,45 @@ resource "kubernetes_ingress_v1" "gitlab_vinnel_cloud" {
 
 # --- Phase B: GitLab Runner, Kubernetes executor ---
 
+resource "kubernetes_ingress_v1" "artifacts_vinnel_cloud" {
+  depends_on = [helm_release.ingress_nginx, kubernetes_deployment_v1.gitlab]
+  metadata {
+    name      = "artifacts-vinnel-cloud"
+    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    annotations = {
+      "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
+      "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["artifacts.vinnel.cloud"]
+      secret_name = "artifacts-vinnel-cloud-tls"
+    }
+
+    rule {
+      host = "artifacts.vinnel.cloud"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = kubernetes_service_v1.gitlab.metadata[0].name
+              port {
+                number = 5050
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 resource "kubernetes_service_account_v1" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner"
@@ -437,7 +486,7 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
           password = random_password.harbor_robot.result
           auth     = base64encode("${harbor_robot_account.ci.full_name}:${random_password.harbor_robot.result}")
         }
-        "gitlab.gitlab.svc.cluster.local:5050" = {
+        "artifacts.vinnel.cloud" = {
           username = gitlab_project_deploy_token.registry.username
           password = gitlab_project_deploy_token.registry.token
           auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")

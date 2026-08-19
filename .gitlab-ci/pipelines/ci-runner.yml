@@ -16,7 +16,7 @@ ci_runner_build:
     name: moby/buildkit:v${BUILDKIT_VERSION}
     entrypoint: [""]
   variables:
-    CI_RUNNER_IMAGE: gitlab.gitlab.svc.cluster.local:5050/vinnel-cloud/gaia/ci-runner/ci-runner
+    CI_RUNNER_IMAGE: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner
   before_script:
     - mkdir -p ~/.docker
     - printf '{"auths":{"%s":{"auth":"%s"}}}' "$CI_REGISTRY" "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 -w0)" > ~/.docker/config.json
@@ -29,15 +29,15 @@ ci_runner_build:
         --opt build-arg:CACHEBUST=${CI_PIPELINE_ID} \
         --opt label:org.opencontainers.image.source=https://gitlab.vinnel.cloud/vinnel-cloud/gaia \
         --opt label:org.opencontainers.image.revision=${CI_COMMIT_SHA} \
-        --import-cache type=registry,ref=${CI_RUNNER_IMAGE}:buildcache,insecure=true \
-        --export-cache type=registry,ref=${CI_RUNNER_IMAGE}:buildcache,mode=max,insecure=true \
-        --output type=image,name=${CI_RUNNER_IMAGE}:${CI_COMMIT_SHA},push=true,registry.insecure=true
+        --import-cache type=registry,ref=${CI_RUNNER_IMAGE}:buildcache \
+        --export-cache type=registry,ref=${CI_RUNNER_IMAGE}:buildcache,mode=max \
+        --output type=image,name=${CI_RUNNER_IMAGE}:${CI_COMMIT_SHA},push=true
 
 ci_runner_smoke_test:
   extends: .ci_runner_rules
   stage: build
   needs: ["ci_runner_build"]
-  image: gitlab.gitlab.svc.cluster.local:5050/vinnel-cloud/gaia/ci-runner/ci-runner:${CI_COMMIT_SHA}
+  image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:${CI_COMMIT_SHA}
   script:
     - kubectl version --client
     - tflint --version
@@ -63,7 +63,7 @@ ci_runner_publish:
     name: quay.io/skopeo/stable:v${SKOPEO_VERSION}
     entrypoint: [""]
   variables:
-    CI_RUNNER_IMAGE: gitlab.gitlab.svc.cluster.local:5050/vinnel-cloud/gaia/ci-runner/ci-runner
+    CI_RUNNER_IMAGE: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner
   before_script:
     - mkdir -p ~/.docker
     - printf '{"auths":{"%s":{"auth":"%s"}}}' "$CI_REGISTRY" "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 -w0)" > ~/.docker/config.json
@@ -71,8 +71,6 @@ ci_runner_publish:
     - |
       skopeo copy \
         --authfile ~/.docker/config.json \
-        --src-tls-verify=false \
-        --dest-tls-verify=false \
         "docker://${CI_RUNNER_IMAGE}:${CI_COMMIT_SHA}" \
         "docker://${CI_RUNNER_IMAGE}:latest"
 
@@ -82,7 +80,7 @@ ci_runner_scan:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "ci_runner_scan"'
-  image: gitlab.gitlab.svc.cluster.local:5050/vinnel-cloud/gaia/ci-runner/ci-runner:latest
+  image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
   before_script:
     - mkdir -p /tmp/bin ~/.docker
     - printf '{"auths":{"%s":{"auth":"%s"}}}' "$CI_REGISTRY" "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 -w0)" > ~/.docker/config.json
@@ -91,7 +89,7 @@ ci_runner_scan:
     - export PATH="/tmp/bin:${PATH}"
   script:
     - |
-      if ! GRYPE_REGISTRY_INSECURE_USE_HTTP=true grype "registry:gitlab.gitlab.svc.cluster.local:5050/vinnel-cloud/gaia/ci-runner/ci-runner:latest" --fail-on high -o table; then
+      if ! grype "registry:artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest" --fail-on high -o table; then
         echo "vulnerabilities found in ci-runner image, triggering a rebuild"
         curl --fail -X POST \
           -F token="${RECONCILE_TRIGGER_TOKEN}" \

@@ -24,17 +24,6 @@ data "talos_machine_configuration" "controlplane" {
         }
       }
     }),
-    yamlencode({
-      machine = {
-        registries = {
-          mirrors = {
-            "gitlab.gitlab.svc.cluster.local:5050" = {
-              endpoints = ["http://gitlab.gitlab.svc.cluster.local:5050"]
-            }
-          }
-        }
-      }
-    }),
   ]
 }
 
