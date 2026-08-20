@@ -273,7 +273,7 @@ resource "kubernetes_deployment_v1" "nextcloud" {
             }
             limits = {
               cpu    = "1000m"
-              memory = "1Gi"
+              memory = "4Gi"
             }
           }
 
@@ -347,7 +347,7 @@ module "nextcloud_vpa" {
   target_name = kubernetes_deployment_v1.nextcloud.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "nextcloud", min_memory = "256Mi", max_memory = "1Gi" },
+    { container_name = "nextcloud", min_memory = "256Mi", max_memory = "4Gi" },
   ]
 }
 
@@ -424,7 +424,7 @@ locals {
     user = $NEXTCLOUD_USER
     pass = $(rclone obscure "$NEXTCLOUD_PASS")
     CONF
-    rclone sync mega-src: nextcloud-dst:/mega-import --config /tmp/rclone.conf --transfers 8 --checkers 16
+    rclone sync mega-src: nextcloud-dst:/mega-import --config /tmp/rclone.conf --transfers 4 --checkers 8
   EOT
 }
 
