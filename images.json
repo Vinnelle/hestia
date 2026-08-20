@@ -1,10 +1,10 @@
 {
   "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
-  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:ae19ee0d04073d82e3b695db4b32a1e3c6c4417f413112ead6cba91b5954a8b0",
-  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:335dc3a482f2336e769e693c98fa07bd13f9c93b28259032fd46d5826d593371",
+  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:17c2bcc5da35ed6df2959ef35eedbc52b3900c0bc961f92b13bc0a209734c0dd",
+  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:1d52d4703fde4d0dcb0900906e3eeb778321b0288ed63f4291e71a92f15f77aa",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:3a2151f6e1617ba2db21d208a71dc0f383e09bf36f2114854c897f4aee622619",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:88083e23357f61fec9a83b25a667c7f05593509ff3aa92b9bbd76c3b96fdaf35",
-  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:c663c3a80de7c8e0585b2225bbf0a35026651781ef1d181dbea049b6b1b7fe47",
-  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:2e41aa3c0ad60de19ccccaea411dbea22282682f7df0105588873d0eb2633fde"
+  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:297f2404fa9d2ea8deb27ae8d30f09519a6604ed7f28782c602a20028c98ca7d",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:36751c94ba5935de418ff103f1380e315f0cb470f7c5fc3bea92bd6a7269fe51",
+  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:9a43a69ea7f3bc1364b41559daf1f3b4a22ec939c66eae9ce029ddcee803fd4a",
+  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:d156fab952d3ce7fc594ea8de74f6887255f6d28955f262d0cc539cbb2753dbc"
 }
