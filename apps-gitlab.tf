@@ -185,7 +185,7 @@ resource "kubernetes_deployment_v1" "gitlab" {
 
         container {
           name  = "gitlab"
-          image = "gitlab/gitlab-ce:18.11.11-ce.0@sha256:10528ba59904282f06798db2075d0ccb34a07f585dcd108d4a7d25fab9bbc271"
+          image = "gitlab/gitlab-ce:19.2.4-ce.0@sha256:1ac3eab1c0ea6162d6c8270d60aa77e8b48f16597c5308fff2a9df0e6f2af7cf"
 
           env {
             name  = "GITLAB_OMNIBUS_CONFIG"
@@ -627,7 +627,7 @@ resource "kubernetes_deployment_v1" "gitlab_runner" {
 
         container {
           name  = "gitlab-runner"
-          image = "gitlab/gitlab-runner:v18.11.4@sha256:96fbcefea955010d39e22408abd71e76c4da0c732bc200506fbef1c001c4d1c6"
+          image = "gitlab/gitlab-runner:v19.2.2@sha256:558e321ec1868d039f675aef8ed170a8bda450f5a4031752e19592e21dadb5bc"
 
           resources {
             requests = {
@@ -748,7 +748,7 @@ resource "kubernetes_deployment_v1" "gitlab_runner_privileged" {
 
         container {
           name  = "gitlab-runner"
-          image = "gitlab/gitlab-runner:v18.11.4@sha256:96fbcefea955010d39e22408abd71e76c4da0c732bc200506fbef1c001c4d1c6"
+          image = "gitlab/gitlab-runner:v19.2.2@sha256:558e321ec1868d039f675aef8ed170a8bda450f5a4031752e19592e21dadb5bc"
 
           resources {
             requests = {

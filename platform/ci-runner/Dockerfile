@@ -1,4 +1,4 @@
-FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241
+FROM debian:trixie-slim@sha256:3a39a0592364683e6bab97937b72cad5a8fa6dcbbee90edb3bb48c7f8e94f258
 
 # renovate: datasource=github-releases depName=actions/runner
 ARG RUNNER_VERSION=2.336.0
@@ -30,7 +30,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
       > /etc/apt/sources.list.d/docker.list \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /etc/apt/keyrings/nodesource.asc \
     && chmod a+r /etc/apt/keyrings/nodesource.asc \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_22.x nodistro main" \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_26.x nodistro main" \
       > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
     && apt-get install -y --no-install-recommends docker-ce-cli nodejs \

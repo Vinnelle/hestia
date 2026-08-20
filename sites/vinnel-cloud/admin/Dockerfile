@@ -3,7 +3,7 @@ RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools
 COPY shared/images/ .
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp
 
-FROM mirror.vinnel.cloud/library/node:24-alpine@sha256:d32cdf619f63fe0471182d08996dd516c6275bb5fd31ae06e55a570bd9e1ad43 AS asset-build
+FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
@@ -16,7 +16,7 @@ COPY --from=images /favicon.webp assets/images/
 RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/fetch-service-icons.sh assets/images/services && sh /build/build.sh \
  && find . \( -name '*.gz' -o -name '*.br' \) -delete
 
-FROM mirror.vinnel.cloud/library/golang:1.26-alpine@sha256:28d89ee9cc0ff9fec75c82ca201e6bf7fdf9a679d4b7b24dfa04f2bb766bb468 AS build
+FROM mirror.vinnel.cloud/library/golang:1.27-alpine@sha256:4c9fe60190a2a3350ddc51de80d0224b8a6698d12bdfc999fee45ea9d6c46dbc AS build
 WORKDIR /app
 
 COPY admin/go.mod admin/go.sum ./
