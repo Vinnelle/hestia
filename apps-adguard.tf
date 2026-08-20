@@ -22,48 +22,7 @@ resource "cloudflare_dns_record" "adguard_admin_vinnel_cloud" {
 locals {
   adguard_ordinals = toset(["0", "1"])
 
-  adguard_config_template_yaml = yamlencode({
-    schema_version = 29
-    http = {
-      address = "0.0.0.0:3000"
-    }
-    users = []
-    dns = {
-      bind_hosts          = ["0.0.0.0"]
-      port                = 53
-      anonymize_client_ip = true
-      upstream_dns = [
-        "https://dns.quad9.net/dns-query",
-        "https://cloudflare-dns.com/dns-query",
-      ]
-      bootstrap_dns = [
-        "9.9.9.9",
-        "149.112.112.112",
-        "1.1.1.1",
-        "1.0.0.1",
-      ]
-      fallback_dns = [
-        "9.9.9.9",
-        "149.112.112.112",
-        "1.1.1.1",
-        "1.0.0.1",
-      ]
-    }
-    filters = [
-      {
-        enabled = true
-        url     = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"
-        name    = "AdGuard DNS filter"
-        id      = 1
-      },
-      {
-        enabled = true
-        url     = "https://adguardteam.github.io/HostlistsRegistry/assets/filter_3.txt"
-        name    = "Peter Lowe's Blocklist"
-        id      = 3
-      },
-    ]
-  })
+  adguard_config_template_yaml = templatefile("${path.module}/apps/adguard/AdGuardHome.yaml.tftpl", {})
   adguard_config_template_hash = sha256(local.adguard_config_template_yaml)
 }
 

@@ -1,10 +1,10 @@
 {
   "// vin-moe": "vin-moe site image — updated by vin-moe-build.yml",
-  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:5225a015fc5eefa58016d6a7ffa90d4514821ea0fd19bda40b41c567f4c8c41e",
-  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:45e4588cd1b3a42fa9de1cf68869bcca70f7c59121ac672e59c8bf548a0d6ab5",
+  "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:aff018113678e23cd7f739975f2836c363672ee9e407a27cef0b6b7e58f1b0f1",
+  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:26c410444c887c1ff9a344b2a02b32cb29c16352209155629987c2439f93a625",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:ed19cdcab663b72b71064226df627d9df6f826a26144a54e6004d8524d75214a",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:5a67aa72b2c18f22b52696ea78f0ad1f29132990c05aea44e20bde3a0369ab11",
-  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:ce394a5f5fcff5a9de80a34ac3eb21b01be558f5fa92023685c48dafc709c031",
-  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:0c85b2a39763dae39d0e43e7916a04a54cce7643d1ee0e649cd368d296878961"
+  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:9405536718481baf438af6fb2134cc79312486135abacf59f7c4c379b946a526",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:12c77db09a4ba63d0e0418e992c1b234f9513178d13cfd14f85592c2400de399",
+  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:e2663ee3af09cc6bd71d1b381551f759cb2d5f4d7a7d42c17850a7ce5c9d01a7",
+  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:4e8b754d3dce04dbbe49e061254af6c138a80963f3606ecd8ec777c059f6b1a1"
 }

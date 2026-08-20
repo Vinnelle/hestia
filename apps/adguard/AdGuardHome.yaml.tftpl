@@ -1,0 +1,31 @@
+"dns":
+  "anonymize_client_ip": true
+  "bind_hosts":
+  - "0.0.0.0"
+  "bootstrap_dns":
+  - "9.9.9.9"
+  - "149.112.112.112"
+  - "1.1.1.1"
+  - "1.0.0.1"
+  "fallback_dns":
+  - "9.9.9.9"
+  - "149.112.112.112"
+  - "1.1.1.1"
+  - "1.0.0.1"
+  "port": 53
+  "upstream_dns":
+  - "https://dns.quad9.net/dns-query"
+  - "https://cloudflare-dns.com/dns-query"
+"filters":
+- "enabled": true
+  "id": 1
+  "name": "AdGuard DNS filter"
+  "url": "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt"
+- "enabled": true
+  "id": 3
+  "name": "Peter Lowe's Blocklist"
+  "url": "https://adguardteam.github.io/HostlistsRegistry/assets/filter_3.txt"
+"http":
+  "address": "0.0.0.0:3000"
+"schema_version": 29
+"users": []
