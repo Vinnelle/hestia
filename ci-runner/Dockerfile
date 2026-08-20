@@ -1,5 +1,7 @@
-FROM ghcr.io/actions/actions-runner:latest@sha256:0cfdcc701ce933c6d243c6b0b2da767366dc9f2e99961d4c3754b0b78084cdda
+FROM debian:bookworm-slim@sha256:abd67ffcfa541b485a3dff59865ab629aa048a6c613e639d36e7456b0b229241
 
+# renovate: datasource=github-releases depName=actions/runner
+ARG RUNNER_VERSION=2.336.0
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
 ARG KUBECTL_VERSION=v1.36.3
 # renovate: datasource=github-releases depName=terraform-linters/tflint
@@ -9,19 +11,12 @@ ARG ACTIONLINT_VERSION=1.7.12
 # renovate: datasource=github-releases depName=cli/cli
 ARG GH_VERSION=2.97.0
 
-USER root
-
-RUN rm -f /usr/bin/dockerd /usr/bin/containerd /usr/bin/containerd-shim-runc-v2 \
-      /usr/bin/ctr /usr/bin/docker-init /usr/bin/docker-proxy \
-      /usr/local/lib/docker/cli-plugins/docker-buildx
-
-RUN /home/runner/externals/node20/bin/node /home/runner/externals/node20/bin/npm install -g npm@^10 \
-    && /home/runner/externals/node24/bin/node /home/runner/externals/node24/bin/npm install -g npm@latest
-
 ARG CACHEBUST=0
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       ca-certificates \
       curl \
+      git \
+      sudo \
       jq \
       rsync \
       build-essential \
@@ -29,9 +24,9 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
       yamllint \
       unzip \
     && install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
     && chmod a+r /etc/apt/keyrings/docker.asc \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
       > /etc/apt/sources.list.d/docker.list \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /etc/apt/keyrings/nodesource.asc \
     && chmod a+r /etc/apt/keyrings/nodesource.asc \
@@ -41,6 +36,19 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     && apt-get install -y --no-install-recommends docker-ce-cli nodejs \
     && rm -rf /var/lib/apt/lists/* \
     && npm install -g npm@latest
+
+RUN groupadd -g 1001 runner \
+    && groupadd docker \
+    && useradd -u 1001 -g runner -G sudo,docker -m -d /home/runner -s /bin/bash runner
+
+RUN curl -fsSL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o /tmp/runner.tar.gz \
+    && tar -xzf /tmp/runner.tar.gz -C /home/runner \
+    && rm /tmp/runner.tar.gz \
+    && /home/runner/bin/installdependencies.sh \
+    && rm -rf /home/runner/externals/node20_alpine /home/runner/externals/node24_alpine \
+    && /home/runner/externals/node20/bin/node /home/runner/externals/node20/bin/npm install -g npm@^10 \
+    && /home/runner/externals/node24/bin/node /home/runner/externals/node24/bin/npm install -g npm@latest \
+    && chown -R runner:runner /home/runner
 
 RUN curl -fsSL -o /usr/local/bin/kubectl \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
@@ -62,3 +70,4 @@ RUN curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_$
     && rm -rf /tmp/gh.tar.gz "/tmp/gh_${GH_VERSION}_linux_amd64"
 
 USER runner
+WORKDIR /home/runner

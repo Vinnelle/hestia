@@ -9,6 +9,7 @@ renovate:
     RENOVATE_PLATFORM: gitlab
     RENOVATE_ENDPOINT: https://gitlab.vinnel.cloud/api/v4
     RENOVATE_TOKEN: "${CI_BOT_TOKEN}"
+    RENOVATE_GITHUB_COM_TOKEN: "${GH_API_TOKEN}"
     RENOVATE_REPOSITORIES: vinnel-cloud/gaia
     RENOVATE_AUTODISCOVER: "false"
   script:
