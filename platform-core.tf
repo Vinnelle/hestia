@@ -29,7 +29,7 @@ resource "helm_release" "ingress_nginx" {
   namespace  = kubernetes_namespace_v1.ingress_nginx.metadata[0].name
 
   values = [
-    file("${path.module}/helm-values/ingress-nginx/values.yaml")
+    file("${path.module}/platform/helm-values/ingress-nginx/values.yaml")
   ]
 }
 

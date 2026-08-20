@@ -78,10 +78,9 @@ resource "kubernetes_config_map_v1" "adguard_config_template" {
 }
 
 resource "netbird_setup_key" "adguard" {
-  for_each = local.adguard_ordinals
-  name     = "adguard-${each.key}"
-  type     = "one-off"
-  # See server-momus.tf: 86400 is the API's documented minimum for expires_in.
+  for_each       = local.adguard_ordinals
+  name           = "adguard-${each.key}"
+  type           = "one-off"
   expiry_seconds = 86400
   ephemeral      = false
   usage_limit    = 1
@@ -154,7 +153,7 @@ resource "kubernetes_stateful_set_v1" "adguard" {
         init_container {
           name    = "seed-config"
           image   = "docker.io/library/busybox:1.38.0"
-          command = ["sh", "-c", file("${path.module}/adguard/seed-config.sh")]
+          command = ["sh", "-c", file("${path.module}/apps/adguard/seed-config.sh")]
 
           env {
             name  = "TEMPLATE_HASH"

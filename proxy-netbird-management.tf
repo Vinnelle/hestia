@@ -1,6 +1,6 @@
 
 locals {
-  netbird_management_json = templatefile("${path.module}/netbird-management/management.json.tftpl", {
+  netbird_management_json = templatefile("${path.module}/proxy/netbird-management/management.json.tftpl", {
     relay_auth_secret = random_password.netbird_relay_auth_secret.result
     datastore_enc_key = random_id.netbird_datastore_enc_key.b64_std
   })

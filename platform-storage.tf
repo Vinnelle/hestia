@@ -104,10 +104,10 @@ resource "kubernetes_config_map_v1" "local_path_config" {
   }
 
   data = {
-    "config.json"    = file("${path.module}/local-path-provisioner/config.json")
-    "setup"          = file("${path.module}/local-path-provisioner/setup")
-    "teardown"       = file("${path.module}/local-path-provisioner/teardown")
-    "helperPod.yaml" = file("${path.module}/local-path-provisioner/helperPod.yaml")
+    "config.json"    = file("${path.module}/platform/local-path-provisioner/config.json")
+    "setup"          = file("${path.module}/platform/local-path-provisioner/setup")
+    "teardown"       = file("${path.module}/platform/local-path-provisioner/teardown")
+    "helperPod.yaml" = file("${path.module}/platform/local-path-provisioner/helperPod.yaml")
   }
 }
 

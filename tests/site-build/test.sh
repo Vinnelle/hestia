@@ -59,9 +59,9 @@ EOF
   rm -rf "$work"
 }
 
-for rel in monke-academy/site/build.sh \
-           vin-moe/site/scripts/build.sh \
-           vinnel-cloud/shared/scripts/build.sh; do
+for rel in sites/monke-academy/site/build.sh \
+           sites/vin-moe/site/scripts/build.sh \
+           sites/vinnel-cloud/shared/scripts/build.sh; do
   test_one "$repo_root/hestia/$rel"
 done
 

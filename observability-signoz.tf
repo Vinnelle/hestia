@@ -7,7 +7,7 @@ resource "helm_release" "signoz" {
   namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
 
   values = [
-    file("${path.module}/helm-values/signoz/values.yaml")
+    file("${path.module}/platform/helm-values/signoz/values.yaml")
   ]
 }
 
@@ -19,7 +19,7 @@ resource "helm_release" "k8s_infra" {
   namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
 
   values = [
-    templatefile("${path.module}/helm-values/k8s-infra/values.yaml.tftpl", {
+    templatefile("${path.module}/platform/helm-values/k8s-infra/values.yaml.tftpl", {
       monitoring_namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
       cluster_name         = var.cluster_name
       node_ip              = var.node_ip

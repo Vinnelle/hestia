@@ -48,7 +48,7 @@ resource "helm_release" "velero" {
   namespace  = kubernetes_namespace_v1.velero.metadata[0].name
 
   values = [
-    templatefile("${path.module}/helm-values/velero/values.yaml.tftpl", {
+    templatefile("${path.module}/platform/helm-values/velero/values.yaml.tftpl", {
       mega_s4_endpoint_domain = var.mega_s4_endpoint_domain
     })
   ]

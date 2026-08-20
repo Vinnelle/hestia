@@ -39,7 +39,7 @@ resource "tls_private_key" "authelia_oidc_issuer" {
 }
 
 locals {
-  authelia_configuration_yaml = templatefile("${path.module}/authelia/configuration.yml.tftpl", {
+  authelia_configuration_yaml = templatefile("${path.module}/identity/authelia/configuration.yml.tftpl", {
     session_secret                  = random_password.authelia_session_secret.result
     storage_encryption_key          = random_password.authelia_storage_encryption_key.result
     oidc_hmac_secret                = random_password.authelia_oidc_hmac_secret.result
@@ -49,7 +49,7 @@ locals {
     nextcloud_client_secret         = random_password.nextcloud_oidc_client_secret.bcrypt_hash
   })
 
-  authelia_users_database_yaml = templatefile("${path.module}/authelia/users_database.yml.tftpl", {
+  authelia_users_database_yaml = templatefile("${path.module}/identity/authelia/users_database.yml.tftpl", {
     admin_password_hash = random_password.authelia_admin_password.bcrypt_hash
   })
 }

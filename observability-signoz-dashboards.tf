@@ -31,10 +31,10 @@ resource "signoz_dashboard" "dashboard" {
   for_each = local.signoz_dashboard_ids
 
   schema_version = "v6"
-  name           = jsondecode(file("${path.module}/${each.key}")).title
+  name           = jsondecode(file("${path.module}/observability/${each.key}")).title
 
   tags = [
-    for t in jsondecode(file("${path.module}/${each.key}")).tags : {
+    for t in jsondecode(file("${path.module}/observability/${each.key}")).tags : {
       key   = "tag"
       value = t
     }
@@ -42,7 +42,7 @@ resource "signoz_dashboard" "dashboard" {
 
   spec = {
     display = {
-      name = jsondecode(file("${path.module}/${each.key}")).title
+      name = jsondecode(file("${path.module}/observability/${each.key}")).title
     }
     layouts   = []
     panels    = {}

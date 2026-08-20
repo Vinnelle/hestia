@@ -32,21 +32,21 @@
     - cp "$SITE_DEPLOY_KUBECONFIG" ~/.kube/config
 
 .site_changes_vin_moe: &site_changes_vin_moe
-  - "hestia/vin-moe/site/**/*"
+  - "hestia/sites/vin-moe/site/**/*"
   - ".gitlab-ci.yml"
   - ".gitlab-ci/pipelines/sites.yml"
   - ".gitlab-ci/scripts/site-deploy.sh"
   - ".gitlab-ci/scripts/record-image-digest.sh"
 
 .site_changes_monke_academy: &site_changes_monke_academy
-  - "hestia/monke-academy/site/**/*"
+  - "hestia/sites/monke-academy/site/**/*"
   - ".gitlab-ci.yml"
   - ".gitlab-ci/pipelines/sites.yml"
   - ".gitlab-ci/scripts/site-deploy.sh"
   - ".gitlab-ci/scripts/record-image-digest.sh"
 
 .site_changes_vinnel_cloud: &site_changes_vinnel_cloud
-  - "hestia/vinnel-cloud/**/*"
+  - "hestia/sites/vinnel-cloud/**/*"
   - ".gitlab-ci.yml"
   - ".gitlab-ci/pipelines/sites.yml"
   - ".gitlab-ci/scripts/site-deploy.sh"
@@ -59,8 +59,8 @@ vin_moe_build:
       changes: *site_changes_vin_moe
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vin_moe"'
   variables:
-    SITE_CONTEXT: hestia/vin-moe/site
-    SITE_DOCKERFILE: hestia/vin-moe/site
+    SITE_CONTEXT: hestia/sites/vin-moe/site
+    SITE_DOCKERFILE: hestia/sites/vin-moe/site
     SITE_IMAGE: vin-moe/site
     SITE_DEPLOYMENT: vin-moe-site
 
@@ -86,8 +86,8 @@ monke_academy_build:
       changes: *site_changes_monke_academy
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "monke_academy"'
   variables:
-    SITE_CONTEXT: hestia/monke-academy/site
-    SITE_DOCKERFILE: hestia/monke-academy/site
+    SITE_CONTEXT: hestia/sites/monke-academy/site
+    SITE_DOCKERFILE: hestia/sites/monke-academy/site
     SITE_IMAGE: monke-academy/site
     SITE_DEPLOYMENT: monke-academy-site
 
@@ -113,8 +113,8 @@ vinnel_cloud_site_build:
       changes: *site_changes_vinnel_cloud
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vinnel_cloud"'
   variables:
-    SITE_CONTEXT: hestia/vinnel-cloud
-    SITE_DOCKERFILE: hestia/vinnel-cloud/site
+    SITE_CONTEXT: hestia/sites/vinnel-cloud
+    SITE_DOCKERFILE: hestia/sites/vinnel-cloud/site
     SITE_IMAGE: vinnel-cloud/site
     SITE_DEPLOYMENT: vinnel-cloud-site
 
@@ -125,8 +125,8 @@ vinnel_cloud_admin_build:
       changes: *site_changes_vinnel_cloud
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vinnel_cloud"'
   variables:
-    SITE_CONTEXT: hestia/vinnel-cloud
-    SITE_DOCKERFILE: hestia/vinnel-cloud/admin
+    SITE_CONTEXT: hestia/sites/vinnel-cloud
+    SITE_DOCKERFILE: hestia/sites/vinnel-cloud/admin
     SITE_IMAGE: vinnel-cloud/admin
     SITE_DEPLOYMENT: vinnel-cloud-admin
 
@@ -137,8 +137,8 @@ vinnel_cloud_auth_build:
       changes: *site_changes_vinnel_cloud
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vinnel_cloud"'
   variables:
-    SITE_CONTEXT: hestia/vinnel-cloud
-    SITE_DOCKERFILE: hestia/vinnel-cloud/auth
+    SITE_CONTEXT: hestia/sites/vinnel-cloud
+    SITE_DOCKERFILE: hestia/sites/vinnel-cloud/auth
     SITE_IMAGE: vinnel-cloud/auth
     SITE_DEPLOYMENT: vinnel-cloud-auth
 
@@ -162,7 +162,7 @@ vinnel_cloud_deploy:
     - sh .gitlab-ci/scripts/site-deploy.sh vinnel-cloud-site vinnel-cloud-admin vinnel-cloud-auth --zone vinnel.cloud
 
 .shell_changes: &shell_changes
-  - "hestia/shell/Dockerfile"
+  - "hestia/apps/shell/Dockerfile"
   - ".gitlab-ci.yml"
   - ".gitlab-ci/pipelines/sites.yml"
   - ".gitlab-ci/scripts/record-image-digest.sh"
@@ -187,7 +187,7 @@ shell_build:
       buildctl-daemonless.sh build \
         --frontend dockerfile.v0 \
         --local context=. \
-        --local dockerfile=hestia/shell \
+        --local dockerfile=hestia/apps/shell \
         --opt label:org.opencontainers.image.source=https://gitlab.vinnel.cloud/vinnel-cloud/gaia \
         --opt label:org.opencontainers.image.revision=${CI_COMMIT_SHA} \
         --import-cache type=registry,ref=artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell:buildcache \

@@ -1,5 +1,5 @@
 .ci_runner_changes: &ci_runner_changes
-  - "hestia/ci-runner/Dockerfile"
+  - "hestia/platform/ci-runner/Dockerfile"
 
 .ci_runner_rules:
   rules:
@@ -24,8 +24,8 @@ ci_runner_build:
     - |
       buildctl-daemonless.sh build \
         --frontend dockerfile.v0 \
-        --local context=hestia/ci-runner \
-        --local dockerfile=hestia/ci-runner \
+        --local context=hestia/platform/ci-runner \
+        --local dockerfile=hestia/platform/ci-runner \
         --opt build-arg:CACHEBUST=${CI_PIPELINE_ID} \
         --opt label:org.opencontainers.image.source=https://gitlab.vinnel.cloud/vinnel-cloud/gaia \
         --opt label:org.opencontainers.image.revision=${CI_COMMIT_SHA} \

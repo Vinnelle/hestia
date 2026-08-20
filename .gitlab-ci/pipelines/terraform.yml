@@ -2,8 +2,8 @@
   - "hestia/**/*.tf"
   - "hestia/**/*.tftpl"
   - "hestia/.terraform.lock.hcl"
-  - "hestia/manifests/**/*"
-  - "hestia/helm-values/**/*"
+  - "hestia/platform/manifests/**/*"
+  - "hestia/platform/helm-values/**/*"
   - "hestia/images.json"
 
 .terraform_install:

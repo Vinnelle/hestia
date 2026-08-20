@@ -72,7 +72,7 @@ COPY --from=builder /build/code /usr/local/bin/code
 COPY --from=builder /build/kubectl /usr/local/bin/kubectl
 COPY --from=builder /build/love /usr/local/bin/love
 COPY --from=builder /build/starship /usr/local/bin/starship
-COPY hestia/momus/entrypoint.sh /usr/local/bin/momus-entrypoint
+COPY hestia/server/momus/entrypoint.sh /usr/local/bin/momus-entrypoint
 
 RUN set -eux; \
     chmod 0755 \
