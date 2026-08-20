@@ -6,7 +6,7 @@ data "talos_machine_configuration" "controlplane" {
   machine_type     = "controlplane"
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
-  talos_version = "v1.13.7"
+  talos_version = "v1.13.9"
 
   config_patches = [
     file("${path.module}/talos/controlplane-patch.yaml"),
@@ -20,7 +20,7 @@ data "talos_machine_configuration" "controlplane" {
       machine = {
         install = {
           disk  = "/dev/nvme1n1"
-          image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.13.7"
+          image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.13.9"
         }
       }
     }),

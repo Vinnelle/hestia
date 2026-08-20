@@ -177,7 +177,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 
         container {
           name  = "saves-http"
-          image = "nginxinc/nginx-unprivileged:1.31-alpine@sha256:59ccf0943b0b8e8d9e6ea9039a39555730f544701a655c596f7df7d096c593f5"
+          image = "nginxinc/nginx-unprivileged:1.31-alpine@sha256:c3fed6436b61d2bf2201ec032c35c000871f7ed062dea5d586bc6bf4d0fdd140"
 
           security_context {
             allow_privilege_escalation = false

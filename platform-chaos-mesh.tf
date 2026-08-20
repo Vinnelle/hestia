@@ -13,7 +13,7 @@ resource "helm_release" "chaos_mesh" {
   name       = "chaos-mesh"
   repository = "https://charts.chaos-mesh.org"
   chart      = "chaos-mesh"
-  version    = "2.8.3"
+  version    = "2.8.4"
   namespace  = kubernetes_namespace_v1.chaos_mesh.metadata[0].name
 
   values = [

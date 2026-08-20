@@ -30,9 +30,9 @@ variables:
   TF_REGISTRY_CLIENT_TIMEOUT: "30"
   MEGA_S4_ENDPOINT_DOMAIN: "g.megas4.com"
   # renovate: datasource=github-releases depName=hashicorp/terraform
-  TERRAFORM_VERSION: "1.15.8"
+  TERRAFORM_VERSION: "1.15.9"
   # renovate: datasource=golang-version depName=golang
-  GO_VERSION: "1.26.5"
+  GO_VERSION: "1.26.7"
   # renovate: datasource=github-releases depName=gitleaks/gitleaks
   GITLEAKS_VERSION: "8.30.1"
   # renovate: datasource=github-releases depName=moby/buildkit
@@ -40,7 +40,7 @@ variables:
   # renovate: datasource=docker depName=quay.io/skopeo/stable extractVersion=^v(?<version>.+)$
   SKOPEO_VERSION: "1.22.2"
   # renovate: datasource=github-releases depName=anchore/grype
-  GRYPE_VERSION: "0.116.1"
+  GRYPE_VERSION: "0.117.0"
 
 include:
   - local: '.gitlab-ci/pipelines/merge-gate.yml'

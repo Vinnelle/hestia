@@ -185,7 +185,7 @@ resource "kubernetes_deployment_v1" "gitlab" {
 
         container {
           name  = "gitlab"
-          image = "gitlab/gitlab-ce:18.11.9-ce.0@sha256:1e89377a1c04b228a7d291a35889b4931342378cce0e2e2f33f908d303fe10b2"
+          image = "gitlab/gitlab-ce:18.11.11-ce.0@sha256:10528ba59904282f06798db2075d0ccb34a07f585dcd108d4a7d25fab9bbc271"
 
           env {
             name  = "GITLAB_OMNIBUS_CONFIG"
@@ -576,7 +576,7 @@ locals {
       [runners.kubernetes]
         namespace          = "${kubernetes_namespace_v1.gitlab.metadata[0].name}"
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
-        image              = "alpine:3.22"
+        image              = "alpine:3.24"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
         host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud"] }]
   EOT
@@ -696,7 +696,7 @@ locals {
       [runners.kubernetes]
         namespace          = "${kubernetes_namespace_v1.gitlab.metadata[0].name}"
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
-        image              = "alpine:3.22"
+        image              = "alpine:3.24"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
         host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud"] }]
         privileged         = true
