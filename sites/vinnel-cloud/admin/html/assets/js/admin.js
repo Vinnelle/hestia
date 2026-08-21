@@ -698,7 +698,7 @@ blogPublish.addEventListener('click', async () => {
     }
     await blogFetch('/api/blog/posts/' + encodeURIComponent(slug) + '/publish', { method: 'POST' });
     await blogReopen(slug);
-    blogSay('Committed to ' + (blogBranch ? blogBranch.textContent : 'pre') + ' — CI opens the merge request');
+    blogSay('Published');
   } catch (err) {
     blogSay(verb + ' failed', true);
     blogFail(err);
