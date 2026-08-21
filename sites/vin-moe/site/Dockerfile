@@ -1,6 +1,8 @@
 FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS images
 RUN apk add --no-cache imagemagick librsvg libwebp-tools
 COPY src/images/favicon.png .
+COPY src/images/avatar.jpg .
+RUN cwebp -q 82 -resize 288 288 avatar.jpg -o avatar.webp
 RUN magick favicon.png -gravity center -background none -extent 530x530 \
     -define icon:auto-resize=16,32,48,64 favicon.ico
 RUN magick favicon.png -gravity center -background none -extent 530x530 \
@@ -24,11 +26,15 @@ RUN npm install -g clean-css-cli terser html-minifier-terser
 
 WORKDIR /app
 COPY scripts/ /build/
+RUN npm install --prefix /build --no-fund --no-audit marked
+COPY posts/ ./posts/
 COPY html/ .
 COPY src/images/favicon.png .
 COPY --from=images /favicon.ico .
 COPY --from=images /apple-touch-icon.png .
+COPY --from=images /avatar.webp .
 
+RUN node /build/render-posts.mjs posts index.html feed.xml && rm -rf posts
 RUN sh /build/fetch-fonts.sh fonts && sh /build/build.sh
 
 FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:c3fed6436b61d2bf2201ec032c35c000871f7ed062dea5d586bc6bf4d0fdd140

@@ -2,6 +2,7 @@ const frame = document.getElementById('service-frame');
 const home = document.getElementById('frame-empty');
 const satisfactoryPage = document.getElementById('page-satisfactory');
 const minecraftPage = document.getElementById('page-minecraft');
+const blogPage = document.getElementById('page-blog');
 const back = document.getElementById('frame-back');
 const frameTitle = document.getElementById('frame-title');
 const fullscreenBtn = document.getElementById('frame-fullscreen');
@@ -15,6 +16,7 @@ const mobileSidebarQuery = matchMedia('(max-width: 640px)');
 const internalPages = {
   'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: loadSatisfactoryStatus },
   'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: loadMinecraftStatus },
+  blog: { el: blogPage, title: 'Blog', onShow: loadBlogPosts },
 };
 
 function expandSectionFor(slug) {
@@ -53,6 +55,7 @@ function show(slug) {
   home.hidden = true;
   satisfactoryPage.hidden = true;
   minecraftPage.hidden = true;
+  blogPage.hidden = true;
   frame.hidden = true;
   back.hidden = true;
   fullscreenBtn.hidden = true;
@@ -500,5 +503,197 @@ function refresh() {
 
 setInterval(refresh, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+
+const blogList = document.getElementById('blog-list');
+const blogEditor = document.getElementById('blog-editor');
+const blogError = document.getElementById('blog-error');
+const blogStatus = document.getElementById('blog-status');
+const blogTitle = document.getElementById('blog-title');
+const blogDate = document.getElementById('blog-date');
+const blogSlug = document.getElementById('blog-slug');
+const blogBody = document.getElementById('blog-body');
+const blogPublish = document.getElementById('blog-publish');
+const blogUnpublish = document.getElementById('blog-unpublish');
+const blogDelete = document.getElementById('blog-delete');
+const blogPublishingOff = document.getElementById('blog-publishing-off');
+const blogBranch = document.getElementById('blog-branch');
+
+let blogCurrent = null;
+let blogPublishing = false;
+
+function blogSay(message, bad) {
+  blogStatus.textContent = message;
+  blogStatus.classList.toggle('blog-status--bad', Boolean(bad));
+}
+
+function blogFail(err) {
+  blogError.textContent = String(err && err.message ? err.message : err);
+  blogError.hidden = false;
+}
+
+async function blogFetch(path, options) {
+  const res = await fetch(path, options);
+  const text = await res.text();
+  let data = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    throw new Error(text.slice(0, 200) || res.statusText);
+  }
+  if (!res.ok) throw new Error(data.err || res.statusText);
+  return data;
+}
+
+function blogRender(posts) {
+  blogList.replaceChildren();
+  if (!posts.length) {
+    const empty = document.createElement('li');
+    empty.className = 'blog-list-empty';
+    empty.textContent = 'No posts yet.';
+    blogList.append(empty);
+    return;
+  }
+  for (const post of posts) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'blog-list-item';
+    button.dataset.slug = post.slug;
+    button.classList.toggle('active', blogCurrent === post.slug);
+
+    const title = document.createElement('span');
+    title.className = 'blog-list-title';
+    title.textContent = post.title;
+
+    const meta = document.createElement('span');
+    meta.className = 'blog-list-meta';
+    meta.textContent = post.date;
+
+    const badge = document.createElement('span');
+    badge.className = post.draft ? 'blog-badge blog-badge--draft' : 'blog-badge';
+    badge.textContent = post.draft ? 'draft' : 'live';
+
+    meta.append(' ', badge);
+    button.append(title, meta);
+    item.append(button);
+    blogList.append(item);
+  }
+}
+
+async function loadBlogPosts() {
+  blogError.hidden = true;
+  try {
+    const data = await blogFetch('/api/blog/posts');
+    blogPublishing = Boolean(data.publishing);
+    blogPublishingOff.hidden = blogPublishing;
+    blogPublish.disabled = !blogPublishing;
+    blogRender(data.posts || []);
+  } catch (err) {
+    blogFail(err);
+  }
+}
+
+function blogOpen(post) {
+  blogCurrent = post.slug || null;
+  blogTitle.value = post.title || '';
+  blogDate.value = post.date || new Date().toISOString().slice(0, 10);
+  blogSlug.value = post.slug || '';
+  blogBody.value = post.body || '';
+  blogUnpublish.hidden = post.draft !== false;
+  blogDelete.hidden = !post.slug;
+  blogEditor.hidden = false;
+  blogSay(post.slug ? '' : 'New post');
+  for (const el of blogList.querySelectorAll('.blog-list-item')) {
+    el.classList.toggle('active', el.dataset.slug === blogCurrent);
+  }
+}
+
+blogList.addEventListener('click', async (e) => {
+  const button = e.target.closest('.blog-list-item');
+  if (!button) return;
+  blogError.hidden = true;
+  try {
+    blogOpen(await blogFetch('/api/blog/posts/' + encodeURIComponent(button.dataset.slug)));
+  } catch (err) {
+    blogFail(err);
+  }
+});
+
+document.getElementById('blog-new').addEventListener('click', () => {
+  blogOpen({ draft: true });
+  blogTitle.focus();
+});
+
+blogTitle.addEventListener('blur', async () => {
+  if (blogCurrent || !blogTitle.value.trim() || blogSlug.value.trim()) return;
+  try {
+    const data = await blogFetch('/api/blog/slug?title=' + encodeURIComponent(blogTitle.value));
+    blogSlug.value = data.slug;
+  } catch (err) {
+    blogFail(err);
+  }
+});
+
+blogEditor.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  blogError.hidden = true;
+  const slug = blogSlug.value.trim();
+  const wasDraft = blogUnpublish.hidden;
+  try {
+    await blogFetch('/api/blog/posts/' + encodeURIComponent(slug), {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: blogTitle.value,
+        date: blogDate.value,
+        body: blogBody.value,
+        draft: wasDraft,
+      }),
+    });
+    blogCurrent = slug;
+    blogSay('Saved');
+    await loadBlogPosts();
+  } catch (err) {
+    blogSay('Not saved', true);
+    blogFail(err);
+  }
+});
+
+async function blogAction(path, verb, done) {
+  if (!blogCurrent) return;
+  blogError.hidden = true;
+  blogSay(verb + '…');
+  try {
+    await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent) + path, { method: 'POST' });
+    blogSay(done);
+    await loadBlogPosts();
+    blogOpen(await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent)));
+  } catch (err) {
+    blogSay(verb + ' failed', true);
+    blogFail(err);
+  }
+}
+
+blogPublish.addEventListener('click', () => {
+  blogAction('/publish', 'Publishing', 'Committed to ' + (blogBranch ? blogBranch.textContent : 'pre') + ' — CI opens the merge request');
+});
+
+blogUnpublish.addEventListener('click', () => {
+  blogAction('/unpublish', 'Unpublishing', 'Removed from the repository');
+});
+
+blogDelete.addEventListener('click', async () => {
+  if (!blogCurrent) return;
+  if (!confirm('Delete "' + blogTitle.value + '"? This also removes it from the repository.')) return;
+  blogError.hidden = true;
+  try {
+    await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent), { method: 'DELETE' });
+    blogCurrent = null;
+    blogEditor.hidden = true;
+    await loadBlogPosts();
+  } catch (err) {
+    blogFail(err);
+  }
+});
 
 show(location.hash.slice(1));

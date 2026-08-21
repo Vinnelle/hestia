@@ -8,6 +8,48 @@ resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   proxied = true
 }
 
+resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog" {
+  metadata {
+    name      = "vinnel-cloud-admin-blog-pvc"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    annotations = {
+      "volumeType" = "hostPath"
+    }
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = "1Gi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "gitlab_project_access_token" "admin_blog" {
+  project      = gitlab_project.gaia.id
+  name         = "vinnel-cloud-admin-blog"
+  scopes       = ["api"]
+  access_level = "developer"
+  expires_at   = "2027-08-01"
+}
+
+resource "kubernetes_secret_v1" "vinnel_cloud_admin_blog" {
+  metadata {
+    name      = "vinnel-cloud-admin-blog"
+    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+  }
+
+  data = {
+    GITLAB_TOKEN = gitlab_project_access_token.admin_blog.token
+  }
+}
+
 resource "kubernetes_service_account_v1" "vinnel_cloud_admin" {
   metadata {
     name      = "vinnel-cloud-admin"
@@ -158,6 +200,13 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
         }
 
+        volume {
+          name = "blog"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin_blog.metadata[0].name
+          }
+        }
+
         container {
           name  = "admin"
           image = local.images["vinnel-cloud-admin"]
@@ -224,6 +273,41 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             }
           }
 
+          env {
+            name  = "BLOG_DATA_DIR"
+            value = "/data/posts"
+          }
+
+          env {
+            name  = "BLOG_BRANCH"
+            value = gitlab_branch.pre.name
+          }
+
+          env {
+            name  = "BLOG_POSTS_PATH"
+            value = "hestia/sites/vin-moe/site/posts"
+          }
+
+          env {
+            name  = "GITLAB_API_URL"
+            value = "https://gitlab.vinnel.cloud/api/v4"
+          }
+
+          env {
+            name  = "GITLAB_PROJECT_ID"
+            value = gitlab_project.gaia.id
+          }
+
+          env {
+            name = "GITLAB_TOKEN"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.vinnel_cloud_admin_blog.metadata[0].name
+                key  = "GITLAB_TOKEN"
+              }
+            }
+          }
+
           resources {
             requests = {
               cpu    = "50m"
@@ -233,6 +317,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
               cpu    = "500m"
               memory = "128Mi"
             }
+          }
+
+          volume_mount {
+            name       = "blog"
+            mount_path = "/data"
           }
 
           startup_probe {

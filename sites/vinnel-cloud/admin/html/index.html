@@ -28,6 +28,12 @@
           </svg>
           <span class="sidebar-label">Home</span>
         </a>
+        <a class="sidebar-link" href="#blog" data-slug="blog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/>
+          </svg>
+          <span class="sidebar-label">Blog</span>
+        </a>
         <button class="sidebar-section-label" type="button" data-section="gameservers" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg>
           <span class="sidebar-section-label-text">Game Servers</span>
@@ -195,6 +201,49 @@
               </thead>
               <tbody id="volumes-tbody"></tbody>
             </table>
+          </div>
+        </section>
+
+        <section class="app-page" id="page-blog" hidden>
+          <h1 class="page-title">Blog</h1>
+          <p class="page-subtitle">Posts for vin.moe. Drafts live here; publishing commits to <code id="blog-branch">pre</code> and CI opens the merge request.</p>
+
+          <div class="state-center error-msg" id="blog-error" hidden></div>
+          <p class="sat-hint" id="blog-publishing-off" hidden>Repository publishing is not configured, so posts can only be saved as drafts.</p>
+
+          <div class="blog-layout">
+            <div class="blog-list-pane">
+              <button class="btn-action" id="blog-new" type="button">New post</button>
+              <ul class="blog-list" id="blog-list"></ul>
+            </div>
+
+            <form class="blog-editor" id="blog-editor" hidden>
+              <label class="blog-field">
+                <span class="blog-field-label">Title</span>
+                <input class="blog-input" id="blog-title" type="text" maxlength="200" required>
+              </label>
+              <div class="blog-field-row">
+                <label class="blog-field">
+                  <span class="blog-field-label">Date</span>
+                  <input class="blog-input" id="blog-date" type="date" required>
+                </label>
+                <label class="blog-field">
+                  <span class="blog-field-label">Slug</span>
+                  <input class="blog-input" id="blog-slug" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" required>
+                </label>
+              </div>
+              <label class="blog-field">
+                <span class="blog-field-label">Body (markdown)</span>
+                <textarea class="blog-textarea" id="blog-body" rows="18" spellcheck="true"></textarea>
+              </label>
+              <div class="blog-actions">
+                <button class="btn-action" id="blog-save" type="submit">Save draft</button>
+                <button class="btn-action" id="blog-publish" type="button">Publish</button>
+                <button class="btn-action" id="blog-unpublish" type="button" hidden>Unpublish</button>
+                <button class="btn-action btn-action--danger" id="blog-delete" type="button">Delete</button>
+                <span class="blog-status" id="blog-status"></span>
+              </div>
+            </form>
           </div>
         </section>
 

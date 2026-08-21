@@ -5,6 +5,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -20,6 +21,7 @@ import (
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"vinnel-cloud-admin/internal/blog"
 	"vinnel-cloud-admin/internal/cluster"
 	"vinnel-cloud-admin/internal/kube"
 	"vinnel-cloud-admin/internal/minecraft"
@@ -227,6 +229,130 @@ func (c *statsCache) get() cluster.Stats {
 	return c.val
 }
 
+type blogAPI struct {
+	store *blog.Store
+	repo  *blog.Repo
+}
+
+func (b *blogAPI) fail(w http.ResponseWriter, err error) {
+	status := http.StatusInternalServerError
+	switch {
+	case errors.Is(err, blog.ErrNotFound):
+		status = http.StatusNotFound
+	case errors.Is(err, blog.ErrInvalid):
+		status = http.StatusBadRequest
+	}
+	w.WriteHeader(status)
+	writeJSON(w, map[string]string{"err": err.Error()})
+}
+
+func (b *blogAPI) list(w http.ResponseWriter, r *http.Request) {
+	posts, err := b.store.List()
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, map[string]any{"posts": posts, "publishing": b.repo.Configured()})
+}
+
+func (b *blogAPI) get(w http.ResponseWriter, r *http.Request) {
+	post, err := b.store.Get(r.PathValue("slug"))
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, post)
+}
+
+func (b *blogAPI) save(w http.ResponseWriter, r *http.Request) {
+	var in blog.Post
+	if err := json.NewDecoder(io.LimitReader(r.Body, blog.MaxBody+8192)).Decode(&in); err != nil {
+		b.fail(w, fmt.Errorf("%w: malformed request", blog.ErrInvalid))
+		return
+	}
+	in.Slug = r.PathValue("slug")
+	if in.Date == "" {
+		in.Date = time.Now().UTC().Format("2006-01-02")
+	}
+	if err := b.store.Save(&in); err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog save: user=%q slug=%q draft=%v", userFromRequest(r), in.Slug, in.Draft)
+	writeJSON(w, &in)
+}
+
+func (b *blogAPI) remove(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	user := userFromRequest(r)
+	if b.repo.Configured() {
+		if err := b.repo.Unpublish(r.Context(), slug, user); err != nil {
+			b.fail(w, err)
+			return
+		}
+	}
+	if err := b.store.Delete(slug); err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog delete: user=%q slug=%q", user, slug)
+	writeJSON(w, map[string]string{"ok": "true"})
+}
+
+func (b *blogAPI) publish(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	post, err := b.store.Get(slug)
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	user := userFromRequest(r)
+	if err := b.repo.Publish(r.Context(), post, user); err != nil {
+		b.fail(w, err)
+		return
+	}
+	post.Draft = false
+	if err := b.store.Save(post); err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog publish: user=%q slug=%q branch=%q", user, slug, b.repo.Branch)
+	writeJSON(w, map[string]string{"ok": "true", "branch": b.repo.Branch})
+}
+
+func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
+	slug := r.PathValue("slug")
+	post, err := b.store.Get(slug)
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	user := userFromRequest(r)
+	if err := b.repo.Unpublish(r.Context(), slug, user); err != nil {
+		b.fail(w, err)
+		return
+	}
+	post.Draft = true
+	if err := b.store.Save(post); err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog unpublish: user=%q slug=%q", user, slug)
+	writeJSON(w, map[string]string{"ok": "true"})
+}
+
+func (b *blogAPI) slugify(w http.ResponseWriter, r *http.Request) {
+	base := blog.Slugify(r.URL.Query().Get("title"))
+	if base == "" {
+		base = "post"
+	}
+	slug := base
+	for i := 2; b.store.Exists(slug); i++ {
+		slug = fmt.Sprintf("%s-%d", base, i)
+	}
+	writeJSON(w, map[string]string{"slug": slug})
+}
+
 func main() {
 	addr := env("LISTEN_ADDR", ":8080")
 
@@ -267,6 +393,22 @@ func main() {
 	htmlRoot, err := fs.Sub(htmlFS, "html")
 	if err != nil {
 		log.Fatalf("embed sub: %v", err)
+	}
+
+	blogStore, err := blog.NewStore(env("BLOG_DATA_DIR", "/data/posts"))
+	if err != nil {
+		log.Fatalf("blog store: %v", err)
+	}
+	blogRepo := &blog.Repo{
+		BaseURL:   env("GITLAB_API_URL", "https://gitlab.vinnel.cloud/api/v4"),
+		ProjectID: env("GITLAB_PROJECT_ID", ""),
+		Token:     os.Getenv("GITLAB_TOKEN"),
+		Branch:    env("BLOG_BRANCH", "pre"),
+		PostsPath: env("BLOG_POSTS_PATH", "hestia/sites/vin-moe/site/posts"),
+	}
+	blogHandlers := &blogAPI{store: blogStore, repo: blogRepo}
+	if !blogRepo.Configured() {
+		log.Print("blog publishing disabled: GITLAB_PROJECT_ID or GITLAB_TOKEN unset")
 	}
 
 	mux := http.NewServeMux()
@@ -316,6 +458,14 @@ func main() {
 
 	mux.HandleFunc("POST /api/gameservers/satisfactory/start", scaleHandler("satisfactory start", satisfactorySvc.Start))
 	mux.HandleFunc("POST /api/gameservers/satisfactory/stop", scaleHandler("satisfactory stop", satisfactorySvc.Stop))
+
+	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
+	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
+	mux.HandleFunc("GET /api/blog/posts/{slug}", blogHandlers.get)
+	mux.HandleFunc("PUT /api/blog/posts/{slug}", blogHandlers.save)
+	mux.HandleFunc("DELETE /api/blog/posts/{slug}", blogHandlers.remove)
+	mux.HandleFunc("POST /api/blog/posts/{slug}/publish", blogHandlers.publish)
+	mux.HandleFunc("POST /api/blog/posts/{slug}/unpublish", blogHandlers.unpublish)
 
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range securityHeaders {
