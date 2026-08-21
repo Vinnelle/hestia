@@ -166,9 +166,7 @@ code {
 
 .prose { max-width: 62ch; margin: 0 auto; }
 .fingerprint {
-  margin-top: 2rem;
-  padding-top: 1.2rem;
-  border-top: 1px solid var(--border);
+  margin: 0 0 0 auto;
   color: var(--faint);
   font-size: 0.78rem;
   line-height: 1.8;
@@ -302,6 +300,10 @@ h2 {
 #runs { counter-reset: topic; }
 
 footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1.6rem;
   width: var(--shell);
   margin-top: 4rem;
   padding-top: 1.6rem;
