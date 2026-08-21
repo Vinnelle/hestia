@@ -6,7 +6,6 @@ proxy_read_timeout 5s;
 proxy_hide_header Set-Cookie;
 proxy_ignore_headers Set-Cookie;
 
-add_header Cache-Control             "public, max-age=300"                   always;
 add_header X-Frame-Options           "SAMEORIGIN"                            always;
 add_header X-Content-Type-Options    "nosniff"                               always;
 add_header Referrer-Policy           "strict-origin-when-cross-origin"       always;

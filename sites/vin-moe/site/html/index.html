@@ -35,7 +35,7 @@
   "url": "https://vin.moe/",
   "email": "mailto:a@vin.moe",
   "image": "https://vin.moe/avatar.webp",
-  "sameAs": ["https://tr.ee/vin"],
+  "sameAs": ["https://tr.ee/vin", "https://infosec.exchange/@ida", "https://ieji.de/@ida"],
   "jobTitle": "Infrastructure Engineer",
   "description": "Infrastructure engineer focused on GCP observability, Kubernetes/Talos homelab operations, and self-hosted systems."
 }
@@ -70,6 +70,10 @@
       <p class="tagline">infrastructure &middot; devops &middot; software</p>
       <div class="hero-links">
         <a href="https://tr.ee/vin">github</a>
+        <span class="sep" aria-hidden="true">&middot;</span>
+        <a rel="me" href="https://infosec.exchange/@ida">mastodon</a>
+        <span class="sep" aria-hidden="true">&middot;</span>
+        <a rel="me" href="https://ieji.de/@ida">mastodon (alt)</a>
         <span class="sep" aria-hidden="true">&middot;</span>
         <a href="mailto:a@vin.moe">email</a>
         <span class="sep" aria-hidden="true">&middot;</span>
@@ -323,6 +327,8 @@ nav.addEventListener('keydown', (e) => {
 
 const postsEl = document.getElementById('posts');
 let postsLoaded = false;
+let postsText = '';
+let postsInFlight = null;
 
 const renderPosts = (posts) => {
   postsEl.replaceChildren();
@@ -368,24 +374,30 @@ const renderPosts = (posts) => {
   postsEl.append(list);
 };
 
-const loadPosts = async () => {
-  if (postsLoaded) return;
-  postsLoaded = true;
-  try {
-    const res = await fetch('/posts.json', { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error(res.status);
-    const data = await res.json();
-    renderPosts(data.posts || []);
-  } catch {
-    postsLoaded = false;
-    postsEl.replaceChildren();
-    const failed = document.createElement('p');
-    failed.className = 'muted';
-    failed.textContent = 'Posts are not loading right now.';
-    postsEl.append(failed);
-    return;
-  }
-  fromHash();
+const loadPosts = () => {
+  if (postsInFlight) return postsInFlight;
+  postsInFlight = (async () => {
+    try {
+      const res = await fetch('/posts.json', { cache: 'no-cache', headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      if (postsLoaded && text === postsText) return;
+      postsText = text;
+      postsLoaded = true;
+      renderPosts(JSON.parse(text).posts || []);
+      fromHash();
+    } catch {
+      if (postsLoaded) return;
+      postsEl.replaceChildren();
+      const failed = document.createElement('p');
+      failed.className = 'muted';
+      failed.textContent = 'Posts are not loading right now.';
+      postsEl.append(failed);
+    } finally {
+      postsInFlight = null;
+    }
+  })();
+  return postsInFlight;
 };
 
 addEventListener('hashchange', fromHash);

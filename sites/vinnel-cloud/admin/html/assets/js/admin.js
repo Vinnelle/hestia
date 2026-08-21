@@ -512,6 +512,7 @@ const blogTitle = document.getElementById('blog-title');
 const blogDate = document.getElementById('blog-date');
 const blogSlug = document.getElementById('blog-slug');
 const blogBody = document.getElementById('blog-body');
+const blogSave = document.getElementById('blog-save');
 const blogPublish = document.getElementById('blog-publish');
 const blogUnpublish = document.getElementById('blog-unpublish');
 const blogDelete = document.getElementById('blog-delete');
@@ -519,6 +520,7 @@ const blogPublishingOff = document.getElementById('blog-publishing-off');
 const blogBranch = document.getElementById('blog-branch');
 
 let blogCurrent = null;
+let blogDraft = true;
 let blogPublishing = false;
 
 function blogSay(message, bad) {
@@ -586,21 +588,29 @@ async function loadBlogPosts() {
     const data = await blogFetch('/api/blog/posts');
     blogPublishing = Boolean(data.publishing);
     blogPublishingOff.hidden = blogPublishing;
-    blogPublish.disabled = !blogPublishing;
+    blogSyncActions();
     blogRender(data.posts || []);
   } catch (err) {
     blogFail(err);
   }
 }
 
+function blogSyncActions() {
+  blogSave.textContent = blogDraft ? 'Save draft' : 'Edit draft';
+  blogPublish.textContent = blogDraft ? 'Publish' : 'Update';
+  blogPublish.disabled = !blogPublishing;
+  blogUnpublish.hidden = blogDraft;
+  blogDelete.hidden = !blogCurrent;
+}
+
 function blogOpen(post) {
   blogCurrent = post.slug || null;
+  blogDraft = post.draft !== false;
   blogTitle.value = post.title || '';
   blogDate.value = post.date || new Date().toISOString().slice(0, 10);
   blogSlug.value = post.slug || '';
   blogBody.value = post.body || '';
-  blogUnpublish.hidden = post.draft !== false;
-  blogDelete.hidden = !post.slug;
+  blogSyncActions();
   blogEditor.hidden = false;
   blogSay(post.slug ? '' : 'New post');
   for (const el of blogList.querySelectorAll('.blog-list-item')) {
@@ -624,11 +634,41 @@ document.getElementById('blog-new').addEventListener('click', () => {
   blogTitle.focus();
 });
 
+async function blogEnsureSlug() {
+  const current = blogSlug.value.trim();
+  if (current) return current;
+  if (!blogTitle.value.trim()) return '';
+  const data = await blogFetch('/api/blog/slug?title=' + encodeURIComponent(blogTitle.value));
+  blogSlug.value = data.slug;
+  return data.slug;
+}
+
+async function blogSavePost() {
+  const slug = await blogEnsureSlug();
+  if (!slug || !blogEditor.reportValidity()) return '';
+  await blogFetch('/api/blog/posts/' + encodeURIComponent(slug), {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: blogTitle.value,
+      date: blogDate.value,
+      body: blogBody.value,
+      draft: blogDraft,
+    }),
+  });
+  blogCurrent = slug;
+  return slug;
+}
+
+async function blogReopen(slug) {
+  await loadBlogPosts();
+  blogOpen(await blogFetch('/api/blog/posts/' + encodeURIComponent(slug)));
+}
+
 blogTitle.addEventListener('blur', async () => {
-  if (blogCurrent || !blogTitle.value.trim() || blogSlug.value.trim()) return;
+  if (blogCurrent) return;
   try {
-    const data = await blogFetch('/api/blog/slug?title=' + encodeURIComponent(blogTitle.value));
-    blogSlug.value = data.slug;
+    await blogEnsureSlug();
   } catch (err) {
     blogFail(err);
   }
@@ -637,49 +677,48 @@ blogTitle.addEventListener('blur', async () => {
 blogEditor.addEventListener('submit', async (e) => {
   e.preventDefault();
   blogError.hidden = true;
-  const slug = blogSlug.value.trim();
-  const wasDraft = blogUnpublish.hidden;
   try {
-    await blogFetch('/api/blog/posts/' + encodeURIComponent(slug), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: blogTitle.value,
-        date: blogDate.value,
-        body: blogBody.value,
-        draft: wasDraft,
-      }),
-    });
-    blogCurrent = slug;
+    const slug = await blogSavePost();
+    if (!slug) return;
+    await blogReopen(slug);
     blogSay('Saved');
-    await loadBlogPosts();
   } catch (err) {
     blogSay('Not saved', true);
     blogFail(err);
   }
 });
 
-async function blogAction(path, verb, done) {
-  if (!blogCurrent) return;
+blogPublish.addEventListener('click', async () => {
   blogError.hidden = true;
+  const verb = blogDraft ? 'Publishing' : 'Updating';
   blogSay(verb + '…');
   try {
-    await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent) + path, { method: 'POST' });
-    blogSay(done);
-    await loadBlogPosts();
-    blogOpen(await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent)));
+    const slug = await blogSavePost();
+    if (!slug) {
+      blogSay('');
+      return;
+    }
+    await blogFetch('/api/blog/posts/' + encodeURIComponent(slug) + '/publish', { method: 'POST' });
+    await blogReopen(slug);
+    blogSay('Committed to ' + (blogBranch ? blogBranch.textContent : 'pre') + ' — CI opens the merge request');
   } catch (err) {
     blogSay(verb + ' failed', true);
     blogFail(err);
   }
-}
-
-blogPublish.addEventListener('click', () => {
-  blogAction('/publish', 'Publishing', 'Committed to ' + (blogBranch ? blogBranch.textContent : 'pre') + ' — CI opens the merge request');
 });
 
-blogUnpublish.addEventListener('click', () => {
-  blogAction('/unpublish', 'Unpublishing', 'Removed from the repository');
+blogUnpublish.addEventListener('click', async () => {
+  if (!blogCurrent) return;
+  blogError.hidden = true;
+  blogSay('Unpublishing…');
+  try {
+    await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent) + '/unpublish', { method: 'POST' });
+    await blogReopen(blogCurrent);
+    blogSay('Removed from the repository');
+  } catch (err) {
+    blogSay('Unpublish failed', true);
+    blogFail(err);
+  }
 });
 
 blogDelete.addEventListener('click', async () => {

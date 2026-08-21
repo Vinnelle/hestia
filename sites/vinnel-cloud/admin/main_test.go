@@ -330,3 +330,40 @@ func TestBlogDeleteRemovesFromRepoFirst(t *testing.T) {
 		t.Error("post still on disk after delete")
 	}
 }
+
+func TestPublicPostsRevalidatesWithETag(t *testing.T) {
+	api, mux := blogTestAPI(t, &blog.Repo{})
+	mux.HandleFunc("GET /public/posts.json", api.publicPosts)
+
+	blogDo(t, mux, "PUT", "/api/blog/posts/live-post", `{"title":"Live","date":"2026-08-21","body":"hello","draft":false}`)
+
+	w := blogDo(t, mux, "GET", "/public/posts.json", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET = %d, body %s", w.Code, w.Body)
+	}
+	etag := w.Header().Get("ETag")
+	if etag == "" {
+		t.Fatal("public posts served without an ETag")
+	}
+	if cc := w.Header().Get("Cache-Control"); !strings.Contains(cc, "must-revalidate") || !strings.Contains(cc, "s-maxage=") {
+		t.Errorf("Cache-Control = %q", cc)
+	}
+
+	conditional := func() *httptest.ResponseRecorder {
+		r := httptest.NewRequest("GET", "/public/posts.json", nil)
+		r.Header.Set("If-None-Match", etag)
+		rec := httptest.NewRecorder()
+		mux.ServeHTTP(rec, r)
+		return rec
+	}
+
+	if got := conditional().Code; got != http.StatusNotModified {
+		t.Errorf("unchanged posts = %d, want %d", got, http.StatusNotModified)
+	}
+
+	blogDo(t, mux, "PUT", "/api/blog/posts/live-post", `{"title":"Live","date":"2026-08-21","body":"hello again","draft":false}`)
+
+	if got := conditional().Code; got != http.StatusOK {
+		t.Errorf("edited posts = %d, want %d", got, http.StatusOK)
+	}
+}

@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"embed"
 	"encoding/json"
 	"errors"
@@ -242,17 +244,27 @@ func (b *blogAPI) purge(ctx context.Context) {
 	}
 }
 
+const publicCacheControl = "public, max-age=0, must-revalidate, s-maxage=300"
+
+func servePublic(w http.ResponseWriter, r *http.Request, contentType string, body []byte) {
+	w.Header().Set("Content-Type", contentType)
+	w.Header().Set("Cache-Control", publicCacheControl)
+	w.Header().Set("ETag", fmt.Sprintf(`"%x"`, sha256.Sum256(body)))
+	http.ServeContent(w, r, "", time.Time{}, bytes.NewReader(body))
+}
+
 func (b *blogAPI) publicPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := b.store.Published()
 	if err != nil {
 		http.Error(w, "unavailable", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Cache-Control", "public, max-age=300")
-	if err := json.NewEncoder(w).Encode(map[string]any{"posts": posts}); err != nil {
-		log.Printf("publicPosts: %v", err)
+	body, err := json.Marshal(map[string]any{"posts": posts})
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
 	}
+	servePublic(w, r, "application/json; charset=utf-8", body)
 }
 
 func (b *blogAPI) publicFeed(w http.ResponseWriter, r *http.Request) {
@@ -266,9 +278,7 @@ func (b *blogAPI) publicFeed(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unavailable", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/atom+xml; charset=utf-8")
-	w.Header().Set("Cache-Control", "public, max-age=300")
-	w.Write(body)
+	servePublic(w, r, "application/atom+xml; charset=utf-8", body)
 }
 
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
