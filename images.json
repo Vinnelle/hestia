@@ -3,8 +3,8 @@
   "monke-academy-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/monke-academy/site@sha256:aff018113678e23cd7f739975f2836c363672ee9e407a27cef0b6b7e58f1b0f1",
   "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:d1aad5001f377a4280e1bea14df3e2e0bfeb14c5df9e97672e94c0c0e3872ba4",
   "// vinnel-cloud": "vinnel-cloud images — updated by vinnel-cloud-auth-build.yml",
-  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:873dad0c0a453c7ee00e7b5b674e94a65a64cdf11569041e90113eab19bdedd4",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:eee5c31d185c51d02196d0ee3f11643646f5c65f29bd08b1c288362ed29a0195",
-  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:812e2a1951a066c05555baf7c5dcfd25df4d103a337b47170085b01206161e55",
+  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:460f904e90caf45656ba50861a967e711523f70d55b9042488204d1272638259",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:6f15db7694f02f53e5cb6ca38e272c2a96fb55799144c42dba795f13ce6c2da6",
+  "vinnel-cloud-auth": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/auth@sha256:fcfa2a16473dd2c521ff69756a32cf93c50d2e21b7559ccf8792bf24effd2920",
   "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:4e8b754d3dce04dbbe49e061254af6c138a80963f3606ecd8ec777c059f6b1a1"
 }
