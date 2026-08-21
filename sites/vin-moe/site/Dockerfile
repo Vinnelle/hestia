@@ -26,15 +26,12 @@ RUN npm install -g clean-css-cli terser html-minifier-terser
 
 WORKDIR /app
 COPY scripts/ /build/
-RUN npm install --prefix /build --no-fund --no-audit marked
-COPY posts/ ./posts/
 COPY html/ .
 COPY src/images/favicon.png .
 COPY --from=images /favicon.ico .
 COPY --from=images /apple-touch-icon.png .
 COPY --from=images /avatar.webp .
 
-RUN node /build/render-posts.mjs posts index.html feed.xml && rm -rf posts
 RUN sh /build/fetch-fonts.sh fonts && sh /build/build.sh
 
 FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:c3fed6436b61d2bf2201ec032c35c000871f7ed062dea5d586bc6bf4d0fdd140
@@ -45,5 +42,6 @@ COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
 COPY conf/nginx-main.conf /etc/nginx/nginx.conf
 COPY conf/nginx.conf /etc/nginx/conf.d/default.conf
+COPY conf/blog-proxy.inc /etc/nginx/conf.d/blog-proxy.inc
 COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080

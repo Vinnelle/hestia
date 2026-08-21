@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -295,5 +296,154 @@ func TestPublishRefusesUnconfigured(t *testing.T) {
 	repo := &Repo{}
 	if err := repo.Publish(context.Background(), &Post{Slug: "x", Title: "X", Date: "2026-08-21"}, "a"); !errors.Is(err, ErrInvalid) {
 		t.Errorf("Publish on unconfigured Repo = %v, want ErrInvalid", err)
+	}
+}
+
+func TestRenderHTML(t *testing.T) {
+	html, err := RenderHTML("# Head\n\nText with `code` and **bold**.\n\n- one\n- two\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"<h1", "<code>code</code>", "<strong>bold</strong>", "<li>one</li>"} {
+		if !strings.Contains(html, want) {
+			t.Errorf("rendered HTML missing %q:\n%s", want, html)
+		}
+	}
+}
+
+func TestPublishedExcludesDrafts(t *testing.T) {
+	s, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	posts := []*Post{
+		{Slug: "live-old", Title: "Old", Date: "2026-01-01", Body: "old body"},
+		{Slug: "live-new", Title: "New", Date: "2026-08-21", Body: "new body"},
+		{Slug: "hidden", Title: "Hidden", Date: "2026-12-01", Body: "SECRET DRAFT", Draft: true},
+	}
+	for _, p := range posts {
+		if err := s.Save(p); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := s.Published()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("Published returned %d posts, want 2: %+v", len(got), got)
+	}
+	if got[0].Slug != "live-new" {
+		t.Errorf("Published not sorted newest first: %+v", got)
+	}
+	for _, p := range got {
+		if strings.Contains(p.HTML, "SECRET DRAFT") || p.Slug == "hidden" {
+			t.Fatal("draft leaked into Published output")
+		}
+		if p.HTML == "" {
+			t.Errorf("%s rendered to empty HTML", p.Slug)
+		}
+	}
+}
+
+func TestFeedIsValidAtom(t *testing.T) {
+	cfg := FeedConfig{Title: "vin.moe", Subtitle: "sub", SiteURL: "https://vin.moe", Author: "Finlay", Email: "a@vin.moe"}
+	body, err := Feed(cfg, []Rendered{{Slug: "hello", Title: "Hello & <goodbye>", Date: "2026-08-21", HTML: "<p>hi</p>"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var parsed struct {
+		XMLName xml.Name `xml:"feed"`
+		Entries []struct {
+			Title   string `xml:"title"`
+			ID      string `xml:"id"`
+			Content string `xml:"content"`
+			Link    struct {
+				Href string `xml:"href,attr"`
+			} `xml:"link"`
+		} `xml:"entry"`
+	}
+	if err := xml.Unmarshal(body, &parsed); err != nil {
+		t.Fatalf("feed is not well-formed XML: %v\n%s", err, body)
+	}
+	if len(parsed.Entries) != 1 {
+		t.Fatalf("entries = %d, want 1", len(parsed.Entries))
+	}
+	e := parsed.Entries[0]
+	if e.Title != "Hello & <goodbye>" {
+		t.Errorf("title did not round-trip through XML escaping: %q", e.Title)
+	}
+	if e.Content != "<p>hi</p>" {
+		t.Errorf("content = %q", e.Content)
+	}
+	if e.Link.Href != "https://vin.moe/#post-hello" {
+		t.Errorf("link = %q", e.Link.Href)
+	}
+	if e.ID != "tag:vin.moe,2026:post/hello" {
+		t.Errorf("id = %q", e.ID)
+	}
+}
+
+func TestFeedWithNoPosts(t *testing.T) {
+	body, err := Feed(FeedConfig{SiteURL: "https://vin.moe"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var parsed struct {
+		XMLName xml.Name `xml:"feed"`
+	}
+	if err := xml.Unmarshal(body, &parsed); err != nil {
+		t.Fatalf("empty feed is not well-formed: %v\n%s", err, body)
+	}
+}
+
+func TestPurgerSkipsWhenUnconfigured(t *testing.T) {
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+	}))
+	defer srv.Close()
+
+	p := &Purger{Client: srv.Client()}
+	if err := p.Purge(context.Background()); err != nil {
+		t.Errorf("unconfigured Purge returned %v, want nil", err)
+	}
+	var nilPurger *Purger
+	if nilPurger.Configured() {
+		t.Error("nil Purger reported configured")
+	}
+	if err := nilPurger.Purge(context.Background()); err != nil {
+		t.Errorf("nil Purge returned %v, want nil", err)
+	}
+	if calls != 0 {
+		t.Errorf("unconfigured purger made %d requests", calls)
+	}
+}
+
+func TestPurgerPostsFileList(t *testing.T) {
+	var body map[string][]string
+	var auth string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Authorization")
+		json.NewDecoder(r.Body).Decode(&body)
+		w.Write([]byte(`{"success":true}`))
+	}))
+	defer srv.Close()
+
+	p := &Purger{ZoneID: "zone", Token: "cf-token", URLs: []string{"https://vin.moe/posts.json"}, Client: srv.Client()}
+	if !p.Configured() {
+		t.Fatal("configured purger reported otherwise")
+	}
+	p.endpointOverride = srv.URL
+	if err := p.Purge(context.Background()); err != nil {
+		t.Fatalf("Purge: %v", err)
+	}
+	if auth != "Bearer cf-token" {
+		t.Errorf("Authorization = %q", auth)
+	}
+	if len(body["files"]) != 1 || body["files"][0] != "https://vin.moe/posts.json" {
+		t.Errorf("files = %v", body["files"])
 	}
 }

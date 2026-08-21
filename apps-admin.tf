@@ -46,7 +46,8 @@ resource "kubernetes_secret_v1" "vinnel_cloud_admin_blog" {
   }
 
   data = {
-    GITLAB_TOKEN = gitlab_project_access_token.admin_blog.token
+    GITLAB_TOKEN         = gitlab_project_access_token.admin_blog.token
+    CF_CACHE_PURGE_TOKEN = var.cloudflare_cache_purge_token
   }
 }
 
@@ -304,6 +305,26 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
               secret_key_ref {
                 name = kubernetes_secret_v1.vinnel_cloud_admin_blog.metadata[0].name
                 key  = "GITLAB_TOKEN"
+              }
+            }
+          }
+
+          env {
+            name  = "BLOG_SITE_URL"
+            value = "https://vin.moe"
+          }
+
+          env {
+            name  = "BLOG_ZONE_ID"
+            value = data.cloudflare_zone.vin_moe.id
+          }
+
+          env {
+            name = "CF_CACHE_PURGE_TOKEN"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.vinnel_cloud_admin_blog.metadata[0].name
+                key  = "CF_CACHE_PURGE_TOKEN"
               }
             }
           }

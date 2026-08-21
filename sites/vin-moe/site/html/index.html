@@ -92,7 +92,8 @@
       <p class="muted">Whatever</p>
     </header>
 
-    <!--posts:start--><!--posts:end-->
+    <div id="posts" aria-live="polite"><p class="muted">Loading…</p></div>
+    <noscript><p class="muted">Posts are fetched at runtime, so this list needs JavaScript. The <a href="/feed.xml">Atom feed</a> does not.</p></noscript>
   </section>
 
   <section class="panel" id="work" role="tabpanel" aria-labelledby="tab-work" tabindex="0">
@@ -158,23 +159,23 @@
     <ol class="topics">
       <li>
         <h3>the image</h3>
-        <p>Four build stages, every base pinned by sha256. The first rasterizes the source PNG into a multi-resolution .ico and an apple-touch icon, and squares the avatar down to a 288px webp. The second compiles ngx_brotli against the exact nginx version of the base image, since upstream ships no compatible release. The third renders the posts and builds the assets. The last is nginx-unprivileged, running non-root.</p>
+        <p>Four build stages, every base pinned by sha256. The first rasterizes the source PNG into a multi-resolution .ico and an apple-touch icon, and squares the avatar down to a 288px webp. The second compiles ngx_brotli against the exact nginx version of the base image, since upstream ships no compatible release. The third builds the assets. The last is nginx-unprivileged, running non-root.</p>
       </li>
       <li>
         <h3>assets</h3>
-        <p>Posts are markdown files in the repo. A build step renders them into this page and into an Atom feed, then deletes the markdown before anything ships. The webfont is fetched at build time and self-hosted, and the avatar is committed rather than hotlinked, so nothing third-party loads at runtime and the CSP stays default-src 'self'. CSS and JS are minified, renamed to include a hash of their own contents, and every reference rewritten to match; that hash is what the one-year immutable cache header is keyed against. Everything text-shaped is pre-compressed once: gzip -9, brotli -q 11.</p>
+        <p>The webfont is fetched at build time and self-hosted, and the avatar is committed rather than hotlinked, so nothing third-party loads at runtime and the CSP stays default-src 'self'. CSS and JS are minified, renamed to include a hash of their own contents, and every reference rewritten to match; that hash is what the one-year immutable cache header is keyed against. Everything text-shaped is pre-compressed once: gzip -9, brotli -q 11.</p>
       </li>
       <li>
         <h3>serving</h3>
-        <p>nginx serves those pre-compressed files directly, so the runtime never spends a cycle compressing per request. Hashed assets get immutable cache headers and open_file_cache keeps hot descriptors around. Every response carries HSTS, CSP, nosniff, frame and referrer policy. /healthz is plaintext for the probes, .html URLs redirect to their extensionless form, and /feed.xml is forced to application/atom+xml instead of the text/xml nginx would otherwise guess from the extension.</p>
+        <p>nginx serves those pre-compressed files directly, so the runtime never spends a cycle compressing per request. Hashed assets get immutable cache headers and open_file_cache keeps hot descriptors around. Every response carries HSTS, CSP, nosniff, frame and referrer policy. /healthz is plaintext for the probes and .html URLs redirect to their extensionless form. Two paths are not files at all: /posts.json and /feed.xml proxy to the editor's service inside the cluster, which is what keeps the blog same-origin and the CSP unchanged.</p>
       </li>
       <li>
         <h3>the page itself</h3>
-        <p>No framework, no bundler, no runtime dependency. One document with its CSS and JS inlined; the font and the avatar are the only other requests. Themes are one palette through light-dark(), so the toggle flips a single property. The numbers here are a CSS counter. Tabs are an ARIA tablist with arrow-key navigation, deep-linkable by fragment, animated by the View Transitions API where it exists and plain where it doesn't. Posts are native details elements, so each one has its own shareable fragment and they still open with JS off, which is also when the nav hides and every panel renders.</p>
+        <p>No framework, no bundler, nothing at build time this page could not do itself. One document with its CSS and JS inlined; the font and the avatar are the only other requests until you open the blog. Themes are one palette through light-dark(), so the toggle flips a single property. The numbers here are a CSS counter. Tabs are an ARIA tablist with arrow-key navigation, deep-linkable by fragment, animated by the View Transitions API where it exists and plain where it doesn't. Posts are built into native details elements once they arrive, so each keeps its own shareable fragment. With JS off the nav hides and every panel renders, but the blog is the one thing that does not: it says so, and points at the feed.</p>
       </li>
       <li>
         <h3>writing</h3>
-        <p>Posts get written in a small editor on admin.vinnel.cloud, behind the same SSO as everything else. Drafts sit on a volume there and go no further. Publishing commits the markdown to the integration branch over the GitLab API; CI opens the merge request and arms auto-merge, and the site build treats the new file like any other change under the site directory. Deleting a published post commits the removal first and drops the local copy second, so the repo never holds something the editor says is gone.</p>
+        <p>Posts get written in a small editor on admin.vinnel.cloud, behind the same SSO as everything else, and stored on a volume beside it. That volume is what this page reads: the blog tab fetches /posts.json, nginx proxies it to the editor over the cluster network, and the markdown is rendered to HTML there rather than at build time. So a post appears without rebuilding or redeploying anything. Publishing also commits the markdown to the integration branch over the GitLab API and CI opens the merge request, which is bookkeeping rather than delivery — the repo keeps the durable copy, the volume serves the live one. Every write purges the three affected URLs at the edge, so the CDN still caches the blog and still shows the change within about a second.</p>
       </li>
       <li>
         <h3>deployment</h3>
@@ -198,7 +199,7 @@
       </li>
       <li>
         <h3>defense in depth</h3>
-        <p>Admin surfaces sit behind Authelia 2FA. The dev box is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets are Terraform-generated and live in state, never the repo. CI authenticates with a token scoped to patching Deployments in one namespace. Workloads run under Pod Security Standards; the exception is the runner pods, which need privileged for docker-in-docker, so a Cilium policy limits their egress to DNS and the internet and blocks pod-to-pod reach into every other namespace.</p>
+        <p>Admin surfaces sit behind Authelia 2FA. The dev box is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets are Terraform-generated and live in state, never the repo. CI authenticates with a token scoped to patching Deployments in one namespace. Workloads run under Pod Security Standards; the exception is the runner pods, which need privileged for docker-in-docker, and which are separated from ordinary jobs by runner tag rather than by network policy. The public blog endpoints are the one unauthenticated path into a service that is otherwise behind SSO, so they are served from a separate route that only ever reads published posts and never touches the editing API.</p>
       </li>
       <li>
         <h3>supply chain</h3>
@@ -242,7 +243,7 @@
     <ol class="topics">
       <li>
         <h3>prove it builds</h3>
-        <p>A merge request touching a site runs the shared build-script test suite: the asset-hashing and cache-busting logic every site’s build.sh has in common gets exercised against a synthetic page, so a change to that shared logic is provable without touching the registry. A new post is an ordinary file under the site directory, so it takes exactly the same path. Nothing else starts: the infrastructure plan skips the paths Terraform demonstrably never reads, so editing HTML no longer queues an apply on the one node that also serves the page.</p>
+        <p>A merge request touching a site runs the shared build-script test suite: the asset-hashing and cache-busting logic every site’s build.sh has in common gets exercised against a synthetic page, so a change to that shared logic is provable without touching the registry. Writing a post skips all of it, because a post is no longer part of the image. Nothing else starts: the infrastructure plan skips the paths Terraform demonstrably never reads, so editing HTML no longer queues an apply on the one node that also serves the page.</p>
       </li>
       <li>
         <h3>build &amp; pin the digest</h3>
@@ -283,7 +284,9 @@ const render = (tab) => {
 };
 
 const activate = (tab) => {
-  if (!tab || tab.getAttribute('aria-selected') === 'true') return;
+  if (!tab) return;
+  if (tab.dataset.tab === 'blog') loadPosts();
+  if (tab.getAttribute('aria-selected') === 'true') return;
   document.startViewTransition ? document.startViewTransition(() => render(tab)) : render(tab);
 };
 
@@ -296,7 +299,9 @@ const show = (tab, { focus = false } = {}) => {
 };
 
 const fromHash = () => {
-  const el = document.getElementById(location.hash.slice(1));
+  const id = location.hash.slice(1);
+  if (id.startsWith('post-')) loadPosts();
+  const el = document.getElementById(id);
   if (!el) return;
   const post = el.closest('details');
   if (post) post.open = true;
@@ -316,11 +321,72 @@ nav.addEventListener('keydown', (e) => {
   show(tabs[(next + tabs.length) % tabs.length], { focus: true });
 });
 
-for (const d of document.querySelectorAll('.posts details')) {
-  d.addEventListener('toggle', () => {
-    if (d.open) history.replaceState(null, '', '#' + d.id);
-  });
-}
+const postsEl = document.getElementById('posts');
+let postsLoaded = false;
+
+const renderPosts = (posts) => {
+  postsEl.replaceChildren();
+  if (!posts.length) {
+    const empty = document.createElement('p');
+    empty.className = 'muted';
+    empty.textContent = 'Nothing published yet.';
+    postsEl.append(empty);
+    return;
+  }
+
+  const list = document.createElement('ol');
+  list.className = 'posts';
+
+  for (const post of posts) {
+    const details = document.createElement('details');
+    details.id = 'post-' + post.slug;
+    details.setAttribute('name', 'post');
+
+    const summary = document.createElement('summary');
+    const title = document.createElement('span');
+    title.className = 'post-title';
+    title.textContent = post.title;
+    const time = document.createElement('time');
+    time.dateTime = post.date;
+    time.textContent = post.date;
+    summary.append(title, time);
+
+    const body = document.createElement('div');
+    body.className = 'post-body';
+    body.innerHTML = post.html;
+
+    details.append(summary, body);
+    details.addEventListener('toggle', () => {
+      if (details.open) history.replaceState(null, '', '#' + details.id);
+    });
+
+    const item = document.createElement('li');
+    item.append(details);
+    list.append(item);
+  }
+
+  postsEl.append(list);
+};
+
+const loadPosts = async () => {
+  if (postsLoaded) return;
+  postsLoaded = true;
+  try {
+    const res = await fetch('/posts.json', { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    renderPosts(data.posts || []);
+  } catch {
+    postsLoaded = false;
+    postsEl.replaceChildren();
+    const failed = document.createElement('p');
+    failed.className = 'muted';
+    failed.textContent = 'Posts are not loading right now.';
+    postsEl.append(failed);
+    return;
+  }
+  fromHash();
+};
 
 addEventListener('hashchange', fromHash);
 fromHash();

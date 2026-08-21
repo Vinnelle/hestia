@@ -58,6 +58,11 @@ locals {
     "nginx['listen_https'] = false",
     "nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
     "gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '10.244.0.0/16']",
+    "puma['worker_processes'] = 4",
+    "puma['per_worker_max_memory_mb'] = 1400",
+    "sidekiq['max_concurrency'] = 10",
+    "postgresql['shared_buffers'] = '2GB'",
+    "postgresql['effective_cache_size'] = '6GB'",
   ])
 
   gitlab_config_hash = sha256(join("", [

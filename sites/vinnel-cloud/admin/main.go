@@ -230,8 +230,45 @@ func (c *statsCache) get() cluster.Stats {
 }
 
 type blogAPI struct {
-	store *blog.Store
-	repo  *blog.Repo
+	store  *blog.Store
+	repo   *blog.Repo
+	purger *blog.Purger
+	feed   blog.FeedConfig
+}
+
+func (b *blogAPI) purge(ctx context.Context) {
+	if err := b.purger.Purge(ctx); err != nil {
+		log.Printf("blog purge: %v", err)
+	}
+}
+
+func (b *blogAPI) publicPosts(w http.ResponseWriter, r *http.Request) {
+	posts, err := b.store.Published()
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	if err := json.NewEncoder(w).Encode(map[string]any{"posts": posts}); err != nil {
+		log.Printf("publicPosts: %v", err)
+	}
+}
+
+func (b *blogAPI) publicFeed(w http.ResponseWriter, r *http.Request) {
+	posts, err := b.store.Published()
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	body, err := blog.Feed(b.feed, posts)
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/atom+xml; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=300")
+	w.Write(body)
 }
 
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
@@ -279,6 +316,9 @@ func (b *blogAPI) save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog save: user=%q slug=%q draft=%v", userFromRequest(r), in.Slug, in.Draft)
+	if !in.Draft {
+		b.purge(r.Context())
+	}
 	writeJSON(w, &in)
 }
 
@@ -296,6 +336,7 @@ func (b *blogAPI) remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog delete: user=%q slug=%q", user, slug)
+	b.purge(r.Context())
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
@@ -317,6 +358,7 @@ func (b *blogAPI) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog publish: user=%q slug=%q branch=%q", user, slug, b.repo.Branch)
+	b.purge(r.Context())
 	writeJSON(w, map[string]string{"ok": "true", "branch": b.repo.Branch})
 }
 
@@ -338,6 +380,7 @@ func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog unpublish: user=%q slug=%q", user, slug)
+	b.purge(r.Context())
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
@@ -406,7 +449,26 @@ func main() {
 		Branch:    env("BLOG_BRANCH", "pre"),
 		PostsPath: env("BLOG_POSTS_PATH", "hestia/sites/vin-moe/site/posts"),
 	}
-	blogHandlers := &blogAPI{store: blogStore, repo: blogRepo}
+	siteURL := env("BLOG_SITE_URL", "https://vin.moe")
+	blogHandlers := &blogAPI{
+		store: blogStore,
+		repo:  blogRepo,
+		purger: &blog.Purger{
+			ZoneID: env("BLOG_ZONE_ID", ""),
+			Token:  os.Getenv("CF_CACHE_PURGE_TOKEN"),
+			URLs:   []string{siteURL + "/", siteURL + "/posts.json", siteURL + "/feed.xml"},
+		},
+		feed: blog.FeedConfig{
+			Title:    env("BLOG_TITLE", "vin.moe"),
+			Subtitle: env("BLOG_SUBTITLE", "infrastructure, devops, software"),
+			SiteURL:  siteURL,
+			Author:   env("BLOG_AUTHOR", "Finlay"),
+			Email:    env("BLOG_AUTHOR_EMAIL", ""),
+		},
+	}
+	if !blogHandlers.purger.Configured() {
+		log.Print("blog cache purge disabled: BLOG_ZONE_ID or CF_CACHE_PURGE_TOKEN unset")
+	}
 	if !blogRepo.Configured() {
 		log.Print("blog publishing disabled: GITLAB_PROJECT_ID or GITLAB_TOKEN unset")
 	}
@@ -458,6 +520,9 @@ func main() {
 
 	mux.HandleFunc("POST /api/gameservers/satisfactory/start", scaleHandler("satisfactory start", satisfactorySvc.Start))
 	mux.HandleFunc("POST /api/gameservers/satisfactory/stop", scaleHandler("satisfactory stop", satisfactorySvc.Stop))
+
+	mux.HandleFunc("GET /public/posts.json", blogHandlers.publicPosts)
+	mux.HandleFunc("GET /public/feed.xml", blogHandlers.publicFeed)
 
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)

@@ -109,7 +109,7 @@ main { width: var(--shell); flex: 1; }
 .panel.active { display: block; animation: panel-in 220ms ease-out; }
 
 @media (scripting: none) {
-  .tabs, .bar-sep, .theme-toggle { display: none; }
+  .tabs, .bar-sep, .theme-toggle, #posts { display: none; }
   .panel { display: block; }
   .panel + .panel { margin-top: 4rem; padding-top: 3rem; border-top: 1px solid var(--border); }
 }
