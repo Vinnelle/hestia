@@ -166,10 +166,33 @@ function applyMeters(root) {
   }
 }
 
+let reauthing = false;
+
+function reauth() {
+  if (reauthing) return;
+  reauthing = true;
+  const snapshot = blogSnapshot();
+  if (snapshot) {
+    try {
+      sessionStorage.setItem(BLOG_DRAFT_KEY, JSON.stringify(snapshot));
+    } catch {}
+  }
+  location.reload();
+}
+
+async function api(path, options) {
+  const res = await fetch(path, { ...options, redirect: 'manual' });
+  if (res.type === 'opaqueredirect' || res.status === 401) {
+    reauth();
+    throw new Error('Session expired, signing in again.');
+  }
+  return res;
+}
+
 async function loadCluster() {
   const err = document.getElementById('cluster-error');
   try {
-    const c = await (await fetch('/api/cluster')).json();
+    const c = await (await api('/api/cluster')).json();
     err.hidden = !c.err;
     if (c.err) err.textContent = c.err;
 
@@ -226,7 +249,7 @@ async function loadSatisfactoryStatus() {
   const err = document.getElementById('satisfactory-error');
   let s;
   try {
-    s = await (await fetch('/api/gameservers/satisfactory')).json();
+    s = await (await api('/api/gameservers/satisfactory')).json();
   } catch (e) {
     err.hidden = false;
     err.textContent = 'Could not load server status.';
@@ -296,7 +319,7 @@ async function loadMinecraftStatus() {
   const err = document.getElementById('minecraft-error');
   let s;
   try {
-    s = await (await fetch('/api/gameservers/minecraft')).json();
+    s = await (await api('/api/gameservers/minecraft')).json();
   } catch (e) {
     err.hidden = false;
     err.textContent = 'Could not load server status.';
@@ -362,7 +385,7 @@ function wirePower(prefix, startUrl, stopUrl, statusLoader) {
     startBtn.disabled = true;
     stopBtn.disabled = true;
     try {
-      const r = await (await fetch(url, { method: 'POST' })).json();
+      const r = await (await api(url, { method: 'POST' })).json();
       if (r.err) alert(r.err);
     } catch (e) {
       alert('Request failed.');
@@ -432,6 +455,7 @@ function wireConsole(prefix, endpoint, streamUrl, after) {
       if (streamBroken) return;
       streamBroken = true;
       write('console-err', '— log stream lost, reconnecting —');
+      api('/api/cluster').catch(() => {});
     });
   };
 
@@ -454,7 +478,7 @@ function wireConsole(prefix, endpoint, streamUrl, after) {
     send.disabled = true;
 
     try {
-      const res = await fetch(endpoint, {
+      const res = await api(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: cmd }),
@@ -521,6 +545,34 @@ const blogBranch = document.getElementById('blog-branch');
 let blogCurrent = null;
 let blogDraft = true;
 let blogPublishing = false;
+const BLOG_DRAFT_KEY = 'vinnel:blog-draft';
+
+function blogSnapshot() {
+  if (blogEditor.hidden) return null;
+  return {
+    current: blogCurrent,
+    post: {
+      slug: blogSlug.value,
+      draft: blogDraft,
+      title: blogTitle.value,
+      date: blogDate.value,
+      body: blogBody.value,
+    },
+  };
+}
+
+function blogRestore() {
+  let saved = null;
+  try {
+    saved = JSON.parse(sessionStorage.getItem(BLOG_DRAFT_KEY) || 'null');
+    sessionStorage.removeItem(BLOG_DRAFT_KEY);
+  } catch {}
+  if (!saved || !saved.post) return;
+  blogOpen(saved.post);
+  blogCurrent = saved.current;
+  blogSyncActions();
+  blogSay('Restored unsaved changes');
+}
 
 function blogSay(message, bad) {
   blogStatus.textContent = message;
@@ -533,7 +585,7 @@ function blogFail(err) {
 }
 
 async function blogFetch(path, options) {
-  const res = await fetch(path, options);
+  const res = await api(path, options);
   const text = await res.text();
   let data = {};
   try {
@@ -589,6 +641,7 @@ async function loadBlogPosts() {
     blogPublishingOff.hidden = blogPublishing;
     blogSyncActions();
     blogRender(data.posts || []);
+    blogRestore();
   } catch (err) {
     blogFail(err);
   }

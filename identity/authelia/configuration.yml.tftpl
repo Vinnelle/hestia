@@ -13,6 +13,8 @@
   },
   "session": {
     "secret": ${jsonencode(session_secret)},
+    "expiration": "12 hours",
+    "inactivity": "8 hours",
     "cookies": [
       { "domain": "vinnel.cloud", "authelia_url": "https://auth.vinnel.cloud" }
     ]
