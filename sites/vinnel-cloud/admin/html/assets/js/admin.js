@@ -512,7 +512,6 @@ const blogTitle = document.getElementById('blog-title');
 const blogDate = document.getElementById('blog-date');
 const blogSlug = document.getElementById('blog-slug');
 const blogBody = document.getElementById('blog-body');
-const blogSave = document.getElementById('blog-save');
 const blogPublish = document.getElementById('blog-publish');
 const blogUnpublish = document.getElementById('blog-unpublish');
 const blogDelete = document.getElementById('blog-delete');
@@ -596,7 +595,6 @@ async function loadBlogPosts() {
 }
 
 function blogSyncActions() {
-  blogSave.textContent = blogDraft ? 'Save draft' : 'Edit draft';
   blogPublish.textContent = blogDraft ? 'Publish' : 'Update';
   blogPublish.disabled = !blogPublishing;
   blogUnpublish.hidden = blogDraft;
