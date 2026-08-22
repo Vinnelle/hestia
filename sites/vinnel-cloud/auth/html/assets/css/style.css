@@ -7,15 +7,19 @@
 }
 
 :root {
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   color-scheme: light dark;
   --bg:            light-dark(#faf8f5, #0c0c0d);
+  --border:        light-dark(#e6e0d8, #1e1e1f);
+  --fg-strong:     light-dark(#161514, #ededea);
   --fg:            light-dark(#2a2825, #cececa);
   --muted:         light-dark(#4a4743, #a9a9a3);
   --dim:           light-dark(#625e57, #74746f);
   --faint:         light-dark(#736e66, #5c5c58);
+  --fainter:       light-dark(#8f8a80, #454542);
   --accent:        light-dark(#b3466b, #f7b9d1);
   --accent-strong: light-dark(#8f3355, #fbd3e2);
+  --accent-soft:   light-dark(rgb(179 70 107 / 0.10), rgb(247 185 209 / 0.12));
   --select-bg:     light-dark(rgb(179 70 107 / 0.18), rgb(247 185 209 / 0.25));
   --select-fg:     light-dark(#161514, #fff);
 }
@@ -26,26 +30,20 @@
 ::selection { background: var(--select-bg); color: var(--select-fg); }
 
 body {
-  font-family: var(--mono);
-  font-size: 15px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 1.5rem;
+  flex-direction: column;
+  min-height: 100dvh;
   background: var(--bg);
   color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-a:hover {
-  color: var(--accent-strong);
-}
+a { color: var(--accent); text-decoration: none; }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -54,56 +52,73 @@ a:hover {
 }
 
 .container {
-  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: min(20rem, 100%);
+  margin: 0 auto;
+  padding: 48px 24px;
 }
 
 .brand {
-  margin-bottom: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 44px;
   animation: enter 420ms ease-out both;
 }
 
+.mark {
+  width: 26px;
+  height: 26px;
+  margin-bottom: 20px;
+  fill: var(--accent);
+}
+
 .wordmark {
-  font-size: 1.75rem;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
+  color: var(--fg-strong);
 }
 
 .wordmark .accent,
-#who.accent {
-  color: var(--accent);
-}
+#who.accent { color: var(--accent); }
 
 .tagline {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--dim);
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--faint);
 }
 
 .stage {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
   animation: enter 420ms ease-out 80ms both;
 }
 
-.stage label {
+.field-label {
   display: block;
-  text-align: left;
-  font-size: 0.8rem;
-  color: var(--dim);
-  margin-bottom: 1.25rem;
+  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
 }
 
 .stage input:not([type="checkbox"]) {
   display: block;
   width: 100%;
-  margin-top: 0.35rem;
   font: inherit;
-  font-size: 0.95rem;
-  color: var(--fg);
+  font-size: 13px;
+  color: var(--fg-strong);
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--faint);
+  border-bottom: 1px solid var(--border);
   border-radius: 0;
-  padding: 0.35rem 0;
+  padding: 4px 0 8px;
   transition: border-color 0.15s;
 }
 
@@ -112,16 +127,18 @@ a:hover {
   border-bottom-color: var(--accent);
 }
 
-.stage label.check {
+.check {
   display: flex;
   width: fit-content;
   align-items: center;
-  gap: 0.4rem;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--dim);
   cursor: pointer;
   user-select: none;
 }
 
-.stage label.check input[type="checkbox"] {
+.check input[type="checkbox"] {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -132,45 +149,61 @@ a:hover {
   clip-path: inset(50%);
 }
 
-.stage label.check .tick {
-  width: 0.85rem;
-  height: 0.85rem;
+.check .tick {
+  width: 14px;
+  height: 14px;
+  flex: none;
   fill: none;
   stroke: var(--accent);
-  stroke-width: 2.25;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 0;
   transition: opacity 0.15s;
 }
 
-.stage label.check input[type="checkbox"]:checked ~ .tick {
-  opacity: 1;
-}
+.check input[type="checkbox"]:checked ~ .tick { opacity: 1; }
+.check:hover span { color: var(--fg-strong); }
 
-.stage label.check:hover span {
-  color: var(--fg);
-}
-
-.stage label.check input[type="checkbox"]:focus-visible ~ span {
+.check input[type="checkbox"]:focus-visible ~ span {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
   border-radius: 2px;
 }
 
-.stage button {
-  font: inherit;
-  font-size: 0.95rem;
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--accent);
-  transition: color 0.15s;
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
 }
 
-.stage button:hover {
-  color: var(--accent-strong);
+.actions button,
+.actions a {
+  flex: 1;
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  padding: 9px 0;
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  color: var(--accent);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.actions button:hover,
+.actions a:hover { background: var(--accent-soft); }
+
+.actions .quiet {
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.actions .quiet:hover {
+  background: transparent;
+  color: var(--fg-strong);
 }
 
 #totp input {
@@ -179,44 +212,33 @@ a:hover {
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: 12px;
   color: var(--dim);
-  margin-bottom: 1.25rem;
-}
-
-.actions .sep {
-  color: var(--faint);
-  margin: 0 0.35rem;
-  user-select: none;
-}
-
-#done p + p {
-  margin-top: 1rem;
 }
 
 #msg {
-  margin-top: 1.5rem;
-  font-size: 0.85rem;
+  margin-top: 26px;
+  font-size: 12px;
   color: var(--accent-strong);
 }
 
 .site-footer {
-  position: fixed;
-  bottom: 1.75rem;
-  left: 0;
-  right: 0;
   display: flex;
   justify-content: center;
+  padding: 18px 24px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: 0.06em;
 }
 
 .theme-toggle {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 7px;
 }
 
 .theme-toggle .sep {
-  color: var(--faint);
+  color: var(--fainter);
   user-select: none;
 }
 
@@ -232,9 +254,7 @@ a:hover {
   transition: color 0.15s;
 }
 
-.theme-opt:hover {
-  color: var(--muted);
-}
+.theme-opt:hover { color: var(--muted); }
 
 .theme-opt[aria-pressed="true"] {
   color: var(--accent);

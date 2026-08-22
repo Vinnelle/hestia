@@ -7,15 +7,18 @@
 }
 
 :root {
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   color-scheme: light dark;
   --bg:            light-dark(#faf8f5, #0c0c0d);
+  --border:        light-dark(#e6e0d8, #1e1e1f);
+  --fg-strong:     light-dark(#161514, #ededea);
   --fg:            light-dark(#2a2825, #cececa);
   --muted:         light-dark(#4a4743, #a9a9a3);
   --dim:           light-dark(#625e57, #74746f);
   --faint:         light-dark(#736e66, #5c5c58);
+  --fainter:       light-dark(#8f8a80, #454542);
   --accent:        light-dark(#b3466b, #f7b9d1);
-  --accent-strong: light-dark(#8f3355, #fbd3e2);
+  --accent-soft:   light-dark(rgb(179 70 107 / 0.10), rgb(247 185 209 / 0.12));
   --select-bg:     light-dark(rgb(179 70 107 / 0.18), rgb(247 185 209 / 0.25));
   --select-fg:     light-dark(#161514, #fff);
 }
@@ -26,24 +29,20 @@
 ::selection { background: var(--select-bg); color: var(--select-fg); }
 
 body {
-  font-family: var(--mono);
-  font-size: 15px;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   min-height: 100dvh;
-  padding: 1.5rem;
   background: var(--bg);
   color: var(--fg);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-a {
-  color: var(--accent);
-  text-decoration: none;
-}
-
-a:hover {
-  color: var(--accent-strong);
-}
+a { color: var(--accent); text-decoration: none; }
 
 :focus-visible {
   outline: 2px solid var(--accent);
@@ -52,74 +51,69 @@ a:hover {
 }
 
 .container {
-  display: grid;
-  grid-template-rows: 1fr auto 1fr;
-  justify-items: center;
-  text-align: center;
-}
-
-.brand {
-  grid-row: 2;
-  animation: enter 420ms ease-out both;
-}
-
-.wordmark {
-  font-size: 1.75rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-}
-
-.wordmark .accent {
-  color: var(--accent);
-}
-
-.cta {
-  grid-row: 3;
-  margin-top: 1rem;
-  font-size: 0.95rem;
-  animation: enter 420ms ease-out 80ms both;
-}
-
-.cta a {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-}
-
-.site-footer {
-  position: fixed;
-  bottom: 1.75rem;
-  left: 0;
-  right: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  padding: 48px 24px 0;
+  text-align: center;
+  animation: enter 420ms ease-out both;
 }
+
+.mark {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 26px;
+  fill: var(--accent);
+}
+
+.wordmark {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fg-strong);
+}
+
+.wordmark .accent { color: var(--accent); }
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 40px;
+  padding: 9px 20px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.cta:hover { background: var(--accent-soft); }
+.cta svg { width: 14px; height: 14px; }
+
+.site-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 18px 48px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+}
+
+.footer-link { color: var(--faint); }
+.footer-link:hover { color: var(--muted); }
 
 .theme-toggle {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 7px;
 }
 
-.sep {
-  color: var(--faint);
+.theme-toggle .sep {
+  color: var(--fainter);
   user-select: none;
-}
-
-.footer-link {
-  color: var(--faint);
-}
-
-.footer-link:hover {
-  color: var(--muted);
 }
 
 .theme-opt {
@@ -134,9 +128,7 @@ a:hover {
   transition: color 0.15s;
 }
 
-.theme-opt:hover {
-  color: var(--muted);
-}
+.theme-opt:hover { color: var(--muted); }
 
 .theme-opt[aria-pressed="true"] {
   color: var(--accent);
@@ -158,6 +150,10 @@ a:hover {
 
 @keyframes enter {
   from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (max-width: 560px) {
+  .site-footer { padding: 18px 24px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

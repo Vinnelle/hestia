@@ -3,19 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="vinnel.cloud — cloud infrastructure, run simply.">
   <link rel="canonical" href="https://vinnel.cloud/">
   <link rel="me" href="https://ieji.de/@ida">
   <link rel="me" href="https://infosec.exchange/@ida">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="vinnel.cloud">
   <meta property="og:title" content="vinnel.cloud">
-  <meta property="og:description" content="Cloud infrastructure, run simply.">
   <meta property="og:url" content="https://vinnel.cloud/">
   <meta property="og:image" content="https://vinnel.cloud/assets/images/vinnel-cloud-social.webp">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="vinnel.cloud">
-  <meta name="twitter:description" content="Cloud infrastructure, run simply.">
   <meta name="twitter:image" content="https://vinnel.cloud/assets/images/vinnel-cloud-social.webp">
   <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
@@ -32,17 +29,22 @@
 </head>
 <body>
   <main class="container">
-    <header class="brand">
-      <h1 class="wordmark">vinnel<span class="accent">.cloud</span></h1>
-    </header>
+    <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="6" y="6" width="24" height="24" rx="5"/>
+      <rect x="34" y="6" width="24" height="24" rx="5" opacity="0.55"/>
+      <rect x="6" y="34" width="24" height="24" rx="5" opacity="0.55"/>
+      <rect x="34" y="34" width="24" height="24" rx="5"/>
+    </svg>
 
-    <div class="cta">
-      <a href="https://auth.vinnel.cloud/?rd=https%3A%2F%2Fadmin.vinnel.cloud%2F" id="account-btn"><span id="account-label">login</span></a>
-    </div>
+    <h1 class="wordmark">vinnel<span class="accent">.cloud</span></h1>
+    <a class="cta" href="https://auth.vinnel.cloud/?rd=https%3A%2F%2Fadmin.vinnel.cloud%2F" id="account-btn">
+      <span id="account-label">sign in</span>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9.5"/><path d="M8.5 4l4 4-4 4"/></svg>
+    </a>
   </main>
 
   <footer class="site-footer">
-    <!-- <a class="footer-link" href="https://status.vinnel.cloud/">status</a> -->
+    <a class="footer-link" href="https://status.vinnel.cloud/">status</a>
     <div class="theme-toggle" role="group" aria-label="Theme">
       <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
       <span class="sep" aria-hidden="true">/</span>

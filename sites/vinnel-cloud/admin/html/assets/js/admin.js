@@ -153,17 +153,12 @@ const fmtBytes = (b) => {
 const pct = (n) => (n || 0).toFixed(0) + '%';
 const text = (id, v) => { document.getElementById(id).textContent = v; };
 
-function bar(percent) {
-  const cls = percent >= 90 ? ' meter--crit' : percent >= 75 ? ' meter--warn' : '';
-  return '<div class="meter"><span class="meter-fill' + cls +
-    '" data-pct="' + Math.min(percent, 100).toFixed(1) + '"></span></div>' +
-    '<span class="meter-text">' + pct(percent) + '</span>';
-}
-
-function applyMeters(root) {
-  for (const el of root.querySelectorAll('.meter-fill[data-pct]')) {
-    el.style.width = el.dataset.pct + '%';
-  }
+function setMeter(id, percent) {
+  const el = document.getElementById(id);
+  const p = Math.max(0, Math.min(percent || 0, 100));
+  el.style.width = p.toFixed(1) + '%';
+  el.classList.toggle('meter--warn', p >= 75 && p < 90);
+  el.classList.toggle('meter--crit', p >= 90);
 }
 
 let reauthing = false;
@@ -203,16 +198,8 @@ async function loadCluster() {
     text('stat-mem', pct(c.memTotal ? (c.memUsed / c.memTotal) * 100 : 0));
     text('stat-mem-sub', fmtBytes(c.memUsed) + ' / ' + fmtBytes(c.memTotal));
 
-    const tbody = document.getElementById('nodes-tbody');
-    tbody.innerHTML = (c.nodes || []).map((n) => {
-      const dot = '<span class="dot' + (n.ready ? ' dot--ok' : ' dot--bad') + '"></span>';
-      return '<tr><td>' + dot + escapeHtml(n.name) + '</td>' +
-        '<td class="meter-cell">' + bar(n.cpuPercent) + '</td>' +
-        '<td class="meter-cell">' + bar(n.memPercent) + '</td>' +
-        '<td>' + n.podCount + ' / ' + n.podTotal + '</td>' +
-        '<td class="dim">' + escapeHtml(n.kubelet || '') + '</td></tr>';
-    }).join('');
-    applyMeters(tbody);
+    setMeter('stat-cpu-fill', c.cpuTotal ? (c.cpuUsed / c.cpuTotal) * 100 : 0);
+    setMeter('stat-mem-fill', c.memTotal ? (c.memUsed / c.memTotal) * 100 : 0);
     renderStorage(c);
   } catch (e) {
     err.hidden = false;
@@ -230,7 +217,6 @@ function renderStorage(c) {
     const bound = v.phase === 'Bound';
     return '<tr><td>' + escapeHtml(v.claim || v.name) + '</td>' +
       '<td class="dim">' + escapeHtml(v.namespace || '—') + '</td>' +
-      '<td class="dim">' + escapeHtml(v.class || '—') + '</td>' +
       '<td>' + fmtBytes(v.capacity) + '</td>' +
       '<td><span class="dot' + (bound ? ' dot--ok' : ' dot--bad') + '"></span>' +
       escapeHtml(v.phase || '') + '</td></tr>';
@@ -540,7 +526,6 @@ const blogPublish = document.getElementById('blog-publish');
 const blogUnpublish = document.getElementById('blog-unpublish');
 const blogDelete = document.getElementById('blog-delete');
 const blogPublishingOff = document.getElementById('blog-publishing-off');
-const blogBranch = document.getElementById('blog-branch');
 
 let blogCurrent = null;
 let blogDraft = true;

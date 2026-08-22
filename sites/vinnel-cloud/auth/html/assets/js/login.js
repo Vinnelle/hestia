@@ -216,7 +216,6 @@
 
   if (canPasskey) {
     $('passkey').hidden = false;
-    $('passkey-sep').hidden = false;
     $('passkey').addEventListener('click', function () {
       msg('');
       stopAutofill();

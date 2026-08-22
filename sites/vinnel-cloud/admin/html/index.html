@@ -10,9 +10,7 @@
   <link rel="icon" type="image/webp" href="/assets/images/favicon.webp">
   <link rel="preload" href="/assets/css/app.css" as="style">
   <link rel="stylesheet" href="/assets/fonts/jetbrains-mono.css">
-  <link rel="stylesheet" href="/assets/css/style.css">
   <link rel="stylesheet" href="/assets/css/app.css">
-  <link rel="stylesheet" href="/assets/css/admin.css">
 </head>
 <body>
 
@@ -21,60 +19,62 @@
   <div class="app-layout">
 
     <aside class="sidebar" id="sidebar">
+      <p class="wordmark sidebar-brand">vinnel<span class="accent">.cloud</span></p>
+
       <nav class="sidebar-nav">
         <a class="sidebar-link" href="#" data-slug="">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>
           </svg>
-          <span class="sidebar-label">Home</span>
+          <span class="sidebar-label">Overview</span>
         </a>
         <a class="sidebar-link" href="#blog" data-slug="blog">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="14" y2="11"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8"/><path d="M8 11h6"/>
           </svg>
           <span class="sidebar-label">Blog</span>
         </a>
+
         <button class="sidebar-section-label" type="button" data-section="gameservers" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="15" y1="13" x2="15.01" y2="13"/><line x1="18" y1="11" x2="18.01" y2="11"/><path d="M17.32 5H6.68a4 4 0 0 0-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 0 1 9.828 16h4.344a2 2 0 0 1 1.414.586L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.545-.604-6.584-.685-7.258-.007-.05-.011-.1-.017-.151A4 4 0 0 0 17.32 5z"/></svg>
-          <span class="sidebar-section-label-text">Game Servers</span>
-          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
+          <span class="sidebar-section-label-text">Game servers</span>
+          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="sidebar-section" data-section="gameservers" hidden>
           <a class="sidebar-link sidebar-link--sub" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
-            <img class="sidebar-icon" src="/assets/images/services/satisfactory.png" alt="" loading="lazy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
             <span class="sidebar-label">Satisfactory</span>
           </a>
           <a class="sidebar-link sidebar-link--sub" href="#gameservers/minecraft" data-slug="gameservers/minecraft">
-            <img class="sidebar-icon" src="/assets/images/services/minecraft.jpg" alt="" loading="lazy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
             <span class="sidebar-label">Minecraft</span>
           </a>
         </div>
+
         {{range .ServiceGroups}}
         <button class="sidebar-section-label" type="button" data-section="{{.Name}}" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
+          <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
           <span class="sidebar-section-label-text">{{.Name}}</span>
-          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
         </button>
         <div class="sidebar-section" data-section="{{.Name}}" hidden>
           {{range .Services}}
           <a class="sidebar-link sidebar-link--sub service-link"
              href="#{{.Slug}}"
              data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
-            {{if .IconURL}}<img class="sidebar-icon" src="{{.IconURL}}" alt="" loading="lazy">{{else}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>{{end}}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
             <span class="sidebar-label">{{.Label}}</span>
           </a>
           {{end}}
         </div>
         {{end}}
       </nav>
+
       <div class="sidebar-footer">
-        <div class="sidebar-theme-wrap">
-          <div class="theme-toggle sidebar-theme-toggle" role="group" aria-label="Theme">
-            <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
-            <span class="sep" aria-hidden="true">/</span>
-            <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
-          </div>
-          <span class="sidebar-label sidebar-watermark">vinnel labs</span>
+        <div class="theme-toggle" role="group" aria-label="Theme">
+          <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+          <span class="sep" aria-hidden="true">/</span>
+          <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
         </div>
       </div>
     </aside>
@@ -84,30 +84,28 @@
       <nav class="app-nav">
         <div class="nav-left">
           <button class="sidebar-toggle-btn" id="sidebar-toggle" type="button" aria-label="Toggle sidebar" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18"/>
             </svg>
           </button>
+          <span class="nav-node">gaia</span>
           <a class="frame-back" id="frame-back" href="#" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
             <span id="frame-title"></span>
           </a>
           <button class="frame-fullscreen-btn" id="frame-fullscreen" type="button" aria-label="Toggle fullscreen" aria-pressed="false" hidden>
-            <svg class="icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3"/></svg>
-            <svg class="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M9 3v4a1 1 0 01-1 1H4M15 3v4a1 1 0 001 1h4M9 21v-4a1 1 0 00-1-1H4M15 21v-4a1 1 0 011-1h4"/></svg>
+            <svg class="icon-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 00-2 2v3M16 3h3a2 2 0 012 2v3M8 21H5a2 2 0 01-2-2v-3M16 21h3a2 2 0 002-2v-3"/></svg>
+            <svg class="icon-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M9 3v4a1 1 0 01-1 1H4M15 3v4a1 1 0 001 1h4M9 21v-4a1 1 0 00-1-1H4M15 21v-4a1 1 0 011-1h4"/></svg>
           </button>
-        </div>
-        <div class="nav-logo-center">
-          <p class="wordmark">vinnel<span class="accent">.cloud</span></p>
         </div>
         <div class="nav-user">
           <button class="user-menu-btn" id="user-menu-btn" aria-haspopup="true" aria-expanded="false">
             <span id="user-email">{{.User}}</span>
-            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
           </button>
           <div class="user-dropdown" id="user-dropdown" hidden>
             <a class="dropdown-item dropdown-item--danger" href="https://auth.vinnel.cloud/logout?rd=https%3A%2F%2Fvinnel.cloud">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
               Sign out
             </a>
           </div>
@@ -117,123 +115,116 @@
       <main class="app-main app-main--frame">
 
         <section class="frame-empty" id="frame-empty">
-          <h1 class="page-title">Home</h1>
-          <p class="page-subtitle">Everything under vinnel.cloud, in one place.</p>
+          <h1 class="page-title">Cluster</h1>
 
-          <div class="service-grid">
+          <div class="state-center error-msg" id="cluster-error" hidden></div>
+
+          <div class="stat-row">
+            <div class="stat">
+              <div class="stat-label">Nodes ready</div>
+              <div class="stat-value" id="stat-nodes">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Pods running</div>
+              <div class="stat-value" id="stat-pods">—</div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">CPU</div>
+              <div class="stat-value" id="stat-cpu">—</div>
+              <div class="stat-meter">
+                <div class="meter"><span class="meter-fill" id="stat-cpu-fill"></span></div>
+                <span class="stat-sub" id="stat-cpu-sub"></span>
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-label">Memory</div>
+              <div class="stat-value" id="stat-mem">—</div>
+              <div class="stat-meter">
+                <div class="meter"><span class="meter-fill" id="stat-mem-fill"></span></div>
+                <span class="stat-sub" id="stat-mem-sub"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-head">
+            <h2 class="section-title">Services</h2>
+          </div>
+
+          <div class="service-list">
+            <a class="service-row service-link" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
+              <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
+              <span class="service-row-body">
+                <span class="service-row-label">Satisfactory</span>
+                </span>
+              <span class="service-row-host">factory.vin.moe</span>
+            </a>
+            <a class="service-row service-link" href="#gameservers/minecraft" data-slug="gameservers/minecraft">
+              <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+              <span class="service-row-body">
+                <span class="service-row-label">Minecraft</span>
+                </span>
+              <span class="service-row-host">mc.vin.moe</span>
+            </a>
             {{range .Services}}
-            <a class="service-tile service-link"
+            <a class="service-row service-link"
                href="#{{.Slug}}"
                data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
-              {{if .IconURL}}<img class="service-tile-icon" src="{{.IconURL}}" alt="" loading="lazy">{{else}}<svg class="service-tile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>{{end}}
-              <div class="service-tile-body">
-                <div class="service-tile-label">{{.Label}}{{if not .Frameable}} <span class="service-tile-ext">↗</span>{{end}}</div>
-                <div class="service-tile-desc">{{.Desc}}</div>
-                <div class="service-tile-host">{{.Host}}</div>
-              </div>
+              <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
+              <span class="service-row-body">
+                <span class="service-row-label">{{.Label}}{{if not .Frameable}} <span class="service-row-ext">↗</span>{{end}}</span>
+              </span>
+              <span class="service-row-host">{{.Host}}</span>
             </a>
             {{end}}
           </div>
 
-          <h2 class="section-title">Cluster</h2>
-          <div class="state-center error-msg" id="cluster-error" hidden></div>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Nodes ready</div>
-              <div class="stat-value" id="stat-nodes">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Pods running</div>
-              <div class="stat-value" id="stat-pods">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">CPU used</div>
-              <div class="stat-value" id="stat-cpu">—</div>
-              <div class="stat-sub" id="stat-cpu-sub"></div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Memory used</div>
-              <div class="stat-value" id="stat-mem">—</div>
-              <div class="stat-sub" id="stat-mem-sub"></div>
-            </div>
+          <div class="section-head">
+            <h2 class="section-title">Storage</h2>
+            <span class="section-meta"><span id="stat-vols">—</span> volumes · <span id="stat-vol-bytes">—</span> provisioned · local-path</span>
           </div>
 
-          <div class="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Node</th>
-                  <th>CPU</th>
-                  <th>Memory</th>
-                  <th>Pods</th>
-                  <th>Kubelet</th>
-                </tr>
-              </thead>
-              <tbody id="nodes-tbody"></tbody>
-            </table>
-          </div>
-
-          <h2 class="section-title">Storage</h2>
-          <p class="page-subtitle">Every persistent volume</p>
-
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-label">Volumes</div>
-              <div class="stat-value" id="stat-vols">—</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-label">Provisioned</div>
-              <div class="stat-value" id="stat-vol-bytes">—</div>
-            </div>
-          </div>
-
-          <div class="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Claim</th>
-                  <th>Namespace</th>
-                  <th>Class</th>
-                  <th>Size</th>
-                  <th>Phase</th>
-                </tr>
-              </thead>
-              <tbody id="volumes-tbody"></tbody>
-            </table>
-          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Claim</th>
+                <th>Namespace</th>
+                <th>Size</th>
+                <th>Phase</th>
+              </tr>
+            </thead>
+            <tbody id="volumes-tbody"></tbody>
+          </table>
         </section>
 
         <section class="app-page" id="page-blog" hidden>
           <h1 class="page-title">Blog</h1>
-          <p class="page-subtitle">vin.moe blog panel.</p>
 
           <div class="state-center error-msg" id="blog-error" hidden></div>
-          <p class="sat-hint" id="blog-publishing-off" hidden>Repository publishing is not configured, so posts can only be saved as drafts.</p>
+          <p class="hint" id="blog-publishing-off" hidden>Repository publishing is not configured, so posts can only be saved as drafts.</p>
 
           <div class="blog-layout">
             <div class="blog-list-pane">
-              <button class="btn-action" id="blog-new" type="button">New post</button>
+              <button class="btn-action btn-action--quiet" id="blog-new" type="button">New post</button>
               <ul class="blog-list" id="blog-list"></ul>
             </div>
 
             <form class="blog-editor" id="blog-editor" hidden>
               <label class="blog-field">
-                <span class="blog-field-label">Title</span>
-                <input class="blog-input" id="blog-title" type="text" maxlength="200" required>
+                <span class="field-label">Title</span>
+                <input class="text-input" id="blog-title" type="text" maxlength="200" required>
               </label>
               <div class="blog-field-row">
                 <label class="blog-field">
-                  <span class="blog-field-label">Date</span>
-                  <input class="blog-input" id="blog-date" type="date" required>
+                  <span class="field-label">Date</span>
+                  <input class="text-input" id="blog-date" type="date" required>
                 </label>
                 <label class="blog-field">
-                  <span class="blog-field-label">Slug</span>
-                  <input class="blog-input" id="blog-slug" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" required>
+                  <span class="field-label">Slug</span>
+                  <input class="text-input" id="blog-slug" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" required>
                 </label>
               </div>
               <label class="blog-field">
-                <span class="blog-field-label">Body (markdown)</span>
+                <span class="field-label">Body — markdown</span>
                 <textarea class="blog-textarea" id="blog-body" rows="18" spellcheck="true"></textarea>
               </label>
               <div class="blog-actions">
@@ -249,79 +240,74 @@
 
         <section class="app-page" id="page-satisfactory" hidden>
           <h1 class="page-title">Satisfactory</h1>
-          <p class="page-subtitle">Dedicated server (factory.vin.moe)</p>
+          <p class="page-subtitle">factory.vin.moe</p>
 
           <div class="state-center error-msg" id="satisfactory-error" hidden></div>
 
-          <div class="stats-grid">
-            <div class="stat-card">
+          <div class="stat-row stat-row--three">
+            <div class="stat">
               <div class="stat-label">Status</div>
               <div class="stat-value" id="sat-status"><span class="dot" id="sat-status-dot"></span><span id="sat-status-text">—</span></div>
               <div class="stat-sub" id="sat-status-sub"></div>
             </div>
-            <div class="stat-card">
+            <div class="stat">
               <div class="stat-label">Players</div>
               <div class="stat-value" id="sat-players">—</div>
               <div class="stat-sub" id="sat-tickrate"></div>
             </div>
-            <div class="stat-card">
+            <div class="stat">
               <div class="stat-label">CPU / Memory</div>
               <div class="stat-value" id="sat-resources">—</div>
             </div>
           </div>
 
-          <div class="sat-actions">
+          <div class="action-row">
             <button class="btn-action" id="sat-power-start" type="button" hidden>Start server</button>
             <button class="btn-action btn-action--danger" id="sat-power-stop" type="button" hidden>Stop server</button>
           </div>
-          <p class="sat-hint" id="sat-power-hint" hidden>Stopping frees the node's RAM/CPU for everything else. Players are disconnected; the world is exactly as it was last saved.</p>
+          <p class="hint" id="sat-power-hint" hidden>Stopping frees the node's RAM and CPU for everything else. Players are disconnected; the world is exactly as it was last saved.</p>
 
-          <div class="table-card">
-            <table>
-              <tbody>
-                <tr><td>Session</td><td id="sat-session" class="dim">—</td></tr>
-                <tr><td>Game phase</td><td id="sat-phase" class="dim">—</td></tr>
-                <tr><td>Tech tier</td><td id="sat-tier" class="dim">—</td></tr>
-                <tr><td>Node</td><td id="sat-node" class="dim">—</td></tr>
-                <tr><td>Image</td><td id="sat-image" class="dim">—</td></tr>
-                <tr><td>Restarts</td><td id="sat-restarts" class="dim">—</td></tr>
-                <tr><td>Pod started</td><td id="sat-started" class="dim">—</td></tr>
-              </tbody>
-            </table>
+          <h2 class="section-title">Pod</h2>
+          <table class="data-table data-table--pairs">
+            <tbody>
+              <tr><td>Session</td><td id="sat-session">—</td></tr>
+              <tr><td>Game phase</td><td id="sat-phase">—</td></tr>
+              <tr><td>Tech tier</td><td id="sat-tier">—</td></tr>
+              <tr><td>Node</td><td id="sat-node">—</td></tr>
+              <tr><td>Image</td><td id="sat-image">—</td></tr>
+              <tr><td>Restarts</td><td id="sat-restarts">—</td></tr>
+              <tr><td>Pod started</td><td id="sat-started">—</td></tr>
+            </tbody>
+          </table>
+
+          <div class="section-head">
+            <h2 class="section-title">Save and map</h2>
           </div>
+          <table class="data-table data-table--pairs">
+            <tbody>
+              <tr><td>File</td><td id="sat-save-file">—</td></tr>
+              <tr><td>Map</td><td id="sat-save-map">—</td></tr>
+              <tr><td>Session name</td><td id="sat-save-session">—</td></tr>
+              <tr><td>Play time</td><td id="sat-save-playtime">—</td></tr>
+              <tr><td>Last saved</td><td id="sat-save-time">—</td></tr>
+              <tr><td>Creative mode</td><td id="sat-save-creative">—</td></tr>
+            </tbody>
+          </table>
 
-          <h2 class="section-title">Save &amp; Map</h2>
-          <p class="page-subtitle">Current save file, and a hand-off to satisfactory-calculator.com's interactive map</p>
-
-          <div class="table-card">
-            <table>
-              <tbody>
-                <tr><td>File</td><td id="sat-save-file" class="dim">—</td></tr>
-                <tr><td>Map</td><td id="sat-save-map" class="dim">—</td></tr>
-                <tr><td>Session name</td><td id="sat-save-session" class="dim">—</td></tr>
-                <tr><td>Play time</td><td id="sat-save-playtime" class="dim">—</td></tr>
-                <tr><td>Last saved</td><td id="sat-save-time" class="dim">—</td></tr>
-                <tr><td>Creative mode</td><td id="sat-save-creative" class="dim">—</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="sat-actions">
+          <div class="action-row">
             <a class="btn-action" id="sat-save-download" href="/api/gameservers/satisfactory/save" download>Download current save</a>
-            <a class="btn-action" href="https://satisfactory-calculator.com/en/interactive-map" target="_blank" rel="noopener noreferrer">Open interactive map ↗</a>
+            <a class="btn-action btn-action--quiet" href="https://satisfactory-calculator.com/en/interactive-map" target="_blank" rel="noopener noreferrer">Open interactive map ↗</a>
           </div>
-          <p class="sat-hint">There's no in-house building/resource map here — drop the downloaded save into satisfactory-calculator.com's own uploader for that.</p>
+          <p class="hint">There is no in-house building or resource map here — drop the downloaded save into satisfactory-calculator.com's own uploader for that.</p>
 
-          <h2 class="section-title">Console</h2>
-          <p class="page-subtitle">Live server output. Commands run over the Dedicated Server HTTPS API with full administrator authority — every command is logged.</p>
-
-          <div class="sat-actions">
-            <button class="btn-action" id="sat-console-follow" type="button" aria-pressed="true">Following</button>
+          <div class="section-head">
+            <h2 class="section-title">Console</h2>
+            <button class="console-follow" id="sat-console-follow" type="button" aria-pressed="true">Following</button>
           </div>
-          <pre class="log-viewer console-output" id="sat-console" aria-live="polite" aria-label="Console output">Attaching to the server log. Type a command below — try <b>help</b>.</pre>
+          <pre class="console-output" id="sat-console" aria-live="polite" aria-label="Console output">Attaching to the server log. Type a command below — try <b>help</b>.</pre>
           <form class="console-form" id="sat-console-form" autocomplete="off">
             <label class="console-prompt" for="sat-console-input" aria-hidden="true">&gt;</label>
-            <input class="console-input" id="sat-console-input" name="command" type="text" maxlength="512"
+            <input class="text-input console-input" id="sat-console-input" name="command" type="text" maxlength="512"
                    placeholder="help" aria-label="Satisfactory server command" spellcheck="false" required>
             <button class="btn-action" type="submit" id="sat-console-send">Run</button>
           </form>
@@ -329,57 +315,54 @@
 
         <section class="app-page" id="page-minecraft" hidden>
           <h1 class="page-title">Minecraft</h1>
-          <p class="page-subtitle">Create: Ultimate Selection 2 — NeoForge 1.21.1 (<span id="mc-address">mc.vin.moe</span>)</p>
+          <p class="page-subtitle"><span id="mc-address">mc.vin.moe</span></p>
 
           <div class="state-center error-msg" id="minecraft-error" hidden></div>
 
-          <div class="stats-grid">
-            <div class="stat-card">
+          <div class="stat-row stat-row--three">
+            <div class="stat">
               <div class="stat-label">Status</div>
               <div class="stat-value" id="mc-status"><span class="dot" id="mc-status-dot"></span><span id="mc-status-text">—</span></div>
               <div class="stat-sub" id="mc-status-sub"></div>
             </div>
-            <div class="stat-card">
+            <div class="stat">
               <div class="stat-label">Players</div>
               <div class="stat-value" id="mc-players">—</div>
               <div class="stat-sub" id="mc-player-names"></div>
             </div>
-            <div class="stat-card">
+            <div class="stat">
               <div class="stat-label">CPU / Memory</div>
               <div class="stat-value" id="mc-resources">—</div>
               <div class="stat-sub" id="mc-latency"></div>
             </div>
           </div>
 
-          <div class="sat-actions">
+          <div class="action-row">
             <button class="btn-action" id="mc-power-start" type="button" hidden>Start server</button>
             <button class="btn-action btn-action--danger" id="mc-power-stop" type="button" hidden>Stop server</button>
           </div>
-          <p class="sat-hint" id="mc-power-hint" hidden>Stopping frees the node's RAM/CPU for everything else. Players are disconnected; the world is exactly as it was at the last autosave.</p>
+          <p class="hint" id="mc-power-hint" hidden>Stopping frees the node's RAM and CPU for everything else. Players are disconnected; the world is exactly as it was at the last autosave.</p>
 
-          <div class="table-card">
-            <table>
-              <tbody>
-                <tr><td>MOTD</td><td id="mc-motd" class="dim">—</td></tr>
-                <tr><td>Version</td><td id="mc-version" class="dim">—</td></tr>
-                <tr><td>Node</td><td id="mc-node" class="dim">—</td></tr>
-                <tr><td>Image</td><td id="mc-image" class="dim">—</td></tr>
-                <tr><td>Restarts</td><td id="mc-restarts" class="dim">—</td></tr>
-                <tr><td>Pod started</td><td id="mc-started" class="dim">—</td></tr>
-              </tbody>
-            </table>
+          <h2 class="section-title">Pod</h2>
+          <table class="data-table data-table--pairs">
+            <tbody>
+              <tr><td>MOTD</td><td id="mc-motd">—</td></tr>
+              <tr><td>Version</td><td id="mc-version">—</td></tr>
+              <tr><td>Node</td><td id="mc-node">—</td></tr>
+              <tr><td>Image</td><td id="mc-image">—</td></tr>
+              <tr><td>Restarts</td><td id="mc-restarts">—</td></tr>
+              <tr><td>Pod started</td><td id="mc-started">—</td></tr>
+            </tbody>
+          </table>
+
+          <div class="section-head">
+            <h2 class="section-title">Console</h2>
+            <button class="console-follow" id="mc-console-follow" type="button" aria-pressed="true">Following</button>
           </div>
-
-          <h2 class="section-title">Console</h2>
-          <p class="page-subtitle">Live server output. Commands run over RCON with full operator authority — every command is logged.</p>
-
-          <div class="sat-actions">
-            <button class="btn-action" id="mc-console-follow" type="button" aria-pressed="true">Following</button>
-          </div>
-          <pre class="log-viewer console-output" id="mc-console" aria-live="polite" aria-label="Console output">Attaching to the server log. Type a command below — try <b>list</b>, <b>tps</b>, <b>seed</b>, or <b>help</b>.</pre>
+          <pre class="console-output" id="mc-console" aria-live="polite" aria-label="Console output">Attaching to the server log. Type a command below — try <b>list</b>, <b>tps</b>, <b>seed</b>, or <b>help</b>.</pre>
           <form class="console-form" id="mc-console-form" autocomplete="off">
             <label class="console-prompt" for="mc-console-input" aria-hidden="true">&gt;</label>
-            <input class="console-input" id="mc-console-input" name="command" type="text" maxlength="512"
+            <input class="text-input console-input" id="mc-console-input" name="command" type="text" maxlength="512"
                    placeholder="help" aria-label="Minecraft server command" spellcheck="false" required>
             <button class="btn-action" type="submit" id="mc-console-send">Run</button>
           </form>

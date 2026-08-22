@@ -13,7 +13,7 @@ COPY shared/html/ .
 COPY admin/html/ .
 COPY --from=images /favicon.webp assets/images/
 
-RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/fetch-service-icons.sh assets/images/services && sh /build/build.sh \
+RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh \
  && find . \( -name '*.gz' -o -name '*.br' \) -delete
 
 FROM mirror.vinnel.cloud/library/golang:1.27-alpine@sha256:4c9fe60190a2a3350ddc51de80d0224b8a6698d12bdfc999fee45ea9d6c46dbc AS build

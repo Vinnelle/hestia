@@ -25,9 +25,10 @@ html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family: 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 15px;
   font-variant-ligatures: none;
+  font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   display: flex;
   flex-direction: column;
@@ -73,7 +74,7 @@ a:hover { color: var(--accent-strong); }
 .brand {
   color: var(--fg-strong);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: -0.01em;
   font-size: 0.95rem;
 }
 .brand:hover { color: var(--accent); }
@@ -189,7 +190,7 @@ h2 {
   color: var(--accent);
   font-size: 0.76rem;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   margin: 3rem 0 0.6rem;
 }
@@ -320,7 +321,7 @@ footer {
 .foot-nav a { color: var(--dim); }
 .foot-nav a:hover { color: var(--accent); }
 
-.theme-toggle { display: flex; align-items: baseline; gap: 0.45rem; }
+.theme-toggle { display: flex; align-items: baseline; gap: 0.45rem; letter-spacing: 0.06em; }
 .theme-opt {
   font: inherit;
   font-size: 0.85rem;
