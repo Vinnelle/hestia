@@ -287,11 +287,12 @@ resource "kubernetes_ingress_v1" "netbird_grpc" {
     name      = "netbird-grpc"
     namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     annotations = {
-      "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
-      "nginx.ingress.kubernetes.io/backend-protocol"   = "GRPC"
-      "nginx.ingress.kubernetes.io/proxy-read-timeout" = "86400"
-      "nginx.ingress.kubernetes.io/proxy-send-timeout" = "86400"
-      "nginx.ingress.kubernetes.io/service-upstream"   = "true"
+      "cert-manager.io/cluster-issuer"                    = local.vinnel_cloud_cluster_issuer
+      "nginx.ingress.kubernetes.io/backend-protocol"      = "GRPC"
+      "nginx.ingress.kubernetes.io/configuration-snippet" = "client_body_timeout 3600s;"
+      "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "86400"
+      "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "86400"
+      "nginx.ingress.kubernetes.io/service-upstream"      = "true"
     }
   }
 
