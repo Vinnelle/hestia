@@ -291,6 +291,7 @@ resource "kubernetes_ingress_v1" "netbird_grpc" {
       "nginx.ingress.kubernetes.io/backend-protocol"   = "GRPC"
       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "86400"
       "nginx.ingress.kubernetes.io/proxy-send-timeout" = "86400"
+      "nginx.ingress.kubernetes.io/service-upstream"   = "true"
     }
   }
 
