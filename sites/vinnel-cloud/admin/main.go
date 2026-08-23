@@ -238,10 +238,14 @@ type blogAPI struct {
 	feed   blog.FeedConfig
 }
 
-func (b *blogAPI) purge(ctx context.Context) {
-	if err := b.purger.Purge(ctx); err != nil {
+func (b *blogAPI) purge(ctx context.Context, extra ...string) {
+	if err := b.purger.Purge(ctx, extra...); err != nil {
 		log.Printf("blog purge: %v", err)
 	}
+}
+
+func (b *blogAPI) postURL(slug string) string {
+	return strings.TrimRight(b.feed.SiteURL, "/") + "/posts/" + slug
 }
 
 const publicCacheControl = "public, max-age=0, must-revalidate, s-maxage=300"
@@ -279,6 +283,25 @@ func (b *blogAPI) publicFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	servePublic(w, r, "application/atom+xml; charset=utf-8", body)
+}
+
+func (b *blogAPI) publicPost(w http.ResponseWriter, r *http.Request) {
+	post, err := b.store.Get(r.PathValue("slug"))
+	if err != nil || post.Draft {
+		http.NotFound(w, r)
+		return
+	}
+	rendered, err := blog.RenderHTML(post.Body)
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	body, err := blog.Page(b.feed, blog.Rendered{Slug: post.Slug, Title: post.Title, Date: post.Date, HTML: rendered})
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	servePublic(w, r, "text/html; charset=utf-8", body)
 }
 
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
@@ -327,7 +350,7 @@ func (b *blogAPI) save(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("blog save: user=%q slug=%q draft=%v", userFromRequest(r), in.Slug, in.Draft)
 	if !in.Draft {
-		b.purge(r.Context())
+		b.purge(r.Context(), b.postURL(in.Slug))
 	}
 	writeJSON(w, &in)
 }
@@ -346,7 +369,7 @@ func (b *blogAPI) remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog delete: user=%q slug=%q", user, slug)
-	b.purge(r.Context())
+	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
@@ -368,7 +391,7 @@ func (b *blogAPI) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog publish: user=%q slug=%q branch=%q", user, slug, b.repo.Branch)
-	b.purge(r.Context())
+	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true", "branch": b.repo.Branch})
 }
 
@@ -390,7 +413,7 @@ func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog unpublish: user=%q slug=%q", user, slug)
-	b.purge(r.Context())
+	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
@@ -533,6 +556,7 @@ func main() {
 
 	mux.HandleFunc("GET /public/posts.json", blogHandlers.publicPosts)
 	mux.HandleFunc("GET /public/feed.xml", blogHandlers.publicFeed)
+	mux.HandleFunc("GET /public/posts/{slug}", blogHandlers.publicPost)
 
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)

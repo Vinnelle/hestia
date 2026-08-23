@@ -35,7 +35,7 @@ resource "kubernetes_deployment_v1" "netbird_dashboard" {
 
           env {
             name  = "NETBIRD_MGMT_API_ENDPOINT"
-            value = "https://proxy.vinnel.cloud"
+            value = "https://netbird.vinnel.cloud"
           }
 
           env {

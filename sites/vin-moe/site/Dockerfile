@@ -33,6 +33,7 @@ COPY --from=images /apple-touch-icon.png .
 COPY --from=images /avatar.webp .
 
 RUN sh /build/fetch-fonts.sh fonts && sh /build/build.sh
+RUN cp css/style.*.css css/post.css && cp fonts/jetbrains-mono.*.css fonts/post.css
 
 FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:c3fed6436b61d2bf2201ec032c35c000871f7ed062dea5d586bc6bf4d0fdd140
 USER root

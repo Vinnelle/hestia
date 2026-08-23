@@ -232,6 +232,28 @@ h2 {
   font-size: 0.78rem;
   white-space: nowrap;
 }
+.post-copy, .post-open {
+  font: inherit;
+  font-size: 0.85rem;
+  flex: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: var(--fainter);
+  transition: color 0.15s;
+}
+.post-copy {
+  width: 1ch;
+  cursor: pointer;
+  visibility: hidden;
+}
+.posts summary:hover .post-copy, .post-copy:focus-visible, .post-copy[data-flash] { visibility: visible; }
+.post-copy:hover, .post-open:hover { color: var(--accent-strong); }
+.post-copy[data-flash] { color: var(--accent); }
+.posts details[open] .post-open { color: var(--accent); }
+.post-page { padding: 0; }
+.post-back { margin: 2.8rem 0 0; font-size: 0.9rem; }
+
 .post-body {
   padding: 0 0 1.4rem 1.9rem;
   animation: panel-in 220ms ease-out;

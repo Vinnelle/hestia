@@ -30,11 +30,12 @@ func (p *Purger) client() *http.Client {
 	return &http.Client{Timeout: 10 * time.Second}
 }
 
-func (p *Purger) Purge(ctx context.Context) error {
+func (p *Purger) Purge(ctx context.Context, extra ...string) error {
 	if !p.Configured() {
 		return nil
 	}
-	payload, err := json.Marshal(map[string]any{"files": p.URLs})
+	files := append(append([]string{}, p.URLs...), extra...)
+	payload, err := json.Marshal(map[string]any{"files": files})
 	if err != nil {
 		return err
 	}

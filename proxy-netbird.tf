@@ -32,7 +32,7 @@ resource "netbird_account_settings" "main" {
   jwt_allow_groups                       = []
   jwt_groups_claim_name                  = ""
   jwt_groups_enabled                     = false
-  lazy_connection_enabled                = true
+  lazy_connection_enabled                = false
   network_range                          = "100.64.0.0/16"
   network_traffic_logs_enabled           = false
   network_traffic_packet_counter_enabled = false
@@ -134,6 +134,15 @@ resource "cloudflare_dns_record" "proxy_vinnel_cloud" {
   type    = "A"
   content = var.node_ip
   ttl     = 1
+  proxied = false
+}
+
+resource "cloudflare_dns_record" "netbird_vinnel_cloud" {
+  zone_id = data.cloudflare_zone.vinnel_cloud.id
+  name    = "netbird.vinnel.cloud"
+  type    = "A"
+  content = var.node_ip
+  ttl     = 1
   proxied = true
 }
 
@@ -173,12 +182,12 @@ resource "kubernetes_ingress_v1" "netbird_dashboard_http" {
     ingress_class_name = "nginx"
 
     tls {
-      hosts       = ["proxy.vinnel.cloud"]
-      secret_name = "netbird-tls"
+      hosts       = ["netbird.vinnel.cloud"]
+      secret_name = "netbird-dashboard-tls"
     }
 
     rule {
-      host = "proxy.vinnel.cloud"
+      host = "netbird.vinnel.cloud"
       http {
         path {
           path      = "/"
@@ -212,8 +221,31 @@ resource "kubernetes_ingress_v1" "netbird_api_http" {
     ingress_class_name = "nginx"
 
     tls {
+      hosts       = ["netbird.vinnel.cloud"]
+      secret_name = "netbird-dashboard-tls"
+    }
+
+    tls {
       hosts       = ["proxy.vinnel.cloud"]
       secret_name = "netbird-tls"
+    }
+
+    rule {
+      host = "netbird.vinnel.cloud"
+      http {
+        path {
+          path      = "/api"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = kubernetes_service_v1.netbird_management.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
     }
 
     rule {

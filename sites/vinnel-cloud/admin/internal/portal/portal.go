@@ -40,7 +40,7 @@ var Services = []Service{
 	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Observability", true, iconActivity, ""},
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Observability", true, iconFlows, ""},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "Network", true, iconShield, ""},
-	{"proxy", "Netbird", "proxy.vinnel.cloud", "Network", true, iconMesh, ""},
+	{"proxy", "Netbird", "netbird.vinnel.cloud", "Network", true, iconMesh, ""},
 	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Storage", true, iconLayers, ""},
 	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Storage", true, iconCloud, ""},
 	{"velero", "Velero", "velero.vinnel.cloud", "Storage", true, iconArchive, ""},

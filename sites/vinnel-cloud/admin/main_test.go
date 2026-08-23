@@ -331,6 +331,35 @@ func TestBlogDeleteRemovesFromRepoFirst(t *testing.T) {
 	}
 }
 
+func TestPublicPostPage(t *testing.T) {
+	api, mux := blogTestAPI(t, &blog.Repo{})
+	api.feed = blog.FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", Author: "Finlay"}
+	mux.HandleFunc("GET /public/posts/{slug}", api.publicPost)
+
+	blogDo(t, mux, "PUT", "/api/blog/posts/live-post", `{"title":"Live","date":"2026-08-21","body":"hello page","draft":false}`)
+	blogDo(t, mux, "PUT", "/api/blog/posts/draft-post", `{"title":"Draft","date":"2026-08-21","body":"secret","draft":true}`)
+
+	w := blogDo(t, mux, "GET", "/public/posts/live-post", "")
+	if w.Code != http.StatusOK {
+		t.Fatalf("GET = %d, body %s", w.Code, w.Body)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("Content-Type = %q", ct)
+	}
+	for _, want := range []string{"hello page", `href="https://vin.moe/posts/live-post"`} {
+		if !strings.Contains(w.Body.String(), want) {
+			t.Errorf("page missing %q", want)
+		}
+	}
+
+	if w := blogDo(t, mux, "GET", "/public/posts/draft-post", ""); w.Code != http.StatusNotFound {
+		t.Errorf("draft page = %d, want %d", w.Code, http.StatusNotFound)
+	}
+	if w := blogDo(t, mux, "GET", "/public/posts/missing", ""); w.Code != http.StatusNotFound {
+		t.Errorf("missing page = %d, want %d", w.Code, http.StatusNotFound)
+	}
+}
+
 func TestPublicPostsRevalidatesWithETag(t *testing.T) {
 	api, mux := blogTestAPI(t, &blog.Repo{})
 	mux.HandleFunc("GET /public/posts.json", api.publicPosts)

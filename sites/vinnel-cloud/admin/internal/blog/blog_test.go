@@ -378,7 +378,7 @@ func TestFeedIsValidAtom(t *testing.T) {
 	if e.Content != "<p>hi</p>" {
 		t.Errorf("content = %q", e.Content)
 	}
-	if e.Link.Href != "https://vin.moe/#post-hello" {
+	if e.Link.Href != "https://vin.moe/posts/hello" {
 		t.Errorf("link = %q", e.Link.Href)
 	}
 	if e.ID != "tag:vin.moe,2026:post/hello" {
@@ -445,5 +445,15 @@ func TestPurgerPostsFileList(t *testing.T) {
 	}
 	if len(body["files"]) != 1 || body["files"][0] != "https://vin.moe/posts.json" {
 		t.Errorf("files = %v", body["files"])
+	}
+
+	if err := p.Purge(context.Background(), "https://vin.moe/posts/hello"); err != nil {
+		t.Fatalf("Purge with extra: %v", err)
+	}
+	if len(body["files"]) != 2 || body["files"][1] != "https://vin.moe/posts/hello" {
+		t.Errorf("files with extra = %v", body["files"])
+	}
+	if len(p.URLs) != 1 {
+		t.Errorf("extra URLs leaked into the purger: %v", p.URLs)
 	}
 }

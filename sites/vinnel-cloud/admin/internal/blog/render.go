@@ -120,7 +120,7 @@ func Feed(cfg FeedConfig, posts []Rendered) ([]byte, error) {
 	for _, p := range posts {
 		feed.Entries = append(feed.Entries, atomEntry{
 			Title:   p.Title,
-			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: site + "/#post-" + p.Slug},
+			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: site + "/posts/" + p.Slug},
 			ID:      fmt.Sprintf("tag:%s,%s:post/%s", host, p.Date[:4], p.Slug),
 			Updated: p.Date + "T00:00:00Z",
 			Content: atomContent{Type: "html", Body: p.HTML},

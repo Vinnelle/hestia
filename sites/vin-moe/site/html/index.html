@@ -370,13 +370,44 @@ const renderPosts = (posts) => {
     details.setAttribute('name', 'post');
 
     const summary = document.createElement('summary');
+
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.className = 'post-copy';
+    copy.textContent = '#';
+    copy.title = 'Copy link to this post';
+    copy.setAttribute('aria-label', 'Copy link to ' + post.title);
+    copy.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const flash = (mark) => {
+        copy.textContent = mark;
+        copy.dataset.flash = '';
+        setTimeout(() => { copy.textContent = '#'; delete copy.dataset.flash; }, 1200);
+      };
+      try {
+        await navigator.clipboard.writeText(location.origin + '/posts/' + post.slug);
+        flash('\u2713');
+      } catch {
+        flash('!');
+      }
+    });
+
     const title = document.createElement('span');
     title.className = 'post-title';
     title.textContent = post.title;
     const time = document.createElement('time');
     time.dateTime = post.date;
     time.textContent = post.date;
-    summary.append(title, time);
+
+    const open = document.createElement('a');
+    open.className = 'post-open';
+    open.href = '/posts/' + post.slug;
+    open.textContent = '\u2197';
+    open.title = 'Open full post';
+    open.setAttribute('aria-label', 'Open full post: ' + post.title);
+
+    summary.append(copy, title, time, open);
 
     const body = document.createElement('div');
     body.className = 'post-body';
