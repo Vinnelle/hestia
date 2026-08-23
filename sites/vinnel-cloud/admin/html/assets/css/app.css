@@ -96,13 +96,20 @@ a:hover { color: var(--accent); }
 
 .sidebar-brand {
   display: flex;
-  align-items: center;
-  gap: 11px;
   padding: 0 20px 26px 18px;
   font-size: 13px;
   line-height: 20px;
   white-space: nowrap;
 }
+
+.sidebar-brand-link {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+.sidebar-brand-link:hover { color: var(--fg-strong); }
 
 .sidebar-mark {
   width: 16px;
