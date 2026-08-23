@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	satisfactoryNamespace  = "server"
+	satisfactoryNamespace  = "games"
 	satisfactoryDeployment = "satisfactory"
 	satisfactoryLabel      = "app=satisfactory"
 	satisfactoryContainer  = "satisfactory"

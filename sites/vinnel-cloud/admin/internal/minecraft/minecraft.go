@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	minecraftNamespace  = "server"
+	minecraftNamespace  = "games"
 	minecraftDeployment = "minecraft"
 	minecraftLabel      = "app=minecraft"
 	minecraftContainer  = "minecraft"
