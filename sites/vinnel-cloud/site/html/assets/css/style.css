@@ -103,7 +103,7 @@ a { color: var(--accent); text-decoration: none; }
 }
 
 .footer-link { color: var(--faint); }
-.footer-link:hover { color: var(--muted); }
+.footer-link:hover { color: var(--accent); }
 
 .theme-toggle {
   display: flex;
