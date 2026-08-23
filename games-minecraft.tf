@@ -1,3 +1,14 @@
+resource "kubernetes_namespace_v1" "games" {
+  metadata {
+    name = "games"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "privileged"
+      "pod-security.kubernetes.io/audit"   = "privileged"
+      "pod-security.kubernetes.io/warn"    = "privileged"
+    }
+  }
+}
+
 resource "cloudflare_dns_record" "mc_vin_moe" {
   zone_id = data.cloudflare_zone.vin_moe.id
   name    = "mc.vin.moe"
@@ -15,7 +26,7 @@ resource "random_password" "minecraft_rcon" {
 resource "kubernetes_secret_v1" "minecraft" {
   metadata {
     name      = "minecraft-secrets"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
 
   data = {
@@ -27,7 +38,7 @@ resource "kubernetes_secret_v1" "minecraft" {
 resource "kubernetes_secret_v1" "minecraft_rcon_admin" {
   metadata {
     name      = "minecraft-rcon"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   data = {
@@ -49,7 +60,7 @@ locals {
 resource "kubernetes_persistent_volume_claim_v1" "minecraft_data" {
   metadata {
     name      = "minecraft-data-pvc"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -69,7 +80,7 @@ resource "kubernetes_persistent_volume_claim_v1" "minecraft_data" {
 resource "kubernetes_deployment_v1" "minecraft" {
   metadata {
     name      = "minecraft"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
     labels = {
       app = "minecraft"
     }
@@ -299,14 +310,14 @@ resource "kubernetes_deployment_v1" "minecraft" {
 module "minecraft_vpa" {
   source = "./modules/vpa"
 
-  depends_on = [helm_release.vpa, kubernetes_deployment_v1.minecraft]
+  depends_on = [helm_release.vpa]
 
   name        = "minecraft"
-  namespace   = kubernetes_namespace_v1.server.metadata[0].name
+  namespace   = kubernetes_namespace_v1.games.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.minecraft.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "minecraft", min_memory = "18Gi", max_memory = "20Gi" },
+    { container_name = "minecraft", min_memory = "18Gi", max_memory = "18Gi" },
   ]
 }

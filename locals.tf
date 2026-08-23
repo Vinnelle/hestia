@@ -4,7 +4,7 @@ locals {
   monke_academy_cluster_issuer = "letsencrypt-prod-monke-academy"
 
   authelia_forward_auth_annotations = {
-    "nginx.ingress.kubernetes.io/auth-url"              = "http://authelia.services.svc.cluster.local/api/authz/auth-request"
+    "nginx.ingress.kubernetes.io/auth-url"              = "http://authelia.${kubernetes_namespace_v1.auth.metadata[0].name}.svc.cluster.local/api/authz/auth-request"
     "nginx.ingress.kubernetes.io/auth-signin"           = "https://auth.vinnel.cloud/?rd=$scheme://$http_host$request_uri"
     "nginx.ingress.kubernetes.io/auth-response-headers" = "Remote-User,Remote-Groups,Remote-Name,Remote-Email"
   }

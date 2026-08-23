@@ -31,7 +31,7 @@ resource "signoz_dashboard" "dashboard" {
   for_each = local.signoz_dashboard_ids
 
   schema_version = "v6"
-  name           = jsondecode(file("${path.module}/observability/${each.key}")).title
+  name           = trim(replace(lower(jsondecode(file("${path.module}/observability/${each.key}")).title), "/[^a-z0-9]+/", "-"), "-")
 
   tags = [
     for t in jsondecode(file("${path.module}/observability/${each.key}")).tags : {
@@ -54,11 +54,6 @@ resource "signoz_dashboard" "dashboard" {
   }
 }
 
-import {
-  for_each = local.signoz_dashboard_ids
-  to       = signoz_dashboard.dashboard[each.key]
-  id       = each.value
-}
 
 removed {
   from = restapi_object.dashboard

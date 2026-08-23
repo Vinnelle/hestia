@@ -14,6 +14,6 @@ controller:
     allow-snippet-annotations: "true"
     annotations-risk-level: Critical
     enable-opentelemetry: "true"
-    otlp-collector-host: "signoz-otel-collector.monitoring.svc.cluster.local"
+    otlp-collector-host: "signoz-otel-collector.observability.svc.cluster.local"
     otlp-collector-port: "4317"
     otel-service-name: "ingress-nginx"

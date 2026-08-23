@@ -1,8 +1,10 @@
-resource "kubernetes_namespace_v1" "gitlab" {
+resource "kubernetes_namespace_v1" "forge" {
   metadata {
-    name = "gitlab"
+    name = "forge"
     labels = {
       "pod-security.kubernetes.io/enforce" = "privileged"
+      "pod-security.kubernetes.io/audit"   = "privileged"
+      "pod-security.kubernetes.io/warn"    = "privileged"
     }
   }
 }
@@ -35,7 +37,7 @@ locals {
     "external_url 'https://gitlab.vinnel.cloud'",
     "registry_external_url 'https://artifacts.vinnel.cloud'",
     "registry['enable'] = true",
-    "registry['storage'] = { 's3' => { 'accesskey' => '${random_password.seaweedfs_s3_access_key.result}', 'secretkey' => '${random_password.seaweedfs_s3_secret_key.result}', 'bucket' => 'gitlab-registry', 'region' => 'us-east-1', 'regionendpoint' => 'http://seaweedfs.seaweedfs.svc.cluster.local:8333', 'secure' => false, 'v4auth' => true, 'forcepathstyle' => true }, 'redirect' => { 'disable' => true } }",
+    "registry['storage'] = { 's3' => { 'accesskey' => '${random_password.seaweedfs_s3_access_key.result}', 'secretkey' => '${random_password.seaweedfs_s3_secret_key.result}', 'bucket' => 'gitlab-registry', 'region' => 'us-east-1', 'regionendpoint' => 'http://seaweedfs.storage.svc.cluster.local:8333', 'secure' => false, 'v4auth' => true, 'forcepathstyle' => true }, 'redirect' => { 'disable' => true } }",
     "registry_nginx['enable'] = true",
     "registry_nginx['listen_https'] = false",
     "registry_nginx['listen_port'] = 5050",
@@ -75,7 +77,7 @@ locals {
 resource "kubernetes_secret_v1" "gitlab_credentials" {
   metadata {
     name      = "gitlab-credentials"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
   data = {
     root-password = random_password.gitlab_root_password.result
@@ -86,7 +88,7 @@ resource "kubernetes_secret_v1" "gitlab_credentials" {
 resource "kubernetes_persistent_volume_claim_v1" "gitlab_config" {
   metadata {
     name      = "gitlab-config-pvc"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     annotations = {
       "volumeType" = "hostPath"
     }
@@ -109,7 +111,7 @@ resource "kubernetes_persistent_volume_claim_v1" "gitlab_config" {
 resource "kubernetes_persistent_volume_claim_v1" "gitlab_logs" {
   metadata {
     name      = "gitlab-logs-pvc"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     annotations = {
       "volumeType" = "hostPath"
     }
@@ -132,7 +134,7 @@ resource "kubernetes_persistent_volume_claim_v1" "gitlab_logs" {
 resource "kubernetes_persistent_volume_claim_v1" "gitlab_data" {
   metadata {
     name      = "gitlab-data-pvc"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     annotations = {
       "volumeType" = "hostPath"
     }
@@ -155,7 +157,7 @@ resource "kubernetes_persistent_volume_claim_v1" "gitlab_data" {
 resource "kubernetes_deployment_v1" "gitlab" {
   metadata {
     name      = "gitlab"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     labels = {
       app = "gitlab"
     }
@@ -323,10 +325,10 @@ resource "kubernetes_deployment_v1" "gitlab" {
 module "gitlab_vpa" {
   source = "./modules/vpa"
 
-  depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab]
+  depends_on = [kubernetes_deployment_v1.gitlab, helm_release.vpa]
 
   name        = "gitlab"
-  namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+  namespace   = kubernetes_namespace_v1.forge.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.gitlab.metadata[0].name
   update_mode = "Initial"
@@ -338,7 +340,7 @@ module "gitlab_vpa" {
 resource "kubernetes_service_v1" "gitlab" {
   metadata {
     name      = "gitlab"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
 
   spec {
@@ -360,10 +362,10 @@ resource "kubernetes_service_v1" "gitlab" {
 }
 
 resource "kubernetes_ingress_v1" "gitlab_vinnel_cloud" {
-  depends_on = [helm_release.ingress_nginx, kubernetes_deployment_v1.gitlab]
+  depends_on = [kubernetes_deployment_v1.gitlab, helm_release.ingress_nginx]
   metadata {
     name      = "gitlab-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-body-size"    = "0"
@@ -402,10 +404,10 @@ resource "kubernetes_ingress_v1" "gitlab_vinnel_cloud" {
 # --- Phase B: GitLab Runner, Kubernetes executor ---
 
 resource "kubernetes_ingress_v1" "artifacts_vinnel_cloud" {
-  depends_on = [helm_release.ingress_nginx, kubernetes_deployment_v1.gitlab]
+  depends_on = [kubernetes_deployment_v1.gitlab, helm_release.ingress_nginx]
   metadata {
     name      = "artifacts-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
@@ -443,14 +445,14 @@ resource "kubernetes_ingress_v1" "artifacts_vinnel_cloud" {
 resource "kubernetes_service_account_v1" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
 }
 
 resource "kubernetes_role_v1" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
 
   rule {
@@ -493,7 +495,7 @@ resource "kubernetes_role_v1" "gitlab_runner" {
 resource "kubernetes_role_binding_v1" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
 
   role_ref {
@@ -505,7 +507,7 @@ resource "kubernetes_role_binding_v1" "gitlab_runner" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.gitlab_runner.metadata[0].name
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
 }
 
@@ -518,7 +520,7 @@ resource "gitlab_project_deploy_token" "registry" {
 resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
   metadata {
     name      = "registry-dockerconfig"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
   type = "kubernetes.io/dockerconfigjson"
   data = {
@@ -534,23 +536,16 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_gitlab" {
   }
 }
 
-resource "kubernetes_secret_v1" "registry_dockerconfig_websites" {
-  metadata {
-    name      = "registry-dockerconfig"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
-  }
-  type = "kubernetes.io/dockerconfigjson"
-  data = {
-    ".dockerconfigjson" = jsonencode({
-      auths = {
-        "artifacts.vinnel.cloud" = {
-          username = gitlab_project_deploy_token.registry.username
-          password = gitlab_project_deploy_token.registry.token
-          auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
-        }
+locals {
+  registry_dockerconfigjson = jsonencode({
+    auths = {
+      "artifacts.vinnel.cloud" = {
+        username = gitlab_project_deploy_token.registry.username
+        password = gitlab_project_deploy_token.registry.token
+        auth     = base64encode("${gitlab_project_deploy_token.registry.username}:${gitlab_project_deploy_token.registry.token}")
       }
-    })
-  }
+    }
+  })
 }
 
 resource "gitlab_group_dependency_proxy" "vinnel_cloud" {
@@ -579,7 +574,7 @@ locals {
       executor = "kubernetes"
 
       [runners.kubernetes]
-        namespace          = "${kubernetes_namespace_v1.gitlab.metadata[0].name}"
+        namespace          = "${kubernetes_namespace_v1.forge.metadata[0].name}"
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
         image              = "alpine:3.24"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
@@ -592,7 +587,7 @@ locals {
 resource "kubernetes_secret_v1" "gitlab_runner_config" {
   metadata {
     name      = "gitlab-runner-config"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
   data = {
     "config.toml" = local.gitlab_runner_config_toml
@@ -602,7 +597,7 @@ resource "kubernetes_secret_v1" "gitlab_runner_config" {
 resource "kubernetes_deployment_v1" "gitlab_runner" {
   metadata {
     name      = "gitlab-runner"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     labels = {
       app = "gitlab-runner"
     }
@@ -669,7 +664,7 @@ module "gitlab_runner_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab_runner]
 
   name        = "gitlab-runner"
-  namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+  namespace   = kubernetes_namespace_v1.forge.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.gitlab_runner.metadata[0].name
   update_mode = "Initial"
@@ -699,7 +694,7 @@ locals {
       executor = "kubernetes"
 
       [runners.kubernetes]
-        namespace          = "${kubernetes_namespace_v1.gitlab.metadata[0].name}"
+        namespace          = "${kubernetes_namespace_v1.forge.metadata[0].name}"
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
         image              = "alpine:3.24"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
@@ -713,7 +708,7 @@ locals {
 resource "kubernetes_secret_v1" "gitlab_runner_privileged_config" {
   metadata {
     name      = "gitlab-runner-privileged-config"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
   data = {
     "config.toml" = local.gitlab_runner_privileged_config_toml
@@ -723,7 +718,7 @@ resource "kubernetes_secret_v1" "gitlab_runner_privileged_config" {
 resource "kubernetes_deployment_v1" "gitlab_runner_privileged" {
   metadata {
     name      = "gitlab-runner-privileged-build"
-    namespace = kubernetes_namespace_v1.gitlab.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     labels = {
       app = "gitlab-runner-privileged-build"
     }
@@ -790,7 +785,7 @@ module "gitlab_runner_privileged_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.gitlab_runner_privileged]
 
   name        = "gitlab-runner-privileged-build"
-  namespace   = kubernetes_namespace_v1.gitlab.metadata[0].name
+  namespace   = kubernetes_namespace_v1.forge.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.gitlab_runner_privileged.metadata[0].name
   update_mode = "Initial"

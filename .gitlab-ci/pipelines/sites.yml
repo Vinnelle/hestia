@@ -77,7 +77,7 @@ vin_moe_deploy:
       changes: *site_changes_vin_moe
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vin_moe"'
   script:
-    - sh .gitlab-ci/scripts/site-deploy.sh vin-moe-site --zone vin.moe
+    - sh .gitlab-ci/scripts/site-deploy.sh vin-moe-site --namespace vin-moe --zone vin.moe
 
 monke_academy_build:
   extends: .site_build
@@ -104,7 +104,7 @@ monke_academy_deploy:
       changes: *site_changes_monke_academy
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "monke_academy"'
   script:
-    - sh .gitlab-ci/scripts/site-deploy.sh monke-academy-site --zone monke.academy
+    - sh .gitlab-ci/scripts/site-deploy.sh monke-academy-site --namespace monke-academy --zone monke.academy
 
 vinnel_cloud_site_build:
   extends: .site_build
@@ -159,7 +159,7 @@ vinnel_cloud_deploy:
       changes: *site_changes_vinnel_cloud
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vinnel_cloud"'
   script:
-    - sh .gitlab-ci/scripts/site-deploy.sh vinnel-cloud-site vinnel-cloud-admin vinnel-cloud-auth --zone vinnel.cloud
+    - sh .gitlab-ci/scripts/site-deploy.sh vinnel-cloud-site vinnel-cloud-admin vinnel-cloud-auth --namespace vinnel-cloud --zone vinnel.cloud
 
 .shell_changes: &shell_changes
   - "hestia/apps/shell/Dockerfile"

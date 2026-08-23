@@ -1,3 +1,13 @@
+resource "kubernetes_namespace_v1" "proxy" {
+  metadata {
+    name = "proxy"
+    labels = {
+      "pod-security.kubernetes.io/enforce" = "privileged"
+      "pod-security.kubernetes.io/audit"   = "privileged"
+      "pod-security.kubernetes.io/warn"    = "privileged"
+    }
+  }
+}
 
 import {
   to = netbird_user.ida
@@ -139,7 +149,7 @@ resource "random_id" "netbird_datastore_enc_key" {
 resource "kubernetes_secret_v1" "netbird_secrets" {
   metadata {
     name      = "netbird-secrets"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
   }
   data = {
     relay-auth-secret            = random_password.netbird_relay_auth_secret.result
@@ -151,7 +161,7 @@ resource "kubernetes_ingress_v1" "netbird_dashboard_http" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "netbird-dashboard-http"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["proxy"], {
       "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600"
@@ -191,7 +201,7 @@ resource "kubernetes_ingress_v1" "netbird_api_http" {
   depends_on = [helm_release.ingress_nginx, kubernetes_ingress_v1.netbird_dashboard_http]
   metadata {
     name      = "netbird-api-http"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     annotations = {
       "nginx.ingress.kubernetes.io/proxy-read-timeout" = "3600"
       "nginx.ingress.kubernetes.io/proxy-send-timeout" = "3600"
@@ -243,7 +253,7 @@ resource "kubernetes_ingress_v1" "netbird_grpc" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "netbird-grpc"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/backend-protocol"   = "GRPC"

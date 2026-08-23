@@ -1,15 +1,3 @@
-
-resource "kubernetes_namespace_v1" "seaweedfs" {
-  metadata {
-    name = "seaweedfs"
-    labels = {
-      "pod-security.kubernetes.io/enforce" = "privileged"
-      "pod-security.kubernetes.io/audit"   = "privileged"
-      "pod-security.kubernetes.io/warn"    = "privileged"
-    }
-  }
-}
-
 resource "cloudflare_dns_record" "s3_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "s3.vinnel.cloud"
@@ -98,14 +86,14 @@ locals {
   seaweedfs_tier_move_sh = <<-EOT
     #!/bin/sh
     set -e
-    echo "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercent=95" | weed shell -master=seaweedfs.seaweedfs.svc.cluster.local:9333
+    echo "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercent=95" | weed shell -master=seaweedfs.storage.svc.cluster.local:9333
   EOT
 }
 
 resource "kubernetes_secret_v1" "seaweedfs_s3_config" {
   metadata {
     name      = "seaweedfs-s3-config"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
   data = {
     "s3.json" = local.seaweedfs_s3_config_json
@@ -115,7 +103,7 @@ resource "kubernetes_secret_v1" "seaweedfs_s3_config" {
 resource "kubernetes_config_map_v1" "seaweedfs_scripts" {
   metadata {
     name      = "seaweedfs-scripts"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
   data = {
     "start.sh" = local.seaweedfs_start_sh
@@ -125,7 +113,7 @@ resource "kubernetes_config_map_v1" "seaweedfs_scripts" {
 resource "kubernetes_persistent_volume_claim_v1" "seaweedfs_data" {
   metadata {
     name      = "seaweedfs-data-pvc"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -145,7 +133,7 @@ resource "kubernetes_persistent_volume_claim_v1" "seaweedfs_data" {
 resource "kubernetes_deployment_v1" "seaweedfs" {
   metadata {
     name      = "seaweedfs"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
     labels = {
       app = "seaweedfs"
     }
@@ -322,7 +310,7 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
 resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
   metadata {
     name      = "seaweedfs-tier-move"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 
   spec {
@@ -356,7 +344,7 @@ module "seaweedfs_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.seaweedfs]
 
   name        = "seaweedfs"
-  namespace   = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+  namespace   = kubernetes_namespace_v1.storage.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.seaweedfs.metadata[0].name
   update_mode = "Initial"
@@ -368,7 +356,7 @@ module "seaweedfs_vpa" {
 resource "kubernetes_service_v1" "seaweedfs" {
   metadata {
     name      = "seaweedfs"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 
   spec {
@@ -408,7 +396,7 @@ resource "kubernetes_ingress_v1" "s3_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "s3-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
@@ -447,7 +435,7 @@ resource "kubernetes_ingress_v1" "seaweed_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "seaweed-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.seaweedfs.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["seaweed"], {
       "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-body-size" = "0"

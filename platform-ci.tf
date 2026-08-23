@@ -1,15 +1,13 @@
-
 resource "kubernetes_service_account_v1" "ci_deployer" {
   metadata {
     name      = "ci-deployer"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
   }
 }
 
-resource "kubernetes_role_v1" "ci_deployer" {
+resource "kubernetes_cluster_role_v1" "ci_deployer" {
   metadata {
-    name      = "ci-deployer"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    name = "ci-deployer"
   }
 
   rule {
@@ -20,28 +18,30 @@ resource "kubernetes_role_v1" "ci_deployer" {
 }
 
 resource "kubernetes_role_binding_v1" "ci_deployer" {
+  for_each = local.ci_deploy_namespaces
+
   metadata {
     name      = "ci-deployer"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = each.value
   }
 
   role_ref {
     api_group = "rbac.authorization.k8s.io"
-    kind      = "Role"
-    name      = kubernetes_role_v1.ci_deployer.metadata[0].name
+    kind      = "ClusterRole"
+    name      = kubernetes_cluster_role_v1.ci_deployer.metadata[0].name
   }
 
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.ci_deployer.metadata[0].name
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_service_account_v1.ci_deployer.metadata[0].namespace
   }
 }
 
 resource "kubernetes_secret_v1" "ci_deployer_token" {
   metadata {
     name      = "ci-deployer-token"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
     annotations = {
       "kubernetes.io/service-account.name" = kubernetes_service_account_v1.ci_deployer.metadata[0].name
     }
@@ -49,6 +49,14 @@ resource "kubernetes_secret_v1" "ci_deployer_token" {
 
   type                           = "kubernetes.io/service-account-token"
   wait_for_service_account_token = true
+}
+
+locals {
+  ci_deploy_namespaces = toset([
+    kubernetes_namespace_v1.vin_moe.metadata[0].name,
+    kubernetes_namespace_v1.monke_academy.metadata[0].name,
+    kubernetes_namespace_v1.vinnel_cloud.metadata[0].name,
+  ])
 }
 
 locals {
@@ -71,7 +79,7 @@ locals {
       context = {
         cluster   = var.cluster_name
         user      = "ci-deployer"
-        namespace = kubernetes_namespace_v1.websites.metadata[0].name
+        namespace = kubernetes_namespace_v1.forge.metadata[0].name
       }
     }]
     current-context = var.cluster_name

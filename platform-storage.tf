@@ -1,7 +1,6 @@
-
-resource "kubernetes_namespace_v1" "local_path_storage" {
+resource "kubernetes_namespace_v1" "storage" {
   metadata {
-    name = "local-path-storage"
+    name = "storage"
     labels = {
       "pod-security.kubernetes.io/enforce" = "privileged"
       "pod-security.kubernetes.io/audit"   = "privileged"
@@ -13,14 +12,14 @@ resource "kubernetes_namespace_v1" "local_path_storage" {
 resource "kubernetes_service_account_v1" "local_path_provisioner" {
   metadata {
     name      = "local-path-provisioner-service-account"
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 }
 
 resource "kubernetes_role_v1" "local_path_provisioner" {
   metadata {
     name      = "local-path-provisioner-role"
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 
   rule {
@@ -63,7 +62,7 @@ resource "kubernetes_cluster_role_v1" "local_path_provisioner" {
 resource "kubernetes_role_binding_v1" "local_path_provisioner" {
   metadata {
     name      = "local-path-provisioner-bind"
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 
   role_ref {
@@ -75,7 +74,7 @@ resource "kubernetes_role_binding_v1" "local_path_provisioner" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.local_path_provisioner.metadata[0].name
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 }
 
@@ -93,14 +92,14 @@ resource "kubernetes_cluster_role_binding_v1" "local_path_provisioner" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.local_path_provisioner.metadata[0].name
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 }
 
 resource "kubernetes_config_map_v1" "local_path_config" {
   metadata {
     name      = "local-path-config"
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 
   data = {
@@ -114,7 +113,7 @@ resource "kubernetes_config_map_v1" "local_path_config" {
 resource "kubernetes_deployment_v1" "local_path_provisioner" {
   metadata {
     name      = "local-path-provisioner"
-    namespace = kubernetes_namespace_v1.local_path_storage.metadata[0].name
+    namespace = kubernetes_namespace_v1.storage.metadata[0].name
   }
 
   spec {
@@ -180,6 +179,18 @@ resource "kubernetes_storage_class_v1" "local_path" {
       "storageclass.kubernetes.io/is-default-class" = "true"
       # Why "local" not the default hostPath: see wiki, Terraform Rationale > platform-storage.tf.
       "defaultVolumeType" = "local"
+    }
+  }
+  storage_provisioner = "rancher.io/local-path"
+  volume_binding_mode = "WaitForFirstConsumer"
+  reclaim_policy      = "Delete"
+}
+
+resource "kubernetes_storage_class_v1" "local_path_hostpath" {
+  metadata {
+    name = "local-path-hostpath"
+    annotations = {
+      "defaultVolumeType" = "hostPath"
     }
   }
   storage_provisioner = "rancher.io/local-path"

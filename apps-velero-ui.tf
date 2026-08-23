@@ -20,7 +20,7 @@ resource "random_password" "velero_ui_auth_secret_passphrase" {
 resource "kubernetes_service_account_v1" "velero_ui" {
   metadata {
     name      = "velero-ui"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 }
 
@@ -55,14 +55,14 @@ resource "kubernetes_cluster_role_binding_v1" "velero_ui" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.velero_ui.metadata[0].name
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 }
 
 resource "kubernetes_role_v1" "velero_ui" {
   metadata {
     name      = "velero-ui"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 
   rule {
@@ -81,7 +81,7 @@ resource "kubernetes_role_v1" "velero_ui" {
 resource "kubernetes_role_binding_v1" "velero_ui" {
   metadata {
     name      = "velero-ui"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 
   role_ref {
@@ -93,14 +93,14 @@ resource "kubernetes_role_binding_v1" "velero_ui" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.velero_ui.metadata[0].name
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 }
 
 resource "kubernetes_config_map_v1" "velero_ui_policies" {
   metadata {
     name      = "velero-ui-policies"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
   data = {
     "policies.csv" = "u,*,manage,all\n"
@@ -110,7 +110,7 @@ resource "kubernetes_config_map_v1" "velero_ui_policies" {
 resource "kubernetes_deployment_v1" "velero_ui" {
   metadata {
     name      = "velero-ui"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
     labels = {
       app = "velero-ui"
     }
@@ -150,12 +150,12 @@ resource "kubernetes_deployment_v1" "velero_ui" {
 
           env {
             name  = "VELERO_NAMESPACE"
-            value = kubernetes_namespace_v1.velero.metadata[0].name
+            value = kubernetes_namespace_v1.backup.metadata[0].name
           }
 
           env {
             name  = "VELERO_UI_NAMESPACE"
-            value = kubernetes_namespace_v1.velero.metadata[0].name
+            value = kubernetes_namespace_v1.backup.metadata[0].name
           }
 
           env {
@@ -284,7 +284,7 @@ resource "kubernetes_deployment_v1" "velero_ui" {
 resource "kubernetes_secret_v1" "velero_ui_secrets" {
   metadata {
     name      = "velero-ui-secrets"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
   data = {
     "oauth-client-secret"    = random_password.velero_ui_oidc_client_secret.result
@@ -298,7 +298,7 @@ module "velero_ui_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.velero_ui]
 
   name        = "velero-ui"
-  namespace   = kubernetes_namespace_v1.velero.metadata[0].name
+  namespace   = kubernetes_namespace_v1.backup.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.velero_ui.metadata[0].name
   update_mode = "Auto"
@@ -310,7 +310,7 @@ module "velero_ui_vpa" {
 resource "kubernetes_service_v1" "velero_ui" {
   metadata {
     name      = "velero-ui"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 
   spec {
@@ -329,7 +329,7 @@ resource "kubernetes_ingress_v1" "velero_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "velero-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["velero"], {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })

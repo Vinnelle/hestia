@@ -1,8 +1,7 @@
-
 resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_auth" {
   metadata {
     name      = "vinnel-cloud-auth-pdb"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
   spec {
     min_available = 1
@@ -15,11 +14,11 @@ resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_auth" {
 }
 
 resource "kubernetes_deployment_v1" "vinnel_cloud_auth" {
-  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_websites]
+  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud]
 
   metadata {
     name      = "vinnel-cloud-auth"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     labels = {
       app = "vinnel-cloud-auth"
     }
@@ -52,7 +51,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_auth" {
 
       spec {
         image_pull_secrets {
-          name = kubernetes_secret_v1.registry_dockerconfig_websites.metadata[0].name
+          name = kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud.metadata[0].name
         }
 
         security_context {
@@ -138,7 +137,7 @@ module "vinnel_cloud_auth_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.vinnel_cloud_auth]
 
   name        = "vinnel-cloud-auth"
-  namespace   = kubernetes_namespace_v1.websites.metadata[0].name
+  namespace   = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.vinnel_cloud_auth.metadata[0].name
   update_mode = "Auto"
@@ -150,7 +149,7 @@ module "vinnel_cloud_auth_vpa" {
 resource "kubernetes_service_v1" "vinnel_cloud_auth" {
   metadata {
     name      = "vinnel-cloud-auth"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   spec {
@@ -169,7 +168,7 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_auth" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "vinnel-cloud-auth"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   spec {

@@ -1,18 +1,6 @@
-resource "kubernetes_namespace_v1" "websites" {
+resource "kubernetes_namespace_v1" "platform" {
   metadata {
-    name = "websites"
-  }
-}
-
-resource "kubernetes_namespace_v1" "services" {
-  metadata {
-    name = "services"
-  }
-}
-
-resource "kubernetes_namespace_v1" "ingress_nginx" {
-  metadata {
-    name = "ingress-nginx"
+    name = "platform"
     labels = {
       "pod-security.kubernetes.io/enforce" = "privileged"
       "pod-security.kubernetes.io/audit"   = "privileged"
@@ -26,7 +14,7 @@ resource "helm_release" "ingress_nginx" {
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = "ingress-nginx"
   version    = "4.15.1"
-  namespace  = kubernetes_namespace_v1.ingress_nginx.metadata[0].name
+  namespace  = kubernetes_namespace_v1.platform.metadata[0].name
 
   values = [
     file("${path.module}/platform/helm-values/ingress-nginx/values.yaml")

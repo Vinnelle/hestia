@@ -1,14 +1,24 @@
+resource "kubernetes_namespace_v1" "vinnel_cloud" {
+  metadata {
+    name = "vinnel-cloud"
+  }
+}
+
+resource "kubernetes_secret_v1" "registry_dockerconfig_vinnel_cloud" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = local.registry_dockerconfigjson
+  }
+}
 
 module "vinnel_cloud_site" {
   source = "./modules/static-site"
 
-  depends_on = [
-    helm_release.cert_manager,
-    helm_release.ingress_nginx,
-    kubernetes_deployment_v1.gitlab,
-    kubernetes_secret_v1.cloudflare_api_token,
-    kubernetes_secret_v1.registry_dockerconfig_websites,
-  ]
+  depends_on = [kubernetes_deployment_v1.gitlab, helm_release.ingress_nginx, helm_release.cert_manager, kubernetes_secret_v1.cloudflare_api_token, kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud]
 
   site_slug         = "vinnel-cloud"
   domain            = "vinnel.cloud"
@@ -20,8 +30,8 @@ module "vinnel_cloud_site" {
   acme_email             = var.acme_email_vinnel_cloud
   cloudflare_secret_name = kubernetes_secret_v1.cloudflare_api_token.metadata[0].name
 
-  namespace            = kubernetes_namespace_v1.websites.metadata[0].name
-  registry_secret_name = kubernetes_secret_v1.registry_dockerconfig_websites.metadata[0].name
+  namespace            = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
+  registry_secret_name = kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud.metadata[0].name
   image                = local.images["vinnel-cloud-site"]
   replicas             = 2
 

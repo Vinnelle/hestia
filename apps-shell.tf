@@ -1,4 +1,3 @@
-
 resource "cloudflare_dns_record" "shell_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "shell.vinnel.cloud"
@@ -16,7 +15,7 @@ resource "random_password" "shell_ttyd" {
 resource "kubernetes_secret_v1" "shell_ttyd_credentials" {
   metadata {
     name      = "shell-ttyd-credentials"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
   data = {
     password = random_password.shell_ttyd.result
@@ -24,11 +23,11 @@ resource "kubernetes_secret_v1" "shell_ttyd_credentials" {
 }
 
 resource "kubernetes_deployment_v1" "vinnel_cloud_shell" {
-  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_websites]
+  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud]
 
   metadata {
     name      = "vinnel-cloud-shell"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     labels = {
       app = "vinnel-cloud-shell"
     }
@@ -58,7 +57,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_shell" {
         service_account_name = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
 
         image_pull_secrets {
-          name = kubernetes_secret_v1.registry_dockerconfig_websites.metadata[0].name
+          name = kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud.metadata[0].name
         }
 
         security_context {
@@ -155,7 +154,7 @@ module "vinnel_cloud_shell_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.vinnel_cloud_shell]
 
   name        = "vinnel-cloud-shell"
-  namespace   = kubernetes_namespace_v1.websites.metadata[0].name
+  namespace   = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.vinnel_cloud_shell.metadata[0].name
   update_mode = "Auto"
@@ -167,7 +166,7 @@ module "vinnel_cloud_shell_vpa" {
 resource "kubernetes_service_v1" "vinnel_cloud_shell" {
   metadata {
     name      = "vinnel-cloud-shell"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   spec {
@@ -186,7 +185,7 @@ resource "kubernetes_ingress_v1" "shell_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "shell-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["shell"], {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })

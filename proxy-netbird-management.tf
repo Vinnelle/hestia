@@ -10,7 +10,7 @@ locals {
 resource "kubernetes_secret_v1" "netbird_management_config" {
   metadata {
     name      = "netbird-management-config"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
   }
   data = {
     "management.json" = local.netbird_management_json
@@ -20,7 +20,7 @@ resource "kubernetes_secret_v1" "netbird_management_config" {
 resource "kubernetes_persistent_volume_claim_v1" "netbird_management" {
   metadata {
     name      = "netbird-management-pvc"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -40,7 +40,7 @@ resource "kubernetes_persistent_volume_claim_v1" "netbird_management" {
 resource "kubernetes_deployment_v1" "netbird_management" {
   metadata {
     name      = "netbird-management"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     labels = {
       app = "netbird-management"
     }
@@ -151,7 +151,7 @@ module "netbird_management_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.netbird_management]
 
   name        = "netbird-management"
-  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  namespace   = kubernetes_namespace_v1.proxy.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.netbird_management.metadata[0].name
   update_mode = "Initial"
@@ -163,7 +163,7 @@ module "netbird_management_vpa" {
 resource "kubernetes_service_v1" "netbird_management" {
   metadata {
     name      = "netbird-management"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
   }
 
   spec {

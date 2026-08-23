@@ -1,7 +1,6 @@
-
-resource "kubernetes_namespace_v1" "monitoring" {
+resource "kubernetes_namespace_v1" "observability" {
   metadata {
-    name = "monitoring"
+    name = "observability"
     labels = {
       "pod-security.kubernetes.io/enforce" = "privileged"
       "pod-security.kubernetes.io/audit"   = "privileged"
@@ -9,3 +8,4 @@ resource "kubernetes_namespace_v1" "monitoring" {
     }
   }
 }
+

@@ -424,7 +424,7 @@ func main() {
 	satisfactorySvc := &satisfactory.Service{
 		Kube:          kubeClient,
 		Host:          env("SATISFACTORY_HOST", ""),
-		SavesURL:      env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.server.svc.cluster.local:8080"),
+		SavesURL:      env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.games.svc.cluster.local:8080"),
 		AdminPassword: os.Getenv("SATISFACTORY_ADMIN_PASSWORD"),
 	}
 

@@ -1,14 +1,24 @@
+resource "kubernetes_namespace_v1" "monke_academy" {
+  metadata {
+    name = "monke-academy"
+  }
+}
+
+resource "kubernetes_secret_v1" "registry_dockerconfig_monke_academy" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = kubernetes_namespace_v1.monke_academy.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = local.registry_dockerconfigjson
+  }
+}
 
 module "monke_academy_site" {
   source = "./modules/static-site"
 
-  depends_on = [
-    helm_release.cert_manager,
-    helm_release.ingress_nginx,
-    kubernetes_deployment_v1.gitlab,
-    kubernetes_secret_v1.cloudflare_api_token,
-    kubernetes_secret_v1.registry_dockerconfig_websites,
-  ]
+  depends_on = [kubernetes_deployment_v1.gitlab, helm_release.ingress_nginx, helm_release.cert_manager, kubernetes_secret_v1.cloudflare_api_token, kubernetes_secret_v1.registry_dockerconfig_monke_academy]
 
   site_slug         = "monke-academy"
   domain            = "monke.academy"
@@ -20,8 +30,8 @@ module "monke_academy_site" {
   acme_email             = var.acme_email_monke_academy
   cloudflare_secret_name = kubernetes_secret_v1.cloudflare_api_token.metadata[0].name
 
-  namespace            = kubernetes_namespace_v1.websites.metadata[0].name
-  registry_secret_name = kubernetes_secret_v1.registry_dockerconfig_websites.metadata[0].name
+  namespace            = kubernetes_namespace_v1.monke_academy.metadata[0].name
+  registry_secret_name = kubernetes_secret_v1.registry_dockerconfig_monke_academy.metadata[0].name
   image                = local.images["monke-academy-site"]
   replicas             = 2
 

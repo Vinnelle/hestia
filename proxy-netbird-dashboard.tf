@@ -2,7 +2,7 @@
 resource "kubernetes_deployment_v1" "netbird_dashboard" {
   metadata {
     name      = "netbird-dashboard"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     labels = {
       app = "netbird-dashboard"
     }
@@ -144,7 +144,7 @@ module "netbird_dashboard_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.netbird_dashboard]
 
   name        = "netbird-dashboard"
-  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  namespace   = kubernetes_namespace_v1.proxy.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.netbird_dashboard.metadata[0].name
   update_mode = "Initial"
@@ -156,7 +156,7 @@ module "netbird_dashboard_vpa" {
 resource "kubernetes_service_v1" "netbird_dashboard" {
   metadata {
     name      = "netbird-dashboard"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
   }
 
   spec {

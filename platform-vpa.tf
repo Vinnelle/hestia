@@ -1,15 +1,9 @@
-resource "kubernetes_namespace_v1" "vpa" {
-  metadata {
-    name = "vpa"
-  }
-}
-
 resource "helm_release" "metrics_server" {
   name       = "metrics-server"
   repository = "https://kubernetes-sigs.github.io/metrics-server/"
   chart      = "metrics-server"
   version    = "3.14.0"
-  namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
+  namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [
     yamlencode({
@@ -23,7 +17,7 @@ resource "helm_release" "vpa" {
   repository = "https://charts.fairwinds.com/stable"
   chart      = "vpa"
   version    = "5.0.0"
-  namespace  = kubernetes_namespace_v1.vpa.metadata[0].name
+  namespace  = kubernetes_namespace_v1.platform.metadata[0].name
 
   values = [
     yamlencode({

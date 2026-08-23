@@ -1,14 +1,3 @@
-resource "kubernetes_namespace_v1" "velero" {
-  metadata {
-    name = "velero"
-    labels = {
-      "pod-security.kubernetes.io/enforce" = "privileged"
-      "pod-security.kubernetes.io/audit"   = "privileged"
-      "pod-security.kubernetes.io/warn"    = "privileged"
-    }
-  }
-}
-
 resource "aws_s3_bucket" "velero" {
   provider = aws.mega_s4
   bucket   = "velero"
@@ -17,7 +6,7 @@ resource "aws_s3_bucket" "velero" {
 resource "kubernetes_secret_v1" "velero_s3_credentials" {
   metadata {
     name      = "velero-s3-credentials"
-    namespace = kubernetes_namespace_v1.velero.metadata[0].name
+    namespace = kubernetes_namespace_v1.backup.metadata[0].name
   }
 
   data = {
@@ -45,7 +34,7 @@ resource "helm_release" "velero" {
   repository = "https://vmware-tanzu.github.io/helm-charts"
   chart      = "velero"
   version    = "12.1.0"
-  namespace  = kubernetes_namespace_v1.velero.metadata[0].name
+  namespace  = kubernetes_namespace_v1.backup.metadata[0].name
 
   values = [
     templatefile("${path.module}/platform/helm-values/velero/values.yaml.tftpl", {

@@ -187,7 +187,7 @@
       "contextLinks": {
         "linksData": ""
       },
-      "description": "Schedule CRs. Expect 2: pod-kill-websites and stress-websites.",
+      "description": "Schedule CRs. Expect 2: pod-kill-sites and stress-sites.",
       "id": "chaos-schedules-total",
       "panelTypes": "value",
       "query": {
@@ -537,7 +537,7 @@
       "contextLinks": {
         "linksData": ""
       },
-      "description": "Blast radius check: only chaos-mesh (the Schedules) and websites (the spawned experiments) should ever appear.",
+      "description": "Blast radius check: only chaos-mesh (the Schedules) and the per-site namespaces (the spawned experiments) should ever appear.",
       "id": "experiments-by-namespace",
       "panelTypes": "graph",
       "query": {

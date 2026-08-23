@@ -1,4 +1,3 @@
-
 resource "kubernetes_namespace_v1" "backup" {
   metadata {
     name = "backup"

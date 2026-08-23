@@ -2,7 +2,7 @@
 resource "kubernetes_deployment_v1" "netbird_relay" {
   metadata {
     name      = "netbird-relay"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
     labels = {
       app = "netbird-relay"
     }
@@ -102,7 +102,7 @@ module "netbird_relay_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.netbird_relay]
 
   name        = "netbird-relay"
-  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  namespace   = kubernetes_namespace_v1.proxy.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.netbird_relay.metadata[0].name
   update_mode = "Initial"
@@ -114,7 +114,7 @@ module "netbird_relay_vpa" {
 resource "kubernetes_service_v1" "netbird_relay" {
   metadata {
     name      = "netbird-relay"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
   }
 
   spec {

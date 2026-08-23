@@ -1,3 +1,9 @@
+resource "kubernetes_namespace_v1" "registry" {
+  metadata {
+    name = "registry"
+  }
+}
+
 resource "cloudflare_dns_record" "mirror_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "mirror.vinnel.cloud"
@@ -50,7 +56,7 @@ locals {
 resource "kubernetes_secret_v1" "registry_cache_config" {
   metadata {
     name      = "registry-cache-config"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.registry.metadata[0].name
   }
   data = {
     "config.yml" = local.registry_cache_config_yaml
@@ -61,7 +67,7 @@ resource "kubernetes_secret_v1" "registry_cache_config" {
 resource "kubernetes_persistent_volume_claim_v1" "registry_cache" {
   metadata {
     name      = "registry-cache-pvc"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.registry.metadata[0].name
     annotations = {
       "volumeType" = "hostPath"
     }
@@ -80,7 +86,7 @@ resource "kubernetes_persistent_volume_claim_v1" "registry_cache" {
 resource "kubernetes_deployment_v1" "registry_cache" {
   metadata {
     name      = "registry-cache"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.registry.metadata[0].name
     labels = {
       app = "registry-cache"
     }
@@ -194,7 +200,7 @@ module "registry_cache_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.registry_cache]
 
   name        = "registry-cache"
-  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  namespace   = kubernetes_namespace_v1.registry.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.registry_cache.metadata[0].name
   update_mode = "Initial"
@@ -206,7 +212,7 @@ module "registry_cache_vpa" {
 resource "kubernetes_service_v1" "registry_cache" {
   metadata {
     name      = "registry-cache"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.registry.metadata[0].name
   }
 
   spec {
@@ -226,7 +232,7 @@ resource "kubernetes_ingress_v1" "mirror_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx, kubernetes_deployment_v1.registry_cache]
   metadata {
     name      = "mirror-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.registry.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer"                 = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-body-size"    = "0"

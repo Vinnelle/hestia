@@ -1,7 +1,6 @@
-
-resource "kubernetes_namespace_v1" "adguard" {
+resource "kubernetes_namespace_v1" "dns" {
   metadata {
-    name = "adguard"
+    name = "dns"
     labels = {
       "pod-security.kubernetes.io/enforce" = "privileged"
       "pod-security.kubernetes.io/audit"   = "privileged"
@@ -29,7 +28,7 @@ locals {
 resource "kubernetes_config_map_v1" "adguard_config_template" {
   metadata {
     name      = "adguard-config-template"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
   }
   data = {
     "AdGuardHome.yaml" = local.adguard_config_template_yaml
@@ -48,7 +47,7 @@ resource "netbird_setup_key" "adguard" {
 resource "kubernetes_secret_v1" "adguard_netbird_setup_keys" {
   metadata {
     name      = "adguard-netbird-setup-keys"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
   }
   data = {
     for ordinal, key in netbird_setup_key.adguard : "setup-key-${ordinal}" => key.key
@@ -58,7 +57,7 @@ resource "kubernetes_secret_v1" "adguard_netbird_setup_keys" {
 resource "kubernetes_service_v1" "adguard_headless" {
   metadata {
     name      = "adguard-headless"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
   }
   spec {
     cluster_ip = "None"
@@ -75,7 +74,7 @@ resource "kubernetes_service_v1" "adguard_headless" {
 resource "kubernetes_stateful_set_v1" "adguard" {
   metadata {
     name      = "adguard"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
     labels = {
       app = "adguard"
     }
@@ -307,7 +306,7 @@ resource "kubernetes_stateful_set_v1" "adguard" {
 resource "kubernetes_pod_disruption_budget_v1" "adguard" {
   metadata {
     name      = "adguard"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
   }
   spec {
     min_available = 1
@@ -325,7 +324,7 @@ module "adguard_vpa" {
   depends_on = [helm_release.vpa, kubernetes_stateful_set_v1.adguard]
 
   name        = "adguard"
-  namespace   = kubernetes_namespace_v1.adguard.metadata[0].name
+  namespace   = kubernetes_namespace_v1.dns.metadata[0].name
   target_kind = "StatefulSet"
   target_name = kubernetes_stateful_set_v1.adguard.metadata[0].name
   update_mode = "Initial"
@@ -338,7 +337,7 @@ module "adguard_vpa" {
 resource "kubernetes_service_v1" "adguard" {
   metadata {
     name      = "adguard"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
   }
 
   spec {
@@ -357,7 +356,7 @@ resource "kubernetes_ingress_v1" "adguard_admin_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "adguard-admin-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.adguard.metadata[0].name
+    namespace = kubernetes_namespace_v1.dns.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["adguard"], {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })

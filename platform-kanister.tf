@@ -1,15 +1,9 @@
-resource "kubernetes_namespace_v1" "kanister" {
-  metadata {
-    name = "kanister"
-  }
-}
-
 resource "helm_release" "kanister" {
   name       = "kanister"
   repository = "https://charts.kanister.io"
   chart      = "kanister-operator"
   version    = "0.118.0"
-  namespace  = kubernetes_namespace_v1.kanister.metadata[0].name
+  namespace  = kubernetes_namespace_v1.backup.metadata[0].name
 }
 
 resource "kubectl_manifest" "kanister_s3_profile" {
@@ -20,7 +14,7 @@ resource "kubectl_manifest" "kanister_s3_profile" {
     kind       = "Profile"
     metadata = {
       name      = "s3-profile"
-      namespace = kubernetes_namespace_v1.kanister.metadata[0].name
+      namespace = kubernetes_namespace_v1.backup.metadata[0].name
     }
     location = {
       type     = "s3Compliant"

@@ -1,7 +1,6 @@
-
-resource "kubernetes_namespace_v1" "nextcloud" {
+resource "kubernetes_namespace_v1" "files" {
   metadata {
-    name = "nextcloud"
+    name = "files"
   }
 }
 
@@ -65,7 +64,7 @@ locals {
 resource "kubernetes_config_map_v1" "nextcloud_setup" {
   metadata {
     name      = "nextcloud-setup"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
   data = {
     "10-configure.sh" = local.nextcloud_setup_sh
@@ -75,7 +74,7 @@ resource "kubernetes_config_map_v1" "nextcloud_setup" {
 resource "kubernetes_secret_v1" "nextcloud_secrets" {
   metadata {
     name      = "nextcloud-secrets"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
   data = {
     "admin-password"     = random_password.nextcloud_admin_password.result
@@ -90,7 +89,7 @@ resource "kubernetes_secret_v1" "nextcloud_secrets" {
 resource "kubernetes_persistent_volume_claim_v1" "nextcloud" {
   metadata {
     name      = "nextcloud-pvc"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -110,7 +109,7 @@ resource "kubernetes_persistent_volume_claim_v1" "nextcloud" {
 resource "kubernetes_deployment_v1" "nextcloud" {
   metadata {
     name      = "nextcloud"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
     labels = {
       app = "nextcloud"
     }
@@ -223,7 +222,7 @@ resource "kubernetes_deployment_v1" "nextcloud" {
 
           env {
             name  = "OBJECTSTORE_S3_HOST"
-            value = "seaweedfs.seaweedfs.svc.cluster.local"
+            value = "seaweedfs.storage.svc.cluster.local"
           }
 
           env {
@@ -342,7 +341,7 @@ module "nextcloud_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.nextcloud]
 
   name        = "nextcloud"
-  namespace   = kubernetes_namespace_v1.nextcloud.metadata[0].name
+  namespace   = kubernetes_namespace_v1.files.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.nextcloud.metadata[0].name
   update_mode = "Initial"
@@ -354,7 +353,7 @@ module "nextcloud_vpa" {
 resource "kubernetes_service_v1" "nextcloud" {
   metadata {
     name      = "nextcloud"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
 
   spec {
@@ -373,7 +372,7 @@ resource "kubernetes_ingress_v1" "cloud_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "cloud-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["cloud"], {
       "cert-manager.io/cluster-issuer"              = local.vinnel_cloud_cluster_issuer
       "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
@@ -433,7 +432,7 @@ resource "kubernetes_job_v1" "nextcloud_mega_import" {
 
   metadata {
     name      = "nextcloud-mega-import"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
 
   spec {
@@ -500,7 +499,7 @@ resource "kubernetes_ingress_v1" "cloud_api_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx, kubernetes_ingress_v1.cloud_vinnel_cloud]
   metadata {
     name      = "cloud-api-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.nextcloud.metadata[0].name
+    namespace = kubernetes_namespace_v1.files.metadata[0].name
     annotations = {
       "nginx.ingress.kubernetes.io/proxy-body-size" = "0"
     }

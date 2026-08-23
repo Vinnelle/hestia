@@ -1,3 +1,8 @@
+resource "kubernetes_namespace_v1" "auth" {
+  metadata {
+    name = "auth"
+  }
+}
 
 resource "cloudflare_dns_record" "auth_vin_moe" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
@@ -57,7 +62,7 @@ locals {
 resource "kubernetes_secret_v1" "authelia_config" {
   metadata {
     name      = "authelia-config"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
   }
   data = {
     "configuration.yml" = local.authelia_configuration_yaml
@@ -67,7 +72,7 @@ resource "kubernetes_secret_v1" "authelia_config" {
 resource "kubernetes_secret_v1" "authelia_users_database" {
   metadata {
     name      = "authelia-users-database"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
   }
   data = {
     "users_database.yml" = local.authelia_users_database_yaml
@@ -77,7 +82,7 @@ resource "kubernetes_secret_v1" "authelia_users_database" {
 resource "kubernetes_secret_v1" "authelia_smtp_credentials" {
   metadata {
     name      = "authelia-smtp-credentials"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
   }
   data = {
     "smtp-password" = var.resend_api_key
@@ -87,7 +92,7 @@ resource "kubernetes_secret_v1" "authelia_smtp_credentials" {
 resource "kubernetes_persistent_volume_claim_v1" "authelia" {
   metadata {
     name      = "authelia-pvc"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -107,7 +112,7 @@ resource "kubernetes_persistent_volume_claim_v1" "authelia" {
 resource "kubernetes_deployment_v1" "authelia" {
   metadata {
     name      = "authelia"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
     labels = {
       app = "authelia"
     }
@@ -257,7 +262,7 @@ module "authelia_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.authelia]
 
   name        = "authelia"
-  namespace   = kubernetes_namespace_v1.services.metadata[0].name
+  namespace   = kubernetes_namespace_v1.auth.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.authelia.metadata[0].name
   update_mode = "Initial"
@@ -269,7 +274,7 @@ module "authelia_vpa" {
 resource "kubernetes_service_v1" "authelia" {
   metadata {
     name      = "authelia"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
   }
 
   spec {
@@ -288,7 +293,7 @@ resource "kubernetes_ingress_v1" "authelia" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "authelia"
-    namespace = kubernetes_namespace_v1.services.metadata[0].name
+    namespace = kubernetes_namespace_v1.auth.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
 

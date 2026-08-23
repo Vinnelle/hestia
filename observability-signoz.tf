@@ -4,7 +4,8 @@ resource "helm_release" "signoz" {
   repository = "https://charts.signoz.io"
   chart      = "signoz"
   version    = "0.138.0"
-  namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
+  namespace  = kubernetes_namespace_v1.observability.metadata[0].name
+  timeout    = 900
 
   values = [
     file("${path.module}/platform/helm-values/signoz/values.yaml")
@@ -16,13 +17,13 @@ resource "helm_release" "k8s_infra" {
   repository = "https://charts.signoz.io"
   chart      = "k8s-infra"
   version    = "0.17.0"
-  namespace  = kubernetes_namespace_v1.monitoring.metadata[0].name
+  namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [
     templatefile("${path.module}/platform/helm-values/k8s-infra/values.yaml.tftpl", {
-      monitoring_namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
-      cluster_name         = var.cluster_name
-      node_ip              = var.node_ip
+      observability_namespace = kubernetes_namespace_v1.observability.metadata[0].name
+      cluster_name            = var.cluster_name
+      node_ip                 = var.node_ip
     })
   ]
 
@@ -60,7 +61,7 @@ resource "kubernetes_cluster_role_binding_v1" "otel_agent_metrics" {
   subject {
     kind      = "ServiceAccount"
     name      = "k8s-infra-otel-agent"
-    namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
+    namespace = kubernetes_namespace_v1.observability.metadata[0].name
   }
 }
 
@@ -74,7 +75,7 @@ resource "cloudflare_dns_record" "signoz_vinnel_cloud" {
 }
 
 locals {
-  signoz_alert_channels = ["slack"]
+  signoz_alert_channels = ["email"]
 
   signoz_notification_settings = {
     group_by = ["alertname"]
@@ -290,7 +291,7 @@ resource "kubernetes_ingress_v1" "signoz_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx, helm_release.signoz]
   metadata {
     name      = "signoz-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
+    namespace = kubernetes_namespace_v1.observability.metadata[0].name
     annotations = merge(local.admin_framed_service_annotations["signoz"], {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })
@@ -328,7 +329,7 @@ resource "kubernetes_ingress_v1" "signoz_api_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx, helm_release.signoz, kubernetes_ingress_v1.signoz_vinnel_cloud]
   metadata {
     name      = "signoz-api-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.monitoring.metadata[0].name
+    namespace = kubernetes_namespace_v1.observability.metadata[0].name
   }
 
   spec {

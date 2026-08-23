@@ -39,7 +39,7 @@ variable "cloudflare_secret_name" {
 }
 
 variable "namespace" {
-  description = "Kubernetes namespace to deploy the site into"
+  description = "Kubernetes namespace to deploy the site into, shared by every site on the same TLD"
   type        = string
 }
 

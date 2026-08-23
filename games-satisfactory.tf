@@ -10,7 +10,7 @@ resource "cloudflare_dns_record" "factory_vin_moe" {
 resource "kubernetes_secret_v1" "satisfactory_admin" {
   metadata {
     name      = "satisfactory-admin"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   data = {
@@ -21,7 +21,7 @@ resource "kubernetes_secret_v1" "satisfactory_admin" {
 resource "kubernetes_persistent_volume_claim_v1" "satisfactory_saves" {
   metadata {
     name      = "satisfactory-saves-pvc"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
   spec {
     access_modes = ["ReadWriteOnce"]
@@ -41,7 +41,7 @@ resource "kubernetes_persistent_volume_claim_v1" "satisfactory_saves" {
 resource "kubernetes_config_map_v1" "satisfactory_saves_http_conf" {
   metadata {
     name      = "satisfactory-saves-http-conf"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
 
   data = {
@@ -61,7 +61,7 @@ resource "kubernetes_config_map_v1" "satisfactory_saves_http_conf" {
 resource "kubernetes_service_v1" "satisfactory_saves" {
   metadata {
     name      = "satisfactory-saves"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
 
   spec {
@@ -78,7 +78,7 @@ resource "kubernetes_service_v1" "satisfactory_saves" {
 resource "kubernetes_deployment_v1" "satisfactory" {
   metadata {
     name      = "satisfactory"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
     labels = {
       app = "satisfactory"
     }
@@ -251,7 +251,7 @@ module "satisfactory_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.satisfactory]
 
   name        = "satisfactory"
-  namespace   = kubernetes_namespace_v1.server.metadata[0].name
+  namespace   = kubernetes_namespace_v1.games.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.satisfactory.metadata[0].name
   update_mode = "Initial"

@@ -12,7 +12,7 @@ resource "kubernetes_ingress_v1" "status_vinnel_cloud" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "status-vinnel-cloud"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     annotations = {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     }

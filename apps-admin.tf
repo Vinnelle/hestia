@@ -1,4 +1,3 @@
-
 resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   zone_id = data.cloudflare_zone.vinnel_cloud.id
   name    = "admin.vinnel.cloud"
@@ -11,7 +10,7 @@ resource "cloudflare_dns_record" "admin_vinnel_cloud" {
 resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog" {
   metadata {
     name      = "vinnel-cloud-admin-blog-pvc"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     annotations = {
       "volumeType" = "hostPath"
     }
@@ -42,7 +41,7 @@ resource "gitlab_project_access_token" "admin_blog" {
 resource "kubernetes_secret_v1" "vinnel_cloud_admin_blog" {
   metadata {
     name      = "vinnel-cloud-admin-blog"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   data = {
@@ -54,7 +53,7 @@ resource "kubernetes_secret_v1" "vinnel_cloud_admin_blog" {
 resource "kubernetes_service_account_v1" "vinnel_cloud_admin" {
   metadata {
     name      = "vinnel-cloud-admin"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 }
 
@@ -96,14 +95,14 @@ resource "kubernetes_cluster_role_binding_v1" "vinnel_cloud_admin" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 }
 
 resource "kubernetes_role_v1" "vinnel_cloud_admin_gameserver_scale" {
   metadata {
     name      = "vinnel-cloud-admin-gameserver-scale"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
 
   rule {
@@ -116,7 +115,7 @@ resource "kubernetes_role_v1" "vinnel_cloud_admin_gameserver_scale" {
 resource "kubernetes_role_binding_v1" "vinnel_cloud_admin_gameserver_scale" {
   metadata {
     name      = "vinnel-cloud-admin-gameserver-scale"
-    namespace = kubernetes_namespace_v1.server.metadata[0].name
+    namespace = kubernetes_namespace_v1.games.metadata[0].name
   }
 
   role_ref {
@@ -128,14 +127,14 @@ resource "kubernetes_role_binding_v1" "vinnel_cloud_admin_gameserver_scale" {
   subject {
     kind      = "ServiceAccount"
     name      = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 }
 
 resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_admin" {
   metadata {
     name      = "vinnel-cloud-admin-pdb"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
   spec {
     min_available = 1
@@ -148,11 +147,11 @@ resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_admin" {
 }
 
 resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
-  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_websites]
+  depends_on = [kubernetes_deployment_v1.gitlab, kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud]
 
   metadata {
     name      = "vinnel-cloud-admin"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     labels = {
       app = "vinnel-cloud-admin"
     }
@@ -188,7 +187,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
         service_account_name = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
 
         image_pull_secrets {
-          name = kubernetes_secret_v1.registry_dockerconfig_websites.metadata[0].name
+          name = kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud.metadata[0].name
         }
 
         security_context {
@@ -226,7 +225,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
 
           env {
             name  = "OTEL_COLLECTOR_ENDPOINT"
-            value = "signoz-otel-collector.${kubernetes_namespace_v1.monitoring.metadata[0].name}.svc.cluster.local:4317"
+            value = "signoz-otel-collector.${kubernetes_namespace_v1.observability.metadata[0].name}.svc.cluster.local:4317"
           }
 
           env {
@@ -236,7 +235,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
 
           env {
             name  = "SATISFACTORY_SAVES_URL"
-            value = "http://${kubernetes_service_v1.satisfactory_saves.metadata[0].name}.${kubernetes_namespace_v1.server.metadata[0].name}.svc.cluster.local:8080"
+            value = "http://${kubernetes_service_v1.satisfactory_saves.metadata[0].name}.${kubernetes_namespace_v1.games.metadata[0].name}.svc.cluster.local:8080"
           }
 
           env {
@@ -384,7 +383,7 @@ module "vinnel_cloud_admin_vpa" {
   depends_on = [helm_release.vpa, kubernetes_deployment_v1.vinnel_cloud_admin]
 
   name        = "vinnel-cloud-admin"
-  namespace   = kubernetes_namespace_v1.websites.metadata[0].name
+  namespace   = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   target_kind = "Deployment"
   target_name = kubernetes_deployment_v1.vinnel_cloud_admin.metadata[0].name
   update_mode = "Auto"
@@ -396,7 +395,7 @@ module "vinnel_cloud_admin_vpa" {
 resource "kubernetes_service_v1" "vinnel_cloud_admin" {
   metadata {
     name      = "vinnel-cloud-admin"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   }
 
   spec {
@@ -415,7 +414,7 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_admin" {
   depends_on = [helm_release.ingress_nginx]
   metadata {
     name      = "vinnel-cloud-admin"
-    namespace = kubernetes_namespace_v1.websites.metadata[0].name
+    namespace = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
     annotations = merge(local.authelia_forward_auth_annotations, {
       "cert-manager.io/cluster-issuer" = local.vinnel_cloud_cluster_issuer
     })

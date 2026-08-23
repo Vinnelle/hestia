@@ -1,12 +1,9 @@
-resource "kubernetes_namespace_v1" "chaos_mesh" {
-  metadata {
-    name = "chaos-mesh"
-    labels = {
-      "pod-security.kubernetes.io/enforce" = "privileged"
-      "pod-security.kubernetes.io/audit"   = "privileged"
-      "pod-security.kubernetes.io/warn"    = "privileged"
-    }
-  }
+locals {
+  chaos_site_namespaces = sort(tolist(toset([
+    kubernetes_namespace_v1.vin_moe.metadata[0].name,
+    kubernetes_namespace_v1.monke_academy.metadata[0].name,
+    kubernetes_namespace_v1.vinnel_cloud.metadata[0].name,
+  ])))
 }
 
 resource "helm_release" "chaos_mesh" {
@@ -14,7 +11,7 @@ resource "helm_release" "chaos_mesh" {
   repository = "https://charts.chaos-mesh.org"
   chart      = "chaos-mesh"
   version    = "2.8.4"
-  namespace  = kubernetes_namespace_v1.chaos_mesh.metadata[0].name
+  namespace  = kubernetes_namespace_v1.platform.metadata[0].name
 
   values = [
     yamlencode({
@@ -39,14 +36,14 @@ resource "helm_release" "chaos_mesh" {
   ]
 }
 
-resource "kubectl_manifest" "chaos_pod_kill_websites" {
+resource "kubectl_manifest" "chaos_pod_kill_sites" {
   depends_on = [helm_release.chaos_mesh]
   yaml_body = yamlencode({
     apiVersion = "chaos-mesh.org/v1alpha1"
     kind       = "Schedule"
     metadata = {
-      name      = "pod-kill-websites"
-      namespace = kubernetes_namespace_v1.chaos_mesh.metadata[0].name
+      name      = "pod-kill-sites"
+      namespace = kubernetes_namespace_v1.platform.metadata[0].name
     }
     spec = {
       schedule          = "*/30 * * * *"
@@ -57,21 +54,21 @@ resource "kubectl_manifest" "chaos_pod_kill_websites" {
         action = "pod-kill"
         mode   = "one"
         selector = {
-          namespaces = ["websites"]
+          namespaces = local.chaos_site_namespaces
         }
       }
     }
   })
 }
 
-resource "kubectl_manifest" "chaos_stress_websites" {
+resource "kubectl_manifest" "chaos_stress_sites" {
   depends_on = [helm_release.chaos_mesh]
   yaml_body = yamlencode({
     apiVersion = "chaos-mesh.org/v1alpha1"
     kind       = "Schedule"
     metadata = {
-      name      = "stress-websites"
-      namespace = kubernetes_namespace_v1.chaos_mesh.metadata[0].name
+      name      = "stress-sites"
+      namespace = kubernetes_namespace_v1.platform.metadata[0].name
     }
     spec = {
       schedule          = "0 * * * *"
@@ -81,7 +78,7 @@ resource "kubectl_manifest" "chaos_stress_websites" {
       stressChaos = {
         mode = "one"
         selector = {
-          namespaces = ["websites"]
+          namespaces = local.chaos_site_namespaces
         }
         stressors = {
           cpu    = { workers = 1, load = 50 }
