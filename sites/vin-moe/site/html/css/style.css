@@ -232,25 +232,36 @@ h2 {
   font-size: 0.78rem;
   white-space: nowrap;
 }
-.post-copy, .post-open {
+.post-actions {
+  flex: none;
+  display: flex;
+  align-self: center;
+  gap: 0.15rem;
+  margin: -0.9rem -0.5rem -0.9rem 0.35rem;
+}
+.post-act {
   font: inherit;
-  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  height: 2.4rem;
   flex: none;
   background: transparent;
   border: none;
+  border-radius: 5px;
   padding: 0;
   color: var(--fainter);
-  transition: color 0.15s;
-}
-.post-copy {
-  width: 1ch;
   cursor: pointer;
-  visibility: hidden;
+  transition: color 0.15s, background-color 0.15s;
 }
+.post-act svg { width: 15px; height: 15px; }
+.post-act:hover { color: var(--accent-strong); background: var(--accent-soft); }
+.post-copy { visibility: hidden; }
 .posts summary:hover .post-copy, .post-copy:focus-visible, .post-copy[data-flash] { visibility: visible; }
-.post-copy:hover, .post-open:hover { color: var(--accent-strong); }
 .post-copy[data-flash] { color: var(--accent); }
 .posts details[open] .post-open { color: var(--accent); }
+@media (hover: none) { .post-copy { visibility: visible; } }
 .post-page { padding: 0; }
 .post-back { margin: 2.8rem 0 0; font-size: 0.9rem; }
 

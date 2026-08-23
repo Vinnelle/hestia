@@ -351,6 +351,12 @@ let postsLoaded = false;
 let postsText = '';
 let postsInFlight = null;
 
+const svg = (body) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+const ICON_COPY = svg('<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>');
+const ICON_DONE = svg('<path d="M20 6 9 17l-5-5"/>');
+const ICON_FAIL = svg('<path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>');
+const ICON_OPEN = svg('<path d="M15 3h6v6"/><path d="M21 3 11 13"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>');
+
 const renderPosts = (posts) => {
   postsEl.replaceChildren();
   if (!posts.length) {
@@ -371,28 +377,6 @@ const renderPosts = (posts) => {
 
     const summary = document.createElement('summary');
 
-    const copy = document.createElement('button');
-    copy.type = 'button';
-    copy.className = 'post-copy';
-    copy.textContent = '#';
-    copy.title = 'Copy link to this post';
-    copy.setAttribute('aria-label', 'Copy link to ' + post.title);
-    copy.addEventListener('click', async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const flash = (mark) => {
-        copy.textContent = mark;
-        copy.dataset.flash = '';
-        setTimeout(() => { copy.textContent = '#'; delete copy.dataset.flash; }, 1200);
-      };
-      try {
-        await navigator.clipboard.writeText(location.origin + '/posts/' + post.slug);
-        flash('\u2713');
-      } catch {
-        flash('!');
-      }
-    });
-
     const title = document.createElement('span');
     title.className = 'post-title';
     title.textContent = post.title;
@@ -400,14 +384,40 @@ const renderPosts = (posts) => {
     time.dateTime = post.date;
     time.textContent = post.date;
 
+    const copy = document.createElement('button');
+    copy.type = 'button';
+    copy.className = 'post-act post-copy';
+    copy.innerHTML = ICON_COPY;
+    copy.title = 'Copy link to this post';
+    copy.setAttribute('aria-label', 'Copy link to ' + post.title);
+    copy.addEventListener('click', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const flash = (mark) => {
+        copy.innerHTML = mark;
+        copy.dataset.flash = '';
+        setTimeout(() => { copy.innerHTML = ICON_COPY; delete copy.dataset.flash; }, 1200);
+      };
+      try {
+        await navigator.clipboard.writeText(location.origin + '/posts/' + post.slug);
+        flash(ICON_DONE);
+      } catch {
+        flash(ICON_FAIL);
+      }
+    });
+
     const open = document.createElement('a');
-    open.className = 'post-open';
+    open.className = 'post-act post-open';
     open.href = '/posts/' + post.slug;
-    open.textContent = '\u2197';
+    open.innerHTML = ICON_OPEN;
     open.title = 'Open full post';
     open.setAttribute('aria-label', 'Open full post: ' + post.title);
 
-    summary.append(copy, title, time, open);
+    const actions = document.createElement('span');
+    actions.className = 'post-actions';
+    actions.append(copy, open);
+
+    summary.append(title, time, actions);
 
     const body = document.createElement('div');
     body.className = 'post-body';
