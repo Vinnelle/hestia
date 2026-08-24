@@ -13,6 +13,15 @@ cluster:
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
 machine:
+  kubelet:
+    extraMounts:
+      - destination: /opt/local-path-provisioner
+        type: bind
+        source: /opt/local-path-provisioner
+        options:
+          - bind
+          - rshared
+          - rw
   network:
     nameservers:
       - 9.9.9.9

@@ -62,3 +62,435 @@ removed {
     destroy = false
   }
 }
+
+resource "signoz_dashboard" "service_status" {
+  depends_on = [helm_release.signoz]
+
+  schema_version = "v6"
+  name           = "service-status"
+
+  tags = [
+    { key = "tag", value = "kubernetes" },
+    { key = "tag", value = "availability" },
+  ]
+
+  spec = {
+    display = {
+      name        = "Service Status"
+      description = "Every workload's replica count against what it wants, and the restarts it took getting there"
+    }
+    links     = []
+    variables = []
+
+    panels = {
+      "bf120719-8534-4582-8d08-706eb360fc9c" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Deployment replicas available" }
+          links   = []
+          plugin = {
+            time_series_panel = {
+              kind = "signoz/TimeSeriesPanel"
+              spec = {
+                legend = { position = "bottom", mode = "list" }
+              }
+            }
+          }
+          queries = [{
+            kind = "time_series"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "k8s.deployment.available"
+                        time_aggregation  = "avg"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter   = { expression = "" }
+                      having   = { expression = "" }
+                      group_by = [{ name = "k8s.deployment.name", field_context = "attribute", field_data_type = "string" }]
+                      legend   = "{{k8s.deployment.name}}"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+
+      "69e99cd6-cc3b-4d57-8bd7-6bf44a34b667" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Deployment replicas desired" }
+          links   = []
+          plugin = {
+            time_series_panel = {
+              kind = "signoz/TimeSeriesPanel"
+              spec = {
+                legend = { position = "bottom", mode = "list" }
+              }
+            }
+          }
+          queries = [{
+            kind = "time_series"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "k8s.deployment.desired"
+                        time_aggregation  = "avg"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter   = { expression = "" }
+                      having   = { expression = "" }
+                      group_by = [{ name = "k8s.deployment.name", field_context = "attribute", field_data_type = "string" }]
+                      legend   = "{{k8s.deployment.name}}"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+
+      "60fd2dff-2f15-4049-8d8a-feb0ecc6b1ee" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "StatefulSet pods ready" }
+          links   = []
+          plugin = {
+            time_series_panel = {
+              kind = "signoz/TimeSeriesPanel"
+              spec = {
+                legend = { position = "bottom", mode = "list" }
+              }
+            }
+          }
+          queries = [{
+            kind = "time_series"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "k8s.statefulset.ready_pods"
+                        time_aggregation  = "avg"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter   = { expression = "" }
+                      having   = { expression = "" }
+                      group_by = [{ name = "k8s.statefulset.name", field_context = "attribute", field_data_type = "string" }]
+                      legend   = "{{k8s.statefulset.name}}"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+
+      "bb71a87c-3611-4fca-b903-b51ef1cb64dc" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Container restarts" }
+          links   = []
+          plugin = {
+            time_series_panel = {
+              kind = "signoz/TimeSeriesPanel"
+              spec = {
+                legend = { position = "bottom", mode = "list" }
+              }
+            }
+          }
+          queries = [{
+            kind = "time_series"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "k8s.container.restarts"
+                        time_aggregation  = "max"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter   = { expression = "" }
+                      having   = { expression = "" }
+                      group_by = [{ name = "k8s.pod.name", field_context = "attribute", field_data_type = "string" }]
+                      legend   = "{{k8s.pod.name}}"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+    }
+
+    layouts = [{
+      grid = {
+        kind = "Grid"
+        spec = {
+          display = {
+            title    = "Workloads"
+            collapse = { open = true }
+          }
+          items = [
+            { x = 0, y = 0, width = 6, height = 6, content = { ref = "#/spec/panels/bf120719-8534-4582-8d08-706eb360fc9c" } },
+            { x = 6, y = 0, width = 6, height = 6, content = { ref = "#/spec/panels/69e99cd6-cc3b-4d57-8bd7-6bf44a34b667" } },
+            { x = 0, y = 6, width = 6, height = 6, content = { ref = "#/spec/panels/60fd2dff-2f15-4049-8d8a-feb0ecc6b1ee" } },
+            { x = 6, y = 6, width = 6, height = 6, content = { ref = "#/spec/panels/bb71a87c-3611-4fca-b903-b51ef1cb64dc" } },
+          ]
+        }
+      }
+    }]
+  }
+}
+
+resource "signoz_dashboard" "container_security" {
+  depends_on = [helm_release.signoz, helm_release.trivy_operator]
+
+  schema_version = "v6"
+  name           = "container-security"
+
+  tags = [
+    { key = "tag", value = "security" },
+    { key = "tag", value = "trivy" },
+  ]
+
+  spec = {
+    display = {
+      name        = "Container Security"
+      description = "What trivy-operator finds in the images this cluster is actually running"
+    }
+    links     = []
+    variables = []
+
+    panels = {
+      "1a075a04-efc3-4ad4-9a25-8db6da78f62e" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Critical vulnerabilities" }
+          links   = []
+          plugin = {
+            number_panel = {
+              kind = "signoz/NumberPanel"
+              spec = {
+                formatting = { decimal_precision = "0" }
+              }
+            }
+          }
+          queries = [{
+            kind = "scalar"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "trivy_image_vulnerabilities"
+                        time_aggregation  = "max"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter = { expression = "severity = 'Critical'" }
+                      having = { expression = "" }
+                      legend = "critical"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+
+      "5c019d7e-c7af-4d52-964c-cd7bd888d31e" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Exposed secrets in images" }
+          links   = []
+          plugin = {
+            number_panel = {
+              kind = "signoz/NumberPanel"
+              spec = {
+                formatting = { decimal_precision = "0" }
+              }
+            }
+          }
+          queries = [{
+            kind = "scalar"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "trivy_image_exposedsecrets"
+                        time_aggregation  = "max"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter = { expression = "" }
+                      having = { expression = "" }
+                      legend = "secrets"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+
+      "0ad09f7a-b2e4-4559-8879-c588abf2ab66" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Vulnerabilities by severity" }
+          links   = []
+          plugin = {
+            time_series_panel = {
+              kind = "signoz/TimeSeriesPanel"
+              spec = {
+                legend = { position = "bottom", mode = "list" }
+              }
+            }
+          }
+          queries = [{
+            kind = "time_series"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "trivy_image_vulnerabilities"
+                        time_aggregation  = "max"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter   = { expression = "" }
+                      having   = { expression = "" }
+                      group_by = [{ name = "severity", field_context = "attribute", field_data_type = "string" }]
+                      legend   = "{{severity}}"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+
+      "643a1b48-6df6-46ab-b8e4-5fd0e0878392" = {
+        kind = "Panel"
+        spec = {
+          display = { name = "Critical vulnerabilities by namespace" }
+          links   = []
+          plugin = {
+            time_series_panel = {
+              kind = "signoz/TimeSeriesPanel"
+              spec = {
+                legend = { position = "bottom", mode = "list" }
+              }
+            }
+          }
+          queries = [{
+            kind = "time_series"
+            spec = {
+              name = "A"
+              plugin = {
+                builder_query = {
+                  kind = "signoz/BuilderQuery"
+                  spec = {
+                    metrics = {
+                      name          = "A"
+                      step_interval = "60"
+                      signal        = "metrics"
+                      aggregations = [{
+                        metric_name       = "trivy_image_vulnerabilities"
+                        time_aggregation  = "max"
+                        space_aggregation = "sum"
+                        reduce_to         = "last"
+                      }]
+                      filter   = { expression = "severity = 'Critical'" }
+                      having   = { expression = "" }
+                      group_by = [{ name = "namespace", field_context = "attribute", field_data_type = "string" }]
+                      legend   = "{{namespace}}"
+                    }
+                  }
+                }
+              }
+            }
+          }]
+        }
+      }
+    }
+
+    layouts = [{
+      grid = {
+        kind = "Grid"
+        spec = {
+          display = {
+            title    = "Findings"
+            collapse = { open = true }
+          }
+          items = [
+            { x = 0, y = 0, width = 3, height = 4, content = { ref = "#/spec/panels/1a075a04-efc3-4ad4-9a25-8db6da78f62e" } },
+            { x = 3, y = 0, width = 3, height = 4, content = { ref = "#/spec/panels/5c019d7e-c7af-4d52-964c-cd7bd888d31e" } },
+            { x = 0, y = 4, width = 6, height = 6, content = { ref = "#/spec/panels/0ad09f7a-b2e4-4559-8879-c588abf2ab66" } },
+            { x = 6, y = 4, width = 6, height = 6, content = { ref = "#/spec/panels/643a1b48-6df6-46ab-b8e4-5fd0e0878392" } },
+          ]
+        }
+      }
+    }]
+  }
+}

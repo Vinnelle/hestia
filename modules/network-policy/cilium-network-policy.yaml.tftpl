@@ -1,0 +1,50 @@
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: default-deny
+  namespace: ${namespace}
+spec:
+  endpointSelector: {}
+  ingress:
+    - fromEndpoints:
+%{ for ns in concat([namespace, telemetry_namespace], ingress_from) ~}
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": ${ns}
+%{ endfor ~}
+    - fromEntities:
+        - host
+        - remote-node
+        - kube-apiserver
+        - health
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": ${namespace}
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": ${telemetry_namespace}
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": kube-system
+            "k8s:k8s-app": kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+%{ for e in egress_to ~}
+    - toEndpoints:
+        - matchLabels:
+            "k8s:io.kubernetes.pod.namespace": ${e.namespace}
+      toPorts:
+        - ports:
+%{ for port in e.ports ~}
+            - port: "${port}"
+              protocol: TCP
+%{ endfor ~}
+%{ endfor ~}
+    - toEntities:
+        - host
+        - remote-node
+        - kube-apiserver
+        - world

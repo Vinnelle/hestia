@@ -1,0 +1,40 @@
+targetNamespaces: ""
+excludeNamespaces: "kube-system"
+
+operator:
+  scanJobsConcurrentLimit: 1
+  scanJobTTL: "10m"
+  scannerReportTTL: "24h"
+  metricsFindingsEnabled: true
+  vulnerabilityScannerScanOnlyCurrentRevisions: true
+  configAuditScannerEnabled: true
+  exposedSecretScannerEnabled: true
+  rbacAssessmentScannerEnabled: true
+  infraAssessmentScannerEnabled: false
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+
+serviceMonitor:
+  enabled: false
+
+trivy:
+  ignoreUnfixed: true
+  dbRepository: mirror.gcr.io/aquasec/trivy-db
+  javaDbRepository: mirror.gcr.io/aquasec/trivy-java-db
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi

@@ -27,3 +27,8 @@ output "gitlab_root_password" {
   value     = random_password.gitlab_root_password.result
   sensitive = true
 }
+
+output "miniflux_admin_password" {
+  value     = random_password.miniflux_admin_password.result
+  sensitive = true
+}

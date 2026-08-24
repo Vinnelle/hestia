@@ -1,15 +1,20 @@
 # SigNoz dashboards
 
-Not managed by the `signoz_dashboard` resource — it needs SigNoz >= v0.135.0 (the typed
-v2/Perses schema this repo's `signoz` provider targets), and that version doesn't exist yet
-(checked SigNoz's actual GitHub releases 2026-07-28: v0.134.0, the version this cluster
-runs, is current). Blocked upstream, not a config problem here.
+The JSON files here are **not** the source of truth for what these dashboards show
+(updated 2026-08-23). They were created through SigNoz's older `/api/v1/dashboards` REST API
+back when the `signoz_dashboard` resource's typed v2/Perses schema needed a SigNoz version
+that did not exist yet; the chart has since moved to `0.138.0` and the `restapi_object`
+resources were adopted by `signoz_dashboard.dashboard`, which carries their IDs with
+`ignore_changes = [spec, tags, name]`. Terraform reads each file only for its `title` and
+`tags` — the panels live in SigNoz itself. Editing a file here changes nothing.
 
-These use the older JSON schema SigNoz's `/api/v1/dashboards` REST API accepts, which has no
-such gate. `observability-signoz-dashboards.tf` `for_each`es every `**/*.json` under this
-directory through the `restapi` provider, so adding a dashboard is: drop the file here, apply.
-Editing an existing one needs `terraform apply -replace` on its `restapi_object.dashboard[...]`
-address — `ignore_changes = [data]` means an in-place edit is never planned (see CLAUDE.md).
+New dashboards do not go through this directory at all: write them as their own
+`signoz_dashboard` resource with a real `spec` (`schema_version = "v6"`, panels keyed by UUID,
+a `layouts` grid referencing them). `signoz_dashboard.service_status` and
+`.container_security` in `observability-signoz-dashboards.tf` are the two worked examples —
+both use `builder_query` on metric names rather than PromQL, which is what the provider
+validates at plan time. Porting one of the 22 below means giving it a real `spec` the same way
+and removing its key from `local.signoz_dashboard_ids`.
 
 Most files are official templates from [SigNoz/dashboards](https://github.com/SigNoz/dashboards).
 `chaos-mesh/` is hand-written — no official template exists for it.
