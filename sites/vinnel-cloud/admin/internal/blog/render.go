@@ -95,6 +95,15 @@ type FeedConfig struct {
 	SiteURL  string
 	Author   string
 	Email    string
+
+	PostLinkBase string
+}
+
+func (c FeedConfig) postLink(slug string) string {
+	if c.PostLinkBase != "" {
+		return c.PostLinkBase + slug
+	}
+	return strings.TrimRight(c.SiteURL, "/") + "/posts/" + slug
 }
 
 func Feed(cfg FeedConfig, posts []Rendered) ([]byte, error) {
@@ -120,7 +129,7 @@ func Feed(cfg FeedConfig, posts []Rendered) ([]byte, error) {
 	for _, p := range posts {
 		feed.Entries = append(feed.Entries, atomEntry{
 			Title:   p.Title,
-			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: site + "/posts/" + p.Slug},
+			Link:    atomLink{Rel: "alternate", Type: "text/html", Href: cfg.postLink(p.Slug)},
 			ID:      fmt.Sprintf("tag:%s,%s:post/%s", host, p.Date[:4], p.Slug),
 			Updated: p.Date + "T00:00:00Z",
 			Content: atomContent{Type: "html", Body: p.HTML},

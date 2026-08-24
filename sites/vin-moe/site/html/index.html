@@ -183,11 +183,11 @@
     <ol class="topics">
       <li>
         <h3>nginx</h3>
-        <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, and .html URLs redirect to their extensionless form.</p>
+        <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses redirect to their new home on blog.vin.moe. The same pods answer both hostnames: one server block per host, with the blog host serving only the reader page, its stylesheet, and the public post endpoints.</p>
       </li>
       <li>
         <h3>the page</h3>
-        <p>The page uses no framework and no bundler. The font and the avatar are the only requests besides the stylesheet and script until you open the blog. One palette covers both themes through light-dark(), so the toggle changes a single property, and the section numbers are a CSS counter. The tabs are an ARIA tablist with arrow-key navigation and fragment links, animated by the View Transitions API where it exists. Posts render into details elements, so each keeps a shareable fragment. With JavaScript disabled the tab bar is hidden and every panel renders, except the blog, which points at the feed instead.</p>
+        <p>The page uses no framework and no bundler. The font and the avatar are the only requests besides the stylesheet and script until you open the blog. One palette covers both themes through light-dark(), so the toggle changes a single property, and the section numbers are a CSS counter. The tabs are an ARIA tablist with arrow-key navigation and fragment links, animated by the View Transitions API where it exists. Posts render into details elements for inline reading, and each one opens full screen on blog.vin.moe under its own shareable fragment, rendered there from the same posts.json the tab loads. With JavaScript disabled the tab bar is hidden and every panel renders, except the blog, which points at the feed instead.</p>
       </li>
       <li>
         <h3>the deployment</h3>
@@ -203,7 +203,7 @@
       </li>
       <li>
         <h3>the durable copy</h3>
-        <p>Publishing also commits the markdown to the integration branch through the GitLab API, and CI opens the merge request. The repository keeps the durable copy and the volume serves the live one. Each write purges the three affected URLs at the edge, so the blog stays cached and still shows the change within about a second.</p>
+        <p>Publishing also commits the markdown to the integration branch through the GitLab API, and CI opens the merge request. The repository keeps the durable copy and the volume serves the live one. Each write purges the four affected URLs at the edge, plus the post's own page, so the blog stays cached and still shows the change within about a second.</p>
       </li>
     </ol>
 
@@ -357,6 +357,8 @@ const ICON_DONE = svg('<path d="M20 6 9 17l-5-5"/>');
 const ICON_FAIL = svg('<path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>');
 const ICON_OPEN = svg('<path d="M15 3h6v6"/><path d="M21 3 11 13"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>');
 
+const POST_BASE = 'https://blog.vin.moe/#';
+
 const renderPosts = (posts) => {
   postsEl.replaceChildren();
   if (!posts.length) {
@@ -399,7 +401,7 @@ const renderPosts = (posts) => {
         setTimeout(() => { copy.innerHTML = ICON_COPY; delete copy.dataset.flash; }, 1200);
       };
       try {
-        await navigator.clipboard.writeText(location.origin + '/posts/' + post.slug);
+        await navigator.clipboard.writeText(POST_BASE + post.slug);
         flash(ICON_DONE);
       } catch {
         flash(ICON_FAIL);
@@ -408,7 +410,7 @@ const renderPosts = (posts) => {
 
     const open = document.createElement('a');
     open.className = 'post-act post-open';
-    open.href = '/posts/' + post.slug;
+    open.href = POST_BASE + post.slug;
     open.innerHTML = ICON_OPEN;
     open.title = 'Open full post';
     open.setAttribute('aria-label', 'Open full post: ' + post.title);

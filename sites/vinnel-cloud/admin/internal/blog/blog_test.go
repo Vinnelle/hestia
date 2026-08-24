@@ -399,6 +399,28 @@ func TestFeedWithNoPosts(t *testing.T) {
 	}
 }
 
+func TestFeedUsesPostLinkBase(t *testing.T) {
+	cfg := FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", PostLinkBase: "https://blog.vin.moe/#", Author: "Finlay"}
+	body, err := Feed(cfg, []Rendered{{Slug: "hello", Title: "Hello", Date: "2026-08-21", HTML: "<p>hi</p>"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var parsed struct {
+		Entries []struct {
+			Link struct {
+				Href string `xml:"href,attr"`
+			} `xml:"link"`
+		} `xml:"entry"`
+	}
+	if err := xml.Unmarshal(body, &parsed); err != nil {
+		t.Fatalf("feed is not well-formed XML: %v\n%s", err, body)
+	}
+	if len(parsed.Entries) != 1 || parsed.Entries[0].Link.Href != "https://blog.vin.moe/#hello" {
+		t.Errorf("entries = %+v", parsed.Entries)
+	}
+}
+
 func TestPurgerSkipsWhenUnconfigured(t *testing.T) {
 	calls := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

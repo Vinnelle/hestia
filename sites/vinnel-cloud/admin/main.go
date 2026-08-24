@@ -50,6 +50,13 @@ func env(key, def string) string {
 	return def
 }
 
+func postLinkBase(publicURL string) string {
+	if publicURL == "" {
+		return ""
+	}
+	return publicURL + "/#"
+}
+
 var extraFrameSrc = []string{"https://auth.vinnel.cloud"}
 
 var frameSrc = func() string {
@@ -232,10 +239,11 @@ func (c *statsCache) get() cluster.Stats {
 }
 
 type blogAPI struct {
-	store  *blog.Store
-	repo   *blog.Repo
-	purger *blog.Purger
-	feed   blog.FeedConfig
+	store     *blog.Store
+	repo      *blog.Repo
+	purger    *blog.Purger
+	feed      blog.FeedConfig
+	publicURL string
 }
 
 func (b *blogAPI) purge(ctx context.Context, extra ...string) {
@@ -245,6 +253,9 @@ func (b *blogAPI) purge(ctx context.Context, extra ...string) {
 }
 
 func (b *blogAPI) postURL(slug string) string {
+	if b.publicURL != "" {
+		return b.publicURL + "/posts/" + slug
+	}
 	return strings.TrimRight(b.feed.SiteURL, "/") + "/posts/" + slug
 }
 
@@ -483,20 +494,27 @@ func main() {
 		PostsPath: env("BLOG_POSTS_PATH", "hestia/sites/vin-moe/site/posts"),
 	}
 	siteURL := env("BLOG_SITE_URL", "https://vin.moe")
+	publicURL := strings.TrimRight(env("BLOG_PUBLIC_URL", ""), "/")
+	purgeURLs := []string{siteURL + "/", siteURL + "/posts.json", siteURL + "/feed.xml"}
+	if publicURL != "" {
+		purgeURLs = append(purgeURLs, publicURL+"/")
+	}
 	blogHandlers := &blogAPI{
-		store: blogStore,
-		repo:  blogRepo,
+		store:     blogStore,
+		repo:      blogRepo,
+		publicURL: publicURL,
 		purger: &blog.Purger{
 			ZoneID: env("BLOG_ZONE_ID", ""),
 			Token:  os.Getenv("CF_CACHE_PURGE_TOKEN"),
-			URLs:   []string{siteURL + "/", siteURL + "/posts.json", siteURL + "/feed.xml"},
+			URLs:   purgeURLs,
 		},
 		feed: blog.FeedConfig{
-			Title:    env("BLOG_TITLE", "vin.moe"),
-			Subtitle: env("BLOG_SUBTITLE", "infrastructure, devops, software"),
-			SiteURL:  siteURL,
-			Author:   env("BLOG_AUTHOR", "Finlay"),
-			Email:    env("BLOG_AUTHOR_EMAIL", ""),
+			Title:        env("BLOG_TITLE", "vin.moe"),
+			Subtitle:     env("BLOG_SUBTITLE", "infrastructure, devops, software"),
+			SiteURL:      siteURL,
+			Author:       env("BLOG_AUTHOR", "Finlay"),
+			Email:        env("BLOG_AUTHOR_EMAIL", ""),
+			PostLinkBase: postLinkBase(publicURL),
 		},
 	}
 	if !blogHandlers.purger.Configured() {

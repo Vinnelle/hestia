@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>blog — vin.moe</title>
+<meta name="description" content="Full-screen posts from vin.moe.">
+<meta name="robots" content="noindex">
+<link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="stylesheet" href="/fonts/post.css">
+<link rel="stylesheet" href="/css/post.css">
+<style>@media (scripting: none) { #post { display: none; } }</style>
+</head>
+<body>
+<a class="skip" href="#main">skip to content</a>
+
+<div class="bar">
+  <a class="brand" href="https://vin.moe/">vin.moe</a>
+  <nav class="bar-nav" aria-label="Site">
+    <span class="tabs">
+      <a class="tab" href="https://vin.moe/">about</a>
+      <a class="tab" href="/feed.xml">feed</a>
+    </span>
+  </nav>
+</div>
+
+<main id="main">
+  <article>
+    <div id="post"><p class="muted">Loading…</p></div>
+    <noscript><p class="muted">Posts are rendered here with JavaScript. The <a href="/feed.xml">Atom feed</a> does not need it.</p></noscript>
+  </article>
+  <p class="post-back"><a href="/">&larr; all posts</a></p>
+</main>
+
+<footer>
+  <nav class="foot-nav" aria-label="Source">
+    <a href="/feed.xml">Atom feed</a>
+    <a href="https://github.com/Vinnelle/vin.moe">Site source</a>
+    <a href="https://github.com/Vinnelle/hestia">Infra source</a>
+  </nav>
+  <p class="fingerprint">43B0 BED0 F544 6DF5 4FD0&nbsp; D966 C568 F432 345E C5F4</p>
+</footer>
+
+<script>
+const target = document.getElementById('post');
+
+const el = (tag, cls, text) => {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+};
+
+let postsPromise = null;
+const loadPosts = () => {
+  if (!postsPromise) {
+    postsPromise = fetch('/posts.json', { headers: { Accept: 'application/json' } })
+      .then((res) => { if (!res.ok) throw new Error(res.status); return res.json(); });
+  }
+  return postsPromise;
+};
+
+const showPost = (post) => {
+  document.title = post.title + ' — vin.moe';
+  const head = el('header', 'page-head');
+  const meta = el('p', 'dim');
+  const time = el('time', null, post.date);
+  time.dateTime = post.date;
+  meta.append(time);
+  head.append(el('h1', null, post.title), meta);
+  const body = el('div', 'post-body post-page');
+  body.innerHTML = post.html;
+  target.replaceChildren(head, body);
+};
+
+const showList = (posts) => {
+  document.title = 'blog — vin.moe';
+  const head = el('header', 'page-head');
+  head.append(el('h1', null, 'Blog'), el('p', 'muted', 'These are just my own thoughts and opinions.'));
+  const list = el('ul', 'list');
+  for (const post of posts) {
+    const link = el('a', null, post.title);
+    link.href = '#' + post.slug;
+    const item = el('li');
+    item.append(link);
+    list.append(item);
+  }
+  target.replaceChildren(head, list);
+};
+
+const showMissing = () => {
+  document.title = 'not found — blog.vin.moe';
+  target.replaceChildren(el('p', 'muted', 'No post at this address.'));
+};
+
+const render = async () => {
+  let slug = location.hash.slice(1);
+  try { slug = decodeURIComponent(slug); } catch {}
+  try {
+    const posts = (await loadPosts()).posts || [];
+    const post = posts.find((p) => p.slug === slug);
+    if (!slug) showList(posts);
+    else if (!post) showMissing();
+    else showPost(post);
+  } catch {
+    target.replaceChildren(el('p', 'muted', 'Posts are not loading right now.'));
+  }
+  scrollTo(0, 0);
+};
+
+addEventListener('hashchange', render);
+render();
+</script>
+</body>
+</html>

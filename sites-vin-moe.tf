@@ -22,6 +22,7 @@ module "vin_moe_site" {
 
   site_slug         = "vin-moe"
   domain            = "vin.moe"
+  extra_hosts       = ["blog.vin.moe"]
   zone_id           = data.cloudflare_zone.vin_moe.id
   node_ip           = var.node_ip
   cache_description = "cache everything for vin.moe"

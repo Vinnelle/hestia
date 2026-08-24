@@ -114,7 +114,7 @@ func Page(cfg FeedConfig, p Rendered) ([]byte, error) {
 		Title:    p.Title,
 		Date:     p.Date,
 		Body:     template.HTML(p.HTML),
-		URL:      site + "/posts/" + p.Slug,
+		URL:      cfg.postLink(p.Slug),
 		Excerpt:  Excerpt(p.HTML),
 		Site:     site,
 		SiteName: cfg.Title,

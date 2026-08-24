@@ -333,7 +333,7 @@ func TestBlogDeleteRemovesFromRepoFirst(t *testing.T) {
 
 func TestPublicPostPage(t *testing.T) {
 	api, mux := blogTestAPI(t, &blog.Repo{})
-	api.feed = blog.FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", Author: "Finlay"}
+	api.feed = blog.FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", PostLinkBase: "https://blog.vin.moe/#", Author: "Finlay"}
 	mux.HandleFunc("GET /public/posts/{slug}", api.publicPost)
 
 	blogDo(t, mux, "PUT", "/api/blog/posts/live-post", `{"title":"Live","date":"2026-08-21","body":"hello page","draft":false}`)
@@ -346,7 +346,7 @@ func TestPublicPostPage(t *testing.T) {
 	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
 		t.Errorf("Content-Type = %q", ct)
 	}
-	for _, want := range []string{"hello page", `href="https://vin.moe/posts/live-post"`} {
+	for _, want := range []string{"hello page", `href="https://blog.vin.moe/#live-post"`} {
 		if !strings.Contains(w.Body.String(), want) {
 			t.Errorf("page missing %q", want)
 		}

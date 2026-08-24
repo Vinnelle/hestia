@@ -314,6 +314,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
+            name  = "BLOG_PUBLIC_URL"
+            value = "https://blog.vin.moe"
+          }
+
+          env {
             name  = "BLOG_ZONE_ID"
             value = data.cloudflare_zone.vin_moe.id
           }

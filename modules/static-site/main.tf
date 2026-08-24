@@ -7,6 +7,17 @@ resource "cloudflare_dns_record" "apex" {
   proxied = true
 }
 
+resource "cloudflare_dns_record" "extra" {
+  for_each = toset(var.extra_hosts)
+
+  zone_id = var.zone_id
+  name    = each.value
+  type    = "A"
+  content = var.node_ip
+  ttl     = 1
+  proxied = true
+}
+
 resource "cloudflare_ruleset" "cache" {
   zone_id = var.zone_id
   name    = "site cdn cache"
@@ -16,7 +27,7 @@ resource "cloudflare_ruleset" "cache" {
   rules = [{
     ref         = "cache_site"
     description = var.cache_description
-    expression  = "http.host eq \"${var.domain}\""
+    expression  = join(" or ", [for h in concat([var.domain], var.extra_hosts) : format("http.host eq %q", h)])
     action      = "set_cache_settings"
     action_parameters = {
       cache = true
@@ -208,7 +219,7 @@ resource "kubernetes_ingress_v1" "this" {
     ingress_class_name = "nginx"
 
     tls {
-      hosts       = [var.domain]
+      hosts       = concat([var.domain], var.extra_hosts)
       secret_name = "${var.site_slug}-tls"
     }
 
@@ -223,6 +234,28 @@ resource "kubernetes_ingress_v1" "this" {
               name = kubernetes_service_v1.this.metadata[0].name
               port {
                 number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+
+    dynamic "rule" {
+      for_each = toset(var.extra_hosts)
+
+      content {
+        host = rule.value
+        http {
+          path {
+            path      = "/"
+            path_type = "Prefix"
+            backend {
+              service {
+                name = kubernetes_service_v1.this.metadata[0].name
+                port {
+                  number = 80
+                }
               }
             }
           }

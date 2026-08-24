@@ -8,6 +8,12 @@ variable "domain" {
   type        = string
 }
 
+variable "extra_hosts" {
+  description = "Additional hostnames served by the same deployment, e.g. \"blog.vin.moe\"; each gets a DNS record, cache coverage and an ingress rule on the site's TLS cert"
+  type        = list(string)
+  default     = []
+}
+
 variable "zone_id" {
   description = "Cloudflare zone ID the site's DNS/cache rules attach to"
   type        = string

@@ -42,3 +42,21 @@ func TestPage(t *testing.T) {
 		t.Error("post HTML was double-escaped")
 	}
 }
+
+func TestPageWithPostLinkBase(t *testing.T) {
+	cfg := FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe/", PostLinkBase: "https://blog.vin.moe/#", Author: "Finlay"}
+	body, err := Page(cfg, Rendered{Slug: "hello", Title: "Hello", Date: "2026-08-21", HTML: "<p>body text</p>"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(body)
+
+	for _, want := range []string{
+		`<link rel="canonical" href="https://blog.vin.moe/#hello">`,
+		`<meta property="og:url" content="https://blog.vin.moe/#hello">`,
+	} {
+		if !strings.Contains(page, want) {
+			t.Errorf("page missing %q\n%s", want, page)
+		}
+	}
+}
