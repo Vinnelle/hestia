@@ -21,8 +21,6 @@ serviceMonitor:
 
 trivy:
   ignoreUnfixed: true
-  dbRepository: mirror.gcr.io/aquasec/trivy-db
-  javaDbRepository: mirror.gcr.io/aquasec/trivy-java-db
   resources:
     requests:
       cpu: 100m
