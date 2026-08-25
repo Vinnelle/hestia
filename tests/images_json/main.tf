@@ -3,7 +3,11 @@ terraform {
 }
 
 locals {
-  images = jsondecode(file("${path.module}/../../sites/images.json"))
+  images = merge(
+    jsondecode(file("${path.module}/../../sites/site-images.json")),
+    jsondecode(file("${path.module}/../../apps/app-images.json")),
+    jsondecode(file("${path.module}/../../identity/identity-images.json")),
+  )
 }
 
 output "images" {

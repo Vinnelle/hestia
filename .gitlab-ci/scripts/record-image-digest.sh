@@ -22,12 +22,24 @@ for attempt in 1 2 3 4 5; do
   fi
   git reset --hard FETCH_HEAD
 
-  jq --arg d "$deployment" --arg r "$image_ref" '.[$d] = $r' hestia/sites/images.json > hestia/sites/images.json.tmp
-  mv hestia/sites/images.json.tmp hestia/sites/images.json
-  git add hestia/sites/images.json
+  target=""
+  for f in hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json; do
+    if jq -e --arg d "$deployment" 'has($d)' "$f" >/dev/null; then
+      target="$f"
+      break
+    fi
+  done
+  if [ -z "$target" ]; then
+    echo "no images file records a $deployment entry -- add one before recording a digest" >&2
+    exit 1
+  fi
+
+  jq --arg d "$deployment" --arg r "$image_ref" '.[$d] = $r' "$target" > "$target.tmp"
+  mv "$target.tmp" "$target"
+  git add "$target"
 
   if git diff --cached --quiet; then
-    echo "hestia/sites/images.json already records this digest"
+    echo "$target already records this digest"
     exit 0
   fi
 
