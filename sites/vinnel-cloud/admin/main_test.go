@@ -396,3 +396,17 @@ func TestPublicPostsRevalidatesWithETag(t *testing.T) {
 		t.Errorf("edited posts = %d, want %d", got, http.StatusOK)
 	}
 }
+
+func TestPurgeTargetsCoverEveryCachedHost(t *testing.T) {
+	got := purgeTargets("https://vin.moe/", "https://blog.vin.moe")
+	want := []string{
+		"https://vin.moe/", "https://vin.moe/posts.json", "https://vin.moe/feed.xml",
+		"https://blog.vin.moe/", "https://blog.vin.moe/posts.json", "https://blog.vin.moe/feed.xml",
+	}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Fatalf("purgeTargets = %q, want %q", got, want)
+	}
+	if got := purgeTargets("https://vin.moe", ""); len(got) != 3 {
+		t.Fatalf("no public host: got %q", got)
+	}
+}

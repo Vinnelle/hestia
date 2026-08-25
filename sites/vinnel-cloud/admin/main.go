@@ -57,6 +57,17 @@ func postLinkBase(publicURL string) string {
 	return publicURL + "/#"
 }
 
+func purgeTargets(siteURL, publicURL string) []string {
+	urls := []string{}
+	for _, host := range []string{strings.TrimRight(siteURL, "/"), publicURL} {
+		if host == "" {
+			continue
+		}
+		urls = append(urls, host+"/", host+"/posts.json", host+"/feed.xml")
+	}
+	return urls
+}
+
 var extraFrameSrc = []string{"https://auth.vinnel.cloud"}
 
 var frameSrc = func() string {
@@ -495,10 +506,7 @@ func main() {
 	}
 	siteURL := env("BLOG_SITE_URL", "https://vin.moe")
 	publicURL := strings.TrimRight(env("BLOG_PUBLIC_URL", ""), "/")
-	purgeURLs := []string{siteURL + "/", siteURL + "/posts.json", siteURL + "/feed.xml"}
-	if publicURL != "" {
-		purgeURLs = append(purgeURLs, publicURL+"/")
-	}
+	purgeURLs := purgeTargets(siteURL, publicURL)
 	blogHandlers := &blogAPI{
 		store:     blogStore,
 		repo:      blogRepo,
