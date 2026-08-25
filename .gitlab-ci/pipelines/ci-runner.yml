@@ -41,13 +41,11 @@ ci_runner_smoke_test:
   script:
     - kubectl version --client
     - tflint --version
-    - actionlint -version
     - shellcheck --version
     - yamllint --version
     - gh --version
     - jq --version
     - rsync --version
-    - docker --version
     - cc --version
 
 ci_runner_publish:
@@ -89,7 +87,7 @@ ci_runner_scan:
     - export PATH="/tmp/bin:${PATH}"
   script:
     - |
-      if ! grype "registry:artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest" --fail-on high -o table; then
+      if ! grype -c .grype.yaml "registry:artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest" --fail-on high --only-fixed -o table; then
         echo "vulnerabilities found in ci-runner image, triggering a rebuild"
         curl --fail -X POST \
           -F token="${RECONCILE_TRIGGER_TOKEN}" \

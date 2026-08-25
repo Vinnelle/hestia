@@ -1,22 +1,17 @@
 FROM debian:trixie-slim@sha256:3a39a0592364683e6bab97937b72cad5a8fa6dcbbee90edb3bb48c7f8e94f258
 
-# renovate: datasource=github-releases depName=actions/runner
-ARG RUNNER_VERSION=2.336.0
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-ARG KUBECTL_VERSION=v1.36.3
+ARG KUBECTL_VERSION=v1.36.4
 # renovate: datasource=github-releases depName=terraform-linters/tflint
 ARG TFLINT_VERSION=v0.64.0
-# renovate: datasource=github-releases depName=rhysd/actionlint
-ARG ACTIONLINT_VERSION=1.7.12
 # renovate: datasource=github-releases depName=cli/cli
-ARG GH_VERSION=2.97.0
+ARG GH_VERSION=2.98.0
 
 ARG CACHEBUST=0
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
       ca-certificates \
       curl \
       git \
-      sudo \
       jq \
       rsync \
       build-essential \
@@ -24,31 +19,16 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
       yamllint \
       unzip \
     && install -m 0755 -d /etc/apt/keyrings \
-    && curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
-    && chmod a+r /etc/apt/keyrings/docker.asc \
-    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-      > /etc/apt/sources.list.d/docker.list \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key -o /etc/apt/keyrings/nodesource.asc \
     && chmod a+r /etc/apt/keyrings/nodesource.asc \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/nodesource.asc] https://deb.nodesource.com/node_26.x nodistro main" \
       > /etc/apt/sources.list.d/nodesource.list \
     && apt-get update \
-    && apt-get install -y --no-install-recommends docker-ce-cli nodejs \
-    && rm -rf /var/lib/apt/lists/* \
-    && npm install -g npm@latest
+    && apt-get install -y --no-install-recommends nodejs \
+    && rm -rf /var/lib/apt/lists/* /usr/lib/node_modules/npm /usr/bin/npm /usr/bin/npx
 
 RUN groupadd -g 1001 runner \
-    && groupadd docker \
-    && useradd -u 1001 -g runner -G sudo,docker -m -d /home/runner -s /bin/bash runner
-
-RUN curl -fsSL "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o /tmp/runner.tar.gz \
-    && tar -xzf /tmp/runner.tar.gz -C /home/runner \
-    && rm /tmp/runner.tar.gz \
-    && /home/runner/bin/installdependencies.sh \
-    && rm -rf /home/runner/externals/node20_alpine /home/runner/externals/node24_alpine \
-    && /home/runner/externals/node20/bin/node /home/runner/externals/node20/bin/npm install -g npm@^10 \
-    && /home/runner/externals/node24/bin/node /home/runner/externals/node24/bin/npm install -g npm@latest \
-    && chown -R runner:runner /home/runner
+    && useradd -u 1001 -g runner -m -d /home/runner -s /bin/bash runner
 
 RUN curl -fsSL -o /usr/local/bin/kubectl \
       "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
@@ -58,11 +38,6 @@ RUN curl -fsSL "https://github.com/terraform-linters/tflint/releases/download/${
     && unzip -q /tmp/tflint.zip -d /usr/local/bin \
     && chmod 0755 /usr/local/bin/tflint \
     && rm /tmp/tflint.zip
-
-RUN curl -fsSL "https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" -o /tmp/actionlint.tar.gz \
-    && tar -xzf /tmp/actionlint.tar.gz -C /usr/local/bin actionlint \
-    && chmod 0755 /usr/local/bin/actionlint \
-    && rm /tmp/actionlint.tar.gz
 
 RUN curl -fsSL "https://github.com/cli/cli/releases/download/v${GH_VERSION}/gh_${GH_VERSION}_linux_amd64.tar.gz" -o /tmp/gh.tar.gz \
     && tar -xzf /tmp/gh.tar.gz -C /tmp \
