@@ -48,7 +48,7 @@ locals {
       "qs.forEach(function(x){x[0].matches=x[1]===d;",
       "if(x[0].onchange)try{x[0].onchange.call(x[0],ev(x[0]));}catch(e){}});",
       "ls.forEach(function(x){try{x[1].call(x[0],ev(x[0]));}catch(e){}});}",
-      "var m=document.cookie.match(/(?:^|; )theme=(dark|light)/);if(m)a(m[1]);",
+      "var m=document.cookie.match(/(?:^|; )vinnel_theme=(dark|light)/);if(m)a(m[1]);",
       "addEventListener('message',function(e){if(e.origin!=='https://admin.vinnel.cloud')return;",
       "var v=e.data&&e.data.vinnelTheme;if(v!==t&&(v==='dark'||v==='light')){a(v);",
       "${contains(keys(local.admin_frame_theme_js_app), slug) ? "location.reload();" : ""}}});",

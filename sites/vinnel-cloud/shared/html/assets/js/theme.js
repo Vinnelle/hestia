@@ -3,11 +3,12 @@
 
   function persist(t) {
     try { localStorage.theme = t; } catch (e) {}
-    document.cookie = 'theme=' + t + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
+    document.cookie = 'vinnel_theme=' + t + '; domain=.vinnel.cloud; path=/; max-age=31536000; secure; samesite=lax';
   }
 
   try {
-    var m = document.cookie.match(/(?:^|; )theme=(dark|light)/);
+    document.cookie = 'theme=; domain=.vinnel.cloud; path=/; max-age=0';
+    var m = document.cookie.match(/(?:^|; )vinnel_theme=(dark|light)/);
     var t = (m && m[1]) || localStorage.theme;
     if (t) {
       root.dataset.theme = t;
