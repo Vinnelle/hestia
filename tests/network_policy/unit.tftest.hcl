@@ -4,7 +4,7 @@
 # that selects nothing (policy present, nothing enforced), a missing DNS leg
 # (every name lookup in the namespace times out), and a port list that lands on
 # the wrong egress rule (which would clamp same-namespace traffic to that one
-# port instead of widening it). See gaia/CLAUDE.md's modules/network-policy row.
+# port instead of widening it). See gaia/CLAUDE.md's platform/network-policy/policy row.
 run "endpoint_selector_selects_the_whole_namespace" {
   command = plan
 

@@ -11,7 +11,7 @@ resource "helm_release" "trivy_operator" {
 }
 
 module "vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [helm_release.trivy_operator]
 

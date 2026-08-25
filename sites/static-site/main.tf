@@ -176,7 +176,7 @@ resource "kubernetes_deployment_v1" "this" {
 }
 
 module "vpa" {
-  source = "../vpa"
+  source = "../../platform/vpa/resource"
 
   name        = "${var.site_slug}-site"
   namespace   = var.namespace

@@ -3,7 +3,7 @@ terraform {
 }
 
 locals {
-  rendered = yamldecode(templatefile("${path.module}/../../modules/network-policy/cilium-network-policy.yaml.tftpl", {
+  rendered = yamldecode(templatefile("${path.module}/../../platform/network-policy/policy/cilium-network-policy.yaml.tftpl", {
     namespace           = "files"
     telemetry_namespace = "observability"
     ingress_from        = ["forge"]

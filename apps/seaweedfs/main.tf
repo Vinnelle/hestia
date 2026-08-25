@@ -334,7 +334,7 @@ resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
 }
 
 module "vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.seaweedfs]
 

@@ -16,7 +16,7 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_vinnel_cloud" {
 }
 
 module "vinnel_cloud_site" {
-  source = "../../modules/static-site"
+  source = "../static-site"
 
   depends_on = [
     kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud,

@@ -139,7 +139,7 @@ resource "kubernetes_deployment_v1" "netbird_dashboard" {
 }
 
 module "dashboard_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.netbird_dashboard]
 

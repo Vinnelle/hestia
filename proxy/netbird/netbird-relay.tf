@@ -97,7 +97,7 @@ resource "kubernetes_deployment_v1" "netbird_relay" {
 }
 
 module "relay_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.netbird_relay]
 

@@ -323,7 +323,7 @@ resource "kubernetes_deployment_v1" "gitlab" {
 }
 
 module "gitlab_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.gitlab]
 
@@ -659,7 +659,7 @@ resource "kubernetes_deployment_v1" "gitlab_runner" {
 }
 
 module "gitlab_runner_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.gitlab_runner]
 
@@ -780,7 +780,7 @@ resource "kubernetes_deployment_v1" "gitlab_runner_privileged" {
 }
 
 module "gitlab_runner_privileged_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.gitlab_runner_privileged]
 

@@ -30,7 +30,7 @@ locals {
 }
 
 module "network_policy" {
-  source = "../../modules/network-policy"
+  source = "./policy"
 
   for_each = local.policied_namespaces
 

@@ -146,7 +146,7 @@ resource "kubernetes_deployment_v1" "netbird_management" {
 }
 
 module "management_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.netbird_management]
 

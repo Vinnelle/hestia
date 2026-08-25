@@ -16,7 +16,7 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_monke_academy" {
 }
 
 module "monke_academy_site" {
-  source = "../../modules/static-site"
+  source = "../static-site"
 
   depends_on = [
     kubernetes_secret_v1.registry_dockerconfig_monke_academy,

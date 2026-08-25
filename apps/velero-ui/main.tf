@@ -293,7 +293,7 @@ resource "kubernetes_secret_v1" "velero_ui_secrets" {
 }
 
 module "velero_ui_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.velero_ui]
 

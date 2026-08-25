@@ -319,7 +319,7 @@ resource "kubernetes_pod_disruption_budget_v1" "adguard" {
 }
 
 module "vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_stateful_set_v1.adguard]
 

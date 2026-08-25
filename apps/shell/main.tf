@@ -148,7 +148,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_shell" {
 }
 
 module "vinnel_cloud_shell_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.vinnel_cloud_shell]
 

@@ -16,7 +16,7 @@ resource "kubernetes_secret_v1" "registry_dockerconfig_vin_moe" {
 }
 
 module "vin_moe_site" {
-  source = "../../modules/static-site"
+  source = "../static-site"
 
   depends_on = [
     kubernetes_secret_v1.registry_dockerconfig_vin_moe,

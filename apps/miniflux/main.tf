@@ -174,7 +174,7 @@ resource "kubernetes_stateful_set_v1" "miniflux_postgres" {
 }
 
 module "miniflux_postgres_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_stateful_set_v1.miniflux_postgres]
 
@@ -320,7 +320,7 @@ resource "kubernetes_deployment_v1" "miniflux" {
 }
 
 module "miniflux_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.miniflux]
 

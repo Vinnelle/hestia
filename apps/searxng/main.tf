@@ -126,7 +126,7 @@ resource "kubernetes_deployment_v1" "searxng" {
 }
 
 module "vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.searxng]
 

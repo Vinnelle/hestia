@@ -308,7 +308,7 @@ resource "kubernetes_deployment_v1" "minecraft" {
 }
 
 module "minecraft_vpa" {
-  source = "../../modules/vpa"
+  source = "../../platform/vpa/resource"
 
 
   name        = "minecraft"
