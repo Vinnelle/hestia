@@ -235,7 +235,7 @@
       </li>
       <li>
         <h3>the runner image</h3>
-        <p>The runner image is built on debian:trixie-slim, pinned by digest, with the toolchain baked in: node, gh, jq, rsync, kubectl, tflint, shellcheck, yamllint and build-essential. It carries nothing a pipeline does not run, because every extra binary is more vulnerability surface for the nightly scan to trip over. Pods pull it on every start. With one node and a mutable :latest tag, the kubelet would otherwise keep the first copy it pulled and ignore later rebuilds, including the ones the vulnerability scan triggers. Because that tag decides what CI runs, a rebuild is smoke-tested before it is allowed to become :latest.</p>
+        <p>The runner image is built on debian:trixie-slim, pinned by digest, with the toolchain baked in: docker, node, gh, jq, rsync, kubectl, tflint, actionlint, shellcheck, yamllint and build-essential. Pods pull it on every start. With one node and a mutable :latest tag, the kubelet would otherwise keep the first copy it pulled and ignore later rebuilds, including the ones the vulnerability scan triggers. Because that tag decides what CI runs, a rebuild is smoke-tested before it is allowed to become :latest.</p>
       </li>
       <li>
         <h3>registry access from jobs</h3>
