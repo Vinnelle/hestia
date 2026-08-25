@@ -142,3 +142,27 @@ func Feed(cfg FeedConfig, posts []Rendered) ([]byte, error) {
 	}
 	return append([]byte(xml.Header), body...), nil
 }
+
+type sitemapURL struct {
+	Loc     string `xml:"loc"`
+	LastMod string `xml:"lastmod,omitempty"`
+}
+
+type sitemapSet struct {
+	XMLName xml.Name     `xml:"urlset"`
+	Xmlns   string       `xml:"xmlns,attr"`
+	URLs    []sitemapURL `xml:"url"`
+}
+
+func Sitemap(cfg FeedConfig, posts []Rendered) ([]byte, error) {
+	set := sitemapSet{Xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9"}
+	set.URLs = append(set.URLs, sitemapURL{Loc: strings.TrimSuffix(cfg.postLink(""), "posts/")})
+	for _, p := range posts {
+		set.URLs = append(set.URLs, sitemapURL{Loc: cfg.postLink(p.Slug), LastMod: p.Date})
+	}
+	body, err := xml.MarshalIndent(set, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte(xml.Header), body...), nil
+}

@@ -333,7 +333,7 @@ func TestBlogDeleteRemovesFromRepoFirst(t *testing.T) {
 
 func TestPublicPostPage(t *testing.T) {
 	api, mux := blogTestAPI(t, &blog.Repo{})
-	api.feed = blog.FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", PostLinkBase: "https://blog.vin.moe/#", Author: "Finlay"}
+	api.feed = blog.FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", PostLinkBase: "https://blog.vin.moe/posts/", Author: "Finlay"}
 	mux.HandleFunc("GET /public/posts/{slug}", api.publicPost)
 
 	blogDo(t, mux, "PUT", "/api/blog/posts/live-post", `{"title":"Live","date":"2026-08-21","body":"hello page","draft":false}`)
@@ -346,7 +346,7 @@ func TestPublicPostPage(t *testing.T) {
 	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
 		t.Errorf("Content-Type = %q", ct)
 	}
-	for _, want := range []string{"hello page", `href="https://blog.vin.moe/#live-post"`} {
+	for _, want := range []string{"hello page", `href="https://blog.vin.moe/posts/live-post"`} {
 		if !strings.Contains(w.Body.String(), want) {
 			t.Errorf("page missing %q", want)
 		}
@@ -400,13 +400,13 @@ func TestPublicPostsRevalidatesWithETag(t *testing.T) {
 func TestPurgeTargetsCoverEveryCachedHost(t *testing.T) {
 	got := purgeTargets("https://vin.moe/", "https://blog.vin.moe")
 	want := []string{
-		"https://vin.moe/", "https://vin.moe/posts.json", "https://vin.moe/feed.xml",
-		"https://blog.vin.moe/", "https://blog.vin.moe/posts.json", "https://blog.vin.moe/feed.xml",
+		"https://vin.moe/", "https://vin.moe/posts.json", "https://vin.moe/feed.xml", "https://vin.moe/sitemap.xml",
+		"https://blog.vin.moe/", "https://blog.vin.moe/posts.json", "https://blog.vin.moe/feed.xml", "https://blog.vin.moe/sitemap.xml",
 	}
 	if strings.Join(got, " ") != strings.Join(want, " ") {
 		t.Fatalf("purgeTargets = %q, want %q", got, want)
 	}
-	if got := purgeTargets("https://vin.moe", ""); len(got) != 3 {
+	if got := purgeTargets("https://vin.moe", ""); len(got) != 4 {
 		t.Fatalf("no public host: got %q", got)
 	}
 }

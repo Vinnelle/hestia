@@ -400,7 +400,7 @@ func TestFeedWithNoPosts(t *testing.T) {
 }
 
 func TestFeedUsesPostLinkBase(t *testing.T) {
-	cfg := FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", PostLinkBase: "https://blog.vin.moe/#", Author: "Finlay"}
+	cfg := FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe", PostLinkBase: "https://blog.vin.moe/posts/", Author: "Finlay"}
 	body, err := Feed(cfg, []Rendered{{Slug: "hello", Title: "Hello", Date: "2026-08-21", HTML: "<p>hi</p>"}})
 	if err != nil {
 		t.Fatal(err)
@@ -416,7 +416,7 @@ func TestFeedUsesPostLinkBase(t *testing.T) {
 	if err := xml.Unmarshal(body, &parsed); err != nil {
 		t.Fatalf("feed is not well-formed XML: %v\n%s", err, body)
 	}
-	if len(parsed.Entries) != 1 || parsed.Entries[0].Link.Href != "https://blog.vin.moe/#hello" {
+	if len(parsed.Entries) != 1 || parsed.Entries[0].Link.Href != "https://blog.vin.moe/posts/hello" {
 		t.Errorf("entries = %+v", parsed.Entries)
 	}
 }
@@ -477,5 +477,32 @@ func TestPurgerPostsFileList(t *testing.T) {
 	}
 	if len(p.URLs) != 1 {
 		t.Errorf("extra URLs leaked into the purger: %v", p.URLs)
+	}
+}
+
+func TestSitemapListsPosts(t *testing.T) {
+	cfg := FeedConfig{SiteURL: "https://vin.moe/", PostLinkBase: "https://blog.vin.moe/posts/"}
+	body, err := Sitemap(cfg, []Rendered{{Slug: "hello", Date: "2026-08-21"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var set struct {
+		URLs []struct {
+			Loc     string `xml:"loc"`
+			LastMod string `xml:"lastmod"`
+		} `xml:"url"`
+	}
+	if err := xml.Unmarshal(body, &set); err != nil {
+		t.Fatalf("sitemap is not valid XML: %v\n%s", err, body)
+	}
+	if len(set.URLs) != 2 {
+		t.Fatalf("sitemap has %d urls, want 2\n%s", len(set.URLs), body)
+	}
+	if set.URLs[0].Loc != "https://blog.vin.moe/" {
+		t.Errorf("index url = %q", set.URLs[0].Loc)
+	}
+	if set.URLs[1].Loc != "https://blog.vin.moe/posts/hello" || set.URLs[1].LastMod != "2026-08-21" {
+		t.Errorf("post url = %+v", set.URLs[1])
 	}
 }

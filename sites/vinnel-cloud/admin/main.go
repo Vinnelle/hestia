@@ -54,7 +54,7 @@ func postLinkBase(publicURL string) string {
 	if publicURL == "" {
 		return ""
 	}
-	return publicURL + "/#"
+	return publicURL + "/posts/"
 }
 
 func purgeTargets(siteURL, publicURL string) []string {
@@ -63,7 +63,7 @@ func purgeTargets(siteURL, publicURL string) []string {
 		if host == "" {
 			continue
 		}
-		urls = append(urls, host+"/", host+"/posts.json", host+"/feed.xml")
+		urls = append(urls, host+"/", host+"/posts.json", host+"/feed.xml", host+"/sitemap.xml")
 	}
 	return urls
 }
@@ -305,6 +305,20 @@ func (b *blogAPI) publicFeed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	servePublic(w, r, "application/atom+xml; charset=utf-8", body)
+}
+
+func (b *blogAPI) publicSitemap(w http.ResponseWriter, r *http.Request) {
+	posts, err := b.store.Published()
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	body, err := blog.Sitemap(b.feed, posts)
+	if err != nil {
+		http.Error(w, "unavailable", http.StatusInternalServerError)
+		return
+	}
+	servePublic(w, r, "application/xml; charset=utf-8", body)
 }
 
 func (b *blogAPI) publicPost(w http.ResponseWriter, r *http.Request) {
@@ -582,6 +596,7 @@ func main() {
 
 	mux.HandleFunc("GET /public/posts.json", blogHandlers.publicPosts)
 	mux.HandleFunc("GET /public/feed.xml", blogHandlers.publicFeed)
+	mux.HandleFunc("GET /public/sitemap.xml", blogHandlers.publicSitemap)
 	mux.HandleFunc("GET /public/posts/{slug}", blogHandlers.publicPost)
 
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)

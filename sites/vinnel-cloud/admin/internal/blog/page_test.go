@@ -44,7 +44,7 @@ func TestPage(t *testing.T) {
 }
 
 func TestPageWithPostLinkBase(t *testing.T) {
-	cfg := FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe/", PostLinkBase: "https://blog.vin.moe/#", Author: "Finlay"}
+	cfg := FeedConfig{Title: "vin.moe", SiteURL: "https://vin.moe/", PostLinkBase: "https://blog.vin.moe/posts/", Author: "Finlay"}
 	body, err := Page(cfg, Rendered{Slug: "hello", Title: "Hello", Date: "2026-08-21", HTML: "<p>body text</p>"})
 	if err != nil {
 		t.Fatal(err)
@@ -52,8 +52,8 @@ func TestPageWithPostLinkBase(t *testing.T) {
 	page := string(body)
 
 	for _, want := range []string{
-		`<link rel="canonical" href="https://blog.vin.moe/#hello">`,
-		`<meta property="og:url" content="https://blog.vin.moe/#hello">`,
+		`<link rel="canonical" href="https://blog.vin.moe/posts/hello">`,
+		`<meta property="og:url" content="https://blog.vin.moe/posts/hello">`,
 	} {
 		if !strings.Contains(page, want) {
 			t.Errorf("page missing %q\n%s", want, page)

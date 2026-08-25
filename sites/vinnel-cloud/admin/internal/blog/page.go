@@ -77,11 +77,11 @@ var postPage = template.Must(template.New("post").Parse(`<!DOCTYPE html>
 <a class="skip" href="#main">skip to content</a>
 
 <div class="bar">
-  <a class="brand" href="/">{{.SiteName}}</a>
+  <a class="brand" href="{{.Site}}/">{{.SiteName}}</a>
   <nav class="bar-nav" aria-label="Site">
     <span class="tabs">
-      <a class="tab" href="/">about</a>
-      <a class="tab" href="/#blog">blog</a>
+      <a class="tab" href="{{.Site}}/">about</a>
+      <a class="tab" href="{{.Site}}/#blog">blog</a>
     </span>
   </nav>
 </div>
@@ -94,7 +94,7 @@ var postPage = template.Must(template.New("post").Parse(`<!DOCTYPE html>
     </header>
     <div class="post-body post-page">{{.Body}}</div>
   </article>
-  <p class="post-back"><a href="/#blog">&larr; all posts</a></p>
+  <p class="post-back"><a href="{{.Site}}/#blog">&larr; all posts</a></p>
 </main>
 
 <footer>

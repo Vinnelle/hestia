@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>blog — vin.moe</title>
 <meta name="description" content="Full-screen posts from vin.moe.">
-<meta name="robots" content="noindex">
+<link rel="canonical" href="https://blog.vin.moe/">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
@@ -30,10 +30,14 @@
 
 <main id="main">
   <article>
+    <header class="page-head">
+      <h1>Blog</h1>
+      <p class="muted">These are just my own thoughts and opinions.</p>
+    </header>
     <div id="post"><p class="muted">Loading…</p></div>
-    <noscript><p class="muted">Posts are rendered here with JavaScript. The <a href="/feed.xml">Atom feed</a> does not need it.</p></noscript>
+    <noscript><p class="muted">Posts are listed here with JavaScript. The <a href="/feed.xml">Atom feed</a> does not need it.</p></noscript>
   </article>
-  <p class="post-back"><a href="https://vin.moe/#blog">&larr; all posts</a></p>
+  <p class="post-back"><a href="https://vin.moe/">&larr; vin.moe</a></p>
 </main>
 
 <footer>
@@ -55,61 +59,34 @@ const el = (tag, cls, text) => {
   return node;
 };
 
-let postsPromise = null;
-const loadPosts = () => {
-  if (!postsPromise) {
-    postsPromise = fetch('/posts.json', { headers: { Accept: 'application/json' } })
-      .then((res) => { if (!res.ok) throw new Error(res.status); return res.json(); });
-  }
-  return postsPromise;
-};
-
-const showPost = (post) => {
-  document.title = post.title + ' — vin.moe';
-  const head = el('header', 'page-head');
-  const meta = el('p', 'dim');
-  const time = el('time', null, post.date);
-  time.dateTime = post.date;
-  meta.append(time);
-  head.append(el('h1', null, post.title), meta);
-  const body = el('div', 'post-body post-page');
-  body.innerHTML = post.html;
-  target.replaceChildren(head, body);
-};
+const postURL = (slug) => '/posts/' + slug;
 
 const showList = (posts) => {
-  document.title = 'blog — vin.moe';
-  const head = el('header', 'page-head');
-  head.append(el('h1', null, 'Blog'), el('p', 'muted', 'These are just my own thoughts and opinions.'));
   const list = el('ul', 'list');
   for (const post of posts) {
     const link = el('a', null, post.title);
-    link.href = '#' + post.slug;
+    link.href = postURL(post.slug);
     const item = el('li');
     item.append(link);
     list.append(item);
   }
-  target.replaceChildren(head, list);
-};
-
-const showMissing = () => {
-  document.title = 'not found — blog.vin.moe';
-  target.replaceChildren(el('p', 'muted', 'No post at this address.'));
+  target.replaceChildren(list);
 };
 
 const render = async () => {
   let slug = location.hash.slice(1);
   try { slug = decodeURIComponent(slug); } catch {}
+  if (slug) {
+    location.replace(postURL(slug));
+    return;
+  }
   try {
-    const posts = (await loadPosts()).posts || [];
-    const post = posts.find((p) => p.slug === slug);
-    if (!slug) showList(posts);
-    else if (!post) showMissing();
-    else showPost(post);
+    const res = await fetch('/posts.json', { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(res.status);
+    showList((await res.json()).posts || []);
   } catch {
     target.replaceChildren(el('p', 'muted', 'Posts are not loading right now.'));
   }
-  scrollTo(0, 0);
 };
 
 addEventListener('hashchange', render);
