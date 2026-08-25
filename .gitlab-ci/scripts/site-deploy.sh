@@ -18,7 +18,7 @@ if [ -z "$namespace" ]; then
 fi
 
 git fetch --depth=1 origin "$CI_COMMIT_REF_NAME"
-git show FETCH_HEAD:hestia/images.json > /tmp/images.json
+git show FETCH_HEAD:hestia/sites/images.json > /tmp/images.json
 
 live=""
 for name in $deployments; do

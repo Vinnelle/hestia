@@ -46,7 +46,10 @@
   - ".gitlab-ci/scripts/record-image-digest.sh"
 
 .site_changes_vinnel_cloud: &site_changes_vinnel_cloud
-  - "hestia/sites/vinnel-cloud/**/*"
+  - "hestia/sites/vinnel-cloud/site/**/*"
+  - "hestia/sites/vinnel-cloud/admin/**/*"
+  - "hestia/sites/vinnel-cloud/auth/**/*"
+  - "hestia/sites/vinnel-cloud/shared/**/*"
   - ".gitlab-ci.yml"
   - ".gitlab-ci/pipelines/sites.yml"
   - ".gitlab-ci/scripts/site-deploy.sh"

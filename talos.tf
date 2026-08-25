@@ -1,3 +1,8 @@
+resource "random_password" "seaweedfs_disk_encryption_key" {
+  length  = 64
+  special = false
+}
+
 resource "talos_machine_secrets" "this" {}
 
 data "talos_machine_configuration" "controlplane" {

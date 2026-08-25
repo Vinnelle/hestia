@@ -3,7 +3,7 @@ terraform {
 }
 
 locals {
-  images = jsondecode(file("${path.module}/../../images.json"))
+  images = jsondecode(file("${path.module}/../../sites/images.json"))
 }
 
 output "images" {

@@ -22,12 +22,12 @@ for attempt in 1 2 3 4 5; do
   fi
   git reset --hard FETCH_HEAD
 
-  jq --arg d "$deployment" --arg r "$image_ref" '.[$d] = $r' hestia/images.json > hestia/images.json.tmp
-  mv hestia/images.json.tmp hestia/images.json
-  git add hestia/images.json
+  jq --arg d "$deployment" --arg r "$image_ref" '.[$d] = $r' hestia/sites/images.json > hestia/sites/images.json.tmp
+  mv hestia/sites/images.json.tmp hestia/sites/images.json
+  git add hestia/sites/images.json
 
   if git diff --cached --quiet; then
-    echo "hestia/images.json already records this digest"
+    echo "hestia/sites/images.json already records this digest"
     exit 0
   fi
 

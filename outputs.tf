@@ -9,12 +9,12 @@ output "talosconfig" {
 }
 
 output "authelia_admin_password" {
-  value     = random_password.authelia_admin_password.result
+  value     = module.identity_authelia.admin_password
   sensitive = true
 }
 
 output "shell_ttyd_password" {
-  value     = random_password.shell_ttyd.result
+  value     = module.shell.ttyd_password
   sensitive = true
 }
 
@@ -24,11 +24,22 @@ output "seaweedfs_disk_encryption_key" {
 }
 
 output "gitlab_root_password" {
-  value     = random_password.gitlab_root_password.result
+  value     = module.gitlab.root_password
   sensitive = true
 }
 
 output "miniflux_admin_password" {
-  value     = random_password.miniflux_admin_password.result
+  value     = module.miniflux.admin_password
   sensitive = true
+}
+
+output "terraform_provider_mirror_url" {
+  description = "Base URL for the provider_installation network_mirror block CI writes into .terraformrc -- must match TF_PROVIDER_MIRROR_URL in .gitlab-ci.yml."
+  value       = module.platform_terraform_mirror.terraform_provider_mirror_url
+}
+
+output "ci_kubeconfig" {
+  description = "Namespace-scoped kubeconfig for GitHub Actions (KUBECONFIG secret)."
+  sensitive   = true
+  value       = module.platform_ci.ci_kubeconfig
 }

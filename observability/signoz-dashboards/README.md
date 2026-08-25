@@ -11,7 +11,7 @@ resources were adopted by `signoz_dashboard.dashboard`, which carries their IDs 
 New dashboards do not go through this directory at all: write them as their own
 `signoz_dashboard` resource with a real `spec` (`schema_version = "v6"`, panels keyed by UUID,
 a `layouts` grid referencing them). `signoz_dashboard.service_status` and
-`.container_security` in `observability-signoz-dashboards.tf` are the two worked examples —
+`.container_security` in `main.tf` here are the two worked examples —
 both use `builder_query` on metric names rather than PromQL, which is what the provider
 validates at plan time. Porting one of the 22 below means giving it a real `spec` the same way
 and removing its key from `local.signoz_dashboard_ids`.
@@ -34,7 +34,7 @@ Most files are official templates from [SigNoz/dashboards](https://github.com/Si
 | `nginx/nginx-ingress-request-handling-performance.json` | Ingress latency/perf detail | same |
 | `cert-manager/cert-manager-dashboard.json` | Certificate lifecycle | nothing — cert-manager's chart adds `prometheus.io` annotations itself whenever `prometheus.enabled: true` and no ServiceMonitor is asked for, which is this cluster's config |
 | `opentelemetry-collector/opentelemetry-collector-dashboard.json` | Health of the ingestion pipeline itself (catches "SigNoz silently stopped receiving data") | k8s-infra's own collector |
-| `chaos-mesh/chaos-mesh.json` | Chaos experiment lifecycle (phase/kind/namespace), emitted events, chaos-daemon injection health | the `prometheus.io/scrape` annotations on `controllerManager`/`chaosDaemon` in `platform-chaos-mesh.tf` |
+| `chaos-mesh/chaos-mesh.json` | Chaos experiment lifecycle (phase/kind/namespace), emitted events, chaos-daemon injection health | the `prometheus.io/scrape` annotations on `controllerManager`/`chaosDaemon` in `platform/chaos-mesh` |
 
 **Not covered, deliberately:** internal pod-to-pod traffic (Cilium/Hubble) — Hubble already
 has its own UI at `hubble.vinnel.cloud`, a second dashboard for the same data via a metrics
