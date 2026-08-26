@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Finlay — vin.moe</title>
 <meta name="description" content="Finlay — infrastructure, DevOps, and software. Notes on running a Talos/Kubernetes homelab, GCP observability work, and how this site itself is built and deployed.">
 <link rel="canonical" href="https://vin.moe/">
@@ -11,7 +12,7 @@
 <link rel="me" href="https://infosec.exchange/@ida">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
-<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
+<script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" as="image" href="/avatar.webp">
@@ -53,9 +54,9 @@
     <span class="tabs" role="tablist" aria-label="Sections">
       <button class="tab" role="tab" id="tab-about" aria-selected="true" aria-controls="about" data-tab="about">about</button>
       <button class="tab" role="tab" id="tab-blog" aria-selected="false" aria-controls="blog" tabindex="-1" data-tab="blog">blog</button>
+      <button class="tab" role="tab" id="tab-work" aria-selected="false" aria-controls="work" tabindex="-1" data-tab="work">work</button>
+      <button class="tab" role="tab" id="tab-runs" aria-selected="false" aria-controls="runs" tabindex="-1" data-tab="runs">colophon</button>
     </span>
-    <a class="tab" href="/work">work</a>
-    <a class="tab" href="/colophon">colophon</a>
     <span class="bar-sep" aria-hidden="true"></span>
     <span class="theme-toggle" role="group" aria-label="Theme">
       <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
@@ -101,6 +102,16 @@
     <div id="posts" aria-live="polite"><p class="muted">Loading…</p></div>
     <noscript><p class="muted">Posts are fetched at runtime, so this list needs JavaScript. The <a href="/feed.xml">Atom feed</a> does not.</p></noscript>
   </section>
+
+  <section class="panel" id="work" role="tabpanel" aria-labelledby="tab-work" tabindex="0">
+    <div class="fragment"><p class="muted">Loading&hellip;</p></div>
+    <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="/work">/work</a>.</p></noscript>
+  </section>
+
+  <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
+    <div class="fragment"><p class="muted">Loading&hellip;</p></div>
+    <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="/colophon">/colophon</a>.</p></noscript>
+  </section>
 </main>
 
 <footer>
@@ -116,6 +127,30 @@ const tabs = [...document.querySelectorAll('.tabs .tab')];
 const panels = [...document.querySelectorAll('.panel')];
 const byName = (name) => tabs.find((t) => t.dataset.tab === name);
 
+const PAGES = { work: '/work', runs: '/colophon' };
+const fragmentInFlight = {};
+
+const loadFragment = (name) => {
+  if (fragmentInFlight[name]) return fragmentInFlight[name];
+  const target = document.querySelector('#' + name + ' .fragment');
+  fragmentInFlight[name] = (async () => {
+    try {
+      const res = await fetch(PAGES[name], { headers: { Accept: 'text/html' } });
+      if (!res.ok) throw new Error(res.status);
+      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+      target.innerHTML = doc.getElementById('main').innerHTML;
+    } catch {
+      fragmentInFlight[name] = null;
+      target.replaceChildren();
+      const failed = document.createElement('p');
+      failed.className = 'muted';
+      failed.textContent = 'This section is not loading right now.';
+      target.append(failed);
+    }
+  })();
+  return fragmentInFlight[name];
+};
+
 const render = (tab) => {
   for (const t of tabs) {
     const on = t === tab;
@@ -128,6 +163,7 @@ const render = (tab) => {
 const activate = (tab) => {
   if (!tab) return;
   if (tab.dataset.tab === 'blog') loadPosts();
+  if (PAGES[tab.dataset.tab]) loadFragment(tab.dataset.tab);
   if (tab.getAttribute('aria-selected') === 'true') return;
   document.startViewTransition ? document.startViewTransition(() => render(tab)) : render(tab);
 };
@@ -140,11 +176,8 @@ const show = (tab, { focus = false } = {}) => {
   if (focus) tab.focus();
 };
 
-const MOVED = { work: '/work', runs: '/colophon' };
-
 const fromHash = () => {
   const id = location.hash.slice(1);
-  if (MOVED[id]) { location.replace(MOVED[id]); return; }
   if (id.startsWith('post-')) loadPosts();
   const el = document.getElementById(id);
   if (!el) return;

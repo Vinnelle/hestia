@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>colophon — vin.moe</title>
 <meta name="description" content="How vin.moe runs: Talos Linux, a single-node Kubernetes cluster, Cilium, nginx, and the Terraform and CI that ship every change.">
 <link rel="canonical" href="https://vin.moe/colophon">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
-<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
+<script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/jetbrains-mono.css">
@@ -46,7 +47,7 @@
   </nav>
 </div>
 
-<main id="main">
+<main id="main" class="page">
   <header class="page-head">
     <h1>How this site runs</h1>
     <p class="muted">This site is a static page served by nginx from a single-node Kubernetes cluster on dedicated hardware. One repository defines the cluster, the container image and the Deployment, in about 8,000 lines of Terraform that HCP Terraform applies. The repository is the source of truth: changes are made there and applied from there, never against the cluster by hand.</p>
