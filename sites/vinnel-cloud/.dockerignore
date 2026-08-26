@@ -1,2 +1,4 @@
 **/Dockerfile
 admin/vinnel-cloud-admin
+admin/editor/node_modules
+admin/editor/dist

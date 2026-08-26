@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"embed"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +16,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"regexp"
@@ -41,6 +44,7 @@ const streamHeartbeat = 20 * time.Second
 
 type pageData struct {
 	User          string
+	Nonce         string
 	Services      []portal.Service
 	ServiceGroups []portal.Group
 }
@@ -131,17 +135,44 @@ var securityHeaders = map[string]string{
 	"X-Frame-Options":        "DENY",
 	"X-Content-Type-Options": "nosniff",
 	"Referrer-Policy":        "strict-origin-when-cross-origin",
-	"Content-Security-Policy": strings.Join([]string{
+}
+
+func contentSecurityPolicy(mediaOrigin, nonce string) string {
+	style := "style-src 'self'"
+	if nonce != "" {
+		style += " 'nonce-" + nonce + "'"
+	}
+	img := "img-src 'self' data:"
+	if mediaOrigin != "" {
+		img += " " + mediaOrigin
+	}
+	return strings.Join([]string{
 		"default-src 'self'",
 		"script-src 'self'",
-		"style-src 'self'",
-		"img-src 'self' data:",
+		style,
+		img,
 		"frame-src " + frameSrc,
 		"object-src 'none'",
 		"frame-ancestors 'none'",
 		"base-uri 'self'",
 		"form-action 'self'",
-	}, "; "),
+	}, "; ")
+}
+
+func originOf(raw string) string {
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return ""
+	}
+	return parsed.Scheme + "://" + parsed.Host
+}
+
+func newNonce() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return ""
+	}
+	return base64.RawStdEncoding.EncodeToString(buf)
 }
 
 func nosniff(h http.Handler) http.Handler {
@@ -535,6 +566,20 @@ func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
+func (b *blogAPI) preview(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, blog.MaxBody+1))
+	if err != nil || len(body) > blog.MaxBody {
+		b.fail(w, fmt.Errorf("%w: body over %d bytes", blog.ErrInvalid, blog.MaxBody))
+		return
+	}
+	rendered, err := blog.RenderHTML(string(body))
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, map[string]string{"html": rendered})
+}
+
 func (b *blogAPI) slugify(w http.ResponseWriter, r *http.Request) {
 	base := blog.Slugify(r.URL.Query().Get("title"))
 	if base == "" {
@@ -694,6 +739,7 @@ func main() {
 
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
+	mux.HandleFunc("POST /api/blog/preview", blogHandlers.preview)
 	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
 	mux.HandleFunc("GET /api/blog/posts/{slug}", blogHandlers.get)
 	mux.HandleFunc("PUT /api/blog/posts/{slug}", blogHandlers.save)
@@ -701,13 +747,17 @@ func main() {
 	mux.HandleFunc("POST /api/blog/posts/{slug}/publish", blogHandlers.publish)
 	mux.HandleFunc("POST /api/blog/posts/{slug}/unpublish", blogHandlers.unpublish)
 
+	mediaOrigin := originOf(publicURL)
+
 	mux.HandleFunc("GET /{$}", func(w http.ResponseWriter, r *http.Request) {
 		for k, v := range securityHeaders {
 			w.Header().Set(k, v)
 		}
+		nonce := newNonce()
+		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(mediaOrigin, nonce))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})

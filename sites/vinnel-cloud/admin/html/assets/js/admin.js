@@ -521,14 +521,23 @@ const blogStatus = document.getElementById('blog-status');
 const blogTitle = document.getElementById('blog-title');
 const blogDate = document.getElementById('blog-date');
 const blogSlug = document.getElementById('blog-slug');
-const blogBody = document.getElementById('blog-body');
+const blogBody = window.markdownEditor.create(document.getElementById('blog-body'), {
+  nonce: document.querySelector('meta[name="csp-nonce"]').content,
+  onChange: () => blogPreviewSchedule(),
+  onFiles: (files) => blogUpload(files),
+  onCommand: (name) => mdApply(name),
+});
 const blogPublish = document.getElementById('blog-publish');
 const blogUnpublish = document.getElementById('blog-unpublish');
 const blogDelete = document.getElementById('blog-delete');
 const blogPublishingOff = document.getElementById('blog-publishing-off');
 const blogToolbar = document.getElementById('blog-toolbar');
+const blogPreview = document.getElementById('blog-preview');
+const blogPreviewToggle = document.getElementById('blog-preview-toggle');
 const blogImageInput = document.getElementById('blog-image-input');
 const blogFileInput = document.getElementById('blog-file-input');
+
+blogBody.view.contentDOM.setAttribute('aria-labelledby', 'blog-body-label');
 
 let blogCurrent = null;
 let blogDraft = true;
@@ -688,14 +697,9 @@ const MD_PREFIXES = {
   numbers: '1. ',
 };
 
-const MD_KEYS = { b: 'bold', i: 'italic', u: 'underline', k: 'link' };
-
 function mdReplace(start, end, text, selStart, selEnd) {
   blogBody.focus();
-  blogBody.setSelectionRange(start, end);
-  if (!document.execCommand('insertText', false, text)) {
-    blogBody.setRangeText(text, start, end, 'end');
-  }
+  blogBody.setRangeText(text, start, end);
   blogBody.setSelectionRange(selStart, selEnd);
 }
 
@@ -747,17 +751,49 @@ function mdApply(name) {
   else if (name === 'link') mdLink();
 }
 
+let blogPreviewTimer = null;
+let blogPreviewSeq = 0;
+
+function blogPreviewOff() {
+  clearTimeout(blogPreviewTimer);
+  blogPreviewSeq++;
+  blogPreview.hidden = true;
+  blogPreview.replaceChildren();
+  blogPreviewToggle.setAttribute('aria-pressed', 'false');
+}
+
+async function blogPreviewRender() {
+  const seq = ++blogPreviewSeq;
+  try {
+    const data = await blogFetch('/api/blog/preview', { method: 'POST', body: blogBody.value });
+    if (seq !== blogPreviewSeq) return;
+    blogPreview.innerHTML = data.html || '<p class="hint">Nothing to preview yet.</p>';
+  } catch (err) {
+    if (seq === blogPreviewSeq) blogFail(err);
+  }
+}
+
+function blogPreviewSchedule() {
+  if (blogPreview.hidden) return;
+  clearTimeout(blogPreviewTimer);
+  blogPreviewTimer = setTimeout(blogPreviewRender, 250);
+}
+
+blogPreviewToggle.addEventListener('click', () => {
+  if (!blogPreview.hidden) {
+    blogPreviewOff();
+    blogBody.focus();
+    return;
+  }
+  blogError.hidden = true;
+  blogPreview.hidden = false;
+  blogPreviewToggle.setAttribute('aria-pressed', 'true');
+  blogPreviewRender();
+});
+
 blogToolbar.addEventListener('click', (e) => {
   const button = e.target.closest('[data-md]');
   if (button) mdApply(button.dataset.md);
-});
-
-blogBody.addEventListener('keydown', (e) => {
-  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-  const name = MD_KEYS[e.key.toLowerCase()];
-  if (!name) return;
-  e.preventDefault();
-  mdApply(name);
 });
 
 async function blogUpload(files, asImage) {
@@ -790,24 +826,6 @@ for (const input of [blogImageInput, blogFileInput]) {
     blogUpload(files, input === blogImageInput);
   });
 }
-
-blogBody.addEventListener('paste', (e) => {
-  const files = Array.from(e.clipboardData.files);
-  if (!files.length) return;
-  e.preventDefault();
-  blogUpload(files);
-});
-
-blogBody.addEventListener('dragover', (e) => {
-  if (Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault();
-});
-
-blogBody.addEventListener('drop', (e) => {
-  const files = Array.from(e.dataTransfer.files);
-  if (!files.length) return;
-  e.preventDefault();
-  blogUpload(files);
-});
 
 let blogTapStart = null;
 let blogTapPicked = false;

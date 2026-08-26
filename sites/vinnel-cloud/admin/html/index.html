@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csp-nonce" content="{{.Nonce}}">
   <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
   <title>admin — vinnel.cloud</title>
@@ -234,7 +235,7 @@
                 </label>
               </div>
               <div class="blog-field">
-                <label class="field-label" for="blog-body">Body &mdash; markdown</label>
+                <span class="field-label" id="blog-body-label">Body &mdash; markdown</span>
                 <div class="blog-toolbar" id="blog-toolbar">
                   <button class="blog-tool" type="button" data-md="h1" title="Heading 1">H1</button>
                   <button class="blog-tool" type="button" data-md="h2" title="Heading 2">H2</button>
@@ -253,8 +254,13 @@
                   <span class="blog-tool-sep"></span>
                   <button class="blog-tool" type="button" id="blog-attach-image" title="Insert an image">Image</button>
                   <button class="blog-tool" type="button" id="blog-attach-file" title="Attach a file">File</button>
+                  <span class="blog-tool-sep"></span>
+                  <button class="blog-tool" type="button" id="blog-preview-toggle" aria-pressed="false" title="Toggle live preview">Preview</button>
                 </div>
-                <textarea class="blog-textarea" id="blog-body" rows="18" spellcheck="true"></textarea>
+                <div class="blog-split">
+                  <div class="blog-input" id="blog-body"></div>
+                  <div class="blog-preview" id="blog-preview" hidden></div>
+                </div>
                 <input id="blog-image-input" type="file" accept="image/*" multiple hidden>
                 <input id="blog-file-input" type="file" multiple hidden>
               </div>
@@ -406,6 +412,7 @@
     </div>
   </div>
 
+  <script src="/assets/js/editor.js"></script>
   <script src="/assets/js/admin.js"></script>
 </body>
 </html>

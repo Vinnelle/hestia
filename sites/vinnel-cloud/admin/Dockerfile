@@ -13,6 +13,11 @@ COPY shared/html/ .
 COPY admin/html/ .
 COPY --from=images /favicon.webp assets/images/
 
+COPY admin/editor/package.json admin/editor/package-lock.json /editor/
+RUN cd /editor && npm ci --no-audit --no-fund
+COPY admin/editor/ /editor/
+RUN cd /editor && node test.mjs && node build.mjs /app/assets/js/editor.js
+
 RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh \
  && find . \( -name '*.gz' -o -name '*.br' \) -delete
 
