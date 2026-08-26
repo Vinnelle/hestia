@@ -115,11 +115,6 @@ resource "kubernetes_deployment_v1" "game_sleeper" {
             }
           }
 
-          port {
-            container_port = var.minecraft_port
-            protocol       = "TCP"
-          }
-
           env {
             name  = "ROLE"
             value = "game-sleeper"
