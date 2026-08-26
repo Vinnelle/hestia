@@ -180,7 +180,7 @@ resource "kubernetes_stateful_set_v1" "adguard" {
 
         container {
           name  = "netbird"
-          image = "netbirdio/netbird:0.77.0"
+          image = "netbirdio/netbird:0.77.1"
 
           command = ["sh", "-c"]
           args = [<<-EOT

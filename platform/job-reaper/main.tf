@@ -57,7 +57,7 @@ resource "kubernetes_cron_job_v1" "job_reaper" {
             service_account_name = kubernetes_service_account_v1.job_reaper.metadata[0].name
             container {
               name  = "reaper"
-              image = "registry.k8s.io/kubectl:v1.36.3"
+              image = "registry.k8s.io/kubectl:v1.36.4"
               args = [
                 "delete",
                 "jobs",
