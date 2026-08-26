@@ -555,6 +555,7 @@ function blogRestore() {
   if (!saved || !saved.post) return;
   blogOpen(saved.post);
   blogCurrent = saved.current;
+  blogHighlight();
   blogSyncActions();
   blogSay('Restored unsaved changes');
 }
@@ -649,20 +650,48 @@ function blogOpen(post) {
   blogSyncActions();
   blogEditor.hidden = false;
   blogSay(post.slug ? '' : 'New post');
+  blogHighlight();
+}
+
+function blogHighlight() {
   for (const el of blogList.querySelectorAll('.blog-list-item')) {
     el.classList.toggle('active', el.dataset.slug === blogCurrent);
   }
 }
 
-blogList.addEventListener('click', async (e) => {
-  const button = e.target.closest('.blog-list-item');
-  if (!button) return;
+async function blogSelect(button) {
   blogError.hidden = true;
   try {
     blogOpen(await blogFetch('/api/blog/posts/' + encodeURIComponent(button.dataset.slug)));
   } catch (err) {
     blogFail(err);
   }
+}
+
+let blogTapStart = null;
+let blogTapPicked = false;
+
+blogList.addEventListener('pointerdown', (e) => {
+  blogTapStart = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY };
+});
+
+blogList.addEventListener('pointerup', (e) => {
+  const start = blogTapStart;
+  blogTapStart = null;
+  const button = e.target.closest('.blog-list-item');
+  if (!start || !button) return;
+  if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 10) return;
+  blogTapPicked = true;
+  blogSelect(button);
+});
+
+blogList.addEventListener('click', (e) => {
+  if (blogTapPicked) {
+    blogTapPicked = false;
+    return;
+  }
+  const button = e.target.closest('.blog-list-item');
+  if (button) blogSelect(button);
 });
 
 document.getElementById('blog-new').addEventListener('click', () => {

@@ -814,8 +814,14 @@ a:hover { color: var(--accent); }
   transition: border-color 0.15s;
 }
 
-.blog-list-item:hover { border-color: var(--accent); }
-.blog-list-item.active { border-color: var(--accent); }
+@media (hover: hover) {
+  .blog-list-item:hover { border-color: var(--accent); }
+}
+
+.blog-list-item.active {
+  border-color: var(--accent);
+  background: var(--raised);
+}
 
 .blog-list-title {
   display: block;
@@ -865,6 +871,16 @@ a:hover { color: var(--accent); }
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
+}
+
+.blog-field-row .blog-field {
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-field-row .text-input {
+  flex: 1;
+  box-sizing: border-box;
 }
 
 .blog-editor > .blog-field:has(.blog-textarea) {
