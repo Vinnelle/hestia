@@ -163,7 +163,8 @@ module "platform_network_policy" {
     module.vinnel_cloud,
   ]
 
-  telemetry_namespace = module.observability_signoz.namespace
+  telemetry_namespace     = module.observability_signoz.namespace
+  mega_s4_endpoint_domain = var.mega_s4_endpoint_domain
 }
 
 # Identity
@@ -460,6 +461,21 @@ module "satisfactory" {
   node_ip                     = var.node_ip
   dashboard_namespace         = module.vinnel_cloud.namespace
   satisfactory_admin_password = var.satisfactory_admin_password
+}
+
+## Sleeper
+
+module "game_sleeper" {
+  source = "./games/sleeper"
+
+  depends_on = [module.minecraft, module.satisfactory]
+
+  namespace                   = module.minecraft.namespace
+  image                       = local.images["vinnel-cloud-admin"]
+  registry_dockerconfigjson   = module.gitlab.registry_dockerconfigjson
+  node_ip                     = var.node_ip
+  satisfactory_admin_password = var.satisfactory_admin_password
+  observability_namespace     = module.observability_signoz.namespace
 }
 
 # Sites

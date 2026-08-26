@@ -22,3 +22,9 @@ variable "egress_to" {
   }))
   default = []
 }
+
+variable "egress_fqdns" {
+  description = "Hostname patterns this namespace's pods may reach outside the cluster, on port 443. null keeps the blanket `world` egress entity; a list (empty included) drops `world` and allows only these names, resolved through Cilium's DNS proxy."
+  type        = list(string)
+  default     = null
+}

@@ -25,11 +25,11 @@ Most files are official templates from [SigNoz/dashboards](https://github.com/Si
 | `k8s-infra-metrics/kubernetes-node-metrics-overall.json` + `-detailed.json` | Node performance | k8s-infra |
 | `k8s-infra-metrics/kubernetes-pod-metrics-overall.json` + `-detailed.json` | Pod performance | k8s-infra |
 | `k8s-infra-metrics/kubernetes-pvc-metrics.json` | Storage (local-path PVCs) | k8s-infra |
-| `k8s-infra-metrics/kubernetes-cronjobs.json` | CronJob activity (pv-backup) | k8s-infra |
+| `k8s-infra-metrics/kubernetes-cronjobs.json` | CronJob activity (`seaweedfs-tier-move`, `job-reaper`) | k8s-infra |
 | `k8s-infra-metrics/k8s-events-receiver.json` | Cluster event stream (activity) | k8s-infra's `presets.kubernetesEvents` (already on) |
 | `k8s-infra-metrics/host-metrics.json` | Raw host CPU/mem/disk/net | k8s-infra's `presets.hostMetrics` (already on) |
 | `k8s-system-monitoring/kubernetes-system-overview.json` | Control-plane at a glance | k8s-infra |
-| `k8s-system-monitoring/kubernetes-{apiserver,controller-manager,coredns,etcd,kube-proxy,kubelet,scheduler}.json` | Per-component control-plane detail | the 7 `presets.prometheus.scrapeConfigs` jobs in `helm-values/k8s-infra/values.yaml.tftpl`, the `extraArgs` in `talos/controlplane-patch.yaml`, the `control-plane-metrics-from-pods` firewall rule, and `kubernetes_cluster_role_v1.otel_agent_metrics` — all four are required together |
+| `k8s-system-monitoring/kubernetes-{apiserver,controller-manager,coredns,etcd,kubelet,scheduler}.json` | Per-component control-plane detail | the `presets.prometheus.scrapeConfigs` jobs in `helm-values/k8s-infra/values.yaml.tftpl`, the `extraArgs` in `talos/controlplane-patch.yaml`, the `control-plane-metrics-from-pods` firewall rule, and `kubernetes_cluster_role_v1.otel_agent_metrics` — all four are required together. The kube-proxy dashboard and its scrape job went when `cluster.proxy.disabled` moved service handling into Cilium's eBPF datapath; the `hubble` job replaced it |
 | `nginx/ingress-nginx-controller.json` | Web traffic (ingress-nginx) | the `prometheus.io/scrape` annotations already on `helm-values/ingress-nginx/values.yaml` |
 | `nginx/nginx-ingress-request-handling-performance.json` | Ingress latency/perf detail | same |
 | `cert-manager/cert-manager-dashboard.json` | Certificate lifecycle | nothing — cert-manager's chart adds `prometheus.io` annotations itself whenever `prometheus.enabled: true` and no ServiceMonitor is asked for, which is this cluster's config |

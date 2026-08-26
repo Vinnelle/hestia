@@ -7,12 +7,15 @@ cluster:
     extraArgs:
       bind-address: 0.0.0.0
   proxy:
-    extraArgs:
-      metrics-bind-address: 0.0.0.0:10249
+    disabled: true
   etcd:
     extraArgs:
       listen-metrics-urls: http://0.0.0.0:2381
 machine:
+  features:
+    kubePrism:
+      enabled: true
+      port: 7445
   kubelet:
     extraMounts:
       - destination: /opt/local-path-provisioner

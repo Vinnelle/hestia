@@ -4,5 +4,6 @@ resource "kubectl_manifest" "this" {
     telemetry_namespace = var.telemetry_namespace
     ingress_from        = var.ingress_from
     egress_to           = var.egress_to
+    egress_fqdns        = var.egress_fqdns
   })
 }

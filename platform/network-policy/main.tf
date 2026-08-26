@@ -20,6 +20,13 @@ locals {
     "vinnel-cloud" = ["vin-moe"]
   }
 
+  network_policy_egress_fqdns = {
+    backup          = ["s3.${var.mega_s4_endpoint_domain}"]
+    "monke-academy" = []
+    storage         = []
+    "vin-moe"       = []
+  }
+
   network_policy_egress_to = {
     backup         = [{ namespace = "storage", ports = [8333] }]
     files          = [{ namespace = "storage", ports = [8333] }]
@@ -38,4 +45,5 @@ module "network_policy" {
   telemetry_namespace = var.telemetry_namespace
   ingress_from        = lookup(local.network_policy_ingress_from, each.key, [])
   egress_to           = lookup(local.network_policy_egress_to, each.key, [])
+  egress_fqdns        = lookup(local.network_policy_egress_fqdns, each.key, null)
 }

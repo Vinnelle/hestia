@@ -32,6 +32,11 @@ spec:
               protocol: UDP
             - port: "53"
               protocol: TCP
+%{ if egress_fqdns != null ~}
+          rules:
+            dns:
+              - matchPattern: "*"
+%{ endif ~}
 %{ for e in egress_to ~}
     - toEndpoints:
         - matchLabels:
@@ -43,8 +48,20 @@ spec:
               protocol: TCP
 %{ endfor ~}
 %{ endfor ~}
+%{ if egress_fqdns != null && length(egress_fqdns) > 0 ~}
+    - toFQDNs:
+%{ for fqdn in egress_fqdns ~}
+        - matchPattern: "${fqdn}"
+%{ endfor ~}
+      toPorts:
+        - ports:
+            - port: "443"
+              protocol: TCP
+%{ endif ~}
     - toEntities:
         - host
         - remote-node
         - kube-apiserver
+%{ if egress_fqdns == null ~}
         - world
+%{ endif ~}

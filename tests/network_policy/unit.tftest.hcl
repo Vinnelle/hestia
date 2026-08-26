@@ -64,3 +64,65 @@ run "ingress_from_namespaces_are_allowed" {
     error_message = "ingress_from namespaces must appear in a fromEndpoints selector"
   }
 }
+
+run "world_egress_survives_when_no_fqdn_list_is_set" {
+  command = plan
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered.spec.egress :
+      contains(try(rule.toEntities, []), "world")
+    ])
+    error_message = "a namespace with egress_fqdns unset must keep the `world` entity — dropping it silently cuts every outbound connection the namespace makes"
+  }
+}
+
+run "fqdn_egress_replaces_world_and_keeps_dns_visible" {
+  command = plan
+
+  assert {
+    condition = !anytrue([
+      for rule in output.rendered_fqdns.spec.egress :
+      contains(try(rule.toEntities, []), "world")
+    ])
+    error_message = "egress_fqdns must drop the `world` entity — leaving it in place makes the FQDN allowlist decorative"
+  }
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered_fqdns.spec.egress :
+      try(rule.toFQDNs[0].matchPattern, null) == "s3.g.megas4.com" &&
+      try(rule.toPorts[0].ports[0].port, null) == "443"
+    ])
+    error_message = "each egress_fqdns entry must render a toFQDNs rule on 443/TCP"
+  }
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered_fqdns.spec.egress :
+      try(rule.toEndpoints[0].matchLabels["k8s:k8s-app"], null) == "kube-dns" &&
+      try(rule.toPorts[0].rules.dns[0].matchPattern, null) == "*"
+    ])
+    error_message = "FQDN policy needs the DNS leg carrying an L7 dns matchPattern — without it Cilium never sees the lookup and every allowed name resolves to a denied IP"
+  }
+}
+
+run "empty_fqdn_list_leaves_no_external_egress" {
+  command = plan
+
+  assert {
+    condition = !anytrue([
+      for rule in output.rendered_no_egress.spec.egress :
+      contains(try(rule.toEntities, []), "world") || contains(keys(rule), "toFQDNs")
+    ])
+    error_message = "an empty egress_fqdns list must render neither `world` nor a toFQDNs rule — that is the whole point of the empty list"
+  }
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered_no_egress.spec.egress :
+      contains(try(rule.toEntities, []), "kube-apiserver")
+    ])
+    error_message = "dropping external egress must not drop the kube-apiserver entity with it"
+  }
+}

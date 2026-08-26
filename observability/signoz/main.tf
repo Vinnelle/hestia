@@ -287,6 +287,56 @@ resource "signoz_rule" "workload_degraded" {
   notification_settings = local.signoz_notification_settings
 }
 
+resource "signoz_rule" "backup_failed" {
+  depends_on     = [helm_release.signoz]
+  alert          = "BackupFailed"
+  alert_type     = "METRIC_BASED_ALERT"
+  rule_type      = "promql_rule"
+  schema_version = "v2alpha1"
+  description    = "A Velero scheduled backup (daily-mega or daily-seaweedfs) last completed in a failed state"
+
+  condition = {
+    composite_query = {
+      panel_type = "graph"
+      query_type = "promql"
+      queries = [{
+        promql = {
+          type = "promql"
+          spec = {
+            name  = "A"
+            query = "min by (schedule) (velero_backup_last_status)"
+          }
+        }
+      }]
+    }
+    selected_query_name = "A"
+    thresholds = {
+      basic = {
+        kind = "basic"
+        spec = [{
+          name       = "critical"
+          op         = "below"
+          match_type = "at_least_once"
+          target     = 1
+          channels   = local.signoz_alert_channels
+        }]
+      }
+    }
+  }
+
+  evaluation = {
+    rolling = {
+      kind = "rolling"
+      spec = {
+        eval_window = "15m"
+        frequency   = "5m"
+      }
+    }
+  }
+
+  notification_settings = local.signoz_notification_settings
+}
+
 resource "kubernetes_ingress_v1" "signoz_vinnel_cloud" {
   depends_on = [helm_release.signoz]
   metadata {

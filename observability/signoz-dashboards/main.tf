@@ -15,7 +15,6 @@ locals {
     "signoz-dashboards/k8s-system-monitoring/kubernetes-controller-manager.json"       = "019fa952-b678-7776-a029-2907bea74680"
     "signoz-dashboards/k8s-system-monitoring/kubernetes-coredns.json"                  = "019fa952-84e5-7a3b-a52a-230c228d9229"
     "signoz-dashboards/k8s-system-monitoring/kubernetes-etcd.json"                     = "019fa952-9b22-7365-b244-c8af996274a1"
-    "signoz-dashboards/k8s-system-monitoring/kubernetes-kube-proxy.json"               = "019fa952-8b82-705e-83d3-314874c02cbc"
     "signoz-dashboards/k8s-system-monitoring/kubernetes-kubelet.json"                  = "019fa952-973a-7d4c-abda-7263c2fb6368"
     "signoz-dashboards/k8s-system-monitoring/kubernetes-scheduler.json"                = "019fa952-d5b9-7cb8-98d4-7deaa21924df"
     "signoz-dashboards/k8s-system-monitoring/kubernetes-system-overview.json"          = "019fa952-9356-7ec3-a7b1-73fdb4de50ab"

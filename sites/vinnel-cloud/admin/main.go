@@ -15,10 +15,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
@@ -48,6 +50,51 @@ func env(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func envDuration(key string, def time.Duration) time.Duration {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	d, err := time.ParseDuration(v)
+	if err != nil {
+		log.Fatalf("%s: %v", key, err)
+	}
+	return d
+}
+
+func runGameSleeper(mc *minecraft.Service, sf *satisfactory.Service) {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	idle := envDuration("GAME_IDLE_TIMEOUT", 15*time.Minute)
+	poll := envDuration("GAME_SLEEP_POLL", 30*time.Second)
+
+	sleeper := &minecraft.Sleeper{
+		Service:     mc,
+		Addr:        env("MINECRAFT_SLEEPER_ADDR", ""),
+		IdleTimeout: idle,
+		Poll:        poll,
+		MOTD:        env("MINECRAFT_SLEEP_MOTD", ""),
+	}
+	idler := &satisfactory.Idler{Service: sf, IdleTimeout: idle, Poll: poll}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		if err := sleeper.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Printf("minecraft sleeper: %v", err)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		if err := idler.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
+			log.Printf("satisfactory idler: %v", err)
+		}
+	}()
+	wg.Wait()
 }
 
 func postLinkBase(publicURL string) string {
@@ -498,6 +545,11 @@ func main() {
 		Address:      env("MINECRAFT_ADDRESS", "mc.vin.moe"),
 		RconAddr:     env("MINECRAFT_RCON_ADDR", ""),
 		RconPassword: os.Getenv("MINECRAFT_RCON_PASSWORD"),
+	}
+
+	if env("ROLE", "dashboard") == "game-sleeper" {
+		runGameSleeper(minecraftSvc, satisfactorySvc)
+		return
 	}
 
 	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))

@@ -1,6 +1,8 @@
 ipam:
   mode: kubernetes
-kubeProxyReplacement: false
+kubeProxyReplacement: true
+k8sServiceHost: localhost
+k8sServicePort: 7445
 policyCIDRMatchMode:
   - nodes
 operator:
@@ -12,6 +14,14 @@ hubble:
       enabled: true
   ui:
     enabled: true
+  metrics:
+    enabled:
+      - dns:query;ignoreAAAA
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - port-distribution
 prometheus:
   enabled: true
 securityContext:
