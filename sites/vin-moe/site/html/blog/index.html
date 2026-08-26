@@ -82,7 +82,7 @@ const render = async () => {
     return;
   }
   try {
-    const res = await fetch('/posts.json', { headers: { Accept: 'application/json' } });
+    const res = await fetch('/posts.json', { cache: 'no-cache', headers: { Accept: 'application/json' } });
     if (!res.ok) throw new Error(res.status);
     showList((await res.json()).posts || []);
   } catch {
