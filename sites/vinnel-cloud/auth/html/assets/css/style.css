@@ -31,6 +31,8 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"]  { color-scheme: dark; }
 
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 ::selection { background: var(--select-bg); color: var(--select-fg); }
 
 body {
@@ -267,6 +269,13 @@ a { color: var(--accent); text-decoration: none; }
 
 @keyframes enter {
   from { opacity: 0; transform: translateY(6px); }
+}
+
+@media (pointer: coarse) {
+  .stage input:not([type="checkbox"]) { font-size: 16px; }
+  .actions button, .actions a { padding: 13px 0; }
+  .check { padding: 7px 0; }
+  .theme-opt { padding: 8px 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

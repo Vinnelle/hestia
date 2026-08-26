@@ -36,6 +36,8 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"]  { color-scheme: dark; }
 
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
 ::selection { background: var(--select-bg); color: var(--select-fg); }
 
 body {
@@ -941,6 +943,7 @@ a:hover { color: var(--accent); }
 
   #user-email, .chevron { display: none; }
 
+  .data-table td:first-child { white-space: normal; overflow-wrap: anywhere; }
   .data-table--pairs td:first-child { width: 120px; }
 
   .sidebar {
@@ -981,6 +984,13 @@ a:hover { color: var(--accent); }
     opacity: 1;
     pointer-events: all;
   }
+}
+
+@media (pointer: coarse) {
+  .text-input, .console-input, .blog-textarea { font-size: 16px; }
+  .btn-action { padding: 10px 14px; }
+  .theme-opt { padding: 7px 0; }
+  .sidebar-link { padding-top: 11px; padding-bottom: 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
