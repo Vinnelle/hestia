@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>colophon — vin.moe</title>
+<meta name="description" content="How vin.moe runs: Talos Linux, a single-node Kubernetes cluster, Cilium, nginx, and the Terraform and CI that ship every change.">
+<link rel="canonical" href="https://vin.moe/colophon">
+<link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/jetbrains-mono.css">
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/theme.js" defer></script>
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vin.moe/colophon">
+<meta property="og:title" content="colophon — vin.moe">
+<meta property="og:description" content="A full writeup of how this site is built, deployed and served.">
+<meta property="og:image" content="https://vin.moe/avatar.webp">
+<meta property="og:site_name" content="vin.moe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="colophon — vin.moe">
+<meta name="twitter:description" content="A full writeup of how this site is built, deployed and served.">
+<meta name="twitter:image" content="https://vin.moe/avatar.webp">
+</head>
+<body>
+<a class="skip" href="#main">skip to content</a>
+
+<div class="bar">
+  <a class="brand" href="/">vin.moe</a>
+  <nav class="bar-nav" aria-label="Site">
+    <a class="tab" href="/">about</a>
+    <a class="tab" href="/#blog">blog</a>
+    <a class="tab" href="/work">work</a>
+    <a class="tab" href="/colophon" aria-current="page">colophon</a>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
+    </span>
+  </nav>
+</div>
+
+<main id="main">
+  <header class="page-head">
+    <h1>How this site runs</h1>
+    <p class="muted">This site is a static page served by nginx from a single-node Kubernetes cluster on dedicated hardware. One repository defines the cluster, the container image and the Deployment, in about 8,000 lines of Terraform that HCP Terraform applies. The repository is the source of truth: changes are made there and applied from there, never against the cluster by hand.</p>
+    <p class="muted">The sections below follow one change from a commit to a running pod, and describe the platform it lands on.</p>
+    <p class="dim note"><em>AI wrote the HTML/CSS on this page. I do infrastructure, not frontend.</em></p>
+  </header>
+
+  <h2>the cluster</h2>
+  <ol class="topics">
+    <li>
+      <h3>the node</h3>
+      <p>Talos Linux runs on dedicated hardware. It has no shell, no SSH and no package manager, so every change is a declarative machine config applied over an mTLS API. The ephemeral and state partitions use LUKS2. Boot media comes from an Image Factory schematic pinned by content hash, and the installer image uses that same schematic. Point it at the stock image instead and Talos removes every system extension when it writes to disk.</p>
+    </li>
+    <li>
+      <h3>control plane</h3>
+      <p>The cluster is one node running both the control plane and workloads, with scheduling on control-plane nodes enabled. Terraform generates the machine secrets, applies the config, bootstraps etcd and keeps the resulting kubeconfig in state.</p>
+    </li>
+    <li>
+      <h3>networking</h3>
+      <p>Cilium provides the CNI and enforces NetworkPolicy in eBPF. Its policies select workload identities rather than only CIDR blocks, which allows a rule to match the node's own host identity. Hubble serves the flow data behind single sign-on.</p>
+    </li>
+    <li>
+      <h3>storage</h3>
+      <p>local-path is the only storage class. It provisions a host-path volume per pod. One node has no second failure domain, so a replicated pool would not add durability.</p>
+    </li>
+  </ol>
+
+  <h2>ingress and dns</h2>
+  <ol class="topics">
+    <li>
+      <h3>ingress and certificates</h3>
+      <p>ingress-nginx runs as a DaemonSet on the host network, bound to the node's public IP. There is no load balancer. cert-manager holds one ClusterIssuer per domain and solves DNS-01 challenges against Cloudflare. Every zone uses strict SSL, so TLS is validated independently on both hops: browser to Cloudflare, and Cloudflare to the origin.</p>
+    </li>
+    <li>
+      <h3>dns and cdn</h3>
+      <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster.</p>
+    </li>
+  </ol>
+
+  <h2>the image</h2>
+  <ol class="topics">
+    <li>
+      <h3>the registry</h3>
+      <p>Images live in GitLab's own container registry, which runs on the same cluster at artifacts.vinnel.cloud, one repository per site. Pods authenticate with a project deploy token mounted as an imagePullSecret rather than a personal one. Base images arrive through a pull-through cache at mirror.vinnel.cloud, so a rebuild does not re-fetch Alpine from Docker Hub against the node's shared anonymous rate limit.</p>
+    </li>
+    <li>
+      <h3>build stages</h3>
+      <p>The image builds in four stages, each base pinned by digest. The first converts the source PNG into a multi-resolution .ico and an apple-touch icon, and squares the avatar down to a 288-pixel WebP. The second compiles ngx_brotli against the exact nginx version in the base image, because upstream publishes no compatible release. The third builds the assets. The fourth is nginx-unprivileged and runs as a non-root user.</p>
+    </li>
+    <li>
+      <h3>assets</h3>
+      <p>The web font is downloaded during the build and served from this origin, and the avatar is committed rather than hotlinked, so nothing third-party loads at runtime and the Content-Security-Policy stays at default-src 'self'. CSS and JavaScript are minified and renamed to include a hash of their contents, with every reference rewritten to match; that hash is what the one-year immutable cache header applies to. Text files are compressed once at build time with gzip -9 and brotli -q 11.</p>
+    </li>
+  </ol>
+
+  <h2>serving</h2>
+  <ol class="topics">
+    <li>
+      <h3>nginx</h3>
+      <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses redirect to their new home on blog.vin.moe. The same pods answer both hostnames: one server block per host, with the blog host serving only the reader page, its stylesheet, and the public post endpoints.</p>
+    </li>
+    <li>
+      <h3>the page</h3>
+      <p>The page uses no framework and no bundler. The font and the avatar are the only requests besides the stylesheet and script until you open the blog. One palette covers both themes through light-dark(), so the toggle changes a single property, and the section numbers are a CSS counter. The tabs are an ARIA tablist with arrow-key navigation and fragment links, animated by the View Transitions API where it exists. Posts render into details elements for inline reading, and each one opens full screen on blog.vin.moe under its own shareable fragment, rendered there from the same posts.json the tab loads. With JavaScript disabled the tab bar is hidden and every panel renders, except the blog, which points at the feed instead.</p>
+    </li>
+    <li>
+      <h3>the deployment</h3>
+      <p>Two replicas sit behind a ClusterIP Service. Each requests 50m CPU and 16Mi of memory, with limits of 200m and 64Mi. Containers run as non-root with all capabilities dropped, no privilege escalation and the RuntimeDefault seccomp profile. Startup, readiness and liveness probes call /healthz. Rollouts surge to 100% with zero unavailable pods and a pre-stop drain, a PodDisruptionBudget keeps one replica serving, and a VerticalPodAutoscaler adjusts memory within that band.</p>
+    </li>
+  </ol>
+
+  <h2>posts</h2>
+  <ol class="topics">
+    <li>
+      <h3>writing and reading</h3>
+      <p>Posts are written in an editor at admin.vinnel.cloud, behind the same single sign-on as everything else, and stored on a volume beside it. The blog tab requests /posts.json, nginx proxies that path to the editor over the cluster network, and the markdown is rendered there rather than at build time. A new post therefore appears without rebuilding or redeploying anything.</p>
+    </li>
+    <li>
+      <h3>the durable copy</h3>
+      <p>Publishing also commits the markdown to the integration branch through the GitLab API, and CI opens the merge request. The repository keeps the durable copy and the volume serves the live one. Each write purges the four affected URLs at the edge, plus the post's own page, so the blog stays cached and still shows the change within about a second.</p>
+    </li>
+  </ol>
+
+  <h2>deploying a change</h2>
+  <ol class="topics">
+    <li>
+      <h3>validation</h3>
+      <p>A merge request that touches a site runs the shared build-script test suite against a synthetic page, which covers the asset-hashing and cache-busting logic every site's build.sh has in common. Writing a post skips all of it, because a post is no longer part of the image. The infrastructure plan skips the paths Terraform does not read, so editing HTML does not queue an apply on the node that also serves the page.</p>
+    </li>
+    <li>
+      <h3>build and digest</h3>
+      <p>buildctl pushes the :latest and commit-SHA tags against a registry-hosted layer cache, so unchanged stages, including the compiled nginx module, are pulled rather than rebuilt. The sha256 digest it returns, not the mutable tag, is merged into a shared image manifest and committed by the job that built it. On a push race the retry re-merges onto whatever landed first: two sites deploying at once write neighbouring lines of the same JSON file, and a rebase would hit the same conflict on every attempt.</p>
+    </li>
+    <li>
+      <h3>rollout</h3>
+      <p>The rollout reads the digest back from git at the remote tip, so it deploys what was recorded rather than what a job variable held. It sets the image to that exact digest and waits on the rollout status. Cloudflare's cache is purged once the new pods are serving; purging first would re-cache the outgoing build.</p>
+    </li>
+    <li>
+      <h3>reconcile and mirror</h3>
+      <p>terraform apply needs only the digest-recording step, not the rollout. Both read the same committed manifest, so the imperative rollout and the declarative apply converge on the same image reference whichever finishes first. Commits authored by CI push with the project's job token, which GitLab excludes from triggering a pipeline, and carry a [skip ci] marker as well. A final job pushes the site source to a public GitHub repository through a scoped token, committing only when something changed.</p>
+    </li>
+  </ol>
+
+  <h2>ci runners</h2>
+  <ol class="topics">
+    <li>
+      <h3>the runners</h3>
+      <p>Two gitlab-runner Deployments run in the cluster, both using the Kubernetes executor, neither sharing a Docker socket. One takes untagged jobs at a concurrency of 4. The other takes only jobs tagged privileged-build, so an ordinary lint or test job cannot land on a pod running privileged. Each job gets its own pod built from the image it declares, and no daemon survives between jobs. The runner config is a Secret, and a config-hash annotation restarts the Deployment when it changes.</p>
+    </li>
+    <li>
+      <h3>the runner image</h3>
+      <p>The runner image is built on debian:trixie-slim, pinned by digest, with the toolchain baked in: node, gh, jq, rsync, kubectl, tflint, shellcheck, yamllint and build-essential. It carries nothing a pipeline does not run, because every extra binary is more vulnerability surface for the nightly scan to trip over. Pods pull it on every start. With one node and a mutable :latest tag, the kubelet would otherwise keep the first copy it pulled and ignore later rebuilds, including the ones the vulnerability scan triggers. Because that tag decides what CI runs, a rebuild is smoke-tested before it is allowed to become :latest.</p>
+    </li>
+    <li>
+      <h3>registry access from jobs</h3>
+      <p>registry.vinnel.cloud stays behind the Cloudflare proxy for public traffic, but the proxy's request-body limit is smaller than the runner image's base layer. A hostAliases entry routing to the node's ingress lives on the runner's executor config rather than on individual jobs, so every job pod inherits it, paired with a firewall rule that opens the web ports to the pod network.</p>
+    </li>
+  </ol>
+
+  <h2>observability</h2>
+  <ol class="topics">
+    <li>
+      <h3>signoz</h3>
+      <p>SigNoz stores metrics, logs and traces in ClickHouse. An OpenTelemetry collector discovers targets by pod annotation, so a new workload becomes observable by adding two labels, with no scrape config to edit. ingress-nginx exports OTLP spans, so a slow request and the logs behind it belong to one trace.</p>
+    </li>
+    <li>
+      <h3>alerting</h3>
+      <p>Alert rules are Terraform resources rather than clicks in an interface: node NotReady, PVC above 85%, certificate expiring within 14 days, and workload below desired replicas. They notify Slack and renotify every four hours while still firing, and dashboards go through the same API. A node that stops responding also stops alerting, so that check cannot live here: Better Stack polls from outside, and status.vinnel.cloud frames its status page.</p>
+    </li>
+  </ol>
+
+  <h2>resilience</h2>
+  <ol class="topics">
+    <li>
+      <h3>failure testing</h3>
+      <p>Chaos Mesh deletes a random site pod every 30 minutes and stresses one hourly, which exercises the disruption budget and the probes above against real failures rather than assumptions. It is scoped to the per-site namespaces, and never touches authentication, the mesh, or the alerting meant to catch problems.</p>
+    </li>
+    <li>
+      <h3>backups</h3>
+      <p>Velero takes two filesystem backups a night, one offsite at 03:00 and one into the cluster's own object store at 03:30, both expiring after seven days. restic snapshots the volumes separately, encrypted and deduplicated on the client so the bucket holds only ciphertext, keeping seven daily snapshots and running an integrity check each time.</p>
+    </li>
+  </ol>
+
+  <h2>security</h2>
+  <ol class="topics">
+    <li>
+      <h3>the firewall</h3>
+      <p>The Talos host firewall defaults to deny. Ports 80 and 443 accept only Cloudflare's published edge ranges, so scans against the origin IP are dropped before nginx sees them. The Kubernetes and Talos APIs stay reachable on purpose: both are certificate-gated with no password surface, CI and Terraform have no fixed egress addresses to allow, and the Talos API is the recovery path for the firewall itself.</p>
+    </li>
+    <li>
+      <h3>access</h3>
+      <p>Admin interfaces sit behind Authelia two-factor authentication. The development machine is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets are generated by Terraform and held in state, never in the repository. CI authenticates with a token scoped to patching Deployments in one namespace. Workloads run under Pod Security Standards, except the runner pods, which need privileged mode for Docker-in-Docker and are separated from ordinary jobs by runner tag. The public blog endpoints are the one unauthenticated path into a service that is otherwise behind single sign-on, so they are served from a route that only reads published posts and never reaches the editing API.</p>
+    </li>
+    <li>
+      <h3>supply chain</h3>
+      <p>Base images and Terraform providers are pinned by digest or lockfile, so moving a tag cannot change what ships. Every push runs go vet and the Go tests, shellcheck, yamllint, and gitleaks over the full history; terraform fmt and tflint run before the plan they gate. Grype scans the runner image on a schedule, and a high or critical finding triggers a rebuild. Renovate opens the version bumps, grouped so a dozen digest updates arrive as one merge request, and major updates wait for review.</p>
+    </li>
+  </ol>
+</main>
+
+<footer>
+  <nav class="foot-nav" aria-label="Source">
+    <a href="https://github.com/Vinnelle/vin.moe">Site source</a>
+    <a href="https://github.com/Vinnelle/hestia">Infra source</a>
+  </nav>
+  <p class="fingerprint">43B0 BED0 F544 6DF5 4FD0&nbsp; D966 C568 F432 345E C5F4</p>
+</footer>
+</body>
+</html>

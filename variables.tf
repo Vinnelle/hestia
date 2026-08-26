@@ -23,12 +23,6 @@ variable "acme_email_vinnel_cloud" {
   default     = "finlay@vinnel.cloud"
 }
 
-variable "acme_email_monke_academy" {
-  description = "Email for the Let's Encrypt ACME account used for monke.academy certs"
-  type        = string
-  default     = "a@monke.academy"
-}
-
 variable "cloudflare_api_token" {
   description = "Cloudflare API token (Zone:DNS:Edit) for managing DNS records. Set as a TFC workspace variable, not codified."
   type        = string

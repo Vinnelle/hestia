@@ -57,8 +57,6 @@ terraform_plan_apply:
   needs:
     - job: vin_moe_build
       optional: true
-    - job: monke_academy_build
-      optional: true
     - job: vinnel_cloud_site_build
       optional: true
     - job: vinnel_cloud_admin_build

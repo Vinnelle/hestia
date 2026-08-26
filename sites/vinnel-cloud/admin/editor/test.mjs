@@ -11,7 +11,7 @@ function decorate(doc, cursor) {
     extensions: [markdown({ base: markdownLanguage })],
   });
   ensureSyntaxTree(state, doc.length, 5000);
-  const set = liveDecorations({ state, visibleRanges: [{ from: 0, to: doc.length }] });
+  const set = liveDecorations({ state, hasFocus: true, visibleRanges: [{ from: 0, to: doc.length }] }, 'https://blog.vin.moe');
   const found = [];
   set.between(0, doc.length, (from, to, value) => {
     found.push({ from, to, spec: value.spec, text: doc.slice(from, to) });
@@ -41,6 +41,14 @@ assert.ok(widget, 'image should be replaced by a widget');
 assert.strictEqual(widget.spec.widget.url, '/img.png');
 assert.strictEqual(widget.spec.widget.alt, 'alt');
 
+const mediaDoc = '![shot](https://blog.vin.moe/media/shot-1234abcd.jpg)\nnext';
+found = decorate(mediaDoc, mediaDoc.length);
+assert.strictEqual(
+  found.find((d) => d.spec.widget).spec.widget.url,
+  '/public/media/shot-1234abcd.jpg',
+  'media loads from the admin origin, not across sites',
+);
+
 found = decorate('- item one\n- item two', 15);
 assert.deepStrictEqual(hidden(found), [], 'list marks are meaningful');
 
@@ -51,5 +59,18 @@ assert.deepStrictEqual(hidden(found), ['`', '`'], 'inline code marks hide');
 
 found = decorate('> one\n> two\n\ntail', 14);
 assert.strictEqual(lineClasses(found).filter((c) => c === 'cm-blockquote').length, 2);
+
+const blurred = EditorState.create({
+  doc: '**bold** text',
+  selection: EditorSelection.cursor(3),
+  extensions: [markdown({ base: markdownLanguage })],
+});
+ensureSyntaxTree(blurred, blurred.doc.length, 5000);
+const away = liveDecorations({ state: blurred, hasFocus: false, visibleRanges: [{ from: 0, to: blurred.doc.length }] });
+let hiddenWhenBlurred = 0;
+away.between(0, blurred.doc.length, () => {
+  hiddenWhenBlurred++;
+});
+assert.strictEqual(hiddenWhenBlurred, 2, 'an unfocused editor hides every marker, cursor line included');
 
 console.log('ok');

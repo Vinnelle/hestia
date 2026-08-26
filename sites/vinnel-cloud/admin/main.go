@@ -45,6 +45,7 @@ const streamHeartbeat = 20 * time.Second
 type pageData struct {
 	User          string
 	Nonce         string
+	MediaOrigin   string
 	Services      []portal.Service
 	ServiceGroups []portal.Group
 }
@@ -349,6 +350,14 @@ func (b *blogAPI) postURL(slug string) string {
 	return strings.TrimRight(b.feed.SiteURL, "/") + "/posts/" + slug
 }
 
+func (b *blogAPI) localMedia(html string) string {
+	origin := originOf(b.publicURL)
+	if origin == "" {
+		return html
+	}
+	return strings.ReplaceAll(html, origin+"/media/", "/public/media/")
+}
+
 func (b *blogAPI) mediaURL(name string) string {
 	if b.publicURL != "" {
 		return b.publicURL + "/media/" + name
@@ -577,7 +586,7 @@ func (b *blogAPI) preview(w http.ResponseWriter, r *http.Request) {
 		b.fail(w, err)
 		return
 	}
-	writeJSON(w, map[string]string{"html": rendered})
+	writeJSON(w, map[string]string{"html": b.localMedia(rendered)})
 }
 
 func (b *blogAPI) slugify(w http.ResponseWriter, r *http.Request) {
@@ -757,7 +766,7 @@ func main() {
 		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(mediaOrigin, nonce))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})

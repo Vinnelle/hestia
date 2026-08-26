@@ -12,7 +12,6 @@ variables:
       - "terraform"
       - "mirror"
       - "vin_moe"
-      - "monke_academy"
       - "vinnel_cloud"
       - "shell"
       - "ci_runner"

@@ -29,6 +29,13 @@ const highlightStyle = HighlightStyle.define([
   { tag: tags.processingInstruction, class: 'cm-tok-mark' },
 ]);
 
+function localMedia(url, mediaOrigin) {
+  if (mediaOrigin && url.startsWith(mediaOrigin + '/media/')) {
+    return '/public/media/' + url.slice((mediaOrigin + '/media/').length);
+  }
+  return url;
+}
+
 class ImageWidget extends WidgetType {
   constructor(url, alt) {
     super();
@@ -49,8 +56,10 @@ class ImageWidget extends WidgetType {
   }
 }
 
-function activeLines(state) {
+function activeLines(view) {
   const lines = new Set();
+  if (!view.hasFocus) return lines;
+  const state = view.state;
   for (const range of state.selection.ranges) {
     const first = state.doc.lineAt(range.from).number;
     const last = state.doc.lineAt(range.to).number;
@@ -67,17 +76,17 @@ function isHidden(node) {
   return false;
 }
 
-function imageSource(state, node) {
+function imageSource(state, node, mediaOrigin) {
   const url = node.node.getChild('URL');
   if (!url) return null;
   const text = state.doc.sliceString(node.from, node.to);
   const alt = text.slice(2, text.indexOf(']('));
-  return new ImageWidget(state.doc.sliceString(url.from, url.to), alt);
+  return new ImageWidget(localMedia(state.doc.sliceString(url.from, url.to), mediaOrigin), alt);
 }
 
-export function liveDecorations(view) {
+export function liveDecorations(view, mediaOrigin) {
   const ranges = [];
-  const active = activeLines(view.state);
+  const active = activeLines(view);
   for (const { from, to } of view.visibleRanges) {
     syntaxTree(view.state).iterate({
       from,
@@ -98,7 +107,7 @@ export function liveDecorations(view) {
         }
         if (raw) return true;
         if (node.name === 'Image') {
-          const widget = imageSource(view.state, node);
+          const widget = imageSource(view.state, node, mediaOrigin);
           if (widget) {
             ranges.push(Decoration.replace({ widget }).range(node.from, node.to));
             return false;
@@ -113,20 +122,22 @@ export function liveDecorations(view) {
   return Decoration.set(ranges, true);
 }
 
-const livePreview = ViewPlugin.fromClass(
-  class {
-    constructor(view) {
-      this.decorations = liveDecorations(view);
-    }
-
-    update(update) {
-      if (update.docChanged || update.viewportChanged || update.selectionSet) {
-        this.decorations = liveDecorations(update.view);
+function livePreview(mediaOrigin) {
+  return ViewPlugin.fromClass(
+    class {
+      constructor(view) {
+        this.decorations = liveDecorations(view, mediaOrigin);
       }
-    }
-  },
-  { decorations: (plugin) => plugin.decorations },
-);
+
+      update(update) {
+        if (update.docChanged || update.viewportChanged || update.selectionSet || update.focusChanged) {
+          this.decorations = liveDecorations(update.view, mediaOrigin);
+        }
+      }
+    },
+    { decorations: (plugin) => plugin.decorations },
+  );
+}
 
 function fileHandler(onFiles) {
   return (event, source) => {
@@ -139,7 +150,7 @@ function fileHandler(onFiles) {
 }
 
 export function createEditor(parent, options) {
-  const { nonce = '', onChange = () => {}, onFiles = () => {}, onCommand = () => false } = options || {};
+  const { nonce = '', mediaOrigin = '', onChange = () => {}, onFiles = () => {}, onCommand = () => false } = options || {};
   const files = fileHandler(onFiles);
 
   const command = (name) => () => {
@@ -161,7 +172,7 @@ export function createEditor(parent, options) {
       ]),
       markdown({ base: markdownLanguage }),
       syntaxHighlighting(highlightStyle),
-      livePreview,
+      livePreview(mediaOrigin),
       EditorView.lineWrapping,
       EditorView.cspNonce.of(nonce),
       EditorView.updateListener.of((update) => {

@@ -88,7 +88,6 @@ module "platform_ci" {
   forge_namespace = module.gitlab.namespace
   deploy_namespaces = toset([
     module.vin_moe.namespace,
-    module.monke_academy.namespace,
     module.vinnel_cloud.namespace,
   ])
   cluster_name           = var.cluster_name
@@ -116,7 +115,6 @@ module "platform_chaos_mesh" {
   namespace = module.platform_core.namespace
   site_namespaces = sort(tolist(toset([
     module.vin_moe.namespace,
-    module.monke_academy.namespace,
     module.vinnel_cloud.namespace,
   ])))
 }
@@ -154,7 +152,6 @@ module "platform_network_policy" {
     module.nextcloud,
     module.gitlab,
     module.miniflux,
-    module.monke_academy,
     module.proxy_netbird,
     module.registry_cache,
     module.searxng,
@@ -479,22 +476,6 @@ module "game_sleeper" {
 }
 
 # Sites
-
-## monke.academy
-
-module "monke_academy" {
-  source = "./sites/monke-academy"
-
-  depends_on = [module.platform_core, module.gitlab]
-
-  zone_id                   = module.platform_core.zone_id_monke_academy
-  node_ip                   = var.node_ip
-  cluster_issuer            = local.monke_academy_cluster_issuer
-  acme_email                = var.acme_email_monke_academy
-  cloudflare_secret_name    = module.platform_core.cloudflare_api_token_secret_name
-  registry_dockerconfigjson = module.gitlab.registry_dockerconfigjson
-  images                    = local.images
-}
 
 ## vin.moe
 

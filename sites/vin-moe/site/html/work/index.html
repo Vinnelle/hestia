@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>work — vin.moe</title>
+<meta name="description" content="Things I’ve built, fixed, and improved — alerting and health-check pipelines on GCP, and a self-hosted Kubernetes homelab.">
+<link rel="canonical" href="https://vin.moe/work">
+<link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script>try{const t=localStorage.theme;if(t)document.documentElement.dataset.theme=t}catch{}</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/jetbrains-mono.css">
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/theme.js" defer></script>
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vin.moe/work">
+<meta property="og:title" content="work — vin.moe">
+<meta property="og:description" content="Built, fixed, and improved — at work and on my own.">
+<meta property="og:image" content="https://vin.moe/avatar.webp">
+<meta property="og:site_name" content="vin.moe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="work — vin.moe">
+<meta name="twitter:description" content="Built, fixed, and improved — at work and on my own.">
+<meta name="twitter:image" content="https://vin.moe/avatar.webp">
+</head>
+<body>
+<a class="skip" href="#main">skip to content</a>
+
+<div class="bar">
+  <a class="brand" href="/">vin.moe</a>
+  <nav class="bar-nav" aria-label="Site">
+    <a class="tab" href="/">about</a>
+    <a class="tab" href="/#blog">blog</a>
+    <a class="tab" href="/work" aria-current="page">work</a>
+    <a class="tab" href="/colophon">colophon</a>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
+    </span>
+  </nav>
+</div>
+
+<main id="main">
+  <header class="page-head">
+    <h1>Things I’ve done</h1>
+    <p class="muted">Built, fixed, and improved — at work and on my own.</p>
+  </header>
+
+  <div class="label"># work</div>
+  <ul class="list">
+    <li>Custom alerting for RHEL servers on GCE, targeting LDAP/S authentication failures.</li>
+    <li>Reworked the platform health-check pipelines: 58s faster, 200 fewer lines, wired into GCP SLOs.</li>
+    <li>Observability SME for the department.</li>
+  </ul>
+
+  <div class="label"># personal</div>
+  <ul class="list last">
+    <li>Ran a fully code-managed GCP stack before moving to dedicated hardware.</li>
+    <li>Migrated off GCP to self-hosted, with minimal downtime.</li>
+    <li>Every service on the server sits behind SSO, a mesh VPN, or both.</li>
+    <li>Built and maintain a homelab and Ubiquiti network — servers, storage arrays, switches, WAPs, gateways, a UPS, a firewall, and a Pi running network analysis, SIEM, ad-blocking and DNS.</li>
+  </ul>
+</main>
+
+<footer>
+  <nav class="foot-nav" aria-label="Source">
+    <a href="https://github.com/Vinnelle/vin.moe">Site source</a>
+    <a href="https://github.com/Vinnelle/hestia">Infra source</a>
+  </nav>
+  <p class="fingerprint">43B0 BED0 F544 6DF5 4FD0&nbsp; D966 C568 F432 345E C5F4</p>
+</footer>
+</body>
+</html>

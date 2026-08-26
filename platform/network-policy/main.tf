@@ -6,7 +6,6 @@ locals {
     "files",
     "forge",
     "miniflux",
-    "monke-academy",
     "proxy",
     "registry",
     "searxng",
@@ -21,10 +20,9 @@ locals {
   }
 
   network_policy_egress_fqdns = {
-    backup          = ["s3.${var.mega_s4_endpoint_domain}"]
-    "monke-academy" = []
-    storage         = []
-    "vin-moe"       = []
+    backup    = ["s3.${var.mega_s4_endpoint_domain}"]
+    storage   = []
+    "vin-moe" = []
   }
 
   network_policy_egress_to = {

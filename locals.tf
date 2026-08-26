@@ -1,7 +1,6 @@
 locals {
-  vin_moe_cluster_issuer       = "letsencrypt-prod-vin-moe"
-  vinnel_cloud_cluster_issuer  = "letsencrypt-prod-vinnel-cloud"
-  monke_academy_cluster_issuer = "letsencrypt-prod-monke-academy"
+  vin_moe_cluster_issuer      = "letsencrypt-prod-vin-moe"
+  vinnel_cloud_cluster_issuer = "letsencrypt-prod-vinnel-cloud"
 
   authelia_forward_auth_annotations = {
     "nginx.ingress.kubernetes.io/auth-url"              = "http://authelia.${module.identity_authelia.namespace}.svc.cluster.local/api/authz/auth-request"

@@ -54,10 +54,6 @@ data "cloudflare_zone" "vinnel_cloud" {
   filter = { name = "vinnel.cloud" }
 }
 
-data "cloudflare_zone" "monke_academy" {
-  filter = { name = "monke.academy" }
-}
-
 resource "cloudflare_zone_setting" "vin_moe_ssl" {
   zone_id    = data.cloudflare_zone.vin_moe.id
   setting_id = "ssl"
@@ -66,12 +62,6 @@ resource "cloudflare_zone_setting" "vin_moe_ssl" {
 
 resource "cloudflare_zone_setting" "vinnel_cloud_ssl" {
   zone_id    = data.cloudflare_zone.vinnel_cloud.id
-  setting_id = "ssl"
-  value      = "strict"
-}
-
-resource "cloudflare_zone_setting" "monke_academy_ssl" {
-  zone_id    = data.cloudflare_zone.monke_academy.id
   setting_id = "ssl"
   value      = "strict"
 }

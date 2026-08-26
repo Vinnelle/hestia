@@ -38,13 +38,6 @@
   - ".gitlab-ci/scripts/site-deploy.sh"
   - ".gitlab-ci/scripts/record-image-digest.sh"
 
-.site_changes_monke_academy: &site_changes_monke_academy
-  - "hestia/sites/monke-academy/site/**/*"
-  - ".gitlab-ci.yml"
-  - ".gitlab-ci/pipelines/sites.yml"
-  - ".gitlab-ci/scripts/site-deploy.sh"
-  - ".gitlab-ci/scripts/record-image-digest.sh"
-
 .site_changes_vinnel_cloud: &site_changes_vinnel_cloud
   - "hestia/sites/vinnel-cloud/site/**/*"
   - "hestia/sites/vinnel-cloud/admin/**/*"
@@ -81,33 +74,6 @@ vin_moe_deploy:
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vin_moe"'
   script:
     - sh .gitlab-ci/scripts/site-deploy.sh vin-moe-site --namespace vin-moe --zone vin.moe
-
-monke_academy_build:
-  extends: .site_build
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
-      changes: *site_changes_monke_academy
-    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "monke_academy"'
-  variables:
-    SITE_CONTEXT: hestia/sites/monke-academy/site
-    SITE_DOCKERFILE: hestia/sites/monke-academy/site
-    SITE_IMAGE: monke-academy/site
-    SITE_DEPLOYMENT: monke-academy-site
-
-monke_academy_deploy:
-  extends: .site_deploy
-  needs:
-    - monke_academy_build
-    - job: lint
-      optional: true
-    - job: secrets_scan
-      optional: true
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
-      changes: *site_changes_monke_academy
-    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "monke_academy"'
-  script:
-    - sh .gitlab-ci/scripts/site-deploy.sh monke-academy-site --namespace monke-academy --zone monke.academy
 
 vinnel_cloud_site_build:
   extends: .site_build

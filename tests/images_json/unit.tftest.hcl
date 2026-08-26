@@ -6,7 +6,7 @@ run "required_deployment_keys_exist" {
 
   assert {
     condition = alltrue([
-      for k in ["monke-academy-site", "vin-moe-site", "vinnel-cloud-admin", "vinnel-cloud-auth", "vinnel-cloud-shell", "vinnel-cloud-site"] :
+      for k in ["vin-moe-site", "vinnel-cloud-admin", "vinnel-cloud-auth", "vinnel-cloud-shell", "vinnel-cloud-site"] :
       contains(keys(output.images), k)
     ])
     error_message = "a *-images.json map is missing a key that main.tf passes via local.images[...]"

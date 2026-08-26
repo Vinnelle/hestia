@@ -31,8 +31,6 @@ sync_pre:
       optional: true
     - job: vin_moe_deploy
       optional: true
-    - job: monke_academy_deploy
-      optional: true
     - job: vinnel_cloud_deploy
       optional: true
     - job: shell_build

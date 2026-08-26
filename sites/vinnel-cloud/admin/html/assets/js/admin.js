@@ -523,6 +523,7 @@ const blogDate = document.getElementById('blog-date');
 const blogSlug = document.getElementById('blog-slug');
 const blogBody = window.markdownEditor.create(document.getElementById('blog-body'), {
   nonce: document.querySelector('meta[name="csp-nonce"]').content,
+  mediaOrigin: document.querySelector('meta[name="media-origin"]').content,
   onChange: () => blogPreviewSchedule(),
   onFiles: (files) => blogUpload(files),
   onCommand: (name) => mdApply(name),

@@ -13,11 +13,6 @@ output "zone_id_vinnel_cloud" {
   value       = data.cloudflare_zone.vinnel_cloud.id
 }
 
-output "zone_id_monke_academy" {
-  description = "Cloudflare zone ID for monke.academy"
-  value       = data.cloudflare_zone.monke_academy.id
-}
-
 output "cloudflare_api_token_secret_name" {
   description = "Name of the cert-manager namespace Secret holding the Cloudflare API token"
   value       = kubernetes_secret_v1.cloudflare_api_token.metadata[0].name

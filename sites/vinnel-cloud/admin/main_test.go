@@ -343,6 +343,21 @@ func TestBlogPreviewRendersMarkdown(t *testing.T) {
 	}
 }
 
+func TestBlogPreviewServesMediaFromOwnOrigin(t *testing.T) {
+	_, mux := blogTestAPI(t, &blog.Repo{})
+
+	w := blogDo(t, mux, "POST", "/api/blog/preview", "![shot](https://blog.vin.moe/media/shot-1234abcd.jpg)")
+	if w.Code != http.StatusOK {
+		t.Fatalf("POST = %d, body %s", w.Code, w.Body)
+	}
+	if !strings.Contains(w.Body.String(), `/public/media/shot-1234abcd.jpg`) {
+		t.Errorf("preview should load media same-origin: %s", w.Body)
+	}
+	if strings.Contains(w.Body.String(), "blog.vin.moe/media/") {
+		t.Errorf("preview still points across origins: %s", w.Body)
+	}
+}
+
 func TestBlogSlugifyDeduplicates(t *testing.T) {
 	_, mux := blogTestAPI(t, &blog.Repo{})
 
