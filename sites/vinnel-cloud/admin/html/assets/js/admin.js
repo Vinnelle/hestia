@@ -526,6 +526,9 @@ const blogPublish = document.getElementById('blog-publish');
 const blogUnpublish = document.getElementById('blog-unpublish');
 const blogDelete = document.getElementById('blog-delete');
 const blogPublishingOff = document.getElementById('blog-publishing-off');
+const blogToolbar = document.getElementById('blog-toolbar');
+const blogImageInput = document.getElementById('blog-image-input');
+const blogFileInput = document.getElementById('blog-file-input');
 
 let blogCurrent = null;
 let blogDraft = true;
@@ -667,6 +670,144 @@ async function blogSelect(button) {
     blogFail(err);
   }
 }
+
+const MD_WRAPS = {
+  bold: ['**', '**'],
+  italic: ['*', '*'],
+  underline: ['<u>', '</u>'],
+  strike: ['~~', '~~'],
+  code: ['`', '`'],
+};
+
+const MD_PREFIXES = {
+  h1: '# ',
+  h2: '## ',
+  h3: '### ',
+  quote: '> ',
+  list: '- ',
+  numbers: '1. ',
+};
+
+const MD_KEYS = { b: 'bold', i: 'italic', u: 'underline', k: 'link' };
+
+function mdReplace(start, end, text, selStart, selEnd) {
+  blogBody.focus();
+  blogBody.setSelectionRange(start, end);
+  if (!document.execCommand('insertText', false, text)) {
+    blogBody.setRangeText(text, start, end, 'end');
+  }
+  blogBody.setSelectionRange(selStart, selEnd);
+}
+
+function mdWrap(name) {
+  const [open, close] = MD_WRAPS[name];
+  const text = blogBody.value;
+  const start = blogBody.selectionStart;
+  const end = blogBody.selectionEnd;
+  if (text.slice(start - open.length, start) === open && text.slice(end, end + close.length) === close) {
+    mdReplace(start - open.length, end + close.length, text.slice(start, end), start - open.length, end - open.length);
+    return;
+  }
+  const selected = text.slice(start, end);
+  mdReplace(start, end, open + selected + close, start + open.length, start + open.length + selected.length);
+}
+
+function mdPrefix(prefix) {
+  const text = blogBody.value;
+  const start = text.lastIndexOf('\n', blogBody.selectionStart - 1) + 1;
+  let end = text.indexOf('\n', blogBody.selectionEnd);
+  if (end < 0) end = text.length;
+  const lines = text.slice(start, end).split('\n');
+  const bare = (line) => line.replace(/^(#{1,6} |> |- |\d+\. )/, '');
+  const drop = lines.every((line) => line.startsWith(prefix));
+  const out = lines.map((line) => (drop ? bare(line) : prefix + bare(line))).join('\n');
+  mdReplace(start, end, out, start, start + out.length);
+}
+
+function mdLink() {
+  const text = blogBody.value;
+  const start = blogBody.selectionStart;
+  const selected = text.slice(start, blogBody.selectionEnd);
+  if (/^(https?:\/\/|\/)\S+$/.test(selected)) {
+    mdReplace(start, blogBody.selectionEnd, '[](' + selected + ')', start + 1, start + 1);
+    return;
+  }
+  const out = '[' + selected + '](url)';
+  mdReplace(start, blogBody.selectionEnd, out, start + out.length - 4, start + out.length - 1);
+}
+
+function mdInsert(text) {
+  const start = blogBody.selectionStart;
+  mdReplace(start, blogBody.selectionEnd, text, start + text.length, start + text.length);
+}
+
+function mdApply(name) {
+  if (MD_WRAPS[name]) mdWrap(name);
+  else if (MD_PREFIXES[name]) mdPrefix(MD_PREFIXES[name]);
+  else if (name === 'link') mdLink();
+}
+
+blogToolbar.addEventListener('click', (e) => {
+  const button = e.target.closest('[data-md]');
+  if (button) mdApply(button.dataset.md);
+});
+
+blogBody.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+  const name = MD_KEYS[e.key.toLowerCase()];
+  if (!name) return;
+  e.preventDefault();
+  mdApply(name);
+});
+
+async function blogUpload(files, asImage) {
+  blogError.hidden = true;
+  for (const file of files) {
+    blogSay('Uploading ' + file.name + '\u2026');
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const data = await blogFetch('/api/blog/media', { method: 'POST', body: form });
+      const image = asImage === undefined ? file.type.startsWith('image/') : asImage;
+      const label = image ? file.name.replace(/\.[^.]+$/, '') : file.name;
+      mdInsert((image ? '!' : '') + '[' + label + '](' + data.url + ')');
+      blogSay('Attached ' + data.name);
+    } catch (err) {
+      blogSay('Upload failed', true);
+      blogFail(err);
+      return;
+    }
+  }
+}
+
+document.getElementById('blog-attach-image').addEventListener('click', () => blogImageInput.click());
+document.getElementById('blog-attach-file').addEventListener('click', () => blogFileInput.click());
+
+for (const input of [blogImageInput, blogFileInput]) {
+  input.addEventListener('change', () => {
+    const files = Array.from(input.files);
+    input.value = '';
+    blogUpload(files, input === blogImageInput);
+  });
+}
+
+blogBody.addEventListener('paste', (e) => {
+  const files = Array.from(e.clipboardData.files);
+  if (!files.length) return;
+  e.preventDefault();
+  blogUpload(files);
+});
+
+blogBody.addEventListener('dragover', (e) => {
+  if (Array.from(e.dataTransfer.types).includes('Files')) e.preventDefault();
+});
+
+blogBody.addEventListener('drop', (e) => {
+  const files = Array.from(e.dataTransfer.files);
+  if (!files.length) return;
+  e.preventDefault();
+  blogUpload(files);
+});
 
 let blogTapStart = null;
 let blogTapPicked = false;

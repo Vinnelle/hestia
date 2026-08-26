@@ -233,10 +233,31 @@
                   <input class="text-input" id="blog-slug" type="text" pattern="[a-z0-9]+(-[a-z0-9]+)*" maxlength="80" required>
                 </label>
               </div>
-              <label class="blog-field">
-                <span class="field-label">Body — markdown</span>
+              <div class="blog-field">
+                <label class="field-label" for="blog-body">Body &mdash; markdown</label>
+                <div class="blog-toolbar" id="blog-toolbar">
+                  <button class="blog-tool" type="button" data-md="h1" title="Heading 1">H1</button>
+                  <button class="blog-tool" type="button" data-md="h2" title="Heading 2">H2</button>
+                  <button class="blog-tool" type="button" data-md="h3" title="Heading 3">H3</button>
+                  <span class="blog-tool-sep"></span>
+                  <button class="blog-tool" type="button" data-md="bold" title="Bold &mdash; Ctrl+B"><strong>B</strong></button>
+                  <button class="blog-tool" type="button" data-md="italic" title="Italic &mdash; Ctrl+I"><em>I</em></button>
+                  <button class="blog-tool" type="button" data-md="underline" title="Underline &mdash; Ctrl+U"><u>U</u></button>
+                  <button class="blog-tool" type="button" data-md="strike" title="Strikethrough"><s>S</s></button>
+                  <button class="blog-tool" type="button" data-md="code" title="Inline code">&lt;/&gt;</button>
+                  <span class="blog-tool-sep"></span>
+                  <button class="blog-tool" type="button" data-md="quote" title="Quote">&rdquo;</button>
+                  <button class="blog-tool" type="button" data-md="list" title="Bulleted list">&bull;</button>
+                  <button class="blog-tool" type="button" data-md="numbers" title="Numbered list">1.</button>
+                  <button class="blog-tool" type="button" data-md="link" title="Link &mdash; Ctrl+K">Link</button>
+                  <span class="blog-tool-sep"></span>
+                  <button class="blog-tool" type="button" id="blog-attach-image" title="Insert an image">Image</button>
+                  <button class="blog-tool" type="button" id="blog-attach-file" title="Attach a file">File</button>
+                </div>
                 <textarea class="blog-textarea" id="blog-body" rows="18" spellcheck="true"></textarea>
-              </label>
+                <input id="blog-image-input" type="file" accept="image/*" multiple hidden>
+                <input id="blog-file-input" type="file" multiple hidden>
+              </div>
               <div class="blog-actions">
                 <button class="btn-action" id="blog-save" type="submit">Save draft</button>
                 <button class="btn-action" id="blog-unpublish" type="button" hidden>Unpublish</button>

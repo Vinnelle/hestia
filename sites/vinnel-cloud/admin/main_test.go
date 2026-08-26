@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"html/template"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -151,7 +154,11 @@ func blogTestAPI(t *testing.T, repo *blog.Repo) (*blogAPI, *http.ServeMux) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	api := &blogAPI{store: store, repo: repo}
+	media, err := blog.NewMedia(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	api := &blogAPI{store: store, media: media, repo: repo, publicURL: "https://blog.vin.moe"}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/blog/posts", api.list)
 	mux.HandleFunc("GET /api/blog/slug", api.slugify)
@@ -160,6 +167,8 @@ func blogTestAPI(t *testing.T, repo *blog.Repo) (*blogAPI, *http.ServeMux) {
 	mux.HandleFunc("DELETE /api/blog/posts/{slug}", api.remove)
 	mux.HandleFunc("POST /api/blog/posts/{slug}/publish", api.publish)
 	mux.HandleFunc("POST /api/blog/posts/{slug}/unpublish", api.unpublish)
+	mux.HandleFunc("POST /api/blog/media", api.upload)
+	mux.HandleFunc("GET /public/media/{name}", api.publicMedia)
 	return api, mux
 }
 
@@ -394,6 +403,60 @@ func TestPublicPostsRevalidatesWithETag(t *testing.T) {
 
 	if got := conditional().Code; got != http.StatusOK {
 		t.Errorf("edited posts = %d, want %d", got, http.StatusOK)
+	}
+}
+
+func TestBlogUploadStoresAndServesMedia(t *testing.T) {
+	_, mux := blogTestAPI(t, &blog.Repo{})
+
+	var body bytes.Buffer
+	form := multipart.NewWriter(&body)
+	part, err := form.CreateFormFile("file", "Holiday Photo.JPG")
+	if err != nil {
+		t.Fatal(err)
+	}
+	part.Write([]byte("jpeg bytes"))
+	form.Close()
+
+	r := httptest.NewRequest("POST", "/api/blog/media", &body)
+	r.Header.Set("Content-Type", form.FormDataContentType())
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, r)
+	if w.Code != http.StatusOK {
+		t.Fatalf("upload = %d, body %s", w.Code, w.Body)
+	}
+
+	var uploaded struct{ Name, URL string }
+	if err := json.Unmarshal(w.Body.Bytes(), &uploaded); err != nil {
+		t.Fatal(err)
+	}
+	if want := "https://blog.vin.moe/media/" + uploaded.Name; uploaded.URL != want {
+		t.Errorf("url = %q, want %q", uploaded.URL, want)
+	}
+
+	w = blogDo(t, mux, "GET", "/public/media/"+uploaded.Name, "")
+	if w.Code != http.StatusOK || w.Body.String() != "jpeg bytes" {
+		t.Fatalf("serve = %d, body %q", w.Code, w.Body)
+	}
+	if got := w.Header().Get("Content-Type"); got != "image/jpeg" {
+		t.Errorf("Content-Type = %q, want image/jpeg", got)
+	}
+
+	w = blogDo(t, mux, "GET", "/public/media/missing-00000000.png", "")
+	if w.Code != http.StatusNotFound {
+		t.Errorf("missing media = %d, want 404", w.Code)
+	}
+}
+
+func TestBlogUploadRejectsEmptyRequest(t *testing.T) {
+	_, mux := blogTestAPI(t, &blog.Repo{})
+
+	r := httptest.NewRequest("POST", "/api/blog/media", strings.NewReader(""))
+	r.Header.Set("Content-Type", "multipart/form-data; boundary=none")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, r)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("upload without a file = %d, want 400", w.Code)
 	}
 }
 

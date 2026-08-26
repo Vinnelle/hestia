@@ -9,9 +9,13 @@ import (
 
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
-var markdown = goldmark.New(goldmark.WithExtensions(extension.GFM))
+var markdown = goldmark.New(
+	goldmark.WithExtensions(extension.GFM),
+	goldmark.WithRendererOptions(html.WithUnsafe()),
+)
 
 func RenderHTML(source string) (string, error) {
 	var out bytes.Buffer

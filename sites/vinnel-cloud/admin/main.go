@@ -298,6 +298,7 @@ func (c *statsCache) get() cluster.Stats {
 
 type blogAPI struct {
 	store     *blog.Store
+	media     *blog.Media
 	repo      *blog.Repo
 	purger    *blog.Purger
 	feed      blog.FeedConfig
@@ -315,6 +316,13 @@ func (b *blogAPI) postURL(slug string) string {
 		return b.publicURL + "/posts/" + slug
 	}
 	return strings.TrimRight(b.feed.SiteURL, "/") + "/posts/" + slug
+}
+
+func (b *blogAPI) mediaURL(name string) string {
+	if b.publicURL != "" {
+		return b.publicURL + "/media/" + name
+	}
+	return "/public/media/" + name
 }
 
 const publicCacheControl = "public, max-age=0, must-revalidate, s-maxage=300"
@@ -385,6 +393,33 @@ func (b *blogAPI) publicPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	servePublic(w, r, "text/html; charset=utf-8", body)
+}
+
+func (b *blogAPI) publicMedia(w http.ResponseWriter, r *http.Request) {
+	b.media.Serve(w, r, r.PathValue("name"))
+}
+
+func (b *blogAPI) upload(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, blog.MaxMedia+4096)
+	file, header, err := r.FormFile("file")
+	if err != nil {
+		b.fail(w, fmt.Errorf("%w: %s", blog.ErrInvalid, err))
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, blog.MaxMedia+1))
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	name, err := b.media.Save(header.Filename, data)
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog upload: user=%q name=%q bytes=%d", userFromRequest(r), name, len(data))
+	writeJSON(w, map[string]string{"name": name, "url": b.mediaURL(name)})
 }
 
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
@@ -563,6 +598,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("blog store: %v", err)
 	}
+	blogMedia, err := blog.NewMedia(env("BLOG_MEDIA_DIR", "/data/media"))
+	if err != nil {
+		log.Fatalf("blog media: %v", err)
+	}
 	blogRepo := &blog.Repo{
 		BaseURL:   env("GITLAB_API_URL", "https://gitlab.vinnel.cloud/api/v4"),
 		ProjectID: env("GITLAB_PROJECT_ID", ""),
@@ -575,6 +614,7 @@ func main() {
 	purgeURLs := purgeTargets(siteURL, publicURL)
 	blogHandlers := &blogAPI{
 		store:     blogStore,
+		media:     blogMedia,
 		repo:      blogRepo,
 		publicURL: publicURL,
 		purger: &blog.Purger{
@@ -650,9 +690,11 @@ func main() {
 	mux.HandleFunc("GET /public/feed.xml", blogHandlers.publicFeed)
 	mux.HandleFunc("GET /public/sitemap.xml", blogHandlers.publicSitemap)
 	mux.HandleFunc("GET /public/posts/{slug}", blogHandlers.publicPost)
+	mux.HandleFunc("GET /public/media/{name}", blogHandlers.publicMedia)
 
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
+	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
 	mux.HandleFunc("GET /api/blog/posts/{slug}", blogHandlers.get)
 	mux.HandleFunc("PUT /api/blog/posts/{slug}", blogHandlers.save)
 	mux.HandleFunc("DELETE /api/blog/posts/{slug}", blogHandlers.remove)
