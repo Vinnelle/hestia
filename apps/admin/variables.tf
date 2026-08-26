@@ -18,6 +18,11 @@ variable "zone_id" {
   type        = string
 }
 
+variable "blog_zone_id" {
+  description = "Cloudflare zone ID holding the blog hostnames the cache purger clears"
+  type        = string
+}
+
 variable "node_ip" {
   description = "Cluster node IP the dashboard A records point to"
   type        = string

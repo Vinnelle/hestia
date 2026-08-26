@@ -277,6 +277,7 @@ module "admin" {
   registry_secret_name              = module.vinnel_cloud.registry_secret_name
   image                             = local.images["vinnel-cloud-admin"]
   zone_id                           = module.platform_core.zone_id_vinnel_cloud
+  blog_zone_id                      = module.platform_core.zone_id_vin_moe
   node_ip                           = var.node_ip
   cluster_issuer                    = local.vinnel_cloud_cluster_issuer
   ingress_class_name                = module.platform_core.ingress_class_name

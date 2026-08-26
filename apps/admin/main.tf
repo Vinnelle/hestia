@@ -319,7 +319,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
 
           env {
             name  = "BLOG_ZONE_ID"
-            value = var.zone_id
+            value = var.blog_zone_id
           }
 
           env {
