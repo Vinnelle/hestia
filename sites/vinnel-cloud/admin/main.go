@@ -138,20 +138,16 @@ var securityHeaders = map[string]string{
 	"Referrer-Policy":        "strict-origin-when-cross-origin",
 }
 
-func contentSecurityPolicy(mediaOrigin, nonce string) string {
+func contentSecurityPolicy(nonce string) string {
 	style := "style-src 'self'"
 	if nonce != "" {
 		style += " 'nonce-" + nonce + "'"
-	}
-	img := "img-src 'self' data:"
-	if mediaOrigin != "" {
-		img += " " + mediaOrigin
 	}
 	return strings.Join([]string{
 		"default-src 'self'",
 		"script-src 'self'",
 		style,
-		img,
+		"img-src 'self' data:",
 		"frame-src " + frameSrc,
 		"object-src 'none'",
 		"frame-ancestors 'none'",
@@ -348,14 +344,6 @@ func (b *blogAPI) postURL(slug string) string {
 		return b.publicURL + "/posts/" + slug
 	}
 	return strings.TrimRight(b.feed.SiteURL, "/") + "/posts/" + slug
-}
-
-func (b *blogAPI) localMedia(html string) string {
-	origin := originOf(b.publicURL)
-	if origin == "" {
-		return html
-	}
-	return strings.ReplaceAll(html, origin+"/media/", "/public/media/")
 }
 
 func (b *blogAPI) mediaURL(name string) string {
@@ -575,20 +563,6 @@ func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
-func (b *blogAPI) preview(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(io.LimitReader(r.Body, blog.MaxBody+1))
-	if err != nil || len(body) > blog.MaxBody {
-		b.fail(w, fmt.Errorf("%w: body over %d bytes", blog.ErrInvalid, blog.MaxBody))
-		return
-	}
-	rendered, err := blog.RenderHTML(string(body))
-	if err != nil {
-		b.fail(w, err)
-		return
-	}
-	writeJSON(w, map[string]string{"html": b.localMedia(rendered)})
-}
-
 func (b *blogAPI) slugify(w http.ResponseWriter, r *http.Request) {
 	base := blog.Slugify(r.URL.Query().Get("title"))
 	if base == "" {
@@ -748,7 +722,6 @@ func main() {
 
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
-	mux.HandleFunc("POST /api/blog/preview", blogHandlers.preview)
 	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
 	mux.HandleFunc("GET /api/blog/posts/{slug}", blogHandlers.get)
 	mux.HandleFunc("PUT /api/blog/posts/{slug}", blogHandlers.save)
@@ -763,7 +736,7 @@ func main() {
 			w.Header().Set(k, v)
 		}
 		nonce := newNonce()
-		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(mediaOrigin, nonce))
+		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(nonce))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
 		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {

@@ -524,7 +524,6 @@ const blogSlug = document.getElementById('blog-slug');
 const blogBody = window.markdownEditor.create(document.getElementById('blog-body'), {
   nonce: document.querySelector('meta[name="csp-nonce"]').content,
   mediaOrigin: document.querySelector('meta[name="media-origin"]').content,
-  onChange: () => blogPreviewSchedule(),
   onFiles: (files) => blogUpload(files),
   onCommand: (name) => mdApply(name),
 });
@@ -533,7 +532,6 @@ const blogUnpublish = document.getElementById('blog-unpublish');
 const blogDelete = document.getElementById('blog-delete');
 const blogPublishingOff = document.getElementById('blog-publishing-off');
 const blogToolbar = document.getElementById('blog-toolbar');
-const blogPreview = document.getElementById('blog-preview');
 const blogPreviewToggle = document.getElementById('blog-preview-toggle');
 const blogImageInput = document.getElementById('blog-image-input');
 const blogFileInput = document.getElementById('blog-file-input');
@@ -752,44 +750,11 @@ function mdApply(name) {
   else if (name === 'link') mdLink();
 }
 
-let blogPreviewTimer = null;
-let blogPreviewSeq = 0;
-
-function blogPreviewOff() {
-  clearTimeout(blogPreviewTimer);
-  blogPreviewSeq++;
-  blogPreview.hidden = true;
-  blogPreview.replaceChildren();
-  blogPreviewToggle.setAttribute('aria-pressed', 'false');
-}
-
-async function blogPreviewRender() {
-  const seq = ++blogPreviewSeq;
-  try {
-    const data = await blogFetch('/api/blog/preview', { method: 'POST', body: blogBody.value });
-    if (seq !== blogPreviewSeq) return;
-    blogPreview.innerHTML = data.html || '<p class="hint">Nothing to preview yet.</p>';
-  } catch (err) {
-    if (seq === blogPreviewSeq) blogFail(err);
-  }
-}
-
-function blogPreviewSchedule() {
-  if (blogPreview.hidden) return;
-  clearTimeout(blogPreviewTimer);
-  blogPreviewTimer = setTimeout(blogPreviewRender, 250);
-}
-
 blogPreviewToggle.addEventListener('click', () => {
-  if (!blogPreview.hidden) {
-    blogPreviewOff();
-    blogBody.focus();
-    return;
-  }
-  blogError.hidden = true;
-  blogPreview.hidden = false;
-  blogPreviewToggle.setAttribute('aria-pressed', 'true');
-  blogPreviewRender();
+  const on = blogPreviewToggle.getAttribute('aria-pressed') !== 'true';
+  blogPreviewToggle.setAttribute('aria-pressed', String(on));
+  blogBody.setRendered(on);
+  blogBody.focus();
 });
 
 blogToolbar.addEventListener('click', (e) => {

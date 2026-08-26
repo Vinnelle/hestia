@@ -67,30 +67,26 @@ func TestRegistryIsConsistentWithCSP(t *testing.T) {
 	if seen["dashboard"] {
 		t.Error("dashboard.vinnel.cloud is deliberately out of scope for the portal")
 	}
-	if !strings.Contains(contentSecurityPolicy("", ""), "frame-ancestors 'none'") {
+	if !strings.Contains(contentSecurityPolicy(""), "frame-ancestors 'none'") {
 		t.Error("the portal must not be frameable — it frames every service")
 	}
 }
 
-func TestContentSecurityPolicyCarriesNonceAndMediaOrigin(t *testing.T) {
-	policy := contentSecurityPolicy("https://blog.vin.moe", "abc123")
+func TestContentSecurityPolicyCarriesNonce(t *testing.T) {
+	policy := contentSecurityPolicy("abc123")
 	if !strings.Contains(policy, "style-src 'self' 'nonce-abc123'") {
 		t.Errorf("the editor's runtime styles need the nonce: %s", policy)
 	}
-	if !strings.Contains(policy, "img-src 'self' data: https://blog.vin.moe") {
-		t.Errorf("uploaded media is served cross-origin and must be allowed: %s", policy)
-	}
 
-	bare := contentSecurityPolicy("", "")
-	if strings.Contains(bare, "nonce-") || strings.Contains(bare, "blog.vin.moe") {
-		t.Errorf("unconfigured policy must not widen: %s", bare)
+	if bare := contentSecurityPolicy(""); strings.Contains(bare, "nonce-") {
+		t.Errorf("an empty nonce must not widen the policy: %s", bare)
 	}
 
 	if got := originOf("https://blog.vin.moe/media"); got != "https://blog.vin.moe" {
 		t.Errorf("originOf = %q", got)
 	}
 	if got := originOf(""); got != "" {
-		t.Errorf("originOf(\"\") = %q", got)
+		t.Errorf("originOf of an empty URL = %q", got)
 	}
 
 	if a, b := newNonce(), newNonce(); a == b || a == "" {
@@ -188,7 +184,6 @@ func blogTestAPI(t *testing.T, repo *blog.Repo) (*blogAPI, *http.ServeMux) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/blog/posts", api.list)
 	mux.HandleFunc("GET /api/blog/slug", api.slugify)
-	mux.HandleFunc("POST /api/blog/preview", api.preview)
 	mux.HandleFunc("GET /api/blog/posts/{slug}", api.get)
 	mux.HandleFunc("PUT /api/blog/posts/{slug}", api.save)
 	mux.HandleFunc("DELETE /api/blog/posts/{slug}", api.remove)
@@ -317,44 +312,6 @@ func TestBlogPublishFailureLeavesDraft(t *testing.T) {
 	w := blogDo(t, mux, "GET", "/api/blog/posts/stuck", "")
 	if !strings.Contains(w.Body.String(), `"draft":true`) {
 		t.Errorf("failed publish should leave the post a draft: %s", w.Body)
-	}
-}
-
-func TestBlogPreviewRendersMarkdown(t *testing.T) {
-	_, mux := blogTestAPI(t, &blog.Repo{})
-
-	w := blogDo(t, mux, "POST", "/api/blog/preview", "# Title\n\n**bold**")
-	if w.Code != http.StatusOK {
-		t.Fatalf("POST = %d, body %s", w.Code, w.Body)
-	}
-	var got struct {
-		HTML string `json:"html"`
-	}
-	if err := json.Unmarshal(w.Body.Bytes(), &got); err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(got.HTML, "<h1>Title</h1>") || !strings.Contains(got.HTML, "<strong>bold</strong>") {
-		t.Errorf("preview did not render markdown: %q", got.HTML)
-	}
-
-	w = blogDo(t, mux, "POST", "/api/blog/preview", strings.Repeat("x", blog.MaxBody+1))
-	if w.Code != http.StatusBadRequest {
-		t.Errorf("oversized preview = %d, want 400", w.Code)
-	}
-}
-
-func TestBlogPreviewServesMediaFromOwnOrigin(t *testing.T) {
-	_, mux := blogTestAPI(t, &blog.Repo{})
-
-	w := blogDo(t, mux, "POST", "/api/blog/preview", "![shot](https://blog.vin.moe/media/shot-1234abcd.jpg)")
-	if w.Code != http.StatusOK {
-		t.Fatalf("POST = %d, body %s", w.Code, w.Body)
-	}
-	if !strings.Contains(w.Body.String(), `/public/media/shot-1234abcd.jpg`) {
-		t.Errorf("preview should load media same-origin: %s", w.Body)
-	}
-	if strings.Contains(w.Body.String(), "blog.vin.moe/media/") {
-		t.Errorf("preview still points across origins: %s", w.Body)
 	}
 }
 

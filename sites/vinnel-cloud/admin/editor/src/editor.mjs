@@ -1,4 +1,4 @@
-import { Transaction } from '@codemirror/state';
+import { Compartment, Transaction } from '@codemirror/state';
 import { EditorView, Decoration, WidgetType, ViewPlugin, keymap } from '@codemirror/view';
 import { history, historyKeymap, defaultKeymap } from '@codemirror/commands';
 import { markdown, markdownLanguage } from '@codemirror/lang-markdown';
@@ -150,8 +150,9 @@ function fileHandler(onFiles) {
 }
 
 export function createEditor(parent, options) {
-  const { nonce = '', mediaOrigin = '', onChange = () => {}, onFiles = () => {}, onCommand = () => false } = options || {};
+  const { nonce = '', mediaOrigin = '', onFiles = () => {}, onCommand = () => false } = options || {};
   const files = fileHandler(onFiles);
+  const rendered = new Compartment();
 
   const command = (name) => () => {
     onCommand(name);
@@ -172,12 +173,9 @@ export function createEditor(parent, options) {
       ]),
       markdown({ base: markdownLanguage }),
       syntaxHighlighting(highlightStyle),
-      livePreview(mediaOrigin),
+      rendered.of(livePreview(mediaOrigin)),
       EditorView.lineWrapping,
       EditorView.cspNonce.of(nonce),
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged) onChange();
-      }),
       EditorView.domEventHandlers({
         paste: (event) => files(event, event.clipboardData),
         drop: (event) => files(event, event.dataTransfer),
@@ -222,6 +220,10 @@ export function createEditor(parent, options) {
 
     focus() {
       view.focus();
+    },
+
+    setRendered(on) {
+      view.dispatch({ effects: rendered.reconfigure(on ? livePreview(mediaOrigin) : []) });
     },
   };
 }
