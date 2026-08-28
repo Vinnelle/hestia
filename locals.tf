@@ -76,10 +76,10 @@ locals {
     EOT
   }
 
-  admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed"]
+  admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed", "glitchtip"]
 
   admin_framed_annotations = {
-    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud"] : slug => merge(
+    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud", "glitchtip"] : slug => merge(
       {
         "nginx.ingress.kubernetes.io/configuration-snippet" = join("\n", compact([
           "more_clear_headers \"X-Frame-Options\";",

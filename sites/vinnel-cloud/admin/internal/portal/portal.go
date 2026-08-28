@@ -38,6 +38,7 @@ var groupIcons = map[string]template.HTML{
 
 var Services = []Service{
 	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Observability", true, iconActivity, ""},
+	{"glitchtip", "GlitchTip", "glitchtip.vinnel.cloud", "Observability", true, iconActivity, ""},
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Observability", true, iconFlows, ""},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "Network", true, iconShield, ""},
 	{"proxy", "Netbird", "netbird.vinnel.cloud", "Network", true, iconMesh, ""},

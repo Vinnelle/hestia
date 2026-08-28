@@ -155,6 +155,7 @@ module "platform_network_policy" {
     module.proxy_netbird,
     module.registry_cache,
     module.searxng,
+    module.glitchtip,
     module.platform_storage,
     module.vin_moe,
     module.vinnel_cloud,
@@ -291,6 +292,19 @@ module "admin" {
   gitlab_project_id                 = module.gitlab.project_id
   gitlab_default_branch             = module.gitlab.default_branch
   cloudflare_cache_purge_token      = var.cloudflare_cache_purge_token
+}
+
+module "glitchtip" {
+  source = "./apps/glitchtip"
+
+  depends_on = [module.platform_core, module.platform_vpa]
+
+  zone_id                         = module.platform_core.zone_id_vinnel_cloud
+  node_ip                         = var.node_ip
+  cluster_issuer                  = local.vinnel_cloud_cluster_issuer
+  ingress_class_name              = module.platform_core.ingress_class_name
+  admin_frame_service_annotations = local.admin_framed_service_annotations["glitchtip"]
+  resend_api_key                  = var.resend_api_key
 }
 
 ## GitLab
