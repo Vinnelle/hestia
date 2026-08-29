@@ -40,6 +40,11 @@ provider "signoz" {
   access_token = var.signoz_api_token
 }
 
+provider "glitchtip" {
+  endpoint = "https://glitchtip.vinnel.cloud"
+  token    = var.glitchtip_api_token
+}
+
 provider "gitlab" {
   base_url = "https://gitlab.vinnel.cloud/api/v4/"
   token    = var.gitlab_api_token

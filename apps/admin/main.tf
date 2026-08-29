@@ -228,6 +228,16 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
+            name  = "SENTRY_DSN"
+            value = var.sentry_dsn
+          }
+
+          env {
+            name  = "SENTRY_ENVIRONMENT"
+            value = "production"
+          }
+
+          env {
             name  = "SATISFACTORY_HOST"
             value = var.node_ip
           }

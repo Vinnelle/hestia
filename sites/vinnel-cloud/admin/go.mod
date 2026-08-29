@@ -3,6 +3,7 @@ module vinnel-cloud-admin
 go 1.25.0
 
 require (
+	github.com/getsentry/sentry-go v0.49.0
 	github.com/yuin/goldmark v1.8.5
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.70.0
 	go.opentelemetry.io/otel v1.46.0

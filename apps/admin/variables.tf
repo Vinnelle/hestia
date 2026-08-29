@@ -88,3 +88,9 @@ variable "cloudflare_cache_purge_token" {
   type        = string
   sensitive   = true
 }
+
+variable "sentry_dsn" {
+  description = "GlitchTip DSN used by the dashboard to report errors and sampled transactions"
+  type        = string
+  sensitive   = true
+}

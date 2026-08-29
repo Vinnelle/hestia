@@ -6,6 +6,10 @@ terraform {
       source  = "cloudflare/cloudflare"
       version = "~> 5.21"
     }
+    glitchtip = {
+      source  = "samiracho/glitchtip"
+      version = "~> 0.0.1"
+    }
     helm = {
       source  = "hashicorp/helm"
       version = "~> 3.2"

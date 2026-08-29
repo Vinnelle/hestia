@@ -1,7 +1,8 @@
 locals {
-  glitchtip_domain = "glitchtip.vinnel.cloud"
-  glitchtip_url    = "https://${local.glitchtip_domain}"
-  postgres_image   = "postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2"
+  glitchtip_domain       = "glitchtip.vinnel.cloud"
+  glitchtip_url          = "https://${local.glitchtip_domain}"
+  glitchtip_organization = "gaia"
+  postgres_image         = "postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2"
 }
 
 resource "kubernetes_namespace_v1" "glitchtip" {
@@ -272,6 +273,14 @@ resource "helm_release" "glitchtip" {
       }
       extraEnvVars = [
         {
+          name  = "SENTRY_DSN"
+          value = glitchtip_project_key.gaia.dsn["public"]
+        },
+        {
+          name  = "SENTRY_ENVIRONMENT"
+          value = "production"
+        },
+        {
           name = "EMAIL_URL"
           valueFrom = {
             secretKeyRef = {
@@ -457,6 +466,29 @@ resource "kubernetes_ingress_v1" "glitchtip_api_vinnel_cloud" {
       }
     }
   }
+}
+
+data "glitchtip_organization" "gaia" {
+  slug = local.glitchtip_organization
+}
+
+resource "glitchtip_team" "gaia" {
+  organization = data.glitchtip_organization.gaia.slug
+  slug         = "gaia"
+}
+
+resource "glitchtip_project" "gaia" {
+  organization = data.glitchtip_organization.gaia.slug
+  team         = glitchtip_team.gaia.slug
+  name         = "gaia"
+  slug         = "gaia"
+  platform     = "go"
+}
+
+resource "glitchtip_project_key" "gaia" {
+  organization = local.glitchtip_organization
+  project      = glitchtip_project.gaia.slug
+  name         = "production"
 }
 
 module "glitchtip_vpa" {

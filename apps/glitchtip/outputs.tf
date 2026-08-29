@@ -7,3 +7,9 @@ output "url" {
   description = "GlitchTip URL"
   value       = local.glitchtip_url
 }
+
+output "sentry_dsn" {
+  description = "Public DSN for the gaia GlitchTip project"
+  value       = glitchtip_project_key.gaia.dsn["public"]
+  sensitive   = true
+}

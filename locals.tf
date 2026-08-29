@@ -76,7 +76,7 @@ locals {
     EOT
   }
 
-  admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed", "glitchtip"]
+  admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed"]
 
   admin_framed_annotations = {
     for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud", "glitchtip"] : slug => merge(

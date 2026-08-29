@@ -155,3 +155,9 @@ variable "docker_hub_access_token" {
   type        = string
   sensitive   = true
 }
+
+variable "glitchtip_api_token" {
+  description = "GlitchTip API token created under Profile -> Auth Tokens, used to provision the gaia project and its ingestion key. Set as a TFC workspace variable, not codified."
+  type        = string
+  sensitive   = true
+}

@@ -292,6 +292,7 @@ module "admin" {
   gitlab_project_id                 = module.gitlab.project_id
   gitlab_default_branch             = module.gitlab.default_branch
   cloudflare_cache_purge_token      = var.cloudflare_cache_purge_token
+  sentry_dsn                        = module.glitchtip.sentry_dsn
 }
 
 module "glitchtip" {

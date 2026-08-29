@@ -43,3 +43,9 @@ output "ci_kubeconfig" {
   sensitive   = true
   value       = module.platform_ci.ci_kubeconfig
 }
+
+output "glitchtip_sentry_dsn" {
+  description = "Public DSN for the gaia GlitchTip project"
+  sensitive   = true
+  value       = module.glitchtip.sentry_dsn
+}

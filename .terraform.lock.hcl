@@ -245,6 +245,28 @@ provider "registry.terraform.io/netbirdio/netbird" {
   ]
 }
 
+provider "registry.terraform.io/samiracho/glitchtip" {
+  version     = "0.0.1"
+  constraints = "~> 0.0.1"
+  hashes = [
+    "h1:1KpaNwS03lA7VWgCFYTTPd4o64shd/fBux6/zXcKT9E=",
+    "zh:0b7bee72aae1fe4d1cc9f61a49ab9e8d26a0695fc42f4479e92d85f4c9e5e7e9",
+    "zh:0c812683a386e378e84675fb8366d7115496d4e338c59ebb391f2c0500c47f35",
+    "zh:1d49965fa860eb841963f1b47d140855eee8961230ea2cb0674c320808406d9b",
+    "zh:27a2bb4e231edf809930fa688c0eefb4a2958ea6efa5f05236a85c3d2b090411",
+    "zh:2d5dec8bccf659b24c2a81a43fb758d73d1cb1784cb90468578185c8b1a6bdb7",
+    "zh:3e1cf6aee68665e06a449a1a45b2480e5a03735fb3a909d8104abed9a8d98af5",
+    "zh:44982dc2593e4be7e83404d8f7b575145aca20e395e02a7907645083df77cf6e",
+    "zh:532449232fc1a79adce9be79930b57b3bf14ba5847974580c2b92ed44788bf64",
+    "zh:609cbc865a86c3d362e7e1ceb9992e6b8c8548fed374d76048f56a98dbbe2c03",
+    "zh:817ff8f7b9e1b6397b4b155609b6e73b42d2011acda186455c87249462e10c8f",
+    "zh:84b12303709f6884147d4d8f64f167528ba02febfea5d0155f5800d5d8555ab0",
+    "zh:a922897bafaae69371ee6e5a00a87e4eb318119d804fe9ca9a4c69219f437fae",
+    "zh:e13b1ac61cc841277eb596e232be1419f10c70e14fd596e4d34c6b0899d8719e",
+    "zh:f809ab383cca0a5f83072981c64208cbd7fa67e986a86ee02dd2c82333221e32",
+  ]
+}
+
 provider "registry.terraform.io/siderolabs/talos" {
   version     = "0.11.0"
   constraints = "~> 0.11"

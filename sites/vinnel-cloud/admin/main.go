@@ -26,6 +26,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"vinnel-cloud-admin/internal/blog"
@@ -55,6 +57,19 @@ func env(key, def string) string {
 		return v
 	}
 	return def
+}
+
+func setupSentry() error {
+	dsn := os.Getenv("SENTRY_DSN")
+	if dsn == "" {
+		return nil
+	}
+	return sentry.Init(sentry.ClientOptions{
+		Dsn:              dsn,
+		EnableTracing:    true,
+		TracesSampleRate: 0.1,
+		Environment:      env("SENTRY_ENVIRONMENT", "production"),
+	})
 }
 
 func envDuration(key string, def time.Duration) time.Duration {
@@ -577,6 +592,12 @@ func (b *blogAPI) slugify(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	addr := env("LISTEN_ADDR", ":8080")
+	if err := setupSentry(); err != nil {
+		log.Fatalf("sentry setup: %v", err)
+	}
+	if os.Getenv("SENTRY_DSN") != "" {
+		defer sentry.Flush(2 * time.Second)
+	}
 
 	shutdownTracing, err := telemetry.Setup(context.Background(), env("OTEL_COLLECTOR_ENDPOINT", ""))
 	if err != nil {
@@ -744,9 +765,10 @@ func main() {
 		}
 	})
 
+	handler := sentryhttp.New(sentryhttp.Options{}).Handle(otelhttp.NewHandler(nosniff(mux), "http"))
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           otelhttp.NewHandler(nosniff(mux), "http"),
+		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
