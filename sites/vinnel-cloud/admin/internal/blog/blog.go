@@ -159,7 +159,7 @@ func (s *Store) path(slug string) (string, error) {
 	return filepath.Join(s.root, slug+".md"), nil
 }
 
-func (s *Store) List() ([]*Post, error) {
+func (s *Store) All() ([]*Post, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -180,7 +180,6 @@ func (s *Store) List() ([]*Post, error) {
 		if err != nil {
 			continue
 		}
-		p.Body = ""
 		posts = append(posts, p)
 	}
 	sort.Slice(posts, func(i, j int) bool {
@@ -189,6 +188,17 @@ func (s *Store) List() ([]*Post, error) {
 		}
 		return posts[i].Slug < posts[j].Slug
 	})
+	return posts, nil
+}
+
+func (s *Store) List() ([]*Post, error) {
+	posts, err := s.All()
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range posts {
+		p.Body = ""
+	}
 	return posts, nil
 }
 

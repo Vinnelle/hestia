@@ -117,6 +117,27 @@ func runGameSleeper(mc *minecraft.Service, sf *satisfactory.Service) {
 	wg.Wait()
 }
 
+func runBlogSync() {
+	store, err := blog.NewStore(env("BLOG_DATA_DIR", "/data/posts"))
+	if err != nil {
+		log.Fatalf("blog store: %v", err)
+	}
+	repo := &blog.Repo{
+		BaseURL:   env("GITLAB_API_URL", "https://gitlab.vinnel.cloud/api/v4"),
+		ProjectID: env("GITLAB_PROJECT_ID", ""),
+		Token:     os.Getenv("GITLAB_TOKEN"),
+		Branch:    env("BLOG_BRANCH", "pre"),
+		PostsPath: env("BLOG_POSTS_PATH", "hestia/sites/vin-moe/site/posts"),
+	}
+	posts, err := store.All()
+	if err != nil {
+		log.Fatalf("blog sync store: %v", err)
+	}
+	if err := repo.Sync(context.Background(), posts, "nightly sync"); err != nil {
+		log.Fatalf("blog sync: %v", err)
+	}
+}
+
 func postLinkBase(publicURL string) string {
 	if publicURL == "" {
 		return ""
@@ -519,12 +540,6 @@ func (b *blogAPI) save(w http.ResponseWriter, r *http.Request) {
 func (b *blogAPI) remove(w http.ResponseWriter, r *http.Request) {
 	slug := r.PathValue("slug")
 	user := userFromRequest(r)
-	if b.repo.Configured() {
-		if err := b.repo.Unpublish(r.Context(), slug, user); err != nil {
-			b.fail(w, err)
-			return
-		}
-	}
 	if err := b.store.Delete(slug); err != nil {
 		b.fail(w, err)
 		return
@@ -542,8 +557,8 @@ func (b *blogAPI) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := userFromRequest(r)
-	if err := b.repo.Publish(r.Context(), post, user); err != nil {
-		b.fail(w, err)
+	if !b.repo.Configured() {
+		b.fail(w, fmt.Errorf("%w: repository sync is not configured", blog.ErrInvalid))
 		return
 	}
 	post.Draft = false
@@ -551,7 +566,7 @@ func (b *blogAPI) publish(w http.ResponseWriter, r *http.Request) {
 		b.fail(w, err)
 		return
 	}
-	log.Printf("blog publish: user=%q slug=%q branch=%q", user, slug, b.repo.Branch)
+	log.Printf("blog publish: user=%q slug=%q", user, slug)
 	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true", "branch": b.repo.Branch})
 }
@@ -564,8 +579,8 @@ func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user := userFromRequest(r)
-	if err := b.repo.Unpublish(r.Context(), slug, user); err != nil {
-		b.fail(w, err)
+	if !b.repo.Configured() {
+		b.fail(w, fmt.Errorf("%w: repository sync is not configured", blog.ErrInvalid))
 		return
 	}
 	post.Draft = true
@@ -605,6 +620,12 @@ func main() {
 	}
 	defer shutdownTracing(context.Background())
 
+	role := env("ROLE", "dashboard")
+	if role == "blog-sync" {
+		runBlogSync()
+		return
+	}
+
 	kubeClient, err := kube.New()
 	if err != nil {
 		log.Printf("kubernetes client unavailable, cluster stats disabled: %v", err)
@@ -631,7 +652,7 @@ func main() {
 		RconPassword: os.Getenv("MINECRAFT_RCON_PASSWORD"),
 	}
 
-	if env("ROLE", "dashboard") == "game-sleeper" {
+	if role == "game-sleeper" {
 		runGameSleeper(minecraftSvc, satisfactorySvc)
 		return
 	}
@@ -647,16 +668,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("blog store: %v", err)
 	}
-	blogMedia, err := blog.NewMedia(env("BLOG_MEDIA_DIR", "/data/media"))
-	if err != nil {
-		log.Fatalf("blog media: %v", err)
-	}
 	blogRepo := &blog.Repo{
 		BaseURL:   env("GITLAB_API_URL", "https://gitlab.vinnel.cloud/api/v4"),
 		ProjectID: env("GITLAB_PROJECT_ID", ""),
 		Token:     os.Getenv("GITLAB_TOKEN"),
 		Branch:    env("BLOG_BRANCH", "pre"),
 		PostsPath: env("BLOG_POSTS_PATH", "hestia/sites/vin-moe/site/posts"),
+	}
+	blogMedia, err := blog.NewMedia(env("BLOG_MEDIA_DIR", "/data/media"))
+	if err != nil {
+		log.Fatalf("blog media: %v", err)
 	}
 	siteURL := env("BLOG_SITE_URL", "https://vin.moe")
 	publicURL := strings.TrimRight(env("BLOG_PUBLIC_URL", ""), "/")
@@ -684,7 +705,7 @@ func main() {
 		log.Print("blog cache purge disabled: BLOG_ZONE_ID or CF_CACHE_PURGE_TOKEN unset")
 	}
 	if !blogRepo.Configured() {
-		log.Print("blog publishing disabled: GITLAB_PROJECT_ID or GITLAB_TOKEN unset")
+		log.Print("blog repository sync disabled: GITLAB_PROJECT_ID or GITLAB_TOKEN unset")
 	}
 
 	mux := http.NewServeMux()

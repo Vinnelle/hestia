@@ -391,6 +391,126 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
   }
 }
 
+resource "kubernetes_cron_job_v1" "vinnel_cloud_admin_blog_sync" {
+  metadata {
+    name      = "vinnel-cloud-admin-blog-sync"
+    namespace = var.namespace
+  }
+
+  spec {
+    schedule                      = "0 2 * * *"
+    timezone                      = "Etc/UTC"
+    concurrency_policy            = "Forbid"
+    successful_jobs_history_limit = 1
+    failed_jobs_history_limit     = 3
+
+    job_template {
+      metadata {}
+      spec {
+        backoff_limit = 3
+
+        template {
+          metadata {}
+          spec {
+            restart_policy                  = "OnFailure"
+            automount_service_account_token = false
+
+            image_pull_secrets {
+              name = var.registry_secret_name
+            }
+
+            security_context {
+              run_as_non_root = true
+              run_as_user     = 10001
+              run_as_group    = 10001
+              seccomp_profile {
+                type = "RuntimeDefault"
+              }
+            }
+
+            volume {
+              name = "blog"
+              persistent_volume_claim {
+                claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin_blog.metadata[0].name
+              }
+            }
+
+            container {
+              name  = "blog-sync"
+              image = var.image
+
+              security_context {
+                allow_privilege_escalation = false
+                read_only_root_filesystem  = true
+                capabilities {
+                  drop = ["ALL"]
+                }
+              }
+
+              env {
+                name  = "ROLE"
+                value = "blog-sync"
+              }
+
+              env {
+                name  = "BLOG_DATA_DIR"
+                value = "/data/posts"
+              }
+
+              env {
+                name  = "BLOG_BRANCH"
+                value = var.gitlab_default_branch
+              }
+
+              env {
+                name  = "BLOG_POSTS_PATH"
+                value = "hestia/sites/vin-moe/site/posts"
+              }
+
+              env {
+                name  = "GITLAB_API_URL"
+                value = "https://gitlab.vinnel.cloud/api/v4"
+              }
+
+              env {
+                name  = "GITLAB_PROJECT_ID"
+                value = var.gitlab_project_id
+              }
+
+              env {
+                name = "GITLAB_TOKEN"
+                value_from {
+                  secret_key_ref {
+                    name = kubernetes_secret_v1.vinnel_cloud_admin_blog.metadata[0].name
+                    key  = "GITLAB_TOKEN"
+                  }
+                }
+              }
+
+              resources {
+                requests = {
+                  cpu    = "10m"
+                  memory = "32Mi"
+                }
+                limits = {
+                  cpu    = "200m"
+                  memory = "128Mi"
+                }
+              }
+
+              volume_mount {
+                name       = "blog"
+                mount_path = "/data"
+                read_only  = true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 module "vinnel_cloud_admin_vpa" {
   source = "../../platform/vpa/resource"
 

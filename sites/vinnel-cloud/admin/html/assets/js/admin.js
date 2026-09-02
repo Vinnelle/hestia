@@ -904,7 +904,7 @@ blogUnpublish.addEventListener('click', async () => {
   try {
     await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent) + '/unpublish', { method: 'POST' });
     await blogReopen(blogCurrent);
-    blogSay('Removed from the repository');
+    blogSay('Unpublished');
   } catch (err) {
     blogSay('Unpublish failed', true);
     blogFail(err);
@@ -913,7 +913,7 @@ blogUnpublish.addEventListener('click', async () => {
 
 blogDelete.addEventListener('click', async () => {
   if (!blogCurrent) return;
-  if (!confirm('Delete "' + blogTitle.value + '"? This also removes it from the repository.')) return;
+  if (!confirm('Delete "' + blogTitle.value + '"? It will be removed from the repository during the nightly sync.')) return;
   blogError.hidden = true;
   try {
     await blogFetch('/api/blog/posts/' + encodeURIComponent(blogCurrent), { method: 'DELETE' });

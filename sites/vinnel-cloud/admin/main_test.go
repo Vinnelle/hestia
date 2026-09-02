@@ -262,15 +262,11 @@ func TestBlogRejectsBadInput(t *testing.T) {
 	}
 }
 
-func TestBlogPublishFlipsDraftAndCommits(t *testing.T) {
-	commits := 0
+func TestBlogPublishFlipsDraftWithoutImmediateSync(t *testing.T) {
+	requests := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/repository/files/") {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		commits++
-		w.WriteHeader(http.StatusCreated)
+		requests++
+		w.WriteHeader(http.StatusForbidden)
 	}))
 	defer srv.Close()
 
@@ -282,8 +278,8 @@ func TestBlogPublishFlipsDraftAndCommits(t *testing.T) {
 	if w := blogDo(t, mux, "POST", "/api/blog/posts/live/publish", ""); w.Code != http.StatusOK {
 		t.Fatalf("publish = %d, body %s", w.Code, w.Body)
 	}
-	if commits != 1 {
-		t.Errorf("commits = %d, want 1", commits)
+	if requests != 0 {
+		t.Errorf("repository requests = %d, want 0", requests)
 	}
 
 	w := blogDo(t, mux, "GET", "/api/blog/posts/live", "")
@@ -292,12 +288,10 @@ func TestBlogPublishFlipsDraftAndCommits(t *testing.T) {
 	}
 }
 
-func TestBlogPublishFailureLeavesDraft(t *testing.T) {
+func TestBlogPublishDoesNotContactRepository(t *testing.T) {
+	requests := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/repository/files/") {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
+		requests++
 		w.WriteHeader(http.StatusForbidden)
 	}))
 	defer srv.Close()
@@ -306,12 +300,15 @@ func TestBlogPublishFailureLeavesDraft(t *testing.T) {
 	_, mux := blogTestAPI(t, repo)
 
 	blogDo(t, mux, "PUT", "/api/blog/posts/stuck", `{"title":"Stuck","date":"2026-08-21","draft":true}`)
-	if w := blogDo(t, mux, "POST", "/api/blog/posts/stuck/publish", ""); w.Code != http.StatusInternalServerError {
-		t.Fatalf("publish = %d, want 500", w.Code)
+	if w := blogDo(t, mux, "POST", "/api/blog/posts/stuck/publish", ""); w.Code != http.StatusOK {
+		t.Fatalf("publish = %d, want 200", w.Code)
 	}
 	w := blogDo(t, mux, "GET", "/api/blog/posts/stuck", "")
-	if !strings.Contains(w.Body.String(), `"draft":true`) {
-		t.Errorf("failed publish should leave the post a draft: %s", w.Body)
+	if !strings.Contains(w.Body.String(), `"draft":false`) {
+		t.Errorf("publish did not clear the draft flag: %s", w.Body)
+	}
+	if requests != 0 {
+		t.Errorf("repository requests = %d, want 0", requests)
 	}
 }
 
@@ -335,15 +332,11 @@ func TestBlogSlugifyDeduplicates(t *testing.T) {
 	}
 }
 
-func TestBlogDeleteRemovesFromRepoFirst(t *testing.T) {
-	deletes := 0
+func TestBlogDeleteLeavesRepoForNightlySync(t *testing.T) {
+	requests := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/repository/files/") {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		deletes++
-		w.WriteHeader(http.StatusCreated)
+		requests++
+		w.WriteHeader(http.StatusForbidden)
 	}))
 	defer srv.Close()
 
@@ -354,8 +347,8 @@ func TestBlogDeleteRemovesFromRepoFirst(t *testing.T) {
 	if w := blogDo(t, mux, "DELETE", "/api/blog/posts/bye", ""); w.Code != http.StatusOK {
 		t.Fatalf("delete = %d, body %s", w.Code, w.Body)
 	}
-	if deletes != 1 {
-		t.Errorf("repo delete commits = %d, want 1", deletes)
+	if requests != 0 {
+		t.Errorf("repository requests = %d, want 0", requests)
 	}
 	if api.store.Exists("bye") {
 		t.Error("post still on disk after delete")

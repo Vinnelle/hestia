@@ -139,6 +139,13 @@ func TestStoreCRUD(t *testing.T) {
 	if list[0].Body != "" {
 		t.Error("List should not carry post bodies")
 	}
+	all, err := s.All()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(all) != 2 || all[0].Body != "two\n" {
+		t.Errorf("All should carry post bodies: %+v", all)
+	}
 
 	if err := s.Delete("older"); err != nil {
 		t.Fatal(err)
@@ -192,110 +199,123 @@ func TestRepoConfigured(t *testing.T) {
 	}
 }
 
-func TestPublishCreatesThenUpdates(t *testing.T) {
+func TestSyncCreatesUpdatesAndDeletes(t *testing.T) {
+	keepRemote := (&Post{Slug: "keep", Title: "Keep", Date: "2026-08-20", Body: "old"}).Marshal()
 	var actions []commitAction
-	var messages []string
-	present := false
+	var message string
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("PRIVATE-TOKEN") != "secret" {
 			t.Errorf("missing token header")
 		}
-		if strings.Contains(r.URL.Path, "/repository/files/") {
-			if !present {
-				w.WriteHeader(http.StatusNotFound)
-				return
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/repository/tree"):
+			if got := r.URL.Query().Get("path"); got != "posts" {
+				t.Errorf("tree path = %q, want posts", got)
 			}
-			w.WriteHeader(http.StatusOK)
-			return
+			if got := r.URL.Query().Get("ref"); got != "pre" {
+				t.Errorf("tree ref = %q, want pre", got)
+			}
+			json.NewEncoder(w).Encode([]treeEntry{
+				{Path: "posts/keep.md", Type: "blob"},
+				{Path: "posts/new.md", Type: "blob"},
+				{Path: "posts/old.md", Type: "blob"},
+			})
+		case strings.HasSuffix(r.URL.Path, "/repository/files/posts/keep.md"):
+			json.NewEncoder(w).Encode(fileResponse{Content: base64.StdEncoding.EncodeToString(keepRemote), Encoding: "base64"})
+		case strings.HasSuffix(r.URL.Path, "/repository/files/posts/new.md"):
+			w.WriteHeader(http.StatusNotFound)
+		case strings.HasSuffix(r.URL.Path, "/repository/commits"):
+			var body struct {
+				Branch  string         `json:"branch"`
+				Message string         `json:"commit_message"`
+				Actions []commitAction `json:"actions"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Errorf("decode commit: %v", err)
+			}
+			if body.Branch != "pre" {
+				t.Errorf("commit branch = %q, want pre", body.Branch)
+			}
+			actions = body.Actions
+			message = body.Message
+			w.WriteHeader(http.StatusCreated)
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
 		}
-		var body struct {
-			Branch  string         `json:"branch"`
-			Message string         `json:"commit_message"`
-			Actions []commitAction `json:"actions"`
-		}
-		json.NewDecoder(r.Body).Decode(&body)
-		if body.Branch != "pre" {
-			t.Errorf("commit branch = %q, want pre", body.Branch)
-		}
-		actions = append(actions, body.Actions...)
-		messages = append(messages, body.Message)
-		present = true
-		w.WriteHeader(http.StatusCreated)
 	}))
 	defer srv.Close()
 
-	repo := &Repo{BaseURL: srv.URL, ProjectID: "vinnel-cloud/gaia", Token: "secret", Branch: "pre", PostsPath: "hestia/sites/vin-moe/site/posts", Client: srv.Client()}
-	p := &Post{Slug: "hello", Title: "Hello", Date: "2026-08-21", Draft: true, Body: "hi"}
-
-	if err := repo.Publish(context.Background(), p, "a@vin.moe"); err != nil {
-		t.Fatalf("first Publish: %v", err)
-	}
-	if err := repo.Publish(context.Background(), p, "a@vin.moe"); err != nil {
-		t.Fatalf("second Publish: %v", err)
+	repo := &Repo{BaseURL: srv.URL, ProjectID: "vinnel-cloud/gaia", Token: "secret", Branch: "pre", PostsPath: "posts", Client: srv.Client()}
+	keep := &Post{Slug: "keep", Title: "Keep", Date: "2026-08-21", Body: "new"}
+	newPost := &Post{Slug: "new", Title: "New", Date: "2026-08-22", Body: "body"}
+	draft := &Post{Slug: "draft", Title: "Draft", Date: "2026-08-23", Draft: true}
+	if err := repo.Sync(context.Background(), []*Post{keep, newPost, draft}, "nightly sync"); err != nil {
+		t.Fatalf("Sync: %v", err)
 	}
 
-	if len(actions) != 2 || actions[0].Action != "create" || actions[1].Action != "update" {
-		t.Fatalf("actions = %+v, want create then update", actions)
+	if len(actions) != 3 {
+		t.Fatalf("actions = %+v, want 3 actions", actions)
 	}
-	if actions[0].FilePath != "hestia/sites/vin-moe/site/posts/hello.md" {
-		t.Errorf("file path = %q", actions[0].FilePath)
+	wants := []struct {
+		path   string
+		action string
+		post   *Post
+	}{
+		{"posts/keep.md", "update", keep},
+		{"posts/new.md", "create", newPost},
+		{"posts/old.md", "delete", nil},
 	}
-	raw, err := base64.StdEncoding.DecodeString(actions[0].Content)
-	if err != nil {
-		t.Fatal(err)
+	for i, want := range wants {
+		if actions[i].FilePath != want.path || actions[i].Action != want.action {
+			t.Errorf("action %d = %+v, want %s %s", i, actions[i], want.action, want.path)
+		}
+		if want.post != nil {
+			raw, err := base64.StdEncoding.DecodeString(actions[i].Content)
+			if err != nil {
+				t.Fatalf("decode action %d: %v", i, err)
+			}
+			if string(raw) != string(want.post.Marshal()) {
+				t.Errorf("action %d content = %q, want %q", i, raw, want.post.Marshal())
+			}
+		}
 	}
-	if strings.Contains(string(raw), "draft: true") {
-		t.Error("published file still marked draft")
-	}
-	if !strings.Contains(messages[0], "Hello") {
-		t.Errorf("commit message = %q", messages[0])
+	if !strings.Contains(message, "nightly sync") {
+		t.Errorf("commit message = %q", message)
 	}
 }
 
-func TestUnpublishSkipsMissingFile(t *testing.T) {
+func TestSyncSkipsUnchangedPosts(t *testing.T) {
+	post := &Post{Slug: "same", Title: "Same", Date: "2026-08-21", Body: "body"}
 	commits := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/repository/files/") {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/repository/tree"):
+			json.NewEncoder(w).Encode([]treeEntry{{Path: "posts/same.md", Type: "blob"}})
+		case strings.HasSuffix(r.URL.Path, "/repository/files/posts/same.md"):
+			json.NewEncoder(w).Encode(fileResponse{Content: base64.StdEncoding.EncodeToString(post.Marshal()), Encoding: "base64"})
+		case strings.HasSuffix(r.URL.Path, "/repository/commits"):
+			commits++
+			w.WriteHeader(http.StatusCreated)
+		default:
 			w.WriteHeader(http.StatusNotFound)
-			return
 		}
-		commits++
-		w.WriteHeader(http.StatusCreated)
 	}))
 	defer srv.Close()
 
 	repo := &Repo{BaseURL: srv.URL, ProjectID: "p", Token: "t", Branch: "pre", PostsPath: "posts", Client: srv.Client()}
-	if err := repo.Unpublish(context.Background(), "gone", "a@vin.moe"); err != nil {
-		t.Fatalf("Unpublish: %v", err)
+	if err := repo.Sync(context.Background(), []*Post{post}, "nightly sync"); err != nil {
+		t.Fatalf("Sync: %v", err)
 	}
 	if commits != 0 {
-		t.Errorf("committed %d times for a file that does not exist", commits)
+		t.Errorf("commits = %d, want 0", commits)
 	}
 }
 
-func TestPublishSurfacesGitlabError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.URL.Path, "/repository/files/") {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"message":"403 Forbidden"}`))
-	}))
-	defer srv.Close()
-
-	repo := &Repo{BaseURL: srv.URL, ProjectID: "p", Token: "t", Branch: "pre", PostsPath: "posts", Client: srv.Client()}
-	err := repo.Publish(context.Background(), &Post{Slug: "x", Title: "X", Date: "2026-08-21"}, "a@vin.moe")
-	if err == nil || !strings.Contains(err.Error(), "403") {
-		t.Fatalf("Publish error = %v, want one mentioning 403", err)
-	}
-}
-
-func TestPublishRefusesUnconfigured(t *testing.T) {
-	repo := &Repo{}
-	if err := repo.Publish(context.Background(), &Post{Slug: "x", Title: "X", Date: "2026-08-21"}, "a"); !errors.Is(err, ErrInvalid) {
-		t.Errorf("Publish on unconfigured Repo = %v, want ErrInvalid", err)
+func TestSyncRefusesUnconfigured(t *testing.T) {
+	if err := (&Repo{}).Sync(context.Background(), nil, "nightly sync"); !errors.Is(err, ErrInvalid) {
+		t.Errorf("Sync on unconfigured Repo = %v, want ErrInvalid", err)
 	}
 }
 
