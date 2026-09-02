@@ -16,7 +16,7 @@ resource "helm_release" "k8s_infra" {
   name       = "k8s-infra"
   repository = "https://charts.signoz.io"
   chart      = "k8s-infra"
-  version    = "0.17.0"
+  version    = "0.17.1"
   namespace  = kubernetes_namespace_v1.observability.metadata[0].name
 
   values = [
