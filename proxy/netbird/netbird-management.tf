@@ -177,3 +177,21 @@ resource "kubernetes_service_v1" "netbird_management" {
     }
   }
 }
+
+resource "kubernetes_service_v1" "netbird_management_api" {
+  metadata {
+    name      = "netbird-management-api"
+    namespace = kubernetes_namespace_v1.proxy.metadata[0].name
+  }
+
+  spec {
+    type = "ClusterIP"
+    selector = {
+      app = "netbird-management"
+    }
+    port {
+      port        = 80
+      target_port = "http"
+    }
+  }
+}

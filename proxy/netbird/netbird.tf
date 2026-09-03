@@ -224,7 +224,7 @@ resource "kubernetes_ingress_v1" "netbird_api_http" {
           path_type = "Prefix"
           backend {
             service {
-              name = kubernetes_service_v1.netbird_management.metadata[0].name
+              name = kubernetes_service_v1.netbird_management_api.metadata[0].name
               port {
                 number = 80
               }
@@ -242,7 +242,7 @@ resource "kubernetes_ingress_v1" "netbird_api_http" {
           path_type = "Prefix"
           backend {
             service {
-              name = kubernetes_service_v1.netbird_management.metadata[0].name
+              name = kubernetes_service_v1.netbird_management_api.metadata[0].name
               port {
                 number = 80
               }

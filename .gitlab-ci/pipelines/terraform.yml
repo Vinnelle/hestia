@@ -19,6 +19,8 @@
 .terraform_base:
   image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
   retry: 2
+  variables:
+    GODEBUG: "http2client=0"
   before_script:
     - !reference [.terraform_install, script]
     - mkdir -p "${TF_PLUGIN_CACHE_DIR}"
