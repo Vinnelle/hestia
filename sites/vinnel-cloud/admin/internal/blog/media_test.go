@@ -31,14 +31,15 @@ func TestMediaSaveAndServe(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewMedia: %v", err)
 	}
+	m.maxBytes = 64
 	if _, err := m.Save("empty.png", nil); err == nil {
 		t.Error("empty upload accepted")
 	}
-	if _, err := m.Save("big.png", make([]byte, MaxMedia+1)); err == nil {
+	if _, err := m.Save("big.png", make([]byte, int(m.maxBytes)+1)); err == nil {
 		t.Error("oversized upload accepted")
 	}
 
-	name, err := m.Save("Diagram.PNG", []byte("not really a png"))
+	name, err := m.SaveReader("Diagram.PNG", strings.NewReader("not really a png"))
 	if err != nil {
 		t.Fatalf("Save: %v", err)
 	}

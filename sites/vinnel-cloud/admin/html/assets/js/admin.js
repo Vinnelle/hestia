@@ -535,6 +535,7 @@ const blogToolbar = document.getElementById('blog-toolbar');
 const blogPreviewToggle = document.getElementById('blog-preview-toggle');
 const blogImageInput = document.getElementById('blog-image-input');
 const blogFileInput = document.getElementById('blog-file-input');
+const blogFilesOrigin = document.querySelector('meta[name="files-origin"]').content;
 
 blogBody.view.contentDOM.setAttribute('aria-labelledby', 'blog-body-label');
 
@@ -769,7 +770,8 @@ async function blogUpload(files, asImage) {
     try {
       const form = new FormData();
       form.append('file', file);
-      const data = await blogFetch('/api/blog/media', { method: 'POST', body: form });
+      const path = (blogFilesOrigin || '') + '/api/blog/media';
+      const data = await blogFetch(path, { method: 'POST', credentials: 'include', body: form });
       const image = asImage === undefined ? file.type.startsWith('image/') : asImage;
       const label = image ? file.name.replace(/\.[^.]+$/, '') : file.name;
       mdInsert((image ? '!' : '') + '[' + label + '](' + data.url + ')');

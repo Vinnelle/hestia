@@ -88,6 +88,9 @@ func TestContentSecurityPolicyCarriesNonce(t *testing.T) {
 	if got := originOf(""); got != "" {
 		t.Errorf("originOf of an empty URL = %q", got)
 	}
+	if policy := contentSecurityPolicy("", "https://files.vinnel.cloud"); !strings.Contains(policy, "connect-src 'self' https://files.vinnel.cloud") {
+		t.Errorf("CSP does not allow the upload origin: %s", policy)
+	}
 
 	if a, b := newNonce(), newNonce(); a == b || a == "" {
 		t.Errorf("nonces must be unique and non-empty: %q %q", a, b)
@@ -190,6 +193,7 @@ func blogTestAPI(t *testing.T, repo *blog.Repo) (*blogAPI, *http.ServeMux) {
 	mux.HandleFunc("POST /api/blog/posts/{slug}/publish", api.publish)
 	mux.HandleFunc("POST /api/blog/posts/{slug}/unpublish", api.unpublish)
 	mux.HandleFunc("POST /api/blog/media", api.upload)
+	mux.HandleFunc("OPTIONS /api/blog/media", api.uploadOptions)
 	mux.HandleFunc("GET /public/media/{name}", api.publicMedia)
 	return api, mux
 }
@@ -435,10 +439,14 @@ func TestBlogUploadStoresAndServesMedia(t *testing.T) {
 
 	r := httptest.NewRequest("POST", "/api/blog/media", &body)
 	r.Header.Set("Content-Type", form.FormDataContentType())
+	r.Header.Set("Origin", adminOrigin)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
 		t.Fatalf("upload = %d, body %s", w.Code, w.Body)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != adminOrigin {
+		t.Errorf("allow origin = %q, want %q", got, adminOrigin)
 	}
 
 	var uploaded struct{ Name, URL string }
@@ -472,6 +480,37 @@ func TestBlogUploadRejectsEmptyRequest(t *testing.T) {
 	mux.ServeHTTP(w, r)
 	if w.Code != http.StatusBadRequest {
 		t.Fatalf("upload without a file = %d, want 400", w.Code)
+	}
+}
+
+func TestBlogUploadAllowsAdminOrigin(t *testing.T) {
+	_, mux := blogTestAPI(t, &blog.Repo{})
+	r := httptest.NewRequest("OPTIONS", "/api/blog/media", nil)
+	r.Header.Set("Origin", adminOrigin)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, r)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("preflight = %d, want 204", w.Code)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Origin"); got != adminOrigin {
+		t.Errorf("allow origin = %q, want %q", got, adminOrigin)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
+		t.Errorf("allow credentials = %q, want true", got)
+	}
+	if got := w.Header().Get("Access-Control-Allow-Methods"); got != "POST" {
+		t.Errorf("allow methods = %q, want POST", got)
+	}
+}
+
+func TestBlogUploadRejectsOtherOrigin(t *testing.T) {
+	_, mux := blogTestAPI(t, &blog.Repo{})
+	r := httptest.NewRequest("POST", "/api/blog/media", nil)
+	r.Header.Set("Origin", "https://evil.example")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, r)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("upload = %d, want 403", w.Code)
 	}
 }
 

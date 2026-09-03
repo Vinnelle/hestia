@@ -48,6 +48,7 @@ type pageData struct {
 	User          string
 	Nonce         string
 	MediaOrigin   string
+	FilesOrigin   string
 	Services      []portal.Service
 	ServiceGroups []portal.Group
 }
@@ -174,15 +175,22 @@ var securityHeaders = map[string]string{
 	"Referrer-Policy":        "strict-origin-when-cross-origin",
 }
 
-func contentSecurityPolicy(nonce string) string {
+func contentSecurityPolicy(nonce string, connectOrigins ...string) string {
 	style := "style-src 'self'"
 	if nonce != "" {
 		style += " 'nonce-" + nonce + "'"
+	}
+	connect := "'self'"
+	for _, origin := range connectOrigins {
+		if origin != "" {
+			connect += " " + origin
+		}
 	}
 	return strings.Join([]string{
 		"default-src 'self'",
 		"script-src 'self'",
 		style,
+		"connect-src " + connect,
 		"img-src 'self' data:",
 		"frame-src " + frameSrc,
 		"object-src 'none'",
@@ -390,6 +398,7 @@ func (b *blogAPI) mediaURL(name string) string {
 }
 
 const publicCacheControl = "public, max-age=0, must-revalidate, s-maxage=300"
+const adminOrigin = "https://admin.vinnel.cloud"
 
 func servePublic(w http.ResponseWriter, r *http.Request, contentType string, body []byte) {
 	w.Header().Set("Content-Type", contentType)
@@ -464,26 +473,70 @@ func (b *blogAPI) publicMedia(w http.ResponseWriter, r *http.Request) {
 }
 
 func (b *blogAPI) upload(w http.ResponseWriter, r *http.Request) {
-	r.Body = http.MaxBytesReader(w, r.Body, blog.MaxMedia+4096)
-	file, header, err := r.FormFile("file")
-	if err != nil {
-		b.fail(w, fmt.Errorf("%w: %s", blog.ErrInvalid, err))
+	if !allowUploadOrigin(w, r) {
 		return
 	}
-	defer file.Close()
+	r.Body = http.MaxBytesReader(w, r.Body, blog.MaxMedia+1<<20)
+	reader, err := r.MultipartReader()
+	if err != nil {
+		b.fail(w, fmt.Errorf("%w: malformed request", blog.ErrInvalid))
+		return
+	}
 
-	data, err := io.ReadAll(io.LimitReader(file, blog.MaxMedia+1))
-	if err != nil {
-		b.fail(w, err)
+	for {
+		part, err := reader.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			b.fail(w, fmt.Errorf("%w: malformed request", blog.ErrInvalid))
+			return
+		}
+		if part.FormName() != "file" {
+			part.Close()
+			continue
+		}
+		name := part.FileName()
+		if name == "" {
+			part.Close()
+			b.fail(w, fmt.Errorf("%w: file name is required", blog.ErrInvalid))
+			return
+		}
+		stored, err := b.media.SaveReader(name, part)
+		part.Close()
+		if err != nil {
+			b.fail(w, err)
+			return
+		}
+		log.Printf("blog upload: user=%q name=%q", userFromRequest(r), stored)
+		writeJSON(w, map[string]string{"name": stored, "url": b.mediaURL(stored)})
 		return
 	}
-	name, err := b.media.Save(header.Filename, data)
-	if err != nil {
-		b.fail(w, err)
+	b.fail(w, fmt.Errorf("%w: file is required", blog.ErrInvalid))
+}
+
+func allowUploadOrigin(w http.ResponseWriter, r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	w.Header().Set("Vary", "Origin")
+	if origin != adminOrigin {
+		http.Error(w, "origin not allowed", http.StatusForbidden)
+		return false
+	}
+	w.Header().Set("Access-Control-Allow-Origin", adminOrigin)
+	w.Header().Set("Access-Control-Allow-Credentials", "true")
+	return true
+}
+
+func (b *blogAPI) uploadOptions(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
 		return
 	}
-	log.Printf("blog upload: user=%q name=%q bytes=%d", userFromRequest(r), name, len(data))
-	writeJSON(w, map[string]string{"name": name, "url": b.mediaURL(name)})
+	w.Header().Set("Access-Control-Allow-Methods", "POST")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
@@ -681,6 +734,7 @@ func main() {
 	}
 	siteURL := env("BLOG_SITE_URL", "https://vin.moe")
 	publicURL := strings.TrimRight(env("BLOG_PUBLIC_URL", ""), "/")
+	filesOrigin := originOf(strings.TrimRight(env("BLOG_FILES_URL", "https://files.vinnel.cloud"), "/"))
 	purgeURLs := purgeTargets(siteURL, publicURL)
 	blogHandlers := &blogAPI{
 		store:     blogStore,
@@ -765,6 +819,7 @@ func main() {
 	mux.HandleFunc("GET /api/blog/posts", blogHandlers.list)
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
 	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
+	mux.HandleFunc("OPTIONS /api/blog/media", blogHandlers.uploadOptions)
 	mux.HandleFunc("GET /api/blog/posts/{slug}", blogHandlers.get)
 	mux.HandleFunc("PUT /api/blog/posts/{slug}", blogHandlers.save)
 	mux.HandleFunc("DELETE /api/blog/posts/{slug}", blogHandlers.remove)
@@ -778,10 +833,10 @@ func main() {
 			w.Header().Set(k, v)
 		}
 		nonce := newNonce()
-		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(nonce))
+		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(nonce, filesOrigin))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, FilesOrigin: filesOrigin, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})

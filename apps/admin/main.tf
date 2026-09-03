@@ -7,6 +7,15 @@ resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   proxied = true
 }
 
+resource "cloudflare_dns_record" "files_vinnel_cloud" {
+  zone_id = var.zone_id
+  name    = "files.vinnel.cloud"
+  type    = "A"
+  content = var.node_ip
+  ttl     = 1
+  proxied = false
+}
+
 resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog" {
   metadata {
     name      = "vinnel-cloud-admin-blog-pvc"
@@ -328,6 +337,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
+            name  = "BLOG_FILES_URL"
+            value = "https://files.vinnel.cloud"
+          }
+
+          env {
             name  = "BLOG_ZONE_ID"
             value = var.blog_zone_id
           }
@@ -567,6 +581,48 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_admin" {
         path {
           path      = "/"
           path_type = "Prefix"
+          backend {
+            service {
+              name = kubernetes_service_v1.vinnel_cloud_admin.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_ingress_v1" "vinnel_cloud_admin_files" {
+  metadata {
+    name      = "vinnel-cloud-admin-files"
+    namespace = var.namespace
+    annotations = merge(var.authelia_forward_auth_annotations, {
+      "cert-manager.io/cluster-issuer"                      = var.cluster_issuer
+      "nginx.ingress.kubernetes.io/proxy-body-size"         = "0"
+      "nginx.ingress.kubernetes.io/proxy-request-buffering" = "off"
+      "nginx.ingress.kubernetes.io/proxy-read-timeout"      = "3600"
+      "nginx.ingress.kubernetes.io/proxy-send-timeout"      = "3600"
+      "nginx.ingress.kubernetes.io/server-snippet"          = "client_body_timeout 3600s;"
+    })
+  }
+
+  spec {
+    ingress_class_name = var.ingress_class_name
+
+    tls {
+      hosts       = ["files.vinnel.cloud"]
+      secret_name = "vinnel-cloud-admin-files-tls"
+    }
+
+    rule {
+      host = "files.vinnel.cloud"
+      http {
+        path {
+          path      = "/api/blog/media"
+          path_type = "Exact"
           backend {
             service {
               name = kubernetes_service_v1.vinnel_cloud_admin.metadata[0].name

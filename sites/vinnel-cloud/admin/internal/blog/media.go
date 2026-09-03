@@ -1,10 +1,12 @@
 package blog
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,7 +14,7 @@ import (
 	"strings"
 )
 
-const MaxMedia = 25 << 20
+const MaxMedia = 512 << 20
 
 var (
 	mediaNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*\.[a-z0-9]{1,8}$`)
@@ -31,7 +33,8 @@ var (
 )
 
 type Media struct {
-	dir string
+	dir      string
+	maxBytes int64
 }
 
 func NewMedia(dir string) (*Media, error) {
@@ -41,10 +44,14 @@ func NewMedia(dir string) (*Media, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("blog media dir: %w", err)
 	}
-	return &Media{dir: dir}, nil
+	return &Media{dir: dir, maxBytes: MaxMedia}, nil
 }
 
 func MediaName(original string, data []byte) string {
+	return mediaName(original, sha256.Sum256(data))
+}
+
+func mediaName(original string, sum [sha256.Size]byte) string {
 	ext := strings.ToLower(filepath.Ext(original))
 	if !mediaExtPattern.MatchString(ext) {
 		ext = ".bin"
@@ -53,7 +60,6 @@ func MediaName(original string, data []byte) string {
 	if stem == "" {
 		stem = "file"
 	}
-	sum := sha256.Sum256(data)
 	return stem + "-" + hex.EncodeToString(sum[:4]) + ext
 }
 
@@ -68,10 +74,38 @@ func (m *Media) Save(original string, data []byte) (string, error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("%w: empty upload", ErrInvalid)
 	}
-	if len(data) > MaxMedia {
-		return "", fmt.Errorf("%w: upload over %d bytes", ErrInvalid, MaxMedia)
+	if int64(len(data)) > m.maxBytes {
+		return "", fmt.Errorf("%w: upload over %d bytes", ErrInvalid, m.maxBytes)
 	}
-	name := MediaName(original, data)
+	return m.SaveReader(original, bytes.NewReader(data))
+}
+
+func (m *Media) SaveReader(original string, src io.Reader) (string, error) {
+	if src == nil {
+		return "", fmt.Errorf("%w: empty upload", ErrInvalid)
+	}
+	tmp, err := os.CreateTemp(m.dir, ".tmp-*")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+
+	hash := sha256.New()
+	n, err := io.CopyN(io.MultiWriter(tmp, hash), src, m.maxBytes+1)
+	if err != nil && !errors.Is(err, io.EOF) {
+		return "", err
+	}
+	if n == 0 {
+		return "", fmt.Errorf("%w: empty upload", ErrInvalid)
+	}
+	if n > m.maxBytes {
+		return "", fmt.Errorf("%w: upload over %d bytes", ErrInvalid, m.maxBytes)
+	}
+
+	var sum [sha256.Size]byte
+	copy(sum[:], hash.Sum(nil))
+	name := mediaName(original, sum)
 	target, err := m.path(name)
 	if err != nil {
 		return "", err
@@ -79,16 +113,7 @@ func (m *Media) Save(original string, data []byte) (string, error) {
 	if _, err := os.Stat(target); err == nil {
 		return name, nil
 	}
-	tmp, err := os.CreateTemp(m.dir, ".tmp-*")
-	if err != nil {
-		return "", err
-	}
-	defer os.Remove(tmp.Name())
 
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		return "", err
-	}
 	if err := tmp.Close(); err != nil {
 		return "", err
 	}
