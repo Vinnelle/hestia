@@ -951,6 +951,88 @@ async function blogUpload(files, asImage) {
   }
 }
 
+async function blogUploadFromURL(url, filename) {
+  blogError.hidden = true;
+  blogSay('Downloading from URL…');
+  try {
+    const data = await blogFilesFetch('/api/blog/media/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, filename }),
+    });
+    const label = filename || data.name.replace(/-[a-f0-9]{8}\.[^.]+$/, '');
+    mdInsert('[' + label + '](' + data.url + ')');
+    blogSay('Attached ' + data.name);
+  } catch (err) {
+    blogSay('Download failed', true);
+    blogFail(err);
+  }
+}
+
+const blogAttachFileBtn = document.getElementById('blog-attach-file');
+const blogAttachFileDropdown = document.getElementById('blog-attach-file-dropdown');
+const blogAttachFileMenu = blogAttachFileDropdown.querySelector('.blog-tool-dropdown-menu');
+const blogUrlModal = document.getElementById('blog-url-modal');
+const blogUrlInput = document.getElementById('blog-url-input');
+const blogUrlFilename = document.getElementById('blog-url-filename');
+const blogUrlCancel = document.getElementById('blog-url-cancel');
+const blogUrlSubmit = document.getElementById('blog-url-submit');
+
+blogAttachFileBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const expanded = blogAttachFileBtn.getAttribute('aria-expanded') === 'true';
+  blogAttachFileBtn.setAttribute('aria-expanded', String(!expanded));
+  blogAttachFileMenu.hidden = expanded;
+});
+
+document.addEventListener('click', (e) => {
+  if (!blogAttachFileDropdown.contains(e.target)) {
+    blogAttachFileBtn.setAttribute('aria-expanded', 'false');
+    blogAttachFileMenu.hidden = true;
+  }
+});
+
+blogAttachFileMenu.addEventListener('click', (e) => {
+  const button = e.target.closest('[data-action]');
+  if (!button) return;
+  blogAttachFileBtn.setAttribute('aria-expanded', 'false');
+  blogAttachFileMenu.hidden = true;
+  const action = button.dataset.action;
+  if (action === 'upload') {
+    blogFileInput.click();
+  } else if (action === 'download') {
+    blogUrlInput.value = '';
+    blogUrlFilename.value = '';
+    blogUrlModal.hidden = false;
+    blogUrlInput.focus();
+  }
+});
+
+blogUrlCancel.addEventListener('click', () => {
+  blogUrlModal.hidden = true;
+});
+
+blogUrlModal.querySelector('.modal-backdrop').addEventListener('click', () => {
+  blogUrlModal.hidden = true;
+});
+
+blogUrlSubmit.addEventListener('click', async () => {
+  const url = blogUrlInput.value.trim();
+  if (!url) return;
+  const filename = blogUrlFilename.value.trim() || undefined;
+  blogUrlModal.hidden = true;
+  await blogUploadFromURL(url, filename);
+});
+
+blogUrlInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    blogUrlSubmit.click();
+  } else if (e.key === 'Escape') {
+    blogUrlModal.hidden = true;
+  }
+});
+
 document.getElementById('blog-attach-image').addEventListener('click', () => blogImageInput.click());
 document.getElementById('blog-attach-file').addEventListener('click', () => blogFileInput.click());
 

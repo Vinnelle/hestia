@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -608,6 +609,53 @@ func (b *blogAPI) uploadOptions(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (b *blogAPI) uploadFromURL(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	var in struct {
+		URL      string `json:"url"`
+		Filename string `json:"filename"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&in); err != nil {
+		b.fail(w, fmt.Errorf("%w: malformed request", blog.ErrInvalid))
+		return
+	}
+	if in.URL == "" {
+		b.fail(w, fmt.Errorf("%w: url is required", blog.ErrInvalid))
+		return
+	}
+
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Get(in.URL)
+	if err != nil {
+		b.fail(w, fmt.Errorf("%w: failed to download: %v", blog.ErrInvalid, err))
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		b.fail(w, fmt.Errorf("%w: download failed with status %d", blog.ErrInvalid, resp.StatusCode))
+		return
+	}
+
+	name := in.Filename
+	if name == "" {
+		name = filepath.Base(resp.Request.URL.Path)
+		if name == "" || name == "." || name == "/" {
+			name = "download"
+		}
+	}
+
+	stored, err := b.media.SaveReader(name, resp.Body)
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog upload from URL: user=%q name=%q url=%q", userFromRequest(r), stored, in.URL)
+	writeJSON(w, map[string]string{"name": stored, "url": b.mediaURL(stored)})
+}
+
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
 	status := http.StatusInternalServerError
 	switch {
@@ -889,6 +937,7 @@ func main() {
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
 	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
 	mux.HandleFunc("OPTIONS /api/blog/media", blogHandlers.uploadOptions)
+	mux.HandleFunc("POST /api/blog/media/url", blogHandlers.uploadFromURL)
 	mux.HandleFunc("POST /api/blog/media/uploads", blogHandlers.uploadStart)
 	mux.HandleFunc("GET /api/blog/media/uploads/{id}", blogHandlers.uploadStatus)
 	mux.HandleFunc("PUT /api/blog/media/uploads/{id}/chunks/{index}", blogHandlers.uploadChunk)

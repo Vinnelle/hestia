@@ -256,13 +256,37 @@
                   <button class="blog-tool" type="button" data-md="link" title="Link &mdash; Ctrl+K">Link</button>
                   <span class="blog-tool-sep"></span>
                   <button class="blog-tool" type="button" id="blog-attach-image" title="Insert an image">Image</button>
-                  <button class="blog-tool" type="button" id="blog-attach-file" title="Attach a file">File</button>
+                  <div class="blog-tool-dropdown" id="blog-attach-file-dropdown">
+                    <button class="blog-tool" type="button" id="blog-attach-file" title="Attach a file" aria-haspopup="true" aria-expanded="false">File</button>
+                    <div class="blog-tool-dropdown-menu" hidden>
+                      <button type="button" data-action="upload">Upload file</button>
+                      <button type="button" data-action="download">Download from URL</button>
+                    </div>
+                  </div>
                   <span class="blog-tool-sep"></span>
                   <button class="blog-tool" type="button" id="blog-preview-toggle" aria-pressed="true" title="Toggle rendered markdown">Preview</button>
                 </div>
                 <div class="blog-input" id="blog-body"></div>
                 <input id="blog-image-input" type="file" accept="image/*" multiple hidden>
                 <input id="blog-file-input" type="file" multiple hidden>
+                <div class="modal" id="blog-url-modal" hidden role="dialog" aria-modal="true" aria-labelledby="blog-url-modal-title">
+                  <div class="modal-backdrop"></div>
+                  <div class="modal-content">
+                    <h2 id="blog-url-modal-title">Download from URL</h2>
+                    <label class="modal-field">
+                      <span class="field-label">File URL</span>
+                      <input class="text-input" id="blog-url-input" type="url" placeholder="https://example.com/file.pdf" required>
+                    </label>
+                    <label class="modal-field">
+                      <span class="field-label">Filename (optional)</span>
+                      <input class="text-input" id="blog-url-filename" type="text" placeholder="Leave empty to auto-detect">
+                    </label>
+                    <div class="modal-actions">
+                      <button class="btn-action btn-action--quiet" id="blog-url-cancel" type="button">Cancel</button>
+                      <button class="btn-action" id="blog-url-submit" type="button">Download</button>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="blog-actions">
                 <button class="btn-action" id="blog-save" type="submit">Save draft</button>
