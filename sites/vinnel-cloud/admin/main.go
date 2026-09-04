@@ -525,8 +525,6 @@ func allowUploadOrigin(w http.ResponseWriter, r *http.Request) bool {
 		http.Error(w, "origin not allowed", http.StatusForbidden)
 		return false
 	}
-	w.Header().Set("Access-Control-Allow-Origin", adminOrigin)
-	w.Header().Set("Access-Control-Allow-Credentials", "true")
 	return true
 }
 
@@ -534,8 +532,12 @@ func (b *blogAPI) uploadOptions(w http.ResponseWriter, r *http.Request) {
 	if !allowUploadOrigin(w, r) {
 		return
 	}
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	if r.Header.Get("Origin") == adminOrigin {
+		w.Header().Set("Access-Control-Allow-Origin", adminOrigin)
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "POST")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	}
 	w.WriteHeader(http.StatusNoContent)
 }
 

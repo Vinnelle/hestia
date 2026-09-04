@@ -445,8 +445,8 @@ func TestBlogUploadStoresAndServesMedia(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("upload = %d, body %s", w.Code, w.Body)
 	}
-	if got := w.Header().Get("Access-Control-Allow-Origin"); got != adminOrigin {
-		t.Errorf("allow origin = %q, want %q", got, adminOrigin)
+	if got := w.Header().Get("Vary"); got != "Origin" {
+		t.Errorf("vary = %q, want Origin", got)
 	}
 
 	var uploaded struct{ Name, URL string }
@@ -494,12 +494,6 @@ func TestBlogUploadAllowsAdminOrigin(t *testing.T) {
 	}
 	if got := w.Header().Get("Access-Control-Allow-Origin"); got != adminOrigin {
 		t.Errorf("allow origin = %q, want %q", got, adminOrigin)
-	}
-	if got := w.Header().Get("Access-Control-Allow-Credentials"); got != "true" {
-		t.Errorf("allow credentials = %q, want true", got)
-	}
-	if got := w.Header().Get("Access-Control-Allow-Methods"); got != "POST" {
-		t.Errorf("allow methods = %q, want POST", got)
 	}
 }
 

@@ -595,6 +595,36 @@ async function blogFetch(path, options) {
   return data;
 }
 
+function blogUploadRequest(path, form, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.withCredentials = true;
+    xhr.upload.addEventListener('progress', (event) => {
+      if (event.lengthComputable) onProgress(event.loaded, event.total);
+    });
+    xhr.addEventListener('load', () => {
+      const text = xhr.responseText;
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        reject(new Error(text.slice(0, 200) || xhr.statusText || 'Upload failed'));
+        return;
+      }
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new Error(data.err || xhr.statusText || 'Upload failed'));
+        return;
+      }
+      resolve(data);
+    });
+    xhr.addEventListener('error', () => reject(new Error('Network request failed.')));
+    xhr.addEventListener('abort', () => reject(new Error('Upload canceled.')));
+    xhr.addEventListener('timeout', () => reject(new Error('Upload timed out.')));
+    xhr.open('POST', path);
+    xhr.send(form);
+  });
+}
+
 function blogRender(posts) {
   blogList.replaceChildren();
   if (!posts.length) {
@@ -766,12 +796,18 @@ blogToolbar.addEventListener('click', (e) => {
 async function blogUpload(files, asImage) {
   blogError.hidden = true;
   for (const file of files) {
-    blogSay('Uploading ' + file.name + '\u2026');
+    blogSay('Uploading ' + file.name + ' 0% (0 B/s)');
     try {
       const form = new FormData();
       form.append('file', file);
       const path = (blogFilesOrigin || '') + '/api/blog/media';
-      const data = await blogFetch(path, { method: 'POST', credentials: 'include', body: form });
+      const started = performance.now();
+      const data = await blogUploadRequest(path, form, (loaded, total) => {
+        const elapsed = Math.max((performance.now() - started) / 1000, 0.001);
+        const size = total || file.size;
+        const percent = size ? Math.min(100, (loaded / size) * 100) : 0;
+        blogSay('Uploading ' + file.name + ' ' + percent.toFixed(0) + '% (' + fmtBytes(loaded / elapsed) + '/s)');
+      });
       const image = asImage === undefined ? file.type.startsWith('image/') : asImage;
       const label = image ? file.name.replace(/\.[^.]+$/, '') : file.name;
       mdInsert((image ? '!' : '') + '[' + label + '](' + data.url + ')');

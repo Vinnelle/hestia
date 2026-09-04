@@ -606,6 +606,12 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_admin_files" {
       "nginx.ingress.kubernetes.io/proxy-read-timeout"      = "3600"
       "nginx.ingress.kubernetes.io/proxy-send-timeout"      = "3600"
       "nginx.ingress.kubernetes.io/server-snippet"          = "client_body_timeout 3600s;"
+      "nginx.ingress.kubernetes.io/enable-cors"             = "true"
+      "nginx.ingress.kubernetes.io/cors-allow-origin"       = "https://admin.vinnel.cloud"
+      "nginx.ingress.kubernetes.io/cors-allow-methods"      = "POST, OPTIONS"
+      "nginx.ingress.kubernetes.io/cors-allow-headers"      = "Content-Type"
+      "nginx.ingress.kubernetes.io/cors-allow-credentials"  = "true"
+      "nginx.ingress.kubernetes.io/cors-max-age"            = "600"
     })
   }
 
