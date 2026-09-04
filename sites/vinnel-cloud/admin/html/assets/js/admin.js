@@ -1034,7 +1034,6 @@ blogUrlInput.addEventListener('keydown', (e) => {
 });
 
 document.getElementById('blog-attach-image').addEventListener('click', () => blogImageInput.click());
-document.getElementById('blog-attach-file').addEventListener('click', () => blogFileInput.click());
 
 for (const input of [blogImageInput, blogFileInput]) {
   input.addEventListener('change', () => {
