@@ -39,6 +39,110 @@ resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog" {
   }
 }
 
+resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog_media" {
+  metadata {
+    name      = "vinnel-cloud-admin-blog-media-pvc"
+    namespace = var.namespace
+  }
+  spec {
+    access_modes       = ["ReadWriteOnce"]
+    storage_class_name = "local-path-bulk"
+    resources {
+      requests = {
+        storage = "250Gi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+locals {
+  vinnel_cloud_admin_blog_media_migrate_sh = <<-EOT
+    set -eu
+    mkdir -p /media
+    if [ -d /source/media ]; then
+      cp -R /source/media/. /media/
+    fi
+  EOT
+}
+
+resource "kubernetes_job_v1" "vinnel_cloud_admin_blog_media_migrate" {
+  metadata {
+    name      = "vinnel-cloud-admin-blog-media-migrate"
+    namespace = var.namespace
+  }
+
+  spec {
+    backoff_limit = 1
+
+    template {
+      metadata {}
+      spec {
+        restart_policy                  = "Never"
+        automount_service_account_token = false
+
+        image_pull_secrets {
+          name = var.registry_secret_name
+        }
+
+        security_context {
+          run_as_non_root = true
+          run_as_user     = 10001
+          run_as_group    = 10001
+          seccomp_profile {
+            type = "RuntimeDefault"
+          }
+        }
+
+        volume {
+          name = "source"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin_blog.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "media"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin_blog_media.metadata[0].name
+          }
+        }
+
+        container {
+          name    = "media-migrate"
+          image   = var.image
+          command = ["/bin/sh", "-c", local.vinnel_cloud_admin_blog_media_migrate_sh]
+
+          security_context {
+            allow_privilege_escalation = false
+            read_only_root_filesystem  = true
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
+          volume_mount {
+            name       = "source"
+            mount_path = "/source"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "media"
+            mount_path = "/media"
+          }
+        }
+      }
+    }
+  }
+
+  wait_for_completion = true
+}
+
 resource "gitlab_project_access_token" "admin_blog" {
   project      = var.gitlab_project_id
   name         = "vinnel-cloud-admin-blog"
@@ -156,6 +260,7 @@ resource "kubernetes_pod_disruption_budget_v1" "vinnel_cloud_admin" {
 }
 
 resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
+  depends_on = [kubernetes_job_v1.vinnel_cloud_admin_blog_media_migrate]
 
   metadata {
     name      = "vinnel-cloud-admin"
@@ -212,6 +317,13 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           name = "blog"
           persistent_volume_claim {
             claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin_blog.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "media"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.vinnel_cloud_admin_blog_media.metadata[0].name
           }
         }
 
@@ -297,6 +409,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
+            name  = "BLOG_MEDIA_DIR"
+            value = "/media"
+          }
+
+          env {
             name  = "BLOG_BRANCH"
             value = var.gitlab_default_branch
           }
@@ -370,6 +487,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           volume_mount {
             name       = "blog"
             mount_path = "/data"
+          }
+
+          volume_mount {
+            name       = "media"
+            mount_path = "/media"
           }
 
           startup_probe {

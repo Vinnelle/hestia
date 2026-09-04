@@ -272,7 +272,7 @@ module "adguard" {
 module "admin" {
   source = "./apps/admin"
 
-  depends_on = [module.platform_core, module.platform_vpa, module.gitlab]
+  depends_on = [module.platform_core, module.platform_vpa, module.platform_storage, module.gitlab]
 
   namespace                         = module.vinnel_cloud.namespace
   registry_secret_name              = module.vinnel_cloud.registry_secret_name
