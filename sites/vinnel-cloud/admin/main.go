@@ -476,7 +476,6 @@ func (b *blogAPI) upload(w http.ResponseWriter, r *http.Request) {
 	if !allowUploadOrigin(w, r) {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, blog.MaxMedia+1<<20)
 	reader, err := r.MultipartReader()
 	if err != nil {
 		b.fail(w, fmt.Errorf("%w: malformed request", blog.ErrInvalid))
@@ -515,6 +514,74 @@ func (b *blogAPI) upload(w http.ResponseWriter, r *http.Request) {
 	b.fail(w, fmt.Errorf("%w: file is required", blog.ErrInvalid))
 }
 
+func (b *blogAPI) uploadStart(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	var in struct {
+		Filename  string `json:"filename"`
+		Size      int64  `json:"size"`
+		ChunkSize int64  `json:"chunkSize"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&in); err != nil {
+		b.fail(w, fmt.Errorf("%w: malformed request", blog.ErrInvalid))
+		return
+	}
+	var status *blog.UploadStatus
+	var err error
+	if in.ChunkSize > 0 {
+		status, err = b.media.StartUploadWithChunkSize(in.Filename, in.Size, in.ChunkSize)
+	} else {
+		status, err = b.media.StartUpload(in.Filename, in.Size)
+	}
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, status)
+}
+
+func (b *blogAPI) uploadStatus(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	status, err := b.media.UploadStatus(r.PathValue("id"))
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, status)
+}
+
+func (b *blogAPI) uploadChunk(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	index, err := strconv.ParseInt(r.PathValue("index"), 10, 64)
+	if err != nil {
+		b.fail(w, fmt.Errorf("%w: invalid chunk index", blog.ErrInvalid))
+		return
+	}
+	if err := b.media.UploadChunk(r.PathValue("id"), index, r.Body); err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, map[string]string{"ok": "true"})
+}
+
+func (b *blogAPI) uploadComplete(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	name, err := b.media.CompleteUpload(r.PathValue("id"))
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	log.Printf("blog upload complete: user=%q name=%q", userFromRequest(r), name)
+	writeJSON(w, map[string]string{"name": name, "url": b.mediaURL(name)})
+}
+
 func allowUploadOrigin(w http.ResponseWriter, r *http.Request) bool {
 	origin := r.Header.Get("Origin")
 	if origin == "" {
@@ -535,7 +602,7 @@ func (b *blogAPI) uploadOptions(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Origin") == adminOrigin {
 		w.Header().Set("Access-Control-Allow-Origin", adminOrigin)
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Methods", "POST")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -822,6 +889,11 @@ func main() {
 	mux.HandleFunc("GET /api/blog/slug", blogHandlers.slugify)
 	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
 	mux.HandleFunc("OPTIONS /api/blog/media", blogHandlers.uploadOptions)
+	mux.HandleFunc("POST /api/blog/media/uploads", blogHandlers.uploadStart)
+	mux.HandleFunc("GET /api/blog/media/uploads/{id}", blogHandlers.uploadStatus)
+	mux.HandleFunc("PUT /api/blog/media/uploads/{id}/chunks/{index}", blogHandlers.uploadChunk)
+	mux.HandleFunc("POST /api/blog/media/uploads/{id}/complete", blogHandlers.uploadComplete)
+	mux.HandleFunc("OPTIONS /api/blog/media/uploads/{path...}", blogHandlers.uploadOptions)
 	mux.HandleFunc("GET /api/blog/posts/{slug}", blogHandlers.get)
 	mux.HandleFunc("PUT /api/blog/posts/{slug}", blogHandlers.save)
 	mux.HandleFunc("DELETE /api/blog/posts/{slug}", blogHandlers.remove)

@@ -591,16 +591,20 @@ async function blogFetch(path, options) {
   } catch {
     throw new Error(text.slice(0, 200) || res.statusText);
   }
-  if (!res.ok) throw new Error(data.err || res.statusText);
+  if (!res.ok) {
+    const err = new Error(data.err || res.statusText);
+    err.status = res.status;
+    throw err;
+  }
   return data;
 }
 
-function blogUploadRequest(path, form, onProgress) {
+function blogUploadRequest(method, path, body, onProgress) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.withCredentials = true;
     xhr.upload.addEventListener('progress', (event) => {
-      if (event.lengthComputable) onProgress(event.loaded, event.total);
+      if (event.lengthComputable && onProgress) onProgress(event.loaded, event.total);
     });
     xhr.addEventListener('load', () => {
       const text = xhr.responseText;
@@ -620,8 +624,8 @@ function blogUploadRequest(path, form, onProgress) {
     xhr.addEventListener('error', () => reject(new Error('Network request failed.')));
     xhr.addEventListener('abort', () => reject(new Error('Upload canceled.')));
     xhr.addEventListener('timeout', () => reject(new Error('Upload timed out.')));
-    xhr.open('POST', path);
-    xhr.send(form);
+    xhr.open(method, path);
+    xhr.send(body);
   });
 }
 
@@ -793,27 +797,154 @@ blogToolbar.addEventListener('click', (e) => {
   if (button) mdApply(button.dataset.md);
 });
 
+const BLOG_UPLOAD_CHUNK_SIZE = 16 * 1024 * 1024;
+const BLOG_UPLOAD_PARALLEL = 4;
+const BLOG_UPLOAD_RETRIES = 3;
+const BLOG_UPLOAD_KEY = 'vinnel:blog-upload:';
+
+function blogFilesFetch(path, options) {
+  return blogFetch((blogFilesOrigin || '') + path, { credentials: 'include', ...options });
+}
+
+function blogUploadKey(file) {
+  return BLOG_UPLOAD_KEY + encodeURIComponent(file.name) + ':' + file.size + ':' + file.lastModified;
+}
+
+function blogUploadSaved(file) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(blogUploadKey(file)) || 'null');
+    if (saved && saved.id && saved.size === file.size && saved.name === file.name && saved.lastModified === file.lastModified) {
+      return saved;
+    }
+  } catch {}
+  return null;
+}
+
+function blogUploadRemember(file, session) {
+  try {
+    localStorage.setItem(blogUploadKey(file), JSON.stringify({
+      id: session.id,
+      name: file.name,
+      size: file.size,
+      lastModified: file.lastModified,
+      chunkSize: session.chunkSize,
+    }));
+  } catch {}
+}
+
+function blogUploadForget(file) {
+  try {
+    localStorage.removeItem(blogUploadKey(file));
+  } catch {}
+}
+
+async function blogUploadSession(file) {
+  const saved = blogUploadSaved(file);
+  if (saved) {
+    try {
+      const status = await blogFilesFetch('/api/blog/media/uploads/' + encodeURIComponent(saved.id));
+      if (status.size === file.size && status.chunkSize === saved.chunkSize) return status;
+    } catch (err) {
+      if (err.status !== 404) throw err;
+    }
+    blogUploadForget(file);
+  }
+
+  const session = await blogFilesFetch('/api/blog/media/uploads', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: file.name, size: file.size, chunkSize: BLOG_UPLOAD_CHUNK_SIZE }),
+  });
+  blogUploadRemember(file, session);
+  return session;
+}
+
+function blogUploadProgress(file, loaded, initial, started) {
+  const elapsed = Math.max((performance.now() - started) / 1000, 0.001);
+  const percent = file.size ? Math.min(100, (loaded / file.size) * 100) : 0;
+  const speed = Math.max(0, loaded - initial) / elapsed;
+  blogSay('Uploading ' + file.name + ' ' + percent.toFixed(0) + '% (' + fmtBytes(speed) + '/s)');
+}
+
+async function blogUploadChunk(file, session, index, loaded, initial, started) {
+  const offset = index * session.chunkSize;
+  const length = Math.min(session.chunkSize, file.size - offset);
+  const body = file.slice(offset, offset + length, 'application/octet-stream');
+  const path = (blogFilesOrigin || '') + '/api/blog/media/uploads/' + encodeURIComponent(session.id) + '/chunks/' + index;
+  for (let attempt = 1; attempt <= BLOG_UPLOAD_RETRIES; attempt++) {
+    loaded[index] = 0;
+    blogUploadProgress(file, loaded.reduce((sum, value) => sum + value, 0), initial, started);
+    try {
+      await blogUploadRequest('PUT', path, body, (sent) => {
+        loaded[index] = Math.min(sent, length);
+        blogUploadProgress(file, loaded.reduce((sum, value) => sum + value, 0), initial, started);
+      });
+      loaded[index] = length;
+      blogUploadProgress(file, loaded.reduce((sum, value) => sum + value, 0), initial, started);
+      return;
+    } catch (err) {
+      if (attempt === BLOG_UPLOAD_RETRIES) throw err;
+      blogSay('Retrying ' + file.name + ' chunk ' + (index + 1) + ' (' + attempt + '/' + BLOG_UPLOAD_RETRIES + ')');
+    }
+  }
+}
+
+async function blogUploadFile(file) {
+  const session = await blogUploadSession(file);
+  const completePath = '/api/blog/media/uploads/' + encodeURIComponent(session.id) + '/complete';
+  if (session.complete) {
+    const result = await blogFilesFetch(completePath, { method: 'POST' });
+    blogUploadForget(file);
+    return result;
+  }
+
+  const total = session.totalChunks || Math.ceil(file.size / session.chunkSize);
+  const loaded = Array(total).fill(0);
+  for (const index of session.received || []) {
+    if (index >= 0 && index < total) loaded[index] = Math.min(session.chunkSize, file.size - index * session.chunkSize);
+  }
+  const initial = loaded.reduce((sum, value) => sum + value, 0);
+  const started = performance.now();
+  blogUploadProgress(file, initial, initial, started);
+
+  const pending = [];
+  for (let index = 0; index < total; index++) {
+    if (loaded[index] === 0) pending.push(index);
+  }
+  let cursor = 0;
+  let failure = null;
+  async function worker() {
+    while (!failure) {
+      const index = cursor++;
+      if (index >= pending.length) return;
+      try {
+        await blogUploadChunk(file, session, pending[index], loaded, initial, started);
+      } catch (err) {
+        failure = err;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(BLOG_UPLOAD_PARALLEL, pending.length) }, worker));
+  if (failure) throw failure;
+
+  blogSay('Finalizing ' + file.name + ' 100%');
+  const result = await blogFilesFetch(completePath, { method: 'POST' });
+  blogUploadForget(file);
+  return result;
+}
+
 async function blogUpload(files, asImage) {
   blogError.hidden = true;
   for (const file of files) {
-    blogSay('Uploading ' + file.name + ' 0% (0 B/s)');
+    blogSay('Preparing ' + file.name);
     try {
-      const form = new FormData();
-      form.append('file', file);
-      const path = (blogFilesOrigin || '') + '/api/blog/media';
-      const started = performance.now();
-      const data = await blogUploadRequest(path, form, (loaded, total) => {
-        const elapsed = Math.max((performance.now() - started) / 1000, 0.001);
-        const size = total || file.size;
-        const percent = size ? Math.min(100, (loaded / size) * 100) : 0;
-        blogSay('Uploading ' + file.name + ' ' + percent.toFixed(0) + '% (' + fmtBytes(loaded / elapsed) + '/s)');
-      });
+      const data = await blogUploadFile(file);
       const image = asImage === undefined ? file.type.startsWith('image/') : asImage;
       const label = image ? file.name.replace(/\.[^.]+$/, '') : file.name;
       mdInsert((image ? '!' : '') + '[' + label + '](' + data.url + ')');
       blogSay('Attached ' + data.name);
     } catch (err) {
-      blogSay('Upload failed', true);
+      blogSay('Upload failed; select the file again to resume', true);
       blogFail(err);
       return;
     }

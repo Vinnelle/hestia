@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"mime/multipart"
@@ -194,6 +195,11 @@ func blogTestAPI(t *testing.T, repo *blog.Repo) (*blogAPI, *http.ServeMux) {
 	mux.HandleFunc("POST /api/blog/posts/{slug}/unpublish", api.unpublish)
 	mux.HandleFunc("POST /api/blog/media", api.upload)
 	mux.HandleFunc("OPTIONS /api/blog/media", api.uploadOptions)
+	mux.HandleFunc("POST /api/blog/media/uploads", api.uploadStart)
+	mux.HandleFunc("GET /api/blog/media/uploads/{id}", api.uploadStatus)
+	mux.HandleFunc("PUT /api/blog/media/uploads/{id}/chunks/{index}", api.uploadChunk)
+	mux.HandleFunc("POST /api/blog/media/uploads/{id}/complete", api.uploadComplete)
+	mux.HandleFunc("OPTIONS /api/blog/media/uploads/{path...}", api.uploadOptions)
 	mux.HandleFunc("GET /public/media/{name}", api.publicMedia)
 	return api, mux
 }
@@ -505,6 +511,76 @@ func TestBlogUploadRejectsOtherOrigin(t *testing.T) {
 	mux.ServeHTTP(w, r)
 	if w.Code != http.StatusForbidden {
 		t.Fatalf("upload = %d, want 403", w.Code)
+	}
+}
+
+func TestBlogResumableUpload(t *testing.T) {
+	_, mux := blogTestAPI(t, &blog.Repo{})
+	start := httptest.NewRequest(http.MethodPost, "/api/blog/media/uploads", strings.NewReader(`{"filename":"Large.bin","size":11,"chunkSize":4}`))
+	start.Header.Set("Content-Type", "application/json")
+	start.Header.Set("Origin", adminOrigin)
+	startResponse := httptest.NewRecorder()
+	mux.ServeHTTP(startResponse, start)
+	if startResponse.Code != http.StatusOK {
+		t.Fatalf("start = %d, body %s", startResponse.Code, startResponse.Body)
+	}
+	var session blog.UploadStatus
+	if err := json.Unmarshal(startResponse.Body.Bytes(), &session); err != nil {
+		t.Fatal(err)
+	}
+	if session.TotalChunks != 3 {
+		t.Fatalf("total chunks = %d, want 3", session.TotalChunks)
+	}
+
+	chunk := func(index int, body string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/blog/media/uploads/%s/chunks/%d", session.ID, index), strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/octet-stream")
+		r.Header.Set("Origin", adminOrigin)
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, r)
+		return w
+	}
+	if w := chunk(0, "hell"); w.Code != http.StatusOK {
+		t.Fatalf("chunk 0 = %d, body %s", w.Code, w.Body)
+	}
+	if w := chunk(2, "rld"); w.Code != http.StatusOK {
+		t.Fatalf("chunk 2 = %d, body %s", w.Code, w.Body)
+	}
+
+	statusRequest := httptest.NewRequest(http.MethodGet, "/api/blog/media/uploads/"+session.ID, nil)
+	statusRequest.Header.Set("Origin", adminOrigin)
+	statusResponse := httptest.NewRecorder()
+	mux.ServeHTTP(statusResponse, statusRequest)
+	if statusResponse.Code != http.StatusOK || !strings.Contains(statusResponse.Body.String(), `"received":[0,2]`) {
+		t.Fatalf("status = %d, body %s", statusResponse.Code, statusResponse.Body)
+	}
+
+	complete := func() *httptest.ResponseRecorder {
+		r := httptest.NewRequest(http.MethodPost, "/api/blog/media/uploads/"+session.ID+"/complete", nil)
+		r.Header.Set("Origin", adminOrigin)
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, r)
+		return w
+	}
+	if w := complete(); w.Code != http.StatusBadRequest {
+		t.Fatalf("incomplete = %d, body %s", w.Code, w.Body)
+	}
+	if w := chunk(1, "o wo"); w.Code != http.StatusOK {
+		t.Fatalf("chunk 1 = %d, body %s", w.Code, w.Body)
+	}
+	w := complete()
+	if w.Code != http.StatusOK {
+		t.Fatalf("complete = %d, body %s", w.Code, w.Body)
+	}
+	var result struct{ Name, URL string }
+	if err := json.Unmarshal(w.Body.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.Name == "" || result.URL == "" {
+		t.Fatalf("complete result = %+v", result)
+	}
+	if w := blogDo(t, mux, http.MethodGet, "/public/media/"+result.Name, ""); w.Code != http.StatusOK || w.Body.String() != "hello world" {
+		t.Fatalf("media = %d, body %q", w.Code, w.Body)
 	}
 }
 

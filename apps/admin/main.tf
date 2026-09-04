@@ -28,7 +28,7 @@ resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog" {
     access_modes = ["ReadWriteOnce"]
     resources {
       requests = {
-        storage = "1Gi"
+        storage = "5Gi"
       }
     }
   }
@@ -608,7 +608,7 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_admin_files" {
       "nginx.ingress.kubernetes.io/server-snippet"          = "client_body_timeout 3600s;"
       "nginx.ingress.kubernetes.io/enable-cors"             = "true"
       "nginx.ingress.kubernetes.io/cors-allow-origin"       = "https://admin.vinnel.cloud"
-      "nginx.ingress.kubernetes.io/cors-allow-methods"      = "POST, OPTIONS"
+      "nginx.ingress.kubernetes.io/cors-allow-methods"      = "GET, POST, PUT, OPTIONS"
       "nginx.ingress.kubernetes.io/cors-allow-headers"      = "Content-Type"
       "nginx.ingress.kubernetes.io/cors-allow-credentials"  = "true"
       "nginx.ingress.kubernetes.io/cors-max-age"            = "600"
@@ -628,7 +628,7 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_admin_files" {
       http {
         path {
           path      = "/api/blog/media"
-          path_type = "Exact"
+          path_type = "Prefix"
           backend {
             service {
               name = kubernetes_service_v1.vinnel_cloud_admin.metadata[0].name

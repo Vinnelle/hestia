@@ -14,8 +14,6 @@ import (
 	"strings"
 )
 
-const MaxMedia = 512 << 20
-
 var (
 	mediaNamePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*\.[a-z0-9]{1,8}$`)
 	mediaExtPattern  = regexp.MustCompile(`^\.[a-z0-9]{1,8}$`)
@@ -33,8 +31,7 @@ var (
 )
 
 type Media struct {
-	dir      string
-	maxBytes int64
+	dir string
 }
 
 func NewMedia(dir string) (*Media, error) {
@@ -44,7 +41,7 @@ func NewMedia(dir string) (*Media, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("blog media dir: %w", err)
 	}
-	return &Media{dir: dir, maxBytes: MaxMedia}, nil
+	return &Media{dir: dir}, nil
 }
 
 func MediaName(original string, data []byte) string {
@@ -74,9 +71,6 @@ func (m *Media) Save(original string, data []byte) (string, error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("%w: empty upload", ErrInvalid)
 	}
-	if int64(len(data)) > m.maxBytes {
-		return "", fmt.Errorf("%w: upload over %d bytes", ErrInvalid, m.maxBytes)
-	}
 	return m.SaveReader(original, bytes.NewReader(data))
 }
 
@@ -92,15 +86,12 @@ func (m *Media) SaveReader(original string, src io.Reader) (string, error) {
 	defer tmp.Close()
 
 	hash := sha256.New()
-	n, err := io.CopyN(io.MultiWriter(tmp, hash), src, m.maxBytes+1)
-	if err != nil && !errors.Is(err, io.EOF) {
+	n, err := io.Copy(io.MultiWriter(tmp, hash), src)
+	if err != nil {
 		return "", err
 	}
 	if n == 0 {
 		return "", fmt.Errorf("%w: empty upload", ErrInvalid)
-	}
-	if n > m.maxBytes {
-		return "", fmt.Errorf("%w: upload over %d bytes", ErrInvalid, m.maxBytes)
 	}
 
 	var sum [sha256.Size]byte
