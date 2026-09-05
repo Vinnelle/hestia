@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -371,4 +372,234 @@ func (m *Media) removeUploadChunks(dir string, meta uploadMeta) {
 	for index := int64(0); index < uploadTotalChunks(meta.Size, meta.ChunkSize); index++ {
 		os.Remove(uploadChunkPath(dir, index))
 	}
+}
+
+type DownloadStatus struct {
+	ID         string `json:"id"`
+	URL        string `json:"url"`
+	Filename   string `json:"filename"`
+	Size       int64  `json:"size"`
+	Downloaded int64  `json:"downloaded"`
+	Complete   bool   `json:"complete"`
+	Name       string `json:"name,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+type downloadMeta struct {
+	URL      string `json:"url"`
+	Filename string `json:"filename"`
+	Size     int64  `json:"size"`
+}
+
+var downloadIDPattern = regexp.MustCompile(`^[a-f0-9]{32}$`)
+
+func (m *Media) StartDownloadFromURL(url, filename string) (*DownloadStatus, error) {
+	if strings.TrimSpace(url) == "" {
+		return nil, fmt.Errorf("%w: url is required", ErrInvalid)
+	}
+
+	root := filepath.Join(m.dir, ".downloads")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return nil, err
+	}
+	for {
+		idBytes := make([]byte, 16)
+		if _, err := rand.Read(idBytes); err != nil {
+			return nil, err
+		}
+		id := hex.EncodeToString(idBytes)
+		dir := filepath.Join(root, id)
+		if err := os.Mkdir(dir, 0o755); err != nil {
+			if errors.Is(err, os.ErrExist) {
+				continue
+			}
+			return nil, err
+		}
+		meta := downloadMeta{URL: url, Filename: filename}
+		if err := writeUploadJSON(filepath.Join(dir, "meta.json"), meta); err != nil {
+			os.RemoveAll(dir)
+			return nil, err
+		}
+		return &DownloadStatus{
+			ID:       id,
+			URL:      url,
+			Filename: filename,
+			Size:     0,
+		}, nil
+	}
+}
+
+func (m *Media) readDownload(id string) (string, downloadMeta, error) {
+	if !downloadIDPattern.MatchString(id) {
+		return "", downloadMeta{}, fmt.Errorf("%w: bad download id %q", ErrInvalid, id)
+	}
+	dir := filepath.Join(m.dir, ".downloads", id)
+	data, err := os.ReadFile(filepath.Join(dir, "meta.json"))
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return "", downloadMeta{}, ErrNotFound
+		}
+		return "", downloadMeta{}, err
+	}
+	var meta downloadMeta
+	if err := json.Unmarshal(data, &meta); err != nil {
+		return "", downloadMeta{}, fmt.Errorf("%w: malformed download metadata", ErrInvalid)
+	}
+	return dir, meta, nil
+}
+
+func readDownloadResult(dir string) (string, bool, error) {
+	data, err := os.ReadFile(filepath.Join(dir, "result.json"))
+	if errors.Is(err, os.ErrNotExist) {
+		return "", false, nil
+	}
+	if err != nil {
+		return "", false, err
+	}
+	var result uploadResult
+	if err := json.Unmarshal(data, &result); err != nil || !mediaNamePattern.MatchString(result.Name) {
+		return "", false, fmt.Errorf("%w: malformed download result", ErrInvalid)
+	}
+	return result.Name, true, nil
+}
+
+func (m *Media) DownloadStatus(id string) (*DownloadStatus, error) {
+	dir, meta, err := m.readDownload(id)
+	if err != nil {
+		return nil, err
+	}
+	name, complete, err := readDownloadResult(dir)
+	if err != nil {
+		return nil, err
+	}
+	status := &DownloadStatus{
+		ID:       id,
+		URL:      meta.URL,
+		Filename: meta.Filename,
+		Size:     meta.Size,
+		Complete: complete,
+		Name:     name,
+	}
+	if complete {
+		return status, nil
+	}
+	downloaded, err := m.downloadedBytes(dir)
+	if err != nil {
+		return nil, err
+	}
+	status.Downloaded = downloaded
+	return status, nil
+}
+
+func (m *Media) downloadedBytes(dir string) (int64, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, err
+	}
+	var total int64
+	for _, entry := range entries {
+		name := entry.Name()
+		if strings.HasPrefix(name, "chunk-") && strings.HasSuffix(name, ".part") {
+			info, err := entry.Info()
+			if err == nil {
+				total += info.Size()
+			}
+		}
+	}
+	return total, nil
+}
+
+func downloadChunkPath(dir string, index int64) string {
+	return filepath.Join(dir, "chunk-"+strconv.FormatInt(index, 10)+".part")
+}
+
+const downloadChunkSize = 16 << 20
+
+func (m *Media) DownloadFromURL(id string) error {
+	dir, meta, err := m.readDownload(id)
+	if err != nil {
+		return err
+	}
+	if _, complete, err := readDownloadResult(dir); err != nil {
+		return err
+	} else if complete {
+		return nil
+	}
+
+	client := &http.Client{Timeout: 0}
+	req, err := http.NewRequest("GET", meta.URL, nil)
+	if err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return m.setDownloadError(dir, fmt.Errorf("download failed with status %d", resp.StatusCode))
+	}
+
+	meta.Size = resp.ContentLength
+	if err := m.updateDownloadMeta(dir, meta); err != nil {
+		return err
+	}
+
+	tmp, err := os.CreateTemp(dir, ".chunk-*")
+	if err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	defer os.Remove(tmp.Name())
+	defer tmp.Close()
+
+	hash := sha256.New()
+	n, err := io.Copy(io.MultiWriter(tmp, hash), resp.Body)
+	if err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	if n == 0 {
+		return m.setDownloadError(dir, fmt.Errorf("empty download"))
+	}
+
+	if err := tmp.Close(); err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	if err := os.Chmod(tmp.Name(), 0o644); err != nil {
+		return m.setDownloadError(dir, err)
+	}
+
+	var sum [sha256.Size]byte
+	copy(sum[:], hash.Sum(nil))
+	name := mediaName(meta.Filename, sum)
+	target, err := m.path(name)
+	if err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	if _, err := os.Stat(target); err == nil {
+		if err := writeUploadJSON(filepath.Join(dir, "result.json"), uploadResult{Name: name}); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err := os.Rename(tmp.Name(), target); err != nil {
+		return m.setDownloadError(dir, err)
+	}
+	if err := writeUploadJSON(filepath.Join(dir, "result.json"), uploadResult{Name: name}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Media) updateDownloadMeta(dir string, meta downloadMeta) error {
+	return writeUploadJSON(filepath.Join(dir, "meta.json"), meta)
+}
+
+func (m *Media) setDownloadError(dir string, err error) error {
+	meta := downloadMeta{}
+	data, _ := os.ReadFile(filepath.Join(dir, "meta.json"))
+	json.Unmarshal(data, &meta)
+	meta.Size = -1
+	writeUploadJSON(filepath.Join(dir, "meta.json"), meta)
+	return err
 }

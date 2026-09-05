@@ -1188,3 +1188,31 @@ a:hover { color: var(--accent); }
   gap: 10px;
   margin-top: 8px;
 }
+
+.modal-progress {
+  margin-bottom: 16px;
+}
+
+.modal-progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.modal-progress-bar::before {
+  content: '';
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+
+.modal-progress-info {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--muted);
+}

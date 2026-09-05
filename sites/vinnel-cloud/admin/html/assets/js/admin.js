@@ -953,16 +953,67 @@ async function blogUpload(files, asImage) {
 
 async function blogUploadFromURL(url, filename) {
   blogError.hidden = true;
-  blogSay('Downloading from URL…');
+  blogUrlModal.hidden = true;
   try {
-    const data = await blogFilesFetch('/api/blog/media/url', {
+    const start = await blogFilesFetch('/api/blog/media/url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, filename }),
     });
-    const label = filename || data.name.replace(/-[a-f0-9]{8}\.[^.]+$/, '');
-    mdInsert('[' + label + '](' + data.url + ')');
-    blogSay('Attached ' + data.name);
+    const downloadId = start.id;
+
+    await blogFilesFetch('/api/blog/media/url/' + encodeURIComponent(downloadId) + '/start', {
+      method: 'POST',
+    });
+
+    const progressEl = blogUrlModal.querySelector('.modal-progress');
+    const progressBar = blogUrlModal.querySelector('.modal-progress-bar');
+    const progressText = blogUrlModal.querySelector('.modal-progress-text');
+    const progressSpeed = blogUrlModal.querySelector('.modal-progress-speed');
+
+    if (progressEl) progressEl.hidden = false;
+
+    let lastDownloaded = 0;
+    let lastTime = Date.now();
+
+    async function poll() {
+      const status = await blogFilesFetch('/api/blog/media/url/' + encodeURIComponent(downloadId));
+      if (status.error) throw new Error(status.error);
+
+      if (progressBar && status.size > 0) {
+        const pct = Math.min(100, (status.downloaded / status.size) * 100);
+        progressBar.style.width = pct.toFixed(1) + '%';
+      }
+      if (progressText) {
+        const pct = status.size > 0 ? ((status.downloaded / status.size) * 100).toFixed(1) : '?';
+        progressText.textContent = pct + '%';
+      }
+      if (progressSpeed) {
+        const now = Date.now();
+        const elapsed = (now - lastTime) / 1000;
+        const delta = status.downloaded - lastDownloaded;
+        if (elapsed > 0) {
+          const speed = delta / elapsed;
+          progressSpeed.textContent = fmtBytes(speed) + '/s';
+        }
+        lastDownloaded = status.downloaded;
+        lastTime = now;
+      }
+
+      if (status.complete) {
+        if (status.name) {
+          const label = filename || status.name.replace(/-[a-f0-9]{8}\.[^.]+$/, '');
+          const mediaUrl = (blogFilesOrigin || '') + '/public/media/' + status.name;
+          mdInsert('[' + label + '](' + mediaUrl + ')');
+          blogSay('Attached ' + status.name);
+        }
+        if (progressEl) progressEl.hidden = true;
+        if (progressBar) progressBar.style.width = '0%';
+        return;
+      }
+      setTimeout(poll, 1000);
+    }
+    await poll();
   } catch (err) {
     blogSay('Download failed', true);
     blogFail(err);

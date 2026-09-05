@@ -19,7 +19,6 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -626,34 +625,38 @@ func (b *blogAPI) uploadFromURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Get(in.URL)
-	if err != nil {
-		b.fail(w, fmt.Errorf("%w: failed to download: %v", blog.ErrInvalid, err))
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		b.fail(w, fmt.Errorf("%w: download failed with status %d", blog.ErrInvalid, resp.StatusCode))
-		return
-	}
-
-	name := in.Filename
-	if name == "" {
-		name = filepath.Base(resp.Request.URL.Path)
-		if name == "" || name == "." || name == "/" {
-			name = "download"
-		}
-	}
-
-	stored, err := b.media.SaveReader(name, resp.Body)
+	status, err := b.media.StartDownloadFromURL(in.URL, in.Filename)
 	if err != nil {
 		b.fail(w, err)
 		return
 	}
-	log.Printf("blog upload from URL: user=%q name=%q url=%q", userFromRequest(r), stored, in.URL)
-	writeJSON(w, map[string]string{"name": stored, "url": b.mediaURL(stored)})
+	writeJSON(w, status)
+}
+
+func (b *blogAPI) uploadFromURLStatus(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	id := r.PathValue("id")
+	status, err := b.media.DownloadStatus(id)
+	if err != nil {
+		b.fail(w, err)
+		return
+	}
+	writeJSON(w, status)
+}
+
+func (b *blogAPI) uploadFromURLStart(w http.ResponseWriter, r *http.Request) {
+	if !allowUploadOrigin(w, r) {
+		return
+	}
+	id := r.PathValue("id")
+	go func() {
+		if err := b.media.DownloadFromURL(id); err != nil {
+			log.Printf("blog download from URL failed: id=%q err=%v", id, err)
+		}
+	}()
+	writeJSON(w, map[string]string{"ok": "true"})
 }
 
 func (b *blogAPI) fail(w http.ResponseWriter, err error) {
@@ -938,6 +941,8 @@ func main() {
 	mux.HandleFunc("POST /api/blog/media", blogHandlers.upload)
 	mux.HandleFunc("OPTIONS /api/blog/media", blogHandlers.uploadOptions)
 	mux.HandleFunc("POST /api/blog/media/url", blogHandlers.uploadFromURL)
+	mux.HandleFunc("GET /api/blog/media/url/{id}", blogHandlers.uploadFromURLStatus)
+	mux.HandleFunc("POST /api/blog/media/url/{id}/start", blogHandlers.uploadFromURLStart)
 	mux.HandleFunc("POST /api/blog/media/uploads", blogHandlers.uploadStart)
 	mux.HandleFunc("GET /api/blog/media/uploads/{id}", blogHandlers.uploadStatus)
 	mux.HandleFunc("PUT /api/blog/media/uploads/{id}/chunks/{index}", blogHandlers.uploadChunk)
