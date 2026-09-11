@@ -114,6 +114,17 @@ func TestIndexTemplateRenders(t *testing.T) {
 	}
 }
 
+func TestIndexTemplateIncludesAccountSettingsLink(t *testing.T) {
+	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
+	var out bytes.Buffer
+	if err := tmpl.Execute(&out, pageData{User: "test@example.com", Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
+		t.Fatal(err)
+	}
+	if want := `href="https://auth.vinnel.cloud/settings"`; !strings.Contains(out.String(), want) {
+		t.Errorf("index.html is missing the account settings link %q", want)
+	}
+}
+
 func TestUserFromRequestPrefersEmail(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	if got := userFromRequest(r); got != "" {

@@ -1,11 +1,11 @@
 FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
 
 # renovate: datasource=github-releases depName=kubernetes/kubernetes
-ARG KUBECTL_VERSION=v1.36.4
+ARG KUBECTL_VERSION=v1.37.0
 # renovate: datasource=github-releases depName=terraform-linters/tflint
 ARG TFLINT_VERSION=v0.64.0
 # renovate: datasource=github-releases depName=cli/cli
-ARG GH_VERSION=2.98.0
+ARG GH_VERSION=2.100.0
 
 ARG CACHEBUST=0
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \

@@ -121,7 +121,7 @@ resource "kubernetes_deployment_v1" "minecraft" {
 
         init_container {
           name  = "fetch-modpack"
-          image = "curlimages/curl:8.21.0@sha256:7c12af72ceb38b7432ab85e1a265cff6ae58e06f95539d539b654f2cfa64bb13"
+          image = "curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777"
 
           command = ["/bin/sh", "-c", <<-EOT
             set -eu
@@ -166,7 +166,7 @@ resource "kubernetes_deployment_v1" "minecraft" {
 
         container {
           name  = "minecraft"
-          image = "itzg/minecraft-server:java21@sha256:3527decf11fbdeb77acd1b035ad65dd1fc83a288c2891a68b31e98b7330a610f"
+          image = "itzg/minecraft-server:java21@sha256:f71707d922f9d616c654ff504bf41e4d09dbf4fa1cd9776ccca660bb2accbab8"
 
           env {
             name  = "EULA"

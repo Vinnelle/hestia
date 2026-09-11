@@ -70,9 +70,14 @@ resource "kubernetes_deployment_v1" "netbird_management" {
       }
 
       spec {
+        host_aliases {
+          ip        = var.node_ip
+          hostnames = ["auth.vinnel.cloud"]
+        }
+
         container {
           name  = "management"
-          image = "netbirdio/management:0.77.1"
+          image = "netbirdio/management:0.78.1"
           args = [
             "--port", "80",
             "--log-file", "console",

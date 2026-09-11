@@ -8,7 +8,7 @@ RUN magick favicon.png -gravity center -background none -extent 530x530 \
 RUN magick favicon.png -gravity center -background none -extent 530x530 \
     -resize 180x180 apple-touch-icon.png
 
-FROM mirror.vinnel.cloud/library/nginx:1.31-alpine@sha256:db35bfc6b2951e7f8a72db5db120288c127ffaeeb4a6d4b95a26fead017d5913 AS brotli-builder
+FROM mirror.vinnel.cloud/library/nginx:1.31-alpine@sha256:72ba65eb42c10344912a84ff42408db7d34f2feb642204570ab8fc5ffd29f1d3 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
  && NGINX_VERSION=$(nginx -v 2>&1 | sed 's/.*\///') \
@@ -20,7 +20,7 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_filter_module.so /ngx_http_brotli_filter_module.so \
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
-FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:aadf416b2cdce311a8811ba3f0608a61b77dbf997500e2eafe781b51f6a0b019 AS asset-build
+FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:ef24c5053d50fdc3e4e56eb4e7ddb7861874ab0fdc797046ba897581deb8e868 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
@@ -35,9 +35,9 @@ COPY --from=images /avatar.webp .
 RUN sh /build/fetch-fonts.sh fonts && sh /build/build.sh
 RUN cp css/style.*.css css/post.css && cp fonts/jetbrains-mono.*.css fonts/post.css
 
-FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:901e944d1f4fc2bd077e8f5568b98c1f6f8cdacf6b97a87747c43134a339b9a7
+FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:2ddec616f1cb58bcac057aa388f28cb81e35137641ef4226d321714499329bd1
 USER root
-RUN apk --no-cache upgrade
+RUN apk --no-cache upgrade && rm /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
 USER nginx
 COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/

@@ -1,7 +1,11 @@
 {
   "theme": "auto",
+  "identity_validation": {
+    "reset_password": { "jwt_secret": ${jsonencode(reset_password_jwt_secret)} }
+  },
   "authentication_backend": {
-    "password_reset": { "disable": true },
+    "password_reset": { "disable": false },
+    "password_change": { "disable": false },
     "file": { "path": "/config/users_database.yml" }
   },
   "access_control": { "default_policy": "two_factor" },

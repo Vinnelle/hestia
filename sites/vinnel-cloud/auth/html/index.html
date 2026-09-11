@@ -15,7 +15,7 @@
   <title>auth.vinnel.cloud</title>
 </head>
 <body>
-  <main class="container">
+  <main class="container" id="auth-shell">
     <header class="brand">
       <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
         <rect x="6" y="6" width="24" height="24" rx="5"/>
@@ -36,6 +36,7 @@
         <span class="field-label">Password</span>
         <input type="password" name="password" autocomplete="current-password" required>
       </label>
+      <a class="forgot" href="/reset-password">Forgot password?</a>
       <label class="check">
         <input type="checkbox" name="remember">
         <svg class="tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.75l3.75 3.75L13.5 4.5"/></svg>
@@ -75,6 +76,156 @@
     <p id="msg" role="alert" hidden></p>
   </main>
 
+  <main class="settings-app" id="settings-app" hidden>
+    <header class="settings-header">
+      <a class="settings-wordmark" href="/">
+        <svg class="settings-mark" viewBox="0 0 64 64" aria-hidden="true">
+          <rect x="6" y="6" width="24" height="24" rx="5"/>
+          <rect x="34" y="6" width="24" height="24" rx="5" opacity="0.55"/>
+          <rect x="6" y="34" width="24" height="24" rx="5" opacity="0.55"/>
+          <rect x="34" y="34" width="24" height="24" rx="5"/>
+        </svg>
+        <span>vinnel<span class="accent">.cloud</span></span>
+      </a>
+      <div class="settings-user">
+        <span id="settings-user-label"></span>
+        <a href="/logout">Sign out</a>
+      </div>
+    </header>
+
+    <div class="settings-layout">
+      <aside class="settings-sidebar">
+        <nav aria-label="Account settings">
+          <button class="settings-nav-link active" type="button" data-settings-page="overview">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
+            Overview
+          </button>
+          <button class="settings-nav-link" type="button" data-settings-page="security">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5.5c0 4.5-3.1 7-7 8.5-3.9-1.5-7-4-7-8.5V6z"/><path d="M9 12l2 2 4-4"/></svg>
+            Security
+          </button>
+        </nav>
+        <a class="settings-back" href="https://admin.vinnel.cloud/">Back to admin</a>
+      </aside>
+
+      <div class="settings-content">
+        <div class="settings-alert" id="settings-alert" role="alert" hidden></div>
+
+        <section class="settings-page" data-settings-page-view="overview">
+          <div class="settings-heading">
+            <p class="settings-kicker">Account</p>
+            <h1>Overview</h1>
+            <p>Manage the identity used across vinnel.cloud.</p>
+          </div>
+
+          <div class="settings-card settings-profile-card">
+            <div class="settings-profile-head">
+              <div class="settings-avatar" id="settings-avatar">?</div>
+              <div>
+                <h2 id="settings-display-name">Loading</h2>
+                <p id="settings-username"></p>
+              </div>
+            </div>
+            <dl class="settings-details">
+              <div><dt>Email</dt><dd id="settings-email">—</dd></div>
+              <div><dt>Two-factor method</dt><dd id="settings-method">—</dd></div>
+            </dl>
+            <p class="settings-note">Your username and profile identity are managed by the authentication backend.</p>
+          </div>
+
+          <div class="settings-card settings-overview-security">
+            <div class="settings-card-heading">
+              <div><p class="settings-kicker">Protection</p><h2>Security</h2></div>
+              <button class="settings-button settings-button--quiet" type="button" data-settings-page="security">Manage</button>
+            </div>
+            <div class="settings-status-row"><span class="settings-status-dot" id="settings-mfa-dot"></span><span id="settings-mfa-summary">Loading security methods</span></div>
+          </div>
+        </section>
+
+        <section class="settings-page" data-settings-page-view="security" hidden>
+          <div class="settings-heading">
+            <p class="settings-kicker">Account</p>
+            <h1>Security</h1>
+            <p>Passwords and sign-in methods are protected by Authelia.</p>
+          </div>
+
+          <section class="settings-card">
+            <div class="settings-card-heading">
+              <div><p class="settings-kicker">Credentials</p><h2>Password</h2></div>
+              <button class="settings-button" type="button" id="password-open">Change password</button>
+            </div>
+            <p class="settings-note" id="password-status">Changing your password requires identity verification.</p>
+            <form class="settings-form" id="password-form" hidden>
+              <label><span>Current password</span><input id="password-old" type="password" autocomplete="current-password" required></label>
+              <label><span>New password</span><input id="password-new" type="password" autocomplete="new-password" minlength="8" required></label>
+              <label><span>Repeat new password</span><input id="password-repeat" type="password" autocomplete="new-password" minlength="8" required></label>
+              <div class="settings-form-actions"><button class="settings-button settings-button--quiet" type="button" id="password-cancel">Cancel</button><button class="settings-button" type="submit">Update password</button></div>
+            </form>
+          </section>
+
+          <section class="settings-card" id="totp-card">
+            <div class="settings-card-heading">
+              <div><p class="settings-kicker">Second factor</p><h2>Authenticator app</h2></div>
+              <span class="settings-badge" id="totp-status">Loading</span>
+            </div>
+            <p class="settings-note">Use a time-based one-time password from an authenticator app.</p>
+            <div class="settings-form-actions"><button class="settings-button" type="button" id="totp-add">Add authenticator</button><button class="settings-button settings-button--danger" type="button" id="totp-remove" hidden>Remove</button></div>
+            <form class="settings-form settings-register" id="totp-register" hidden>
+              <label><span>Algorithm</span><select id="totp-algorithm"></select></label>
+              <label><span>Digits</span><select id="totp-length"></select></label>
+              <label><span>Period</span><select id="totp-period"></select></label>
+              <button class="settings-button" type="button" id="totp-generate">Generate setup</button>
+              <div class="settings-secret" id="totp-secret-panel" hidden>
+                <p>Open the link in your authenticator app, or enter the secret manually.</p>
+                <a id="totp-uri" class="settings-secret-link"></a>
+                <code id="totp-secret"></code>
+                <label><span>Verification code</span><input id="totp-code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="8" required></label>
+                <div class="settings-form-actions"><button class="settings-button settings-button--quiet" type="button" id="totp-cancel">Cancel</button><button class="settings-button" type="submit">Verify and enable</button></div>
+              </div>
+            </form>
+          </section>
+
+          <section class="settings-card" id="keys-card">
+            <div class="settings-card-heading">
+              <div><p class="settings-kicker">Second factor</p><h2>Security keys and passkeys</h2></div>
+              <span class="settings-badge" id="keys-status">Loading</span>
+            </div>
+            <p class="settings-note" id="keys-support">Register a hardware security key or a platform passkey.</p>
+            <form class="settings-form settings-inline-form" id="key-add-form">
+              <label><span>New key description</span><input id="key-description" type="text" maxlength="64" placeholder="Laptop, phone, or security key" required></label>
+              <button class="settings-button" type="submit">Register key</button>
+            </form>
+            <div class="settings-key-list" id="key-list"></div>
+          </section>
+
+          <section class="settings-card" id="method-card">
+            <div class="settings-card-heading"><div><p class="settings-kicker">Sign in</p><h2>Preferred method</h2></div></div>
+            <p class="settings-note">Choose which enrolled method Authelia offers first.</p>
+            <label class="settings-select-label"><span>Account default</span><select id="preferred-method"></select></label>
+          </section>
+        </section>
+      </div>
+    </div>
+
+    <div class="settings-modal" id="elevation-modal" hidden role="dialog" aria-modal="true" aria-labelledby="elevation-title">
+      <div class="settings-modal-backdrop"></div>
+      <div class="settings-modal-content">
+        <h2 id="elevation-title">Verify your identity</h2>
+        <p id="elevation-message">Authelia requires another verification step before this action.</p>
+        <div class="settings-elevation-methods" id="elevation-methods"></div>
+        <form class="settings-form" id="elevation-email" hidden>
+          <label><span>Email code</span><input id="elevation-code" inputmode="numeric" autocomplete="one-time-code" required></label>
+          <div class="settings-form-actions"><button class="settings-button settings-button--quiet" type="button" data-elevation-cancel>Cancel</button><button class="settings-button" type="submit">Verify</button></div>
+        </form>
+        <form class="settings-form" id="elevation-password" hidden>
+          <label><span>Password</span><input id="elevation-password-input" type="password" autocomplete="current-password" required></label>
+          <div class="settings-form-actions"><button class="settings-button settings-button--quiet" type="button" data-elevation-cancel>Cancel</button><button class="settings-button" type="submit">Verify</button></div>
+        </form>
+        <div class="settings-form-actions" id="elevation-cancel-row"><button class="settings-button settings-button--quiet" type="button" data-elevation-cancel>Cancel</button></div>
+      </div>
+    </div>
+  </main>
+
   <footer class="site-footer">
     <div class="theme-toggle" role="group" aria-label="Theme">
       <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
@@ -84,5 +235,6 @@
   </footer>
 
   <script src="/assets/js/login.js" defer></script>
+  <script src="/assets/js/settings.js" defer></script>
 </body>
 </html>

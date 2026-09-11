@@ -1,6 +1,8 @@
 (function () {
   'use strict';
 
+  if (/^\/settings(?:\/|$)/.test(location.pathname)) return;
+
   var qs = new URLSearchParams(location.search);
   var rd = qs.get('rd') || '';
   var rm = qs.get('rm') || '';

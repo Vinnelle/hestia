@@ -33,6 +33,11 @@ resource "random_password" "authelia_admin_password" {
   special = true
 }
 
+resource "random_password" "authelia_reset_password_jwt_secret" {
+  length  = 64
+  special = false
+}
+
 resource "random_password" "netbird_dashboard_oidc_client_secret" {
   length  = 48
   special = false
@@ -48,6 +53,7 @@ locals {
     session_secret                  = random_password.authelia_session_secret.result
     storage_encryption_key          = random_password.authelia_storage_encryption_key.result
     oidc_hmac_secret                = random_password.authelia_oidc_hmac_secret.result
+    reset_password_jwt_secret       = random_password.authelia_reset_password_jwt_secret.result
     oidc_issuer_private_key         = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
     netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
     velero_ui_client_secret         = var.velero_ui_oidc_client_secret_hash
@@ -150,7 +156,7 @@ resource "kubernetes_deployment_v1" "authelia" {
 
         container {
           name  = "authelia"
-          image = "authelia/authelia:4.39.20"
+          image = "authelia/authelia:4.39.22"
 
           port {
             name           = "http"
@@ -300,32 +306,9 @@ resource "kubernetes_ingress_v1" "authelia" {
         location = /brand.css {
           default_type text/css;
           expires 1h;
-          return 200 ":root{color-scheme:light dark;
-            --bg:light-dark(#faf8f5,#0c0c0d);
-            --fg:light-dark(#2a2825,#cececa);
-            --muted:light-dark(#4a4743,#a9a9a3);
-            --dim:light-dark(#625e57,#74746f);
-            --accent:light-dark(#b3466b,#f7b9d1);
-            --accent-strong:light-dark(#8f3355,#fbd3e2);}
-          *{font-family:'JetBrains Mono',ui-monospace,'SF Mono',Menlo,Consolas,'Liberation Mono',monospace !important;}
-          html,body,#root{background:var(--bg) !important;color:var(--fg) !important;}
-          .MuiPaper-root{background:transparent !important;background-image:none !important;box-shadow:none !important;color:var(--fg) !important;}
-          .MuiTypography-root{color:var(--fg) !important;}
-          .MuiTypography-h5{text-transform:lowercase;letter-spacing:-0.01em;}
-          .MuiAvatar-root{display:none !important;}
-          .MuiFormLabel-root{color:var(--dim) !important;}
-          .MuiFormLabel-root.Mui-focused{color:var(--accent) !important;}
-          .MuiInputBase-input{color:var(--fg) !important;}
-          .MuiOutlinedInput-notchedOutline{border-color:var(--dim) !important;border-radius:2px;}
-          .Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--accent) !important;}
-          .MuiSvgIcon-root{color:var(--dim);}
-          .MuiButton-contained{background:var(--accent) !important;color:var(--bg) !important;box-shadow:none !important;border-radius:2px;text-transform:lowercase !important;}
-          .MuiButton-contained:hover{background:var(--accent-strong) !important;}
-          .MuiButton-text{color:var(--accent) !important;text-transform:lowercase !important;}
-          .MuiCheckbox-root{color:var(--dim) !important;}
-          .MuiCheckbox-root.Mui-checked{color:var(--accent) !important;}
-          a{color:var(--accent) !important;}
-          a:hover{color:var(--accent-strong) !important;}";
+           return 200 "@import url(/assets/fonts/jetbrains-mono.css);
+           :root{color-scheme:light dark;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--bg:light-dark(#faf8f5,#0c0c0d);--raised:light-dark(#f3efe9,#131316);--border:light-dark(#e6e0d8,#1e1e1f);--fg:light-dark(#2a2825,#cececa);--muted:light-dark(#4a4743,#a9a9a3);--dim:light-dark(#625e57,#74746f);--accent:light-dark(#b3466b,#f7b9d1);--accent-strong:light-dark(#8f3355,#fbd3e2);--accent-soft:light-dark(rgb(179 70 107/.1),rgb(247 185 209/.12));--danger:light-dark(#b3261e,#f87171)}
+           *,*:before,*:after{box-sizing:border-box}html{-webkit-text-size-adjust:100%;text-size-adjust:100%}body,#root{background:var(--bg)!important;color:var(--fg)!important;font-family:var(--mono)!important;font-size:13px!important;line-height:1.6!important}a{color:var(--accent)!important;text-decoration:none}a:hover{color:var(--accent-strong)!important}.MuiAppBar-root,.MuiDrawer-paper{background:var(--bg)!important;color:var(--fg)!important;box-shadow:none!important}.MuiAppBar-root{border-bottom:1px solid var(--border)!important}.MuiPaper-root{background:transparent!important;background-image:none!important;box-shadow:none!important;color:var(--fg)!important;border-color:var(--border)!important;border-radius:3px!important}.MuiTypography-root,.MuiListItemText-primary,.MuiListItemText-secondary,.MuiDialogContentText-root{font-family:var(--mono)!important;color:var(--fg)!important}.MuiTypography-h4,.MuiTypography-h5,.MuiTypography-h6{font-weight:500!important;letter-spacing:-.01em;text-transform:lowercase}.MuiButton-root{font-family:var(--mono)!important;font-size:12px!important;border-radius:3px!important;text-transform:none!important;box-shadow:none!important}.MuiButton-contained,.MuiButton-outlined{background:transparent!important;border:1px solid var(--accent)!important;color:var(--accent)!important}.MuiButton-contained:hover,.MuiButton-outlined:hover{background:var(--accent-soft)!important}.MuiInputBase-root{font-family:var(--mono)!important;color:var(--fg)!important;background:var(--raised)!important}.MuiInputBase-input{font-family:var(--mono)!important;color:var(--fg)!important}.MuiOutlinedInput-notchedOutline{border-color:var(--dim)!important;border-radius:3px!important}.Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--accent)!important}.MuiSvgIcon-root{color:var(--dim)!important}.MuiCheckbox-root,.MuiRadio-root{color:var(--dim)!important}.MuiCheckbox-root.Mui-checked,.MuiRadio-root.Mui-checked{color:var(--accent)!important}.MuiAlert-root{font-family:var(--mono)!important;background:var(--raised)!important;color:var(--fg)!important;border:1px solid var(--border)!important}@media(max-width:600px){.MuiContainer-root,main.MuiBox-root{padding-left:20px!important;padding-right:20px!important}}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}";
         }
       EOT
 
@@ -351,7 +334,7 @@ resource "kubernetes_ingress_v1" "authelia" {
       host = "auth.vinnel.cloud"
       http {
         dynamic "path" {
-          for_each = ["/api", "/consent", "/settings", "/static", "/locales", "/jwks.json", "/.well-known", "/device", "/reset-password"]
+          for_each = ["/api", "/consent", "/static", "/locales", "/jwks.json", "/.well-known", "/device", "/reset-password"]
           content {
             path      = path.value
             path_type = "Prefix"

@@ -2,6 +2,8 @@ controller:
   kind: DaemonSet
   hostNetwork: true
   dnsPolicy: ClusterFirstWithHostNet
+  admissionWebhooks:
+    failurePolicy: Ignore
   service:
     type: ClusterIP
   metrics:
