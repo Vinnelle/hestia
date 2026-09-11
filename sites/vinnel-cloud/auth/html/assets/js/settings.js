@@ -65,6 +65,8 @@
         : body.message || body.data && body.data.message || response.statusText || 'Request failed.';
       const error = new Error(details);
       error.status = response.status;
+      error.elevation = Boolean(body.data && body.data.elevation === true);
+      error.secondFactor = Boolean(body.data && body.data.second_factor === true);
       throw error;
     }
     return body.data === undefined ? body : body.data;
@@ -226,11 +228,7 @@
       if (action) await action();
       return;
     }
-    if (current.can_skip_second_factor) {
-      beginEmailElevation();
-      return;
-    }
-    $('elevation-message').textContent = 'Authelia requires another verification step before this action.';
+    beginEmailElevation();
   }
 
   async function beginEmailElevation() {
@@ -324,10 +322,15 @@
   }
 
   async function registerKey(description) {
-    const result = await api('/api/secondfactor/webauthn/credential/register', {
-      method: 'PUT',
-      body: jsonBody({ description }),
-    });
+    let result;
+    try {
+      result = await api('/api/secondfactor/webauthn/credential/register', {
+        method: 'PUT',
+        body: jsonBody({ description }),
+      });
+    } catch (error) {
+      throw new Error('Could not start security-key registration: ' + errorMessage(error));
+    }
     const options = creationOptions(result.publicKey || result);
     let credential;
     try {
@@ -337,7 +340,11 @@
       throw error;
     }
     if (!credential) throw new Error('The browser did not return a security key credential.');
-    await api('/api/secondfactor/webauthn/credential/register', { method: 'POST', body: jsonBody(credentialJSON(credential)) });
+    try {
+      await api('/api/secondfactor/webauthn/credential/register', { method: 'POST', body: jsonBody(credentialJSON(credential)) });
+    } catch (error) {
+      throw new Error('Could not save security key: ' + errorMessage(error));
+    }
   }
 
   async function secondFactorWebAuthn() {
@@ -354,7 +361,11 @@
       : { ...rawOptions, challenge: base64urlBytes(rawOptions.challenge), allowCredentials: (rawOptions.allowCredentials || []).map((item) => ({ ...item, id: base64urlBytes(item.id) })) };
     const credential = await navigator.credentials.get({ publicKey: requestOptions });
     if (!credential) throw new Error('The browser did not return a security key credential.');
-    await api('/api/secondfactor/webauthn', { method: 'POST', body: jsonBody({ response: credential.toJSON ? credential.toJSON() : credentialJSON(credential) }) });
+    try {
+      await api('/api/secondfactor/webauthn', { method: 'POST', body: jsonBody({ response: credential.toJSON ? credential.toJSON() : credentialJSON(credential) }) });
+    } catch (error) {
+      throw new Error('Could not verify security key: ' + errorMessage(error));
+    }
     await finishElevationFactor();
   }
 
@@ -368,8 +379,7 @@
     $('elevation-password').hidden = true;
     $('elevation-cancel-row').hidden = false;
     if (!status.require_second_factor) {
-      if (status.can_skip_second_factor) elevationButton('Send email code', beginEmailElevation);
-      else finishElevationFactor().catch((error) => showAlert(errorMessage(error)));
+      elevationButton('Send email code', beginEmailElevation);
       return;
     }
     if (!status.factor_knowledge) {
@@ -392,13 +402,20 @@
         await action();
         return;
       }
-      if (!status.require_second_factor && !status.can_skip_second_factor) {
-        await action();
-        return;
-      }
       elevationAction = action;
       openElevation(status);
     } catch (error) {
+      if (error.elevation && elevationAction === null) {
+        elevationAction = action;
+        openElevation({ require_second_factor: false, can_skip_second_factor: true });
+        beginEmailElevation();
+        return;
+      }
+      if (error.secondFactor && elevationAction === null) {
+        elevationAction = action;
+        openElevation({ require_second_factor: true, factor_knowledge: true, can_skip_second_factor: true });
+        return;
+      }
       showAlert(errorMessage(error));
     }
   }
