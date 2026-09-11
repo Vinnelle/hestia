@@ -60,7 +60,10 @@
     let body = {};
     try { body = bodyText ? JSON.parse(bodyText) : {}; } catch {}
     if (!response.ok || body.status === 'KO') {
-      const error = new Error(body.message || response.statusText || 'Request failed.');
+      const details = body.data && body.data.elevation === false
+        ? 'Authelia requires identity verification before this action.'
+        : body.message || body.data && body.data.message || response.statusText || 'Request failed.';
+      const error = new Error(details);
       error.status = response.status;
       throw error;
     }
@@ -296,7 +299,7 @@
   }
 
   function creationOptions(value) {
-    if (PublicKeyCredential.parseCreationOptionsFromJSON) return PublicKeyCredential.parseCreationOptionsFromJSON(value);
+    if (window.PublicKeyCredential.parseCreationOptionsFromJSON) return window.PublicKeyCredential.parseCreationOptionsFromJSON(value);
     return {
       ...value,
       challenge: base64urlBytes(value.challenge),
@@ -308,11 +311,13 @@
   function credentialJSON(credential) {
     if (credential.toJSON) return credential.toJSON();
     return {
+      clientExtensionResults: credential.getClientExtensionResults ? credential.getClientExtensionResults() : {},
       id: credential.id,
       rawId: base64url(credential.rawId),
       response: {
         attestationObject: base64url(credential.response.attestationObject),
         clientDataJSON: base64url(credential.response.clientDataJSON),
+        transports: credential.response.getTransports ? credential.response.getTransports() : undefined,
       },
       type: credential.type,
     };
@@ -324,22 +329,32 @@
       body: jsonBody({ description }),
     });
     const options = creationOptions(result.publicKey || result);
-    const credential = await navigator.credentials.create({ publicKey: options });
+    let credential;
+    try {
+      credential = await navigator.credentials.create({ publicKey: options });
+    } catch (error) {
+      if (error && error.name === 'NotAllowedError') throw new Error('Security-key registration was cancelled or timed out.');
+      throw error;
+    }
     if (!credential) throw new Error('The browser did not return a security key credential.');
     await api('/api/secondfactor/webauthn/credential/register', { method: 'POST', body: jsonBody(credentialJSON(credential)) });
   }
 
   async function secondFactorWebAuthn() {
-    if (!PublicKeyCredential.parseRequestOptionsFromJSON || !navigator.credentials) throw new Error('WebAuthn is not available in this browser.');
+    if (!window.PublicKeyCredential || !navigator.credentials) throw new Error('WebAuthn is not available in this browser.');
     $('elevation-methods').replaceChildren();
     const message = document.createElement('p');
     message.className = 'settings-note';
     message.textContent = 'Touch your security key or confirm with your passkey.';
     $('elevation-methods').append(message);
     const options = await api('/api/secondfactor/webauthn');
-    const credential = await navigator.credentials.get({ publicKey: PublicKeyCredential.parseRequestOptionsFromJSON(options.publicKey || options) });
+    const rawOptions = options.publicKey || options;
+    const requestOptions = window.PublicKeyCredential.parseRequestOptionsFromJSON
+      ? window.PublicKeyCredential.parseRequestOptionsFromJSON(rawOptions)
+      : { ...rawOptions, challenge: base64urlBytes(rawOptions.challenge), allowCredentials: (rawOptions.allowCredentials || []).map((item) => ({ ...item, id: base64urlBytes(item.id) })) };
+    const credential = await navigator.credentials.get({ publicKey: requestOptions });
     if (!credential) throw new Error('The browser did not return a security key credential.');
-    await api('/api/secondfactor/webauthn', { method: 'POST', body: jsonBody(credential.toJSON ? credential.toJSON() : credentialJSON(credential)) });
+    await api('/api/secondfactor/webauthn', { method: 'POST', body: jsonBody({ response: credential.toJSON ? credential.toJSON() : credentialJSON(credential) }) });
     await finishElevationFactor();
   }
 

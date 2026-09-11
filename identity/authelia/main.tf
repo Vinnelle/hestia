@@ -154,6 +154,41 @@ resource "kubernetes_deployment_v1" "authelia" {
       spec {
         enable_service_links = false
 
+        init_container {
+          name  = "seed-config"
+          image = "docker.io/library/busybox:1.38.0"
+          command = ["sh", "-c", <<-EOT
+            set -eu
+            cp /config-source/configuration.yml /config/configuration.yml
+            if [ ! -f /data/users_database.yml ]; then
+              cp /users-database-source/users_database.yml /data/users_database.yml
+            fi
+            EOT
+          ]
+
+          volume_mount {
+            name       = "config"
+            mount_path = "/config"
+          }
+
+          volume_mount {
+            name       = "data"
+            mount_path = "/data"
+          }
+
+          volume_mount {
+            name       = "config-source"
+            mount_path = "/config-source"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "users-database-source"
+            mount_path = "/users-database-source"
+            read_only  = true
+          }
+        }
+
         container {
           name  = "authelia"
           image = "authelia/authelia:4.39.22"
@@ -186,21 +221,12 @@ resource "kubernetes_deployment_v1" "authelia" {
 
           volume_mount {
             name       = "config"
-            mount_path = "/config/configuration.yml"
-            sub_path   = "configuration.yml"
-            read_only  = true
-          }
-
-          volume_mount {
-            name       = "users-database"
-            mount_path = "/config/users_database.yml"
-            sub_path   = "users_database.yml"
-            read_only  = true
+            mount_path = "/config"
           }
 
           volume_mount {
             name       = "data"
-            mount_path = "/config/data"
+            mount_path = "/data"
           }
 
           volume_mount {
@@ -232,13 +258,18 @@ resource "kubernetes_deployment_v1" "authelia" {
 
         volume {
           name = "config"
+          empty_dir {}
+        }
+
+        volume {
+          name = "config-source"
           secret {
             secret_name = kubernetes_secret_v1.authelia_config.metadata[0].name
           }
         }
 
         volume {
-          name = "users-database"
+          name = "users-database-source"
           secret {
             secret_name = kubernetes_secret_v1.authelia_users_database.metadata[0].name
           }
@@ -299,7 +330,7 @@ resource "kubernetes_ingress_v1" "authelia" {
   metadata {
     name      = "authelia"
     namespace = kubernetes_namespace_v1.auth.metadata[0].name
-    annotations = {
+    annotations = merge({
       "cert-manager.io/cluster-issuer" = var.cluster_issuer
 
       "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
@@ -309,8 +340,38 @@ resource "kubernetes_ingress_v1" "authelia" {
            return 200 "@import url(/assets/fonts/jetbrains-mono.css);
            :root{color-scheme:light dark;--mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--bg:light-dark(#faf8f5,#0c0c0d);--raised:light-dark(#f3efe9,#131316);--border:light-dark(#e6e0d8,#1e1e1f);--fg:light-dark(#2a2825,#cececa);--muted:light-dark(#4a4743,#a9a9a3);--dim:light-dark(#625e57,#74746f);--accent:light-dark(#b3466b,#f7b9d1);--accent-strong:light-dark(#8f3355,#fbd3e2);--accent-soft:light-dark(rgb(179 70 107/.1),rgb(247 185 209/.12));--danger:light-dark(#b3261e,#f87171)}
            *,*:before,*:after{box-sizing:border-box}html{-webkit-text-size-adjust:100%;text-size-adjust:100%}body,#root{background:var(--bg)!important;color:var(--fg)!important;font-family:var(--mono)!important;font-size:13px!important;line-height:1.6!important}a{color:var(--accent)!important;text-decoration:none}a:hover{color:var(--accent-strong)!important}.MuiAppBar-root,.MuiDrawer-paper{background:var(--bg)!important;color:var(--fg)!important;box-shadow:none!important}.MuiAppBar-root{border-bottom:1px solid var(--border)!important}.MuiPaper-root{background:transparent!important;background-image:none!important;box-shadow:none!important;color:var(--fg)!important;border-color:var(--border)!important;border-radius:3px!important}.MuiTypography-root,.MuiListItemText-primary,.MuiListItemText-secondary,.MuiDialogContentText-root{font-family:var(--mono)!important;color:var(--fg)!important}.MuiTypography-h4,.MuiTypography-h5,.MuiTypography-h6{font-weight:500!important;letter-spacing:-.01em;text-transform:lowercase}.MuiButton-root{font-family:var(--mono)!important;font-size:12px!important;border-radius:3px!important;text-transform:none!important;box-shadow:none!important}.MuiButton-contained,.MuiButton-outlined{background:transparent!important;border:1px solid var(--accent)!important;color:var(--accent)!important}.MuiButton-contained:hover,.MuiButton-outlined:hover{background:var(--accent-soft)!important}.MuiInputBase-root{font-family:var(--mono)!important;color:var(--fg)!important;background:var(--raised)!important}.MuiInputBase-input{font-family:var(--mono)!important;color:var(--fg)!important}.MuiOutlinedInput-notchedOutline{border-color:var(--dim)!important;border-radius:3px!important}.Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--accent)!important}.MuiSvgIcon-root{color:var(--dim)!important}.MuiCheckbox-root,.MuiRadio-root{color:var(--dim)!important}.MuiCheckbox-root.Mui-checked,.MuiRadio-root.Mui-checked{color:var(--accent)!important}.MuiAlert-root{font-family:var(--mono)!important;background:var(--raised)!important;color:var(--fg)!important;border:1px solid var(--border)!important}@media(max-width:600px){.MuiContainer-root,main.MuiBox-root{padding-left:20px!important;padding-right:20px!important}}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}";
-        }
+           }
       EOT
+
+      }, {
+      "nginx.ingress.kubernetes.io/server-snippet" = <<-EOT
+          location = /brand.css {
+            default_type text/css;
+            expires 1h;
+            return 200 ":root{color-scheme:light dark;
+              --bg:light-dark(#faf8f5,#0c0c0d);
+              --fg:light-dark(#2a2825,#cececa);
+              --muted:light-dark(#4a4743,#a9a9a3);
+              --dim:light-dark(#625e57,#74746f);
+              --accent:light-dark(#b3466b,#f7b9d1);
+              --accent-strong:light-dark(#8f3355,#fbd3e2);}
+            *{font-family:ui-monospace,monospace !important;}
+            html,body,#root{background:var(--bg) !important;color:var(--fg) !important;}
+            a{color:var(--accent) !important;}
+            .MuiPaper-root{background:transparent !important;box-shadow:none !important;color:var(--fg) !important;}
+            .MuiTypography-root{color:var(--fg) !important;}
+            .MuiButton-root{font-family:ui-monospace,monospace !important;border-radius:3px !important;}
+            .MuiButton-contained,.MuiButton-outlined{background:transparent !important;border:1px solid var(--accent) !important;color:var(--accent) !important;}
+            .MuiInputBase-root{color:var(--fg) !important;background:var(--bg) !important;}
+            .MuiInputBase-input{color:var(--fg) !important;}
+            .MuiOutlinedInput-notchedOutline{border-color:var(--dim) !important;}
+            .Mui-focused .MuiOutlinedInput-notchedOutline{border-color:var(--accent) !important;}
+            .MuiSvgIcon-root{color:var(--dim) !important;}
+            .MuiCheckbox-root,.MuiRadio-root{color:var(--dim) !important;}
+            .MuiCheckbox-root.Mui-checked,.MuiRadio-root.Mui-checked{color:var(--accent) !important;}
+            .MuiAlert-root{background:var(--bg) !important;color:var(--fg) !important;border:1px solid var(--muted) !important;}";
+          }
+        EOT
 
       "nginx.ingress.kubernetes.io/configuration-snippet" = <<-EOT
         more_clear_headers "X-Frame-Options";
@@ -319,7 +380,7 @@ resource "kubernetes_ingress_v1" "authelia" {
         sub_filter '</head>' '<link rel="stylesheet" href="./brand.css" /></head>';
         sub_filter_once on;
       EOT
-    }
+    })
   }
 
   spec {

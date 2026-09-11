@@ -5,7 +5,6 @@ locals {
     "dns",
     "files",
     "forge",
-    "glitchtip",
     "miniflux",
     "proxy",
     "registry",

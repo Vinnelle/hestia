@@ -6,7 +6,7 @@
   "authentication_backend": {
     "password_reset": { "disable": false },
     "password_change": { "disable": false },
-    "file": { "path": "/config/users_database.yml" }
+    "file": { "path": "/data/users_database.yml" }
   },
   "access_control": { "default_policy": "two_factor" },
   "webauthn": {
@@ -25,7 +25,7 @@
   },
   "storage": {
     "encryption_key": ${jsonencode(storage_encryption_key)},
-    "local": { "path": "/config/data/db.sqlite3" }
+    "local": { "path": "/data/db.sqlite3" }
   },
   "notifier": {
     "smtp": {

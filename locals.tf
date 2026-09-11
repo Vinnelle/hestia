@@ -30,7 +30,7 @@ locals {
   }
 
   admin_frame_theme_js = {
-    for slug in local.admin_frame_css_slugs : slug => join("", [
+    for slug in local.admin_frame_css_slugs : slug => join("\n", [
       "(function(){var t=null,d=false,ls=[],qs=[];",
       "try{var q=window.matchMedia.bind(window);window.matchMedia=function(s){",
       "if(t===null||!/prefers-color-scheme/.test(s))return q(s);",
@@ -79,7 +79,7 @@ locals {
   admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed"]
 
   admin_framed_annotations = {
-    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud", "glitchtip"] : slug => merge(
+    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud"] : slug => merge(
       {
         "nginx.ingress.kubernetes.io/configuration-snippet" = join("\n", compact([
           "more_clear_headers \"X-Frame-Options\";",

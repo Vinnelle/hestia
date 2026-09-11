@@ -44,10 +44,6 @@ terraform {
       source  = "SigNoz/signoz"
       version = "~> 0.1"
     }
-    glitchtip = {
-      source  = "samiracho/glitchtip"
-      version = "~> 0.0.1"
-    }
     restapi = {
       source  = "thegeeklab/restapi"
       version = "~> 0.3"
