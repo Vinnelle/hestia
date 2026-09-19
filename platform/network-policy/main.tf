@@ -5,6 +5,7 @@ locals {
     "dns",
     "files",
     "forge",
+    "matrix",
     "miniflux",
     "proxy",
     "registry",
@@ -21,6 +22,7 @@ locals {
 
   network_policy_egress_fqdns = {
     backup    = ["s3.${var.mega_s4_endpoint_domain}"]
+    matrix    = []
     storage   = []
     "vin-moe" = []
   }

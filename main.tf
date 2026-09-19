@@ -151,6 +151,7 @@ module "platform_network_policy" {
     module.adguard,
     module.nextcloud,
     module.gitlab,
+    module.matrix,
     module.miniflux,
     module.proxy_netbird,
     module.registry_cache,
@@ -322,6 +323,21 @@ module "mail" {
   source = "./apps/mail"
 
   zone_id = module.platform_core.zone_id_vinnel_cloud
+}
+
+## Matrix
+
+module "matrix" {
+  source = "./apps/matrix"
+
+  depends_on = [module.platform_vpa]
+
+  zone_id            = module.platform_core.zone_id_vinnel_cloud
+  node_ip            = var.node_ip
+  cluster_issuer     = local.vinnel_cloud_cluster_issuer
+  ingress_class_name = module.platform_core.ingress_class_name
+  server_name        = "vinnel.cloud"
+  hostname           = "matrix.vinnel.cloud"
 }
 
 ## Miniflux
