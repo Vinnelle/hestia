@@ -98,8 +98,12 @@
     }).catch(function (err) {
       if (modal) busy = false;
       autofill = null;
-      if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) return;
-      msg('passkey sign-in failed — use your password, or check /settings.');
+      if (err && err.name === 'AbortError') return;
+      if (err && err.name === 'NotAllowedError') {
+        if (modal) msg('no passkey was chosen — try again, or switch to password.');
+        return;
+      }
+      if (modal) msg('passkey sign-in failed — switch to password, or check /settings.');
     });
   }
 
@@ -139,10 +143,48 @@
   }
 
   function passkeyAutofill() {
-    if (!canPasskey || !PublicKeyCredential.isConditionalMediationAvailable) return;
+    if (autofill || !canPasskey || !PublicKeyCredential.isConditionalMediationAvailable) return;
     PublicKeyCredential.isConditionalMediationAvailable().then(function (ok) {
       if (ok) assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked }, 0, 'conditional');
     });
+  }
+
+  function savedMethod() {
+    try { return localStorage.getItem('auth.method'); } catch (e) { return null; }
+  }
+
+  function setMethod(next, prompt) {
+    var pk = next === 'passkey' && canPasskey;
+    var f = $('login');
+    $('method-password').setAttribute('aria-pressed', String(!pk));
+    $('method-passkey').setAttribute('aria-pressed', String(pk));
+    $('username-field').hidden = pk;
+    $('password-field').hidden = pk;
+    $('forgot').hidden = pk;
+    $('passkey-hint').hidden = !pk;
+    $('signin').hidden = pk;
+    $('passkey').hidden = !pk;
+    f.username.required = !pk;
+    f.password.required = !pk;
+    msg('');
+    try { localStorage.setItem('auth.method', pk ? 'passkey' : 'password'); } catch (e) {}
+    if (pk) {
+      stopAutofill();
+      if (prompt) passkeySignIn();
+    } else {
+      passkeyAutofill();
+    }
+  }
+
+  function showLogin(subtitle) {
+    show('login', subtitle);
+    setMethod(savedMethod() === 'passkey' ? 'passkey' : 'password', false);
+  }
+
+  function passkeySignIn() {
+    msg('');
+    stopAutofill();
+    assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked }, 0);
   }
 
   function route(res) {
@@ -154,8 +196,7 @@
     } else if (lvl === 1) {
       secondFactor();
     } else {
-      show('login', 'sign in.');
-      passkeyAutofill();
+      showLogin('sign in.');
     }
   }
 
@@ -165,13 +206,13 @@
         api('POST', '/api/logout', {}).then(function () {
           if (sameSite(rd)) { location.replace(rd); return; }
           history.replaceState(null, '', '/');
-          show('login', 'signed out.');
+          showLogin('signed out.');
         });
         return;
       }
       route(res);
     }).catch(function () {
-      show('login', 'sign in.');
+      showLogin('sign in.');
       msg('authelia is unreachable.');
     });
   }
@@ -210,19 +251,17 @@
   $('logout').addEventListener('click', function (e) {
     e.preventDefault();
     api('POST', '/api/logout', {}).then(function () {
-      show('login', 'signed out.');
+      showLogin('signed out.');
     });
   });
 
   $('webauthn-go').addEventListener('click', webauthnAssert);
 
   if (canPasskey) {
-    $('passkey').hidden = false;
-    $('passkey').addEventListener('click', function () {
-      msg('');
-      stopAutofill();
-      assert('/api/firstfactor/passkey', { keepMeLoggedIn: $('login').remember.checked }, 0);
-    });
+    $('methods').hidden = false;
+    $('method-password').addEventListener('click', function () { setMethod('password', false); });
+    $('method-passkey').addEventListener('click', function () { setMethod('passkey', true); });
+    $('passkey').addEventListener('click', passkeySignIn);
   }
 
   state();

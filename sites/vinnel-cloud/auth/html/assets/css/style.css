@@ -107,6 +107,39 @@ a { color: var(--accent); text-decoration: none; }
   animation: enter 420ms ease-out 80ms both;
 }
 
+.methods {
+  display: flex;
+  gap: 22px;
+  border-bottom: 1px solid var(--border);
+}
+
+.methods button {
+  margin-bottom: -1px;
+  padding: 0 0 9px;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--faint);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid transparent;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.methods button:hover { color: var(--muted); }
+
+.methods button[aria-pressed="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.methods button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .field-label {
   display: block;
   margin-bottom: 8px;

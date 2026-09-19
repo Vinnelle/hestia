@@ -28,23 +28,28 @@
     </header>
 
     <form id="login" class="stage" hidden>
-      <label class="field">
+      <div class="methods" id="methods" role="group" aria-label="Sign-in method" hidden>
+        <button type="button" id="method-password" aria-pressed="true">Password</button>
+        <button type="button" id="method-passkey" aria-pressed="false">Passkey</button>
+      </div>
+      <label class="field" id="username-field">
         <span class="field-label">Username</span>
         <input name="username" autocomplete="username webauthn" autocapitalize="none" spellcheck="false" required>
       </label>
-      <label class="field">
+      <label class="field" id="password-field">
         <span class="field-label">Password</span>
         <input type="password" name="password" autocomplete="current-password" required>
       </label>
-      <a class="forgot" href="/reset-password">Forgot password?</a>
+      <a class="forgot" id="forgot" href="/reset-password/step1">Forgot password?</a>
       <label class="check">
         <input type="checkbox" name="remember">
         <svg class="tick" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8.75l3.75 3.75L13.5 4.5"/></svg>
         <span>Remember me</span>
       </label>
+      <p class="hint" id="passkey-hint" hidden>Use a passkey saved on this device, or a security key. No username or password needed.</p>
       <div class="actions">
-        <button type="submit">Sign in</button>
-        <button type="button" class="quiet" id="passkey" hidden>Passkey</button>
+        <button type="submit" id="signin">Sign in</button>
+        <button type="button" id="passkey" hidden>Sign in with passkey</button>
       </div>
     </form>
 
