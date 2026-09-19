@@ -118,7 +118,7 @@ resource "kubernetes_deployment_v1" "registry_cache" {
       spec {
         container {
           name  = "registry"
-          image = "registry:3@sha256:1be55279f18a2fe1a74edf2664cac61c1bea305b7b4642dab412e7affdcb3e33"
+          image = "registry:3@sha256:fd374bae807c225661adfe2c0c1f9970a0b8fab1761fd7dfb91e0fd9a8748f9b"
 
           port {
             name           = "registry"

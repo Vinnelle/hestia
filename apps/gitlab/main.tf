@@ -192,7 +192,7 @@ resource "kubernetes_deployment_v1" "gitlab" {
 
         container {
           name  = "gitlab"
-          image = "gitlab/gitlab-ce:19.3.1-ce.0@sha256:f63df4c43029fe91db370609c0b40a1e3585cebd06e3e9637d93a9a3030eb86e"
+          image = "gitlab/gitlab-ce:19.3.2-ce.0@sha256:05453dd1d9aba27c2c487613141596868409b4d03247647f7d66cb0b36f321b8"
 
           env {
             name  = "GITLAB_OMNIBUS_CONFIG"

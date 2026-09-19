@@ -141,7 +141,7 @@ resource "kubernetes_deployment_v1" "velero_ui" {
 
         container {
           name  = "velero-ui"
-          image = "otwld/velero-ui:0.10.2"
+          image = "otwld/velero-ui:0.10.3"
 
           port {
             name           = "http"
