@@ -431,3 +431,40 @@ resource "kubernetes_ingress_v1" "matrix_vinnel_cloud" {
     }
   }
 }
+
+resource "kubernetes_ingress_v1" "matrix_vinnel_cloud_root" {
+  metadata {
+    name      = "matrix-vinnel-cloud-root"
+    namespace = kubernetes_namespace_v1.matrix.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/temporal-redirect" = "https://${var.server_name}"
+    }
+  }
+
+  spec {
+    ingress_class_name = var.ingress_class_name
+
+    tls {
+      hosts       = [var.hostname]
+      secret_name = "matrix-vinnel-cloud-tls"
+    }
+
+    rule {
+      host = var.hostname
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = kubernetes_service_v1.matrix_synapse.metadata[0].name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
