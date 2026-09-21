@@ -191,7 +191,7 @@ resource "kubernetes_deployment_v1" "authelia" {
 
         container {
           name  = "authelia"
-          image = "authelia/authelia:4.39.26"
+          image = "authelia/authelia:4.39.28"
 
           port {
             name           = "http"
