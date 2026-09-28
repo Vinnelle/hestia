@@ -11,10 +11,12 @@ data "talos_machine_configuration" "controlplane" {
   machine_type     = "controlplane"
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
-  talos_version = "v1.13.9"
+  talos_version      = "v1.13.9"
+  kubernetes_version = "v1.37.1"
 
   config_patches = [
     file("${path.module}/talos/controlplane-patch.yaml"),
+    file("${path.module}/talos/cilium-cni-patch.yaml"),
     templatefile("${path.module}/talos/firewall.yaml.tftpl", {
       node_ip = var.node_ip
     }),
@@ -25,7 +27,7 @@ data "talos_machine_configuration" "controlplane" {
       machine = {
         install = {
           disk  = "/dev/nvme1n1"
-          image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.13.9"
+          image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.14.1"
         }
       }
     }),
