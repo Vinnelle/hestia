@@ -8,7 +8,7 @@ RUN magick favicon.png -gravity center -background none -extent 530x530 \
 RUN magick favicon.png -gravity center -background none -extent 530x530 \
     -resize 180x180 apple-touch-icon.png
 
-FROM mirror.vinnel.cloud/library/nginx:1.31-alpine@sha256:62ff2089abf5a9ed33bd232895bef5e22f7bb4b200675cec49a5ebc48e3d4ac8 AS brotli-builder
+FROM mirror.vinnel.cloud/library/nginx:1.31-alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2 AS brotli-builder
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
  && NGINX_VERSION=$(nginx -v 2>&1 | sed 's/.*\///') \
@@ -20,7 +20,7 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_filter_module.so /ngx_http_brotli_filter_module.so \
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
-FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:dbaa92e5758cbbcf85d65d5403fdb530fe3442cbe8c6dbfb7ef23365450d5070 AS asset-build
+FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
@@ -35,7 +35,7 @@ COPY --from=images /avatar.webp .
 RUN sh /build/fetch-fonts.sh fonts && sh /build/build.sh
 RUN cp css/style.*.css css/post.css && cp fonts/jetbrains-mono.*.css fonts/post.css
 
-FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:b54ac358b83fc6c965793fd271839b4ea4cdb6e99895bb19618cbc2ca152d972
+FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:6a23acdfca2b9cfbcec61419e3f1426bcbedb91362f2f19306a8567423bb4612
 USER root
 RUN apk --no-cache upgrade && rm /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
 USER nginx
