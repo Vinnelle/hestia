@@ -1,5 +1,5 @@
 ---
-title: chat
+title: Chat
 date: 2026-09-27
 draft: false
 ---
