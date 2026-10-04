@@ -3,7 +3,7 @@ resource "helm_release" "signoz" {
   name       = "signoz"
   repository = "https://charts.signoz.io"
   chart      = "signoz"
-  version    = "0.143.0"
+  version    = "0.144.0"
   namespace  = kubernetes_namespace_v1.observability.metadata[0].name
   timeout    = 900
 
