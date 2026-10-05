@@ -29,6 +29,12 @@ variable "cache_description" {
   type        = string
 }
 
+variable "uncached_paths" {
+  description = "Exact URL paths the CDN cache rule leaves out, e.g. \"/chat\", whose response depends on the request's User-Agent"
+  type        = list(string)
+  default     = []
+}
+
 variable "cluster_issuer" {
   description = "cert-manager ClusterIssuer name for this site's TLS cert"
   type        = string

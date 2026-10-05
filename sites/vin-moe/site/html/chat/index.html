@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>chat — vin.moe</title>
+<meta name="description" content="chat is a private group chat for the terminal: no server, no accounts, and nothing left behind. End-to-end encrypted with post-quantum keys, over the BitTorrent DHT, Nostr relays or Tor.">
+<link rel="canonical" href="https://vin.moe/chat">
+<link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="stylesheet" href="/fonts/jetbrains-mono.css">
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/theme.js" defer></script>
+
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vin.moe/chat">
+<meta property="og:title" content="chat — vin.moe">
+<meta property="og:description" content="Private group chat for the terminal. No server, no accounts, and nothing left behind.">
+<meta property="og:image" content="https://vin.moe/avatar.webp">
+<meta property="og:site_name" content="vin.moe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="chat — vin.moe">
+<meta name="twitter:description" content="Private group chat for the terminal. No server, no accounts, and nothing left behind.">
+<meta name="twitter:image" content="https://vin.moe/avatar.webp">
+</head>
+<body>
+<a class="skip" href="#main">skip to content</a>
+
+<div class="bar">
+  <a class="brand" href="/">vin.moe</a>
+  <nav class="bar-nav" aria-label="Site">
+    <a class="tab" href="/">about</a>
+    <a class="tab" href="/#blog">blog</a>
+    <a class="tab" href="/work">work</a>
+    <a class="tab" href="/chat" aria-current="page">chat</a>
+    <a class="tab" href="/colophon">colophon</a>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
+    </span>
+  </nav>
+</div>
+
+<main id="main" class="page">
+  <header class="launch">
+    <p class="eyebrow">open source · linux and windows</p>
+    <h1>chat</h1>
+    <p class="pitch">Private group chat for the terminal.</p>
+    <p class="sub">No server, no accounts, and nothing left behind. Share a session id and a password, and everyone with both is in.</p>
+    <div class="cmd">
+      <code>curl -fsSL <span class="nowrap">https://vin.moe/chat | sh</span></code>
+      <button class="copy" type="button" data-copy="curl -fsSL https://vin.moe/chat | sh" aria-label="Copy the command">
+        <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+        <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      </button>
+    </div>
+    <p class="cmd-note">Linux, or Git Bash on Windows. Nothing is installed. <a href="#runner">See what it runs</a></p>
+    <p class="actions">
+      <a class="btn" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-linux-x86_64"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Linux</a>
+      <a class="btn" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-windows-x86_64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Windows</a>
+      <a class="btn" href="https://github.com/Vinnelle/chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M21 3 11 13"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Source code</a>
+    </p>
+  </header>
+
+  <figure class="tui">
+    <div class="tui-window" role="img" aria-label="chat in a terminal. A sidebar lists one session, three peers, with bob and carol marked compared, and the network status. In the conversation, bob and carol join, alice says their verify codes match, bob mentions alice and offers photos.zip, and alice is typing a reply.">
+      <div class="tui-bar"><i></i><i></i><i></i><span>chat</span></div>
+      <div class="tui-screen">
+        <div class="tui-frame">
+          <div class="tui-side">
+            <span class="tui-legend"><b class="m">◆ chat</b></span>
+            <div class="tui-row f"><span>SESSIONS</span><span>1</span></div>
+            <div class="tui-row tui-sel"><b class="m">❯ k7m2q9xw4p</b><span><span class="g">●</span><span class="f"> 3</span></span></div>
+            <div class="tui-gap"></div>
+            <div class="tui-row f"><span>PEERS</span><span>3</span></div>
+            <div class="tui-row"><span class="alice">● <b>alice</b></span><span class="f">you</span></div>
+            <div class="tui-row"><span class="bob">● bob</span><span class="g">✓ compared</span></div>
+            <div class="tui-row"><span class="carol">● carol</span><span class="g">✓ compared</span></div>
+            <div class="tui-fill"></div>
+            <div class="tui-row f"><span>NETWORK</span></div>
+            <div class="tui-kv"><span class="f">route</span><span>dht</span></div>
+            <div class="tui-kv"><span class="f">port</span><span>udp/51034</span></div>
+            <div class="tui-kv"><span class="f">portmap</span><span>mapped</span></div>
+            <div class="tui-kv"><span class="f">relays</span><span>not needed</span></div>
+            <div class="tui-kv"><span class="f">dht</span><span>186 nodes</span></div>
+            <div class="tui-kv"><span class="f">found</span><span>2 peers</span></div>
+            <div class="tui-kv"><span class="f">cands</span><span>0</span></div>
+            <div class="tui-kv"><span class="f">pending</span><span>0</span></div>
+            <div class="tui-kv"><span class="f">rx</span><span>1206 packets</span></div>
+          </div>
+          <div class="tui-main">
+            <span class="tui-legend"><span class="g">●</span> <b>k7m2q9xw4p</b><span class="f"> · 3 online · dht</span></span>
+            <span class="tui-legend end f">21:07</span>
+            <ol class="tui-log">
+              <li><span class="f">21:04</span><b class="bob">bob</b><span>made it in. no sign-up, nice</span></li>
+              <li><span class="f">21:04</span><b class="carol">carol</b><span>same. comparing codes now</span></li>
+              <li><span class="f">21:05</span><span><b class="alice">alice</b><span class="f"> (you)</span></span><span>both match on my end</span></li>
+              <li><b class="y">21:05</b><b class="bob">bob</b><b><span class="y">@alice</span> want the photos from saturday?</b></li>
+              <li><span class="f">21:06</span><span><b class="alice">alice</b><span class="f"> (you)</span></span><span>go on then</span></li>
+              <li><span class="f">21:06</span><b class="bob">bob</b><span>offers photos.zip (3.0 MB) - :download 1 to save it</span></li>
+              <li><span class="f">21:07</span><b class="carol">carol</b><span>this is so much nicer than the group chat</span></li>
+            </ol>
+            <div class="tui-input"><b class="g">❯</b> see you all thursday<span class="tui-caret"></span><span class="tui-count f">20/250</span></div>
+          </div>
+        </div>
+        <div class="tui-status"><b class="tui-chip">INSERT</b><span class="y">○ unsigned</span><b class="alice">alice</b><span class="tui-hints"><span class="m">enter</span> send · <span class="m">/</span> commands · <span class="m">ctrl+f</span> files · <span class="m">esc</span> normal · <span class="m">f1</span> help</span></div>
+      </div>
+    </div>
+    <figcaption>chat draws in your terminal's own colours. Here, that's this page's.</figcaption>
+  </figure>
+
+  <section>
+    <h2>why chat</h2>
+    <p class="statement">Everything a group chat needs, and nothing that knows who you are.</p>
+    <ul class="features">
+      <li>
+        <h3>No server in the middle</h3>
+        <p>Peers find each other over the BitTorrent DHT and talk directly. There's no account to make and no server keeping your messages.</p>
+      </li>
+      <li>
+        <h3>Post-quantum encryption</h3>
+        <p>X25519 and ML-KEM-768 agree the keys together, and every message is sealed with XChaCha20-Poly1305. The key moves on with each one, so a stolen key can't read what came before.</p>
+      </li>
+      <li>
+        <h3>Gets through NATs</h3>
+        <p>chat asks your router to open a port. When direct UDP still can't get through, public Nostr relays carry the traffic, sealed so they can't read it or tell who it's for.</p>
+      </li>
+      <li>
+        <h3>Tor, built in</h3>
+        <p>One setting sends everything through onion services instead, and Tor and DHT members can still share a room.</p>
+      </li>
+      <li>
+        <h3>Quiet on the wire</h3>
+        <p>Every packet is the same size and goes out on a steady beat, with or without anything to send, so the traffic doesn't show when anyone typed.</p>
+      </li>
+      <li>
+        <h3>Nothing left behind</h3>
+        <p>No history, no logs and no install. Nothing touches the disk unless you save your settings, and those are sealed under a passphrase.</p>
+      </li>
+      <li>
+        <h3>Files and pictures</h3>
+        <p>Send a file to the room, or see a picture right in the terminal. Each one is checked against its hash before it's kept.</p>
+      </li>
+      <li>
+        <h3>Made for the terminal</h3>
+        <p>Vim-style keys, your terminal's own colours, and a plain line mode for scripts and pipes.</p>
+      </li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>how it works</h2>
+    <p class="statement">A room is an id and a password. That's the whole sign-up.</p>
+    <ol class="steps">
+      <li>
+        <h3>Start a session</h3>
+        <p>Press Ctrl+N. chat makes up a session id and asks you for a password.</p>
+      </li>
+      <li>
+        <h3>Share both</h3>
+        <p>Send them to whoever you want in. They press Ctrl+J and type both. Nobody without both can find the room, let alone read it.</p>
+      </li>
+      <li>
+        <h3>Compare codes</h3>
+        <p>When someone joins, chat shows a verify code. Read it to each other on a call or in person. If it matches, nobody is sitting in the middle.</p>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>under the hood</h2>
+    <dl class="specs">
+      <dt>Key agreement</dt><dd>X25519 and ML-KEM-768, together</dd>
+      <dt>Encryption</dt><dd>XChaCha20-Poly1305, with a new key for every message</dd>
+      <dt>Identity</dt><dd>Optional Ed25519 signing keys, as AGE or PGP</dd>
+      <dt>Finding peers</dt><dd>BitTorrent DHT over IPv4 and IPv6, and LAN broadcast</dd>
+      <dt>Getting through</dt><dd>Router port mapping (PCP, NAT-PMP, UPnP), then Nostr relays</dd>
+      <dt>Anonymity</dt><dd>Tor onion services, through a running tor or chat's own</dd>
+      <dt>On the wire</dt><dd>1004-byte packets, one every 1.5 to 1.9 seconds per peer</dd>
+      <dt>Saved settings</dt><dd>Sealed with Argon2id and XChaCha20-Poly1305, and can also need the device's TPM, a FIDO2 key or an authenticator code</dd>
+      <dt>Updates</dt><dd>Signed offline with minisign, and checked before they install</dd>
+      <dt>Platforms</dt><dd>Linux and Windows, x86_64</dd>
+      <dt>Built with</dt><dd>C, with libsodium, liboqs, Mbed TLS and libsecp256k1 linked in statically</dd>
+      <dt>Licence</dt><dd>GPL-3.0</dd>
+    </dl>
+    <p class="after">The full design, and what each part can and can't hide, is in the <a href="https://github.com/Vinnelle/chat#readme">README</a>.</p>
+  </section>
+
+  <section class="faq">
+    <h2>questions</h2>
+    <details name="faq">
+      <summary>Has it been audited?</summary>
+      <p>No. It's built on well-reviewed libraries, libsodium and liboqs, but chat itself hasn't been independently audited.</p>
+    </details>
+    <details name="faq">
+      <summary>Does it keep my messages?</summary>
+      <p>No. Messages are on screen while the session is open and gone when it closes. Saving your settings never includes them.</p>
+    </details>
+    <details name="faq">
+      <summary>Who can see that I'm using it?</summary>
+      <p>Your network sees your peers' addresses and a steady stream of same-size packets, which someone determined could recognise as chat. In Tor mode it only sees Tor. To anyone outside the room, the packets themselves are random bytes.</p>
+    </details>
+    <details name="faq">
+      <summary>What if someone else gets the id and password?</summary>
+      <p>They can join, and they show up in the peer list unverified. Set Compare verify codes to required, and nothing you send reaches anyone until you've compared codes with them.</p>
+    </details>
+    <details name="faq">
+      <summary>Why isn't it in my package manager?</summary>
+      <p>On purpose. A package manager keeps a record of what's installed, and chat tries to leave nothing behind. It's one file you can put anywhere, or run with the command below and not keep at all.</p>
+    </details>
+    <details name="faq">
+      <summary>Does it run on macOS or phones?</summary>
+      <p>No. Release builds are for Linux and Windows on x86_64.</p>
+    </details>
+  </section>
+
+  <section class="get" id="get">
+    <h2>get chat</h2>
+    <p class="statement">One command, and nothing to install.</p>
+    <div class="cmd">
+      <code>curl -fsSL <span class="nowrap">https://vin.moe/chat | sh</span></code>
+      <button class="copy" type="button" data-copy="curl -fsSL https://vin.moe/chat | sh" aria-label="Copy the command">
+        <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+        <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+      </button>
+    </div>
+    <p class="muted">It works on Linux, and on Windows from Git Bash. It needs curl, and minisign or OpenSSL 3 to check the release signature. Options for chat go after <code>sh&nbsp;-s&nbsp;--</code>, as in <code>sh&nbsp;-s&nbsp;--&nbsp;--routing&nbsp;tor</code>.</p>
+    <p class="muted">I know some people distrust and dislike these curl installations, so you can download the binary <a href="https://github.com/Vinnelle/chat/releases/latest">here</a>, and below you can see the contents of the install script, as well as its SHA.</p>
+
+    <h3 id="runner">the script</h3>
+    <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
+    <p class="sha">SHA-256 <code>@@runner-sha256@@</code></p>
+    <pre class="code script"><code>@@runner-script@@</code></pre>
+    <p class="muted">To check it before running anything, <code>curl -fsSL https://vin.moe/chat | sha256sum</code> prints the same SHA-256. Browsers get the same file at <a href="/chat.sh">/chat.sh</a>.</p>
+
+    <h3>by hand</h3>
+    <p class="muted">Download the binary for your system from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>, along with SHA256SUMS and SHA256SUMS.minisig. Check the signature, then the binary, and put chat wherever you like:</p>
+    <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
+sha256sum -c --ignore-missing SHA256SUMS
+install -Dm755 chat-linux-x86_64 ~/.local/bin/chat</code></pre>
+    <p class="muted">On Windows, run chat-windows-x86_64.exe from a terminal.</p>
+  </section>
+
+  <p class="dim note"><em>AI wrote this page, from chat's README.</em></p>
+</main>
+
+<footer>
+  <nav class="foot-nav" aria-label="Source">
+    <a href="https://github.com/Vinnelle/vin.moe">Site source</a>
+    <a href="https://github.com/Vinnelle/hestia">Infra source</a>
+  </nav>
+  <p class="fingerprint">43B0 BED0 F544 6DF5 4FD0&nbsp; D966 C568 F432 345E C5F4</p>
+</footer>
+</body>
+</html>

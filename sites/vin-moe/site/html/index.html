@@ -55,6 +55,7 @@
       <button class="tab" role="tab" id="tab-about" aria-selected="true" aria-controls="about" data-tab="about">about</button>
       <button class="tab" role="tab" id="tab-blog" aria-selected="false" aria-controls="blog" tabindex="-1" data-tab="blog">blog</button>
       <button class="tab" role="tab" id="tab-work" aria-selected="false" aria-controls="work" tabindex="-1" data-tab="work">work</button>
+      <button class="tab" role="tab" id="tab-chat" aria-selected="false" aria-controls="chat" tabindex="-1" data-tab="chat">chat</button>
       <button class="tab" role="tab" id="tab-runs" aria-selected="false" aria-controls="runs" tabindex="-1" data-tab="runs">colophon</button>
     </span>
     <span class="bar-sep" aria-hidden="true"></span>
@@ -108,6 +109,11 @@
     <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="/work">/work</a>.</p></noscript>
   </section>
 
+  <section class="panel" id="chat" role="tabpanel" aria-labelledby="tab-chat" tabindex="0">
+    <div class="fragment"><p class="muted">Loading&hellip;</p></div>
+    <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="/chat">/chat</a>.</p></noscript>
+  </section>
+
   <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
     <div class="fragment"><p class="muted">Loading&hellip;</p></div>
     <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="/colophon">/colophon</a>.</p></noscript>
@@ -127,7 +133,7 @@ const tabs = [...document.querySelectorAll('.tabs .tab')];
 const panels = [...document.querySelectorAll('.panel')];
 const byName = (name) => tabs.find((t) => t.dataset.tab === name);
 
-const PAGES = { work: '/work', runs: '/colophon' };
+const PAGES = { work: '/work', chat: '/chat', runs: '/colophon' };
 const fragmentInFlight = {};
 
 const loadFragment = (name) => {

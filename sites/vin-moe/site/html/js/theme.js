@@ -17,3 +17,16 @@ for (const b of themeOpts) {
   });
   b.addEventListener('animationend', () => b.classList.remove('pop'));
 }
+
+document.addEventListener('click', async (e) => {
+  const button = e.target.closest('[data-copy]');
+  if (!button) return;
+  try {
+    await navigator.clipboard.writeText(button.dataset.copy);
+    button.dataset.state = 'done';
+  } catch {
+    button.dataset.state = 'fail';
+  }
+  clearTimeout(button.copyReset);
+  button.copyReset = setTimeout(() => delete button.dataset.state, 1400);
+});

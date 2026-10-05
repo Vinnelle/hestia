@@ -37,6 +37,7 @@
     <a class="tab" href="/">about</a>
     <a class="tab" href="/#blog">blog</a>
     <a class="tab" href="/work">work</a>
+    <a class="tab" href="/chat">chat</a>
     <a class="tab" href="/colophon" aria-current="page">colophon</a>
     <span class="bar-sep" aria-hidden="true"></span>
     <span class="theme-toggle" role="group" aria-label="Theme">
@@ -83,7 +84,7 @@
     </li>
     <li>
       <h3>dns and cdn</h3>
-      <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster.</p>
+      <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster. The one exception is /chat: nginx answers curl and wget there with a shell script and everything else with a page, and a cache keyed only on the URL would hand one to the other, so the rule leaves that path out.</p>
     </li>
   </ol>
 

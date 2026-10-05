@@ -18,6 +18,15 @@ resource "cloudflare_dns_record" "extra" {
   proxied = true
 }
 
+locals {
+  cache_hosts = join(" or ", [for h in concat([var.domain], var.extra_hosts) : format("http.host eq %q", h)])
+  cache_expression = length(var.uncached_paths) == 0 ? local.cache_hosts : format(
+    "(%s) and not (http.request.uri.path in {%s})",
+    local.cache_hosts,
+    join(" ", [for p in var.uncached_paths : format("%q", p)]),
+  )
+}
+
 resource "cloudflare_ruleset" "cache" {
   zone_id = var.zone_id
   name    = "site cdn cache"
@@ -27,7 +36,7 @@ resource "cloudflare_ruleset" "cache" {
   rules = [{
     ref         = "cache_site"
     description = var.cache_description
-    expression  = join(" or ", [for h in concat([var.domain], var.extra_hosts) : format("http.host eq %q", h)])
+    expression  = local.cache_expression
     action      = "set_cache_settings"
     action_parameters = {
       cache = true

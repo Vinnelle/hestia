@@ -28,6 +28,7 @@ module "vin_moe_site" {
   zone_id           = var.zone_id
   node_ip           = var.node_ip
   cache_description = "cache everything for vin.moe"
+  uncached_paths    = ["/chat"]
 
   cluster_issuer         = var.cluster_issuer
   acme_email             = var.acme_email
