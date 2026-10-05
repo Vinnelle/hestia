@@ -240,7 +240,7 @@
     <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
     <p class="sha">SHA-256 <code>@@runner-sha256@@</code></p>
     <pre class="code script"><code>@@runner-script@@</code></pre>
-    <p class="muted">To check it before running anything, <code>curl -fsSL https://vin.moe/chat | sha256sum</code> prints the same SHA-256. Browsers get the same file at <a href="/chat.sh">/chat.sh</a>.</p>
+    <p class="muted">To check it before running anything, <code>curl -fsSL https://vin.moe/chat | sha256sum</code> prints the same SHA-256. Browsers get the same file at <a href="/chat/scripts/chat.sh">/chat/scripts/chat.sh</a>.</p>
 
     <h3>by hand</h3>
     <p class="muted">Download the binary for your system from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>, along with SHA256SUMS and SHA256SUMS.minisig. Check the signature, then the binary, and put chat wherever you like:</p>

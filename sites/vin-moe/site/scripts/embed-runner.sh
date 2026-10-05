@@ -2,7 +2,7 @@
 set -eu
 
 page=chat/index.html
-script=chat.sh
+script=chat/scripts/chat.sh
 
 for marker in @@runner-script@@ @@runner-sha256@@; do
   grep -q "$marker" "$page" || {
