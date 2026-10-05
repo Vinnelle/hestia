@@ -13,6 +13,7 @@
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
 <script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
+<script>(()=>{const r=document.documentElement;let o;try{o=localStorage.os}catch{}r.dataset.os=o==='windows'||o==='linux'?o:/^Win/i.test(navigator.userAgentData?.platform||navigator.platform||'')?'windows':'linux'})()</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" as="image" href="/avatar.webp">
@@ -111,7 +112,7 @@
 
   <section class="panel" id="chat" role="tabpanel" aria-labelledby="tab-chat" tabindex="0">
     <div class="fragment"><p class="muted">Loading&hellip;</p></div>
-    <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="/chat">/chat</a>.</p></noscript>
+    <noscript><p class="muted">This section is fetched at runtime, so it needs JavaScript. The full page is at <a href="https://chat.vin.moe/">chat.vin.moe</a>.</p></noscript>
   </section>
 
   <section class="panel" id="runs" role="tabpanel" aria-labelledby="tab-runs" tabindex="0">
@@ -133,7 +134,7 @@ const tabs = [...document.querySelectorAll('.tabs .tab')];
 const panels = [...document.querySelectorAll('.panel')];
 const byName = (name) => tabs.find((t) => t.dataset.tab === name);
 
-const PAGES = { work: '/work', chat: '/chat', runs: '/colophon' };
+const PAGES = { work: '/work', chat: '/chat/', runs: '/colophon' };
 const fragmentInFlight = {};
 
 const loadFragment = (name) => {

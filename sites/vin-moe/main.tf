@@ -24,11 +24,11 @@ module "vin_moe_site" {
 
   site_slug         = "vin-moe"
   domain            = "vin.moe"
-  extra_hosts       = ["blog.vin.moe"]
+  extra_hosts       = ["blog.vin.moe", "chat.vin.moe"]
   zone_id           = var.zone_id
   node_ip           = var.node_ip
   cache_description = "cache everything for vin.moe"
-  uncached_paths    = ["/chat"]
+  uncached_hosts    = ["chat.vin.moe"]
 
   cluster_issuer         = var.cluster_issuer
   acme_email             = var.acme_email

@@ -37,7 +37,7 @@
     <a class="tab" href="/">about</a>
     <a class="tab" href="/#blog">blog</a>
     <a class="tab" href="/work">work</a>
-    <a class="tab" href="/chat">chat</a>
+    <a class="tab" href="/#chat">chat</a>
     <a class="tab" href="/colophon" aria-current="page">colophon</a>
     <span class="bar-sep" aria-hidden="true"></span>
     <span class="theme-toggle" role="group" aria-label="Theme">
@@ -84,7 +84,7 @@
     </li>
     <li>
       <h3>dns and cdn</h3>
-      <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster. The one exception is /chat: nginx answers curl and wget there with a shell script and everything else with a page, and a cache keyed only on the URL would hand one to the other, so the rule leaves that path out.</p>
+      <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster. The one exception is chat.vin.moe, which the rule leaves out: its front page answers curl and wget with a shell script, PowerShell with a PowerShell script, and everything else with a page, and a cache keyed only on the URL would hand one to the other.</p>
     </li>
   </ol>
 
@@ -108,7 +108,7 @@
   <ol class="topics">
     <li>
       <h3>nginx</h3>
-      <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses redirect to their new home on blog.vin.moe. The same pods answer both hostnames: one server block per host, with the blog host serving only the reader page, its stylesheet, and the public post endpoints.</p>
+      <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses and /chat redirect to their new homes on blog.vin.moe and chat.vin.moe. The same pods answer all three hostnames: one server block per host, with the blog host serving only the reader page, its stylesheet, and the public post endpoints, and the chat host only the chat page, its assets, and the two runner scripts.</p>
     </li>
     <li>
       <h3>the page</h3>

@@ -6,11 +6,12 @@
 <meta name="color-scheme" content="light dark">
 <title>chat — vin.moe</title>
 <meta name="description" content="chat is a private group chat for the terminal: no server, no accounts, and nothing left behind. End-to-end encrypted with post-quantum keys, over the BitTorrent DHT, Nostr relays or Tor.">
-<link rel="canonical" href="https://vin.moe/chat">
-<link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
+<link rel="canonical" href="https://chat.vin.moe/">
+<link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="https://vin.moe/feed.xml">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
 <script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
+<script>(()=>{const r=document.documentElement;let o;try{o=localStorage.os}catch{}r.dataset.os=o==='windows'||o==='linux'?o:/^Win/i.test(navigator.userAgentData?.platform||navigator.platform||'')?'windows':'linux'})()</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/jetbrains-mono.css">
@@ -18,7 +19,7 @@
 <script src="/js/theme.js" defer></script>
 
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://vin.moe/chat">
+<meta property="og:url" content="https://chat.vin.moe/">
 <meta property="og:title" content="chat — vin.moe">
 <meta property="og:description" content="Private group chat for the terminal. No server, no accounts, and nothing left behind.">
 <meta property="og:image" content="https://vin.moe/avatar.webp">
@@ -32,13 +33,13 @@
 <a class="skip" href="#main">skip to content</a>
 
 <div class="bar">
-  <a class="brand" href="/">vin.moe</a>
+  <a class="brand" href="https://vin.moe/">vin.moe</a>
   <nav class="bar-nav" aria-label="Site">
-    <a class="tab" href="/">about</a>
-    <a class="tab" href="/#blog">blog</a>
-    <a class="tab" href="/work">work</a>
-    <a class="tab" href="/chat" aria-current="page">chat</a>
-    <a class="tab" href="/colophon">colophon</a>
+    <a class="tab" href="https://vin.moe/">about</a>
+    <a class="tab" href="https://vin.moe/#blog">blog</a>
+    <a class="tab" href="https://vin.moe/work">work</a>
+    <a class="tab" href="https://chat.vin.moe/" aria-current="page">chat</a>
+    <a class="tab" href="https://vin.moe/colophon">colophon</a>
     <span class="bar-sep" aria-hidden="true"></span>
     <span class="theme-toggle" role="group" aria-label="Theme">
       <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
@@ -54,18 +55,38 @@
     <h1>chat</h1>
     <p class="pitch">Private group chat for the terminal.</p>
     <p class="sub">No server, no accounts, and nothing left behind. Share a session id and a password, and everyone with both is in.</p>
-    <div class="cmd">
-      <code>curl -fsSL <span class="nowrap">https://vin.moe/chat | sh</span></code>
-      <button class="copy" type="button" data-copy="curl -fsSL https://vin.moe/chat | sh" aria-label="Copy the command">
-        <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
-        <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-        <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
-      </button>
+    <div class="cmds">
+      <div class="os-tabs" role="group" aria-label="Operating system">
+        <button class="os-tab" type="button" data-os-choice="linux" aria-pressed="true">linux</button>
+        <button class="os-tab" type="button" data-os-choice="windows" aria-pressed="false">windows</button>
+      </div>
+      <div class="os-linux">
+        <p class="cmd-label">In bash, zsh, fish or any other shell</p>
+        <div class="cmd">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="os-windows">
+        <p class="cmd-label">In PowerShell</p>
+        <div class="cmd ps">
+          <code>irm <span class="nowrap">https://chat.vin.moe | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe | iex" aria-label="Copy the PowerShell command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
-    <p class="cmd-note">Linux, or Git Bash on Windows. Nothing is installed. <a href="#runner">See what it runs</a></p>
+    <p class="cmd-note">Nothing is installed. <a href="#runner">See what it runs</a></p>
     <p class="actions">
-      <a class="btn" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-linux-x86_64"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Linux</a>
-      <a class="btn" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-windows-x86_64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Windows</a>
+      <a class="btn os-linux" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-linux-x86_64"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Linux</a>
+      <a class="btn os-windows" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-windows-x86_64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Windows</a>
       <a class="btn" href="https://github.com/Vinnelle/chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M21 3 11 13"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Source code</a>
     </p>
   </header>
@@ -225,29 +246,63 @@
   <section class="get" id="get">
     <h2>get chat</h2>
     <p class="statement">One command, and nothing to install.</p>
-    <div class="cmd">
-      <code>curl -fsSL <span class="nowrap">https://vin.moe/chat | sh</span></code>
-      <button class="copy" type="button" data-copy="curl -fsSL https://vin.moe/chat | sh" aria-label="Copy the command">
-        <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
-        <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
-        <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
-      </button>
-    </div>
-    <p class="muted">It works on Linux, and on Windows from Git Bash. It needs curl, and minisign or OpenSSL 3 to check the release signature. Options for chat go after <code>sh&nbsp;-s&nbsp;--</code>, as in <code>sh&nbsp;-s&nbsp;--&nbsp;--routing&nbsp;tor</code>.</p>
     <p class="muted">I know some people distrust and dislike these curl installations, so you can download the binary <a href="https://github.com/Vinnelle/chat/releases/latest">here</a>, and below you can see the contents of the install script, as well as its SHA.</p>
+    <div class="os-tabs" id="runner" role="group" aria-label="Operating system">
+      <button class="os-tab" type="button" data-os-choice="linux" aria-pressed="true">linux</button>
+      <button class="os-tab" type="button" data-os-choice="windows" aria-pressed="false">windows</button>
+    </div>
 
-    <h3 id="runner">the script</h3>
-    <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
-    <p class="sha">SHA-256 <code>@@runner-sha256@@</code></p>
-    <pre class="code script"><code>@@runner-script@@</code></pre>
-    <p class="muted">To check it before running anything, <code>curl -fsSL https://vin.moe/chat | sha256sum</code> prints the same SHA-256. Browsers get the same file at <a href="/chat/scripts/chat.sh">/chat/scripts/chat.sh</a>.</p>
+    <div class="os-linux">
+      <div class="cmds">
+        <div class="cmd">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="muted">Paste it into bash, zsh, fish or any other shell. It pipes into sh, so the shell you type it in doesn't matter, and it works from Git Bash on Windows too. It needs curl, and minisign or OpenSSL 3 to check the release signature. Options for chat go after <code class="nowrap">sh -s --</code>, as in <code class="nowrap">sh -s -- --routing tor</code>.</p>
 
-    <h3>by hand</h3>
-    <p class="muted">Download the binary for your system from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>, along with SHA256SUMS and SHA256SUMS.minisig. Check the signature, then the binary, and put chat wherever you like:</p>
-    <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
+      <h3>the script</h3>
+      <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
+      <p class="sha">SHA-256 <code>@@sha256:chat.sh@@</code></p>
+      <pre class="code script"><code>@@script:chat.sh@@</code></pre>
+      <p class="muted">To check it before running anything, <code>curl -fsSL https://chat.vin.moe | sha256sum</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.sh">chat.vin.moe/chat.sh</a>.</p>
+
+      <h3>by hand</h3>
+      <p class="muted">Download chat-linux-x86_64, SHA256SUMS and SHA256SUMS.minisig from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>. Check the signature, then the binary, and put chat wherever you like:</p>
+      <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 sha256sum -c --ignore-missing SHA256SUMS
 install -Dm755 chat-linux-x86_64 ~/.local/bin/chat</code></pre>
-    <p class="muted">On Windows, run chat-windows-x86_64.exe from a terminal.</p>
+    </div>
+
+    <div class="os-windows">
+      <div class="cmds">
+        <div class="cmd ps">
+          <code>irm <span class="nowrap">https://chat.vin.moe | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe | iex" aria-label="Copy the PowerShell command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+      </div>
+      <p class="muted">Paste it into PowerShell: Windows PowerShell 5.1, which comes with Windows, or PowerShell 7. It needs nothing else. Windows has no built-in way to check the release signature, so the script carries its own Ed25519 and BLAKE2b check, which PowerShell compiles as it runs.</p>
+
+      <h3>the script</h3>
+      <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a new folder in your temporary folder, checks SHA256SUMS against chat's release key, checks the program against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
+      <p class="sha">SHA-256 <code>@@sha256:chat.ps1@@</code></p>
+      <pre class="code script"><code>@@script:chat.ps1@@</code></pre>
+      <p class="muted">To check it before running anything, <code>iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.ps1">chat.vin.moe/chat.ps1</a>.</p>
+
+      <h3>by hand</h3>
+      <p class="muted">Download chat-windows-x86_64.exe, SHA256SUMS and SHA256SUMS.minisig from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>. If you have minisign, check the signature. Then check that the hash Get-FileHash prints matches the line for chat-windows-x86_64.exe in SHA256SUMS, and run chat from a terminal:</p>
+      <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
+Get-FileHash chat-windows-x86_64.exe
+.\chat-windows-x86_64.exe</code></pre>
+    </div>
   </section>
 
   <p class="dim note"><em>AI wrote this page, from chat's README.</em></p>

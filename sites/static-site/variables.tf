@@ -29,8 +29,8 @@ variable "cache_description" {
   type        = string
 }
 
-variable "uncached_paths" {
-  description = "Exact URL paths the CDN cache rule leaves out, e.g. \"/chat\", whose response depends on the request's User-Agent"
+variable "uncached_hosts" {
+  description = "Hosts from extra_hosts the CDN cache rule leaves out, e.g. \"chat.vin.moe\", whose responses depend on the request's User-Agent"
   type        = list(string)
   default     = []
 }

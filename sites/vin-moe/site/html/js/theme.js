@@ -18,6 +18,21 @@ for (const b of themeOpts) {
   b.addEventListener('animationend', () => b.classList.remove('pop'));
 }
 
+const syncOs = () => {
+  const os = root.dataset.os === 'windows' ? 'windows' : 'linux';
+  for (const b of document.querySelectorAll('[data-os-choice]')) b.setAttribute('aria-pressed', b.dataset.osChoice === os);
+};
+syncOs();
+new MutationObserver(syncOs).observe(document.body, { childList: true, subtree: true });
+
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('[data-os-choice]');
+  if (!tab) return;
+  root.dataset.os = tab.dataset.osChoice;
+  try { localStorage.os = tab.dataset.osChoice; } catch {}
+  syncOs();
+});
+
 document.addEventListener('click', async (e) => {
   const button = e.target.closest('[data-copy]');
   if (!button) return;
