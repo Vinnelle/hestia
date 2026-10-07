@@ -1,4 +1,4 @@
 {
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:c7ea504046621c1a516b781251ee86f268cd1ac90b81a4aa9fa77818c4e83343",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:00ab1e0e4c0aeaff8cc4ed1f193f976f6d52e84a556319e8cfc44914a21879a2",
   "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:76cf369914e11bc174b1c1c3c29ed3c90c1d61ac05940d92c2326e14fb3b4705"
 }
