@@ -18,19 +18,22 @@ for (const b of themeOpts) {
   b.addEventListener('animationend', () => b.classList.remove('pop'));
 }
 
-const syncOs = () => {
-  const os = root.dataset.os === 'windows' ? 'windows' : 'linux';
+const syncPicks = () => {
+  const os = ['macos', 'windows'].includes(root.dataset.os) ? root.dataset.os : 'linux';
+  const channel = root.dataset.channel === 'beta' ? 'beta' : 'stable';
   for (const b of document.querySelectorAll('[data-os-choice]')) b.setAttribute('aria-pressed', b.dataset.osChoice === os);
+  for (const b of document.querySelectorAll('[data-channel-choice]')) b.setAttribute('aria-pressed', b.dataset.channelChoice === channel);
 };
-syncOs();
-new MutationObserver(syncOs).observe(document.body, { childList: true, subtree: true });
+syncPicks();
+new MutationObserver(syncPicks).observe(document.body, { childList: true, subtree: true });
 
 document.addEventListener('click', (e) => {
-  const tab = e.target.closest('[data-os-choice]');
+  const tab = e.target.closest('[data-os-choice], [data-channel-choice]');
   if (!tab) return;
-  root.dataset.os = tab.dataset.osChoice;
-  try { localStorage.os = tab.dataset.osChoice; } catch {}
-  syncOs();
+  const [key, value] = tab.dataset.osChoice ? ['os', tab.dataset.osChoice] : ['channel', tab.dataset.channelChoice];
+  root.dataset[key] = value;
+  try { localStorage[key] = value; } catch {}
+  syncPicks();
 });
 
 document.addEventListener('click', async (e) => {

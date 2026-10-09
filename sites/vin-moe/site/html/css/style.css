@@ -370,7 +370,9 @@ main { counter-reset: topic; }
 
 .cmds { max-width: 30rem; margin: 0 auto; text-align: left; }
 .cmd-label { margin: 0 0 0.35rem 0.15rem; color: var(--faint); font-size: 0.76rem; line-height: 1.5; }
-.os-tabs { display: flex; gap: 1.3rem; margin: 0 0 0.6rem 0.15rem; }
+.picks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 1.3rem; margin: 0 0 0.6rem 0.15rem; }
+.picks-sep { width: 1px; height: 1rem; background: var(--border); }
+.os-tabs { display: flex; gap: 1.3rem; }
 .os-tab {
   font: inherit;
   font-size: 0.85rem;
@@ -385,11 +387,38 @@ main { counter-reset: topic; }
 }
 .os-tab:hover { color: var(--fg-strong); }
 :root[data-os="linux"] .os-tab[data-os-choice="linux"],
-:root[data-os="windows"] .os-tab[data-os-choice="windows"] { color: var(--accent); text-decoration: underline; }
-:root:not([data-os]) .os-tabs,
-:root[data-os="linux"] .os-windows,
-:root[data-os="windows"] .os-linux { display: none; }
-:root:not([data-os]) div.os-linux + div.os-windows { margin-top: 1.4rem; }
+:root[data-os="macos"] .os-tab[data-os-choice="macos"],
+:root[data-os="windows"] .os-tab[data-os-choice="windows"],
+:root:not([data-channel="beta"]) .os-tab[data-channel-choice="stable"],
+:root[data-channel="beta"] .os-tab[data-channel-choice="beta"] { color: var(--accent); text-decoration: underline; }
+:root:not([data-os]) .picks,
+:root:not([data-os="macos"]) .no-release,
+:root[data-os="linux"] :is(.os-macos, .os-windows),
+:root[data-os="macos"] :is(.os-linux, .os-windows),
+:root[data-os="macos"]:not([data-channel="beta"]) .os-unix,
+:root[data-os="windows"] :is(.os-linux, .os-macos, .os-unix),
+:root:not([data-channel="beta"]) .ch-beta,
+:root[data-channel="beta"] .ch-stable { display: none; }
+:root:not([data-os]) div.os-unix + div.os-windows { margin-top: 1.4rem; }
+.no-release {
+  margin: 0;
+  padding: 0.7rem 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  text-align: left;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.link-btn {
+  font: inherit;
+  padding: 0;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.link-btn:hover { color: var(--accent-strong); }
 .cmd {
   display: flex;
   align-items: center;
@@ -616,8 +645,9 @@ main { counter-reset: topic; }
 .faq details p { margin: 0 0 1.2rem calc(1ch + 0.9rem); color: var(--muted); font-size: 0.9rem; }
 
 .get .cmds { max-width: none; margin: 0 0 1.2rem; }
-.get .os-tabs { margin: 2rem 0 1rem 0.15rem; }
-.launch .os-tabs { justify-content: center; margin-left: 0; }
+.get .picks { margin: 2rem 0 1rem 0.15rem; }
+.get .no-release { margin: 0 0 1.2rem; }
+.launch .picks { justify-content: center; margin-left: 0; }
 .launch .cmd-label { text-align: center; }
 .get h3 { margin: 2.4rem 0 0.6rem; font-size: 0.95rem; font-weight: 700; color: var(--fg-strong); }
 .get .muted { font-size: 0.92rem; }

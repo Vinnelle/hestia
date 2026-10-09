@@ -3,6 +3,17 @@ set -eu
 
 page=chat/index.html
 
+beta() {
+  [ "$(grep -c "$2" "chat/scripts/$1")" = 1 ] || {
+    echo "embed-runner.sh: chat/scripts/$1 needs exactly one line matching $2" >&2
+    exit 1
+  }
+  sed "/$2/s/stable/beta/" "chat/scripts/$1" >"chat/scripts/${1%.*}-beta.${1##*.}"
+}
+
+beta chat.sh '^channel=stable$'
+beta chat.ps1 "^ *\\\$channel = 'stable'\$"
+
 for script in chat/scripts/*; do
   name="${script##*/}"
   code="@@script:$name@@"

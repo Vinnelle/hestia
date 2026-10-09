@@ -4,6 +4,10 @@
 #
 #   irm https://chat.vin.moe | iex
 #
+# or, for the newest beta:
+#
+#   irm https://chat.vin.moe/beta | iex
+#
 # This script downloads the latest release of chat from GitHub, checks that
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for administrator rights, and
@@ -15,8 +19,9 @@
 #   1. Check that this is 64-bit Windows, which the release build needs.
 #   2. Download chat-windows-x86_64.exe, with SHA256SUMS and
 #      SHA256SUMS.minisig, from the latest release on
-#      https://github.com/Vinnelle/chat/releases into a new folder inside
-#      your temporary folder.
+#      https://github.com/Vinnelle/chat/releases (for the beta, the newest
+#      release, betas included) into a new folder inside your temporary
+#      folder.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
 #      key in $minisignPub below (the same key as minisign.pub in the chat
 #      repository). Releases are signed offline, never on GitHub, so even
@@ -30,8 +35,9 @@
 #
 # It works in Windows PowerShell 5.1, which comes with Windows, and in
 # PowerShell 7. To read it before you run it, open
-# https://chat.vin.moe/chat.ps1 in a browser. To check that's the
-# file PowerShell would get, compare the SHA-256 printed by
+# https://chat.vin.moe/chat.ps1 (the beta's is chat-beta.ps1) in a
+# browser. To check that's the file PowerShell would get, compare the
+# SHA-256 printed by
 #
 #   iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1
 #
@@ -49,11 +55,20 @@
     $ProgressPreference = 'SilentlyContinue'
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
+    # Which releases to run. https://chat.vin.moe serves this script with
+    # the line below set to stable, which runs the latest release. The beta,
+    # https://chat.vin.moe/beta, is this same script with that one line set
+    # to beta, which runs the newest release, betas included.
+    $channel = 'stable'
+
     # Where releases come from, and the public half of chat's release key.
     # Only the public half is here: it can check signatures, but it can't
     # make them.
     $repo = 'https://github.com/Vinnelle/chat'
+    $api = 'https://api.github.com/repos/Vinnelle/chat'
     $minisignPub = 'RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB'
+    $site = 'https://chat.vin.moe'
+    if ($channel -eq 'beta') { $site += '/beta' }
 
     # Print a status line on stderr.
     function Say([string] $text) {
@@ -62,12 +77,8 @@
 
     # Step 1: this script is for 64-bit Windows. $IsLinux and $IsMacOS only
     # exist in PowerShell 7, so in Windows PowerShell 5.1 they're empty.
-    if ($IsMacOS) {
-        Say "release builds are for Linux and Windows. To build chat yourself, see $repo"
-        return
-    }
-    if ($IsLinux) {
-        Say 'this script is for Windows. On Linux, run: curl -fsSL https://chat.vin.moe | sh'
+    if ($IsLinux -or $IsMacOS) {
+        Say "this script is for Windows. On Linux and macOS, run: curl -fsSL $site | sh"
         return
     }
     if (-not [Environment]::Is64BitOperatingSystem) {
@@ -81,10 +92,26 @@
     $dir = (New-Item -ItemType Directory (Join-Path ([IO.Path]::GetTempPath()) ('chat.' + [IO.Path]::GetRandomFileName()))).FullName
     # The finally block at the end deletes the folder however this ends.
     try {
-        # /releases/latest/download/<name> always points at the newest release.
-        Say 'downloading the latest release'
+        # /releases/latest/download/<name> always points at the latest
+        # release. GitHub never counts a beta as the latest release, so the
+        # beta asks GitHub's API for the newest release of all instead, and
+        # downloads from that release's tag. Anything that doesn't look like a
+        # version tag is refused.
+        if ($channel -eq 'beta') {
+            $releases = Invoke-RestMethod -UseBasicParsing "$api/releases?per_page=1"
+            $tag = ($releases | Select-Object -First 1).tag_name
+            if ("$tag" -notmatch '^v[0-9]') {
+                Say "couldn't find the newest release at $repo/releases"
+                return
+            }
+            Say "downloading $tag"
+            $from = "$repo/releases/download/$tag"
+        } else {
+            Say 'downloading the latest release'
+            $from = "$repo/releases/latest/download"
+        }
         foreach ($file in $asset, 'SHA256SUMS', 'SHA256SUMS.minisig') {
-            Invoke-WebRequest -UseBasicParsing "$repo/releases/latest/download/$file" -OutFile (Join-Path $dir $file)
+            Invoke-WebRequest -UseBasicParsing "$from/$file" -OutFile (Join-Path $dir $file)
         }
 
         # Step 3: the signature. Windows has no Ed25519 or BLAKE2b built in, so

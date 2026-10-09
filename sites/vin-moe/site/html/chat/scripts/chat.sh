@@ -1,10 +1,14 @@
 #!/bin/sh
 #
-# chat runner for Linux, served at https://chat.vin.moe
+# chat runner for Linux and macOS, served at https://chat.vin.moe
 #
 # Run it with:
 #
 #   curl -fsSL https://chat.vin.moe | sh
+#
+# or, for the newest beta:
+#
+#   curl -fsSL https://chat.vin.moe/beta | sh
 #
 # This script downloads the latest release of chat from GitHub, checks that
 # it was signed with chat's release key, runs it, and deletes it again when
@@ -16,8 +20,9 @@
 #
 #   1. Pick the release file that fits this computer.
 #   2. Download it, with SHA256SUMS and SHA256SUMS.minisig, from the latest
-#      release on https://github.com/Vinnelle/chat/releases into a new
-#      temporary folder that only you can read.
+#      release on https://github.com/Vinnelle/chat/releases (for the beta,
+#      the newest release, betas included) into a new temporary folder that
+#      only you can read.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
 #      key in minisign_pub below (the same key as minisign.pub in the chat
 #      repository). Releases are signed offline, never on GitHub, so even
@@ -35,19 +40,27 @@
 #   irm https://chat.vin.moe | iex
 #
 # To read the script before you run it, open
-# https://chat.vin.moe/chat.sh in a browser. To check that's the file
-# your shell would get, compare the SHA-256 printed by
+# https://chat.vin.moe/chat.sh (the beta's is chat-beta.sh) in a browser.
+# To check that's the file your shell would get, compare the SHA-256 printed
+# by
 #
 #   curl -fsSL https://chat.vin.moe | sha256sum
 #
-# with the one shown on https://chat.vin.moe.
+# (shasum -a 256 on a Mac) with the one shown on https://chat.vin.moe.
 
 # Stop at the first command that fails, and treat unset variables as errors.
 set -eu
 
+# Which releases to run. https://chat.vin.moe serves this script with the
+# line below set to stable, which runs the latest release. The beta,
+# https://chat.vin.moe/beta, is this same script with that one line set to
+# beta, which runs the newest release, betas included.
+channel=stable
+
 # Where releases come from, and the public half of chat's release key. Only
 # the public half is here: it can check signatures, but it can't make them.
 repo=https://github.com/Vinnelle/chat
+api=https://api.github.com/repos/Vinnelle/chat
 minisign_pub=RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 
 # Print a status line. It goes to stderr, so it never mixes with chat's output.
@@ -74,6 +87,15 @@ get() {
     curl --proto '=https' --tlsv1.2 -fsSL "$@"
 }
 
+# Print a file's SHA-256. Linux has sha256sum, and macOS has shasum instead.
+sha256() {
+    if command -v sha256sum >/dev/null 2>&1; then
+        sha256sum "$1"
+    else
+        shasum -a 256 "$1"
+    fi | cut -d ' ' -f 1
+}
+
 # Check SHA256SUMS against SHA256SUMS.minisig with chat's release key. If
 # minisign is installed, it does the check. Otherwise OpenSSL 3 does the same
 # check by hand: minisign signs the BLAKE2b-512 hash of a file with Ed25519,
@@ -87,8 +109,10 @@ check_signature() {
     fi
     # The second line of a .minisig file is the signature in base64: two bytes
     # naming the algorithm ("ED" means a signed BLAKE2b-512 hash), eight bytes
-    # of key id, then the 64-byte Ed25519 signature.
-    sed -n 2p "$dir/SHA256SUMS.minisig" | base64 -d >"$dir/sig"
+    # of key id, then the 64-byte Ed25519 signature. OpenSSL decodes the
+    # base64 here and below, because macOS's own base64 only learned -d in
+    # macOS 13.
+    sed -n 2p "$dir/SHA256SUMS.minisig" | openssl base64 -d -A >"$dir/sig"
     [ "$(head -c 2 "$dir/sig")" = ED ] || return 1
     tail -c 64 "$dir/sig" >"$dir/sig.ed25519"
     # The public key decodes the same way: "Ed", eight bytes of key id, then
@@ -96,7 +120,7 @@ check_signature() {
     # turns those 32 bytes into an Ed25519 public key file OpenSSL can read.
     {
         printf '\060\052\060\005\006\003\053\145\160\003\041\000'
-        printf '%s' "$minisign_pub" | base64 -d | tail -c 32
+        printf '%s' "$minisign_pub" | openssl base64 -d -A | tail -c 32
     } >"$dir/pub.der"
     openssl dgst -blake2b512 -binary "$dir/SHA256SUMS" >"$dir/SHA256SUMS.blake2b"
     openssl pkeyutl -verify -pubin -keyform DER -inkey "$dir/pub.der" -rawin \
@@ -107,20 +131,30 @@ main() {
     # Step 1: pick the release file. Git Bash, MSYS2 and Cygwin run on
     # Windows, so they get the Windows build, which runs in the same terminal.
     case "$(uname -s)" in
-        Linux) asset=chat-linux-x86_64 bin=chat ;;
-        MINGW* | MSYS* | CYGWIN*) asset=chat-windows-x86_64.exe bin=chat.exe ;;
-        *) die "release builds are for Linux and Windows. To build chat yourself, see $repo" ;;
+        Linux) os=linux ;;
+        Darwin) os=macos ;;
+        MINGW* | MSYS* | CYGWIN*) os=windows ;;
+        *) die "release builds are for Linux, macOS and Windows. To build chat yourself, see $repo" ;;
     esac
-    # Release builds are for 64-bit x86 only.
-    case "$(uname -m)" in
-        x86_64 | amd64) ;;
-        *) die "release builds are for x86_64 only. To build chat yourself, see $repo" ;;
+    # Linux and Windows builds are for 64-bit x86. macOS has one for Apple
+    # silicon, which uname calls arm64, and one for Intel Macs.
+    case "$os-$(uname -m)" in
+        linux-x86_64 | linux-amd64) asset=chat-linux-x86_64 bin=chat ;;
+        windows-x86_64 | windows-amd64) asset=chat-windows-x86_64.exe bin=chat.exe ;;
+        macos-arm64 | macos-aarch64) asset=chat-macos-aarch64 bin=chat ;;
+        macos-x86_64) asset=chat-macos-x86_64 bin=chat ;;
+        *) die "release builds are for x86_64 Linux and Windows, and for Macs. To build chat yourself, see $repo" ;;
     esac
-    # Check for every tool this needs before downloading anything.
+    # Check for every tool this needs before downloading anything. The
+    # openssl that comes with macOS is LibreSSL, which can't check the
+    # signature, so on a Mac it's usually minisign, from Homebrew.
     need curl
-    need sha256sum
-    command -v minisign >/dev/null 2>&1 || openssl pkeyutl -help 2>&1 | grep -q rawin ||
+    command -v sha256sum >/dev/null 2>&1 || command -v shasum >/dev/null 2>&1 ||
+        die "this needs sha256sum or shasum, and has neither"
+    if ! command -v minisign >/dev/null 2>&1 && ! openssl pkeyutl -help 2>&1 | grep -q rawin; then
+        [ "$os" = macos ] && die "checking the release signature needs minisign: brew install minisign"
         die "checking the release signature needs minisign, or OpenSSL 3 or newer"
+    fi
     # chat draws a full-screen interface, so it needs a terminal. Under
     # "curl | sh", this script's input is the download rather than your
     # keyboard, so chat reads from the terminal itself, /dev/tty.
@@ -129,7 +163,8 @@ main() {
     # Step 2: a new folder only you can read (mktemp -d makes it with mode
     # 700). $XDG_RUNTIME_DIR is used when it exists: it belongs to you alone
     # and is kept in memory, so on most Linux desktops the download never
-    # touches the disk.
+    # touches the disk. macOS has no $XDG_RUNTIME_DIR, and its $TMPDIR is
+    # already a folder of your own.
     tmp=${TMPDIR:-/tmp}
     if [ -d "${XDG_RUNTIME_DIR:-}" ] && [ -w "$XDG_RUNTIME_DIR" ]; then
         tmp=$XDG_RUNTIME_DIR
@@ -142,18 +177,32 @@ main() {
     trap 'exit 143' TERM
     trap 'exit 129' HUP
 
-    # Find the latest release. GitHub redirects /releases/latest to
+    # Find the release. GitHub redirects /releases/latest to
     # /releases/tag/<version>, and the version is the last part of that
-    # address. Anything that doesn't look like a version tag is refused.
-    tag=$(get -I -o /dev/null -w '%{url_effective}' "$repo/releases/latest")
-    tag=${tag##*/}
+    # address. GitHub never counts a beta as the latest release, so the beta
+    # asks GitHub's API for the newest release of all instead, and reads the
+    # version from its "tag_name". Anything that doesn't look like a version
+    # tag is refused.
+    if [ "$channel" = beta ]; then
+        tag=$(get "$api/releases?per_page=1" | tr ',' '\n' |
+            sed -n 's/^[[:space:]{]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+    else
+        tag=$(get -I -o /dev/null -w '%{url_effective}' "$repo/releases/latest")
+        tag=${tag##*/}
+    fi
     case "$tag" in
         v[0-9]*) ;;
         *) die "couldn't find the latest release at $repo/releases" ;;
     esac
 
+    # A release that came out before chat had a build for this computer
+    # doesn't have the file. On stable, the beta might.
     say "downloading $tag"
-    for file in "$asset" SHA256SUMS SHA256SUMS.minisig; do
+    if ! get -o "$dir/$asset" "$repo/releases/download/$tag/$asset"; then
+        [ "$channel" = beta ] && die "couldn't download $asset from $tag"
+        die "couldn't download $asset from $tag. If it has none yet, the beta might: curl -fsSL https://chat.vin.moe/beta | sh"
+    fi
+    for file in SHA256SUMS SHA256SUMS.minisig; do
         get -o "$dir/$file" "$repo/releases/download/$tag/$file"
     done
 
@@ -164,7 +213,7 @@ main() {
     # genuine, and compare the hashes.
     sum=$(awk -v asset="$asset" '$2 == asset { print $1 }' "$dir/SHA256SUMS")
     [ -n "$sum" ] || die "SHA256SUMS has no line for $asset"
-    [ "$(sha256sum "$dir/$asset" | cut -d ' ' -f 1)" = "$sum" ] ||
+    [ "$(sha256 "$dir/$asset")" = "$sum" ] ||
         die "$asset doesn't match SHA256SUMS"
 
     # Step 5: name it chat, let only you run it, and start it with any options

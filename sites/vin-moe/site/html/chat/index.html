@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
 <script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
-<script>(()=>{const r=document.documentElement;let o;try{o=localStorage.os}catch{}r.dataset.os=o==='windows'||o==='linux'?o:/^Win/i.test(navigator.userAgentData?.platform||navigator.platform||'')?'windows':'linux'})()</script>
+<script>(()=>{const r=document.documentElement,p=navigator.userAgentData?.platform||navigator.platform||'';let o,c;try{o=localStorage.os;c=localStorage.channel}catch{}r.dataset.os=['linux','macos','windows'].includes(o)?o:/^Win/i.test(p)?'windows':/^Mac/i.test(p)?'macos':'linux';r.dataset.channel=location.pathname==='/beta'||c==='beta'?'beta':'stable'})()</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/jetbrains-mono.css">
@@ -48,20 +48,36 @@
 
 <main id="main" class="page">
   <header class="launch">
-    <p class="eyebrow">open source · linux and windows</p>
+    <p class="eyebrow">open source · linux, macos and windows</p>
     <h1>chat</h1>
     <p class="pitch">Private group chat for the terminal.</p>
     <p class="sub">No server, no accounts, and nothing left behind. Share a session id and a password, and everyone with both is in.</p>
     <div class="cmds">
-      <div class="os-tabs" role="group" aria-label="Operating system">
-        <button class="os-tab" type="button" data-os-choice="linux" aria-pressed="true">linux</button>
-        <button class="os-tab" type="button" data-os-choice="windows" aria-pressed="false">windows</button>
+      <div class="picks">
+        <div class="os-tabs" role="group" aria-label="Operating system">
+          <button class="os-tab" type="button" data-os-choice="linux" aria-pressed="true">linux</button>
+          <button class="os-tab" type="button" data-os-choice="macos" aria-pressed="false">macos</button>
+          <button class="os-tab" type="button" data-os-choice="windows" aria-pressed="false">windows</button>
+        </div>
+        <span class="picks-sep" aria-hidden="true"></span>
+        <div class="os-tabs" role="group" aria-label="Release">
+          <button class="os-tab" type="button" data-channel-choice="stable" aria-pressed="true">stable</button>
+          <button class="os-tab" type="button" data-channel-choice="beta" aria-pressed="false">beta</button>
+        </div>
       </div>
-      <div class="os-linux">
+      <div class="os-unix">
         <p class="cmd-label">In bash, zsh, fish or any other shell</p>
-        <div class="cmd">
+        <div class="cmd ch-stable">
           <code>curl -fsSL <span class="nowrap">https://chat.vin.moe | sh</span></code>
-          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux command">
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux and macOS command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ch-beta">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/beta | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/beta | sh" aria-label="Copy the Linux and macOS beta command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
             <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
@@ -70,7 +86,7 @@
       </div>
       <div class="os-windows">
         <p class="cmd-label">In PowerShell</p>
-        <div class="cmd ps">
+        <div class="cmd ps ch-stable">
           <code>irm <span class="nowrap">https://chat.vin.moe | iex</span></code>
           <button class="copy" type="button" data-copy="irm https://chat.vin.moe | iex" aria-label="Copy the PowerShell command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
@@ -78,12 +94,22 @@
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
           </button>
         </div>
+        <div class="cmd ps ch-beta">
+          <code>irm <span class="nowrap">https://chat.vin.moe/beta | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe/beta | iex" aria-label="Copy the PowerShell beta command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
       </div>
+      <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.5.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
     </div>
     <p class="cmd-note">Nothing is installed. <a href="#runner">See what it runs</a></p>
     <p class="actions">
-      <a class="btn os-linux" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-linux-x86_64"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Linux</a>
-      <a class="btn os-windows" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-windows-x86_64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Windows</a>
+      <a class="btn os-linux ch-stable" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-linux-x86_64"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Linux</a>
+      <a class="btn os-windows ch-stable" href="https://github.com/Vinnelle/chat/releases/latest/download/chat-windows-x86_64.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download for Windows</a>
+      <a class="btn ch-beta" href="https://github.com/Vinnelle/chat/releases"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download the beta</a>
       <a class="btn" href="https://github.com/Vinnelle/chat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M21 3 11 13"/><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Source code</a>
     </p>
   </header>
@@ -205,7 +231,7 @@
       <dt>On the wire</dt><dd>1004-byte packets, one every 1.5 to 1.9 seconds per peer</dd>
       <dt>Saved settings</dt><dd>Sealed with Argon2id and XChaCha20-Poly1305, and can also need the device's TPM, a FIDO2 key or an authenticator code</dd>
       <dt>Updates</dt><dd>Signed offline with minisign, and checked before they install</dd>
-      <dt>Platforms</dt><dd>Linux and Windows, x86_64</dd>
+      <dt>Platforms</dt><dd>Linux and Windows on x86_64, and macOS 11 and later on Apple silicon and Intel</dd>
       <dt>Built with</dt><dd>C, with libsodium, liboqs, Mbed TLS and libsecp256k1 linked in statically</dd>
       <dt>Licence</dt><dd>GPL-3.0</dd>
     </dl>
@@ -236,24 +262,42 @@
     </details>
     <details name="faq">
       <summary>Does it run on macOS or phones?</summary>
-      <p>No. Release builds are for Linux and Windows on x86_64.</p>
+      <p>macOS, yes, from 0.5.0, on Apple silicon and Intel Macs with macOS 11 or later. Locking a save to the device, security keys and desktop notifications don't work there yet. Phones, no.</p>
     </details>
   </section>
 
   <section class="get" id="get">
     <h2>get chat</h2>
     <p class="statement">One command, and nothing to install.</p>
-    <p class="muted">I know some people distrust and dislike these curl installations, so you can download the binary <a href="https://github.com/Vinnelle/chat/releases/latest">here</a>, and below you can see the contents of the install script, as well as its SHA.</p>
-    <div class="os-tabs" id="runner" role="group" aria-label="Operating system">
-      <button class="os-tab" type="button" data-os-choice="linux" aria-pressed="true">linux</button>
-      <button class="os-tab" type="button" data-os-choice="windows" aria-pressed="false">windows</button>
+    <p class="muted">I know some people distrust and dislike these curl installations, so you can download the binary <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">here</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">here</a>, and below you can see the contents of the install script, as well as its SHA.</p>
+    <div class="picks" id="runner">
+      <div class="os-tabs" role="group" aria-label="Operating system">
+        <button class="os-tab" type="button" data-os-choice="linux" aria-pressed="true">linux</button>
+        <button class="os-tab" type="button" data-os-choice="macos" aria-pressed="false">macos</button>
+        <button class="os-tab" type="button" data-os-choice="windows" aria-pressed="false">windows</button>
+      </div>
+      <span class="picks-sep" aria-hidden="true"></span>
+      <div class="os-tabs" role="group" aria-label="Release">
+        <button class="os-tab" type="button" data-channel-choice="stable" aria-pressed="true">stable</button>
+        <button class="os-tab" type="button" data-channel-choice="beta" aria-pressed="false">beta</button>
+      </div>
     </div>
 
-    <div class="os-linux">
+    <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.5.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
+
+    <div class="os-unix">
       <div class="cmds">
-        <div class="cmd">
+        <div class="cmd ch-stable">
           <code>curl -fsSL <span class="nowrap">https://chat.vin.moe | sh</span></code>
-          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux command">
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux and macOS command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ch-beta">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/beta | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/beta | sh" aria-label="Copy the Linux and macOS beta command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
             <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
@@ -261,25 +305,44 @@
         </div>
       </div>
       <p class="muted">Paste it into bash, zsh, fish or any other shell. It pipes into sh, so the shell you type it in doesn't matter, and it works from Git Bash on Windows too. It needs curl, and minisign or OpenSSL 3 to check the release signature. Options for chat go after <code class="nowrap">sh -s --</code>, as in <code class="nowrap">sh -s -- --routing tor</code>.</p>
+      <p class="muted os-macos">On a Mac, get minisign first, with <code class="nowrap">brew install minisign</code>: the openssl that comes with macOS can't check the signature. chat runs on Apple silicon and Intel Macs with macOS 11 or later. Locking a save to the device, security keys and desktop notifications don't work there yet.</p>
 
       <h3>the script</h3>
       <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
-      <p class="sha">SHA-256 <code>@@sha256:chat.sh@@</code></p>
-      <pre class="code script"><code>@@script:chat.sh@@</code></pre>
-      <p class="muted">To check it before running anything, <code>curl -fsSL https://chat.vin.moe | sha256sum</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.sh">chat.vin.moe/chat.sh</a>.</p>
+      <p class="muted ch-beta">The beta's runner is the same script with one line changed, <code class="nowrap">channel=beta</code>, so it runs the newest release, betas included, instead of the latest stable one.</p>
+      <p class="sha ch-stable">SHA-256 <code>@@sha256:chat.sh@@</code></p>
+      <pre class="code script ch-stable"><code>@@script:chat.sh@@</code></pre>
+      <p class="muted ch-stable">To check it before running anything, <code>curl -fsSL https://chat.vin.moe | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.sh">chat.vin.moe/chat.sh</a>.</p>
+      <p class="sha ch-beta">SHA-256 <code>@@sha256:chat-beta.sh@@</code></p>
+      <pre class="code script ch-beta"><code>@@script:chat-beta.sh@@</code></pre>
+      <p class="muted ch-beta">To check it before running anything, <code>curl -fsSL https://chat.vin.moe/beta | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.sh">chat.vin.moe/chat-beta.sh</a>.</p>
 
       <h3>by hand</h3>
-      <p class="muted">Download chat-linux-x86_64, SHA256SUMS and SHA256SUMS.minisig from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>. Check the signature, then the binary, and put chat wherever you like:</p>
-      <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
+      <p class="muted os-linux">Download chat-linux-x86_64, SHA256SUMS and SHA256SUMS.minisig from the <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">latest release</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">newest release</a>. Check the signature, then the binary, and put chat wherever you like:</p>
+      <pre class="code os-linux"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 sha256sum -c --ignore-missing SHA256SUMS
 install -Dm755 chat-linux-x86_64 ~/.local/bin/chat</code></pre>
+      <p class="muted os-macos">Download chat-macos-aarch64 for Apple silicon or chat-macos-x86_64 for an Intel Mac, with SHA256SUMS and SHA256SUMS.minisig, from the <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">latest release</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">newest release</a>. Check the signature, then the binary. A browser marks what it downloads, and macOS won't run a marked program that Apple hasn't notarized, which chat isn't, so take the mark off with xattr before you run it from a terminal:</p>
+      <pre class="code os-macos"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
+grep chat-macos-aarch64 SHA256SUMS | shasum -a 256 -c
+xattr -d com.apple.quarantine chat-macos-aarch64
+chmod +x chat-macos-aarch64
+./chat-macos-aarch64</code></pre>
     </div>
 
     <div class="os-windows">
       <div class="cmds">
-        <div class="cmd ps">
+        <div class="cmd ps ch-stable">
           <code>irm <span class="nowrap">https://chat.vin.moe | iex</span></code>
           <button class="copy" type="button" data-copy="irm https://chat.vin.moe | iex" aria-label="Copy the PowerShell command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ps ch-beta">
+          <code>irm <span class="nowrap">https://chat.vin.moe/beta | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe/beta | iex" aria-label="Copy the PowerShell beta command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
             <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
@@ -290,12 +353,16 @@ install -Dm755 chat-linux-x86_64 ~/.local/bin/chat</code></pre>
 
       <h3>the script</h3>
       <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a new folder in your temporary folder, checks SHA256SUMS against chat's release key, checks the program against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
-      <p class="sha">SHA-256 <code>@@sha256:chat.ps1@@</code></p>
-      <pre class="code script"><code>@@script:chat.ps1@@</code></pre>
-      <p class="muted">To check it before running anything, <code>iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.ps1">chat.vin.moe/chat.ps1</a>.</p>
+      <p class="muted ch-beta">The beta's runner is the same script with one line changed, <code class="nowrap">$channel = 'beta'</code>, so it runs the newest release, betas included, instead of the latest stable one.</p>
+      <p class="sha ch-stable">SHA-256 <code>@@sha256:chat.ps1@@</code></p>
+      <pre class="code script ch-stable"><code>@@script:chat.ps1@@</code></pre>
+      <p class="muted ch-stable">To check it before running anything, <code>iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.ps1">chat.vin.moe/chat.ps1</a>.</p>
+      <p class="sha ch-beta">SHA-256 <code>@@sha256:chat-beta.ps1@@</code></p>
+      <pre class="code script ch-beta"><code>@@script:chat-beta.ps1@@</code></pre>
+      <p class="muted ch-beta">To check it before running anything, <code>iwr https://chat.vin.moe/beta -OutFile chat-beta.ps1; Get-FileHash chat-beta.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.ps1">chat.vin.moe/chat-beta.ps1</a>.</p>
 
       <h3>by hand</h3>
-      <p class="muted">Download chat-windows-x86_64.exe, SHA256SUMS and SHA256SUMS.minisig from the <a href="https://github.com/Vinnelle/chat/releases/latest">latest release</a>. If you have minisign, check the signature. Then check that the hash Get-FileHash prints matches the line for chat-windows-x86_64.exe in SHA256SUMS, and run chat from a terminal:</p>
+      <p class="muted">Download chat-windows-x86_64.exe, SHA256SUMS and SHA256SUMS.minisig from the <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">latest release</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">newest release</a>. If you have minisign, check the signature. Then check that the hash Get-FileHash prints matches the line for chat-windows-x86_64.exe in SHA256SUMS, and run chat from a terminal:</p>
       <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 Get-FileHash chat-windows-x86_64.exe
 .\chat-windows-x86_64.exe</code></pre>

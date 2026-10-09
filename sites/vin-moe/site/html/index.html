@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
 <script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t;r.style.colorScheme=t}}catch{}</script>
-<script>(()=>{const r=document.documentElement;let o;try{o=localStorage.os}catch{}r.dataset.os=o==='windows'||o==='linux'?o:/^Win/i.test(navigator.userAgentData?.platform||navigator.platform||'')?'windows':'linux'})()</script>
+<script>(()=>{const r=document.documentElement,p=navigator.userAgentData?.platform||navigator.platform||'';let o,c;try{o=localStorage.os;c=localStorage.channel}catch{}r.dataset.os=['linux','macos','windows'].includes(o)?o:/^Win/i.test(p)?'windows':/^Mac/i.test(p)?'macos':'linux';r.dataset.channel=c==='beta'?'beta':'stable'})()</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preload" as="image" href="/avatar.webp">
