@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>colophon | vin.moe</title>
-<meta name="description" content="How vin.moe runs: Talos Linux, a single-node Kubernetes cluster, Cilium, nginx, and the Terraform and CI that ship every change.">
+<meta name="description" content="How vin.moe runs: a RAM-only relay, Talos Linux in a single-node Kubernetes cluster, Cilium, nginx, and the Terraform and CI that ship every change.">
 <link rel="canonical" href="https://vin.moe/colophon">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
@@ -51,28 +51,52 @@
 <main id="main" class="page">
   <header class="page-head">
     <h1>how this site runs</h1>
-    <p class="muted">This site is a static page served by nginx from a single-node Kubernetes cluster on dedicated hardware. One repository defines the cluster, the container image and the Deployment, in about 8,000 lines of Terraform that HCP Terraform applies. The repository is the source of truth: changes are made there and applied from there, never against the cluster by hand.</p>
-    <p class="muted">The sections below follow one change from a commit to a running pod, and describe the platform it lands on.</p>
+    <p class="muted">This site is a static page served by nginx from a single-node Kubernetes cluster, which runs in a virtual machine on a server in my homelab. The only public address in front of it belongs to a RAM-only relay in Switzerland, which forwards traffic to the cluster over WireGuard. One repository defines all of it, from the host's firewall to the container image and the Deployment, in about 12,500 lines of Terraform that CI applies, with the state kept in HCP Terraform. The repository is the source of truth: changes are made there and applied from there, never against the cluster by hand.</p>
+    <p class="muted">The sections below start with the machine, follow a request in through the relay, follow one change from a commit to a running pod, and describe the platform it lands on.</p>
     <p class="dim note"><em>AI wrote the HTML/CSS on this page. I do infrastructure, not frontend.</em></p>
   </header>
 
-  <h2>the cluster</h2>
+  <h2>the machine</h2>
   <ul class="topics">
     <li>
-      <h3>the node</h3>
-      <p>Talos Linux runs on dedicated hardware. It has no shell, no SSH and no package manager, so every change is a declarative machine config applied over an mTLS API. The ephemeral and state partitions use LUKS2. Boot media comes from an Image Factory schematic pinned by content hash, and the installer image uses that same schematic. Point it at the stock image instead and Talos removes every system extension when it writes to disk.</p>
+      <h3>the host</h3>
+      <p>The cluster runs in one virtual machine on a Proxmox VE host, and Terraform manages the host too: its package repositories, its firewall, the storage pool, the Talos ISO, the VM and its nightly backup job. It signs in with an API token, never over SSH. The host boots with Secure Boot, its firewall accepts connections only from the local network, and every VM disk lives on a ZFS pool that is encrypted at rest and unlocked by hand after each boot.</p>
     </li>
+    <li>
+      <h3>the node</h3>
+      <p>Talos Linux runs in that VM. It has no shell, no SSH and no package manager, so every change is a declarative machine config applied over an mTLS API. The VM boots UEFI with Secure Boot and a virtual TPM. The state and ephemeral partitions use LUKS2 sealed to that TPM, and enrolment checks that Secure Boot is on. The data volumes are sealed the same way, with a recovery passphrase in a second slot. The ISO and the installer come from one Image Factory schematic, whose ID is a hash of its contents, and the ISO is pinned by checksum. Point the installer at the stock image instead and Talos removes every system extension when it writes to disk. Each virtual disk carries a fixed serial number, and Talos picks its disks by serial, never by their order on the bus.</p>
+    </li>
+  </ul>
+
+  <h2>the cluster</h2>
+  <ul class="topics">
     <li>
       <h3>control plane</h3>
       <p>The cluster is one node running both the control plane and workloads, with scheduling on control-plane nodes enabled. Terraform generates the machine secrets, applies the config, bootstraps etcd and keeps the resulting kubeconfig in state.</p>
     </li>
     <li>
       <h3>networking</h3>
-      <p>Cilium provides the CNI and enforces NetworkPolicy in eBPF. Its policies select workload identities rather than only CIDR blocks, which allows a rule to match the node's own host identity. Hubble serves the flow data behind single sign-on.</p>
+      <p>Cilium provides the CNI and enforces NetworkPolicy in eBPF. Each application namespace starts from default deny, with its exceptions written next to the others. The policies select workload identities rather than only CIDR blocks, which allows a rule to match the node's own host identity, and a cluster-wide rule keeps the relay from reaching any pod. Hubble serves the flow data behind single sign-on.</p>
     </li>
     <li>
       <h3>storage</h3>
-      <p>local-path is the only storage class. It provisions a host-path volume per pod. One node has no second failure domain, so a replicated pool would not add durability.</p>
+      <p>local-path provisions a host-path volume per pod, and bulk data gets its own class on a separate disk. SeaweedFS serves S3-compatible object storage from the VM's remaining disks. Every one of those volumes is encrypted. One node has no second failure domain, so a replicated pool would not add durability; the nightly backup of the whole VM does.</p>
+    </li>
+  </ul>
+
+  <h2>the relay</h2>
+  <ul class="topics">
+    <li>
+      <h3>the instance</h3>
+      <p>Every public hostname resolves to one small instance on Infomaniak's public cloud in Switzerland. It boots a custom Alpine image and runs entirely from RAM, so nothing it handles is written to disk. It has no SSH, no login console and no syslog. The root account is locked at boot, the configuration arrives on a config drive, and once nftables and WireGuard are up the relay disables kernel module loading until it shuts down. Its public address belongs to a separate network port, so the address survives a rebuild of the instance.</p>
+    </li>
+    <li>
+      <h3>forwarding</h3>
+      <p>nftables forwards a fixed list of ports to the node over WireGuard: the web, SSH for git and two game servers. Everything else is dropped. The node dials out to the relay and keeps the tunnel open, so nothing at home has to accept a connection from outside. Forwarded connections are masqueraded, so the cluster sees every visitor as the relay's tunnel address, and no visitor's IP reaches nginx, the logs or anything else at home. TLS terminates on the node, so the relay holds no certificate and never sees inside an HTTPS request. The node refuses to route anything that arrives through the tunnel, and the relay's counters answer only the node, over the tunnel.</p>
+    </li>
+    <li>
+      <h3>the relay image</h3>
+      <p>A build script assembles the image from Alpine's virt ISO, with every package the relay needs carried on it, so it boots without reaching a package mirror. When the build or its overlay changes, CI builds and uploads a new image, checks the upload against the cloud's own hash, and pins the new image ID in git. The same pipeline's apply then replaces the instance. The relay is never patched in place: changing it means shipping a new image or new configuration.</p>
     </li>
   </ul>
 
@@ -80,11 +104,11 @@
   <ul class="topics">
     <li>
       <h3>ingress and certificates</h3>
-      <p>ingress-nginx runs as a DaemonSet on the host network, bound to the node's public IP. There is no load balancer. cert-manager holds one ClusterIssuer per domain and solves DNS-01 challenges against Cloudflare. Every zone uses strict SSL, so TLS is validated independently on both hops: browser to Cloudflare, and Cloudflare to the origin.</p>
+      <p>ingress-nginx runs as a DaemonSet on the host network and receives whatever the relay forwards. There is no load balancer. cert-manager holds one ClusterIssuer per domain and solves DNS-01 challenges against Cloudflare, so no ACME validation traffic reaches the cluster.</p>
     </li>
     <li>
-      <h3>dns and cdn</h3>
-      <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster. The one exception is chat.vin.moe, which the rule leaves out: its front page answers curl and wget with a shell script, PowerShell with a PowerShell script, and everything else with a page, and a cache keyed only on the URL would hand one to the other.</p>
+      <h3>dns</h3>
+      <p>Cloudflare serves DNS and nothing else. Every record is a DNS-only A record pointing at the relay, so no request passes through Cloudflare and nothing is cached at an edge. CAA records allow only Let's Encrypt, and only through DNS-01. Universal SSL is switched off, because Cloudflare would otherwise add CAA records for its own certificate authorities.</p>
     </li>
   </ul>
 
@@ -92,7 +116,7 @@
   <ul class="topics">
     <li>
       <h3>the registry</h3>
-      <p>Images live in GitLab's own container registry, which runs on the same cluster at artifacts.vinnel.cloud, one repository per site. Pods authenticate with a project deploy token mounted as an imagePullSecret rather than a personal one. Base images arrive through a pull-through cache at mirror.vinnel.cloud, so a rebuild does not re-fetch Alpine from Docker Hub against the node's shared anonymous rate limit.</p>
+      <p>Images live in GitLab's own container registry, which runs on the same cluster at artifacts.vinnel.cloud, one repository per site. Pods authenticate with a project deploy token mounted as an imagePullSecret rather than a personal one. The node's machine config resolves the registry's name to the node itself, so image pulls never leave the machine. Base images arrive through a pull-through cache at mirror.vinnel.cloud, so a rebuild does not re-fetch them from Docker Hub.</p>
     </li>
     <li>
       <h3>build stages</h3>
@@ -108,11 +132,11 @@
   <ul class="topics">
     <li>
       <h3>nginx</h3>
-      <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses and /chat redirect to their new homes on blog.vin.moe and chat.vin.moe. The same pods answer all three hostnames: one server block per host, with the blog host serving only the reader page, its stylesheet, and the public post endpoints, and the chat host only the chat page, its assets, and the two runner scripts.</p>
+      <p>nginx serves the pre-compressed files directly, so it never compresses a static file per request; only the proxied blog responses are compressed on the fly. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses and /chat redirect to their new homes on blog.vin.moe and chat.vin.moe. The same pods answer all three hostnames, with one server block per host. The blog host serves only the reader page, its assets and the public post endpoints, and the chat host only the chat page, its assets and the runner scripts. chat.vin.moe's front page answers curl and wget with a shell script, PowerShell with a PowerShell script and everything else with a page, and its Vary: User-Agent header keeps any cache from handing one to the other. /beta does the same for the beta builds.</p>
     </li>
     <li>
       <h3>the page</h3>
-      <p>The page uses no framework and no bundler. The font and the avatar are the only requests besides the stylesheet and script until you open the blog. One palette covers both themes through light-dark(), so the toggle changes a single property. The tabs are an ARIA tablist with arrow-key navigation and fragment links, and the pink block marking the current tab slides to the next one when you switch. Posts render into details elements for inline reading, and each one opens full screen on blog.vin.moe under its own shareable fragment, rendered there from the same posts.json the tab loads. With JavaScript disabled the tab bar is hidden and every panel renders, except the blog, which points at the feed instead.</p>
+      <p>The page uses no framework and no bundler. On first load it requests only the stylesheet, one script, the font and the avatar. The other tabs fetch their content the first time they open: the blog from posts.json, and work, chat and the colophon from their own standalone pages, whose main section is dropped into the tab. One palette covers both themes through light-dark(), so the toggle changes a single property. The tabs are an ARIA tablist with arrow-key navigation and fragment links, and the pink block marking the current tab slides to the next one when you switch. Posts render into details elements for inline reading, and each one also has its own page on blog.vin.moe, rendered on the server so a shared link works without JavaScript. With JavaScript disabled the tab bar is hidden and the about section renders in full. The other sections link to their standalone pages, and the blog to the feed.</p>
     </li>
     <li>
       <h3>the deployment</h3>
@@ -128,7 +152,7 @@
     </li>
     <li>
       <h3>the durable copy</h3>
-      <p>Publishing also commits the markdown to the integration branch through the GitLab API, and CI opens the merge request. The repository keeps the durable copy and the volume serves the live one. Each write purges the four affected URLs at the edge, plus the post's own page, so the blog stays cached and still shows the change within about a second.</p>
+      <p>Publishing also commits the markdown to the integration branch through the GitLab API, and CI opens the merge request. The repository keeps the durable copy and the volume serves the live one. Public post responses carry an ETag and tell browsers to revalidate on every load, so an edit shows on the next view and an unchanged post costs only a 304.</p>
     </li>
   </ul>
 
@@ -136,19 +160,19 @@
   <ol class="topics">
     <li>
       <h3>validation</h3>
-      <p>A merge request that touches a site runs the shared build-script test suite against a synthetic page, which covers the asset-hashing and cache-busting logic every site's build.sh has in common. Writing a post skips all of it, because a post is no longer part of the image. The infrastructure plan skips the paths Terraform does not read, so editing HTML does not queue an apply on the node that also serves the page.</p>
+      <p>Every change starts on the integration branch. CI opens a merge request into production and arms auto-merge, and GitLab merges it once that pipeline passes. A merge request runs only the checks its paths call for. A change to a script runs the shared build-script test suite against a synthetic page, which covers the asset-hashing and cache-busting logic every site's build.sh has in common. The infrastructure plan skips the paths Terraform does not read, so editing HTML does not queue an apply on the node that also serves the page.</p>
     </li>
     <li>
       <h3>build and digest</h3>
-      <p>buildctl pushes the :latest and commit-SHA tags against a registry-hosted layer cache, so unchanged stages, including the compiled nginx module, are pulled rather than rebuilt. The sha256 digest it returns, not the mutable tag, is merged into a shared image manifest and committed by the job that built it. On a push race the retry re-merges onto whatever landed first: two sites deploying at once write neighbouring lines of the same JSON file, and a rebase would hit the same conflict on every attempt.</p>
+      <p>buildctl pushes the :latest and commit-SHA tags against a registry-hosted layer cache, so unchanged stages, including the compiled nginx module, are pulled rather than rebuilt. The sha256 digest it returns, not the mutable tag, is recorded in a JSON file of image digests and committed by the job that built it. On a push race the retry resets to whatever landed first and records its digest again: two sites deploying at once write neighbouring lines of the same file, and a rebase would hit the same conflict on every attempt.</p>
     </li>
     <li>
       <h3>rollout</h3>
-      <p>The rollout reads the digest back from git at the remote tip, so it deploys what was recorded rather than what a job variable held. It sets the image to that exact digest and waits on the rollout status. Cloudflare's cache is purged once the new pods are serving; purging first would re-cache the outgoing build.</p>
+      <p>The rollout reads the digest back from git at the remote tip, so it deploys what was recorded rather than what a job variable held. It sets the image to that exact digest and waits on the rollout status.</p>
     </li>
     <li>
       <h3>reconcile and mirror</h3>
-      <p>terraform apply needs only the digest-recording step, not the rollout. Both read the same committed manifest, so the imperative rollout and the declarative apply converge on the same image reference whichever finishes first. Commits authored by CI push with the project's job token, which GitLab excludes from triggering a pipeline, and carry a [skip ci] marker as well. A final job pushes the site source to a public GitHub repository through a scoped token, committing only when something changed.</p>
+      <p>terraform apply needs only the digest-recording step, not the rollout. Both read the same committed digests, so the imperative rollout and the declarative apply converge on the same image reference whichever finishes first. The apply runs in its own CI pod: HCP Terraform only stores the state, and the job decrypts its inputs from a SOPS-encrypted file in the repository with CI's own key. Commits authored by CI push with the project's job token, which GitLab excludes from triggering a pipeline, and carry a [skip ci] marker as well. A final job pushes the site source to a public GitHub repository through a scoped token, committing only when something changed.</p>
     </li>
   </ol>
 
@@ -160,11 +184,11 @@
     </li>
     <li>
       <h3>the runner image</h3>
-      <p>The runner image is built on debian:trixie-slim, pinned by digest, with the toolchain baked in: node, gh, jq, rsync, kubectl, tflint, shellcheck, yamllint and build-essential. It carries nothing a pipeline does not run, because every extra binary is more vulnerability surface for the nightly scan to trip over. Pods pull it on every start. With one node and a mutable :latest tag, the kubelet would otherwise keep the first copy it pulled and ignore later rebuilds, including the ones the vulnerability scan triggers. Because that tag decides what CI runs, a rebuild is smoke-tested before it is allowed to become :latest.</p>
+      <p>The runner image is built on debian:trixie-slim, pinned by digest, with the toolchain baked in: node, gh, jq, rsync, kubectl, tflint, shellcheck, yamllint and build-essential. It carries nothing a pipeline does not run, because every extra binary is more vulnerability surface for the nightly scan to trip over. Jobs use its mutable :latest tag, so the kubelet pulls it again on every pod start rather than keeping the first copy it pulled, and every rebuild takes effect, including the ones the vulnerability scan triggers. Because that tag decides what CI runs, a rebuild is smoke-tested before it is allowed to become :latest.</p>
     </li>
     <li>
       <h3>registry access from jobs</h3>
-      <p>registry.vinnel.cloud stays behind the Cloudflare proxy for public traffic, but the proxy's request-body limit is smaller than the runner image's base layer. A hostAliases entry routing to the node's ingress lives on the runner's executor config rather than on individual jobs, so every job pod inherits it, paired with a firewall rule that opens the web ports to the pod network.</p>
+      <p>Public names resolve to the relay, so a job pushing an image would otherwise leave the house and come back in through the tunnel. A hostAliases entry on the runner's executor config points the registry, mirror and GitLab hostnames at the node instead. It lives there rather than on individual jobs, so every job pod inherits it, and a firewall rule opens the web ports to the pod network to match.</p>
     </li>
   </ul>
 
@@ -176,7 +200,7 @@
     </li>
     <li>
       <h3>alerting</h3>
-      <p>Alert rules are Terraform resources rather than clicks in an interface: node NotReady, PVC above 85%, certificate expiring within 14 days, and workload below desired replicas. They notify Slack and renotify every four hours while still firing, and dashboards go through the same API. A node that stops responding also stops alerting, so that check cannot live here: Better Stack polls from outside, and status.vinnel.cloud frames its status page.</p>
+      <p>Alert rules live in the repository rather than in an interface. The chart's default rules cover the node and the workloads, such as a node going NotReady or a Deployment short of its replicas, and two rules of my own catch a certificate expiring within 14 days and a volume over 85% full. The default rules and dashboards are fetched from upstream at pinned commits, so an upstream change cannot alter them unannounced. Alertmanager sends email and renotifies every four hours while an alert is still firing. A node that stops responding also stops alerting, so that check cannot live here: Better Stack polls from outside, and status.vinnel.cloud frames its status page.</p>
     </li>
   </ul>
 
@@ -188,7 +212,7 @@
     </li>
     <li>
       <h3>backups</h3>
-      <p>Proxmox Backup Server snapshots the whole cluster's virtual machine every night at 03:00 and ships it offsite to object storage, encrypted on the host before it leaves, so the bucket only ever holds ciphertext. Backups are incremental and deduplicated, a week of dailies and a month of weeklies are kept, and a weekly job verifies every chunk. A restore brings the machine back exactly as it was, disks, keys and all.</p>
+      <p>Proxmox Backup Server, on the host, backs up the cluster's whole virtual machine every night at 03:00 to MEGA's S4 object storage in Luxembourg. It is encrypted on the host before it leaves, so the bucket only ever holds ciphertext, and the host's storage key can touch only objects, not buckets. Backups are incremental and deduplicated, and a week of dailies and a month of weeklies are kept. Each Saturday a job re-verifies any snapshot not checked in the last 30 days. A backup holds the whole machine, its disks, EFI variables and TPM state included.</p>
     </li>
   </ul>
 
@@ -196,15 +220,15 @@
   <ul class="topics">
     <li>
       <h3>the firewall</h3>
-      <p>The Talos host firewall defaults to deny. Ports 80 and 443 accept only Cloudflare's published edge ranges, so scans against the origin IP are dropped before nginx sees them. The Kubernetes and Talos APIs stay reachable on purpose: both are certificate-gated with no password surface, CI and Terraform have no fixed egress addresses to allow, and the Talos API is the recovery path for the firewall itself.</p>
+      <p>The Talos host firewall defaults to deny. The forwarded ports accept only the relay's tunnel subnet and the local network, and the web ports are also open to the pod network for the jobs above. The Kubernetes and Talos APIs cannot be reached from the internet at all: they accept the local network, where Terraform runs from a workstation, and the pod network, where CI runs. On the relay, both the cloud's security group and nftables allow only WireGuard, ping and the forwarded ports.</p>
     </li>
     <li>
       <h3>access</h3>
-      <p>Admin interfaces sit behind Authelia two-factor authentication. The development machine is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets are generated by Terraform and held in state, never in the repository. CI authenticates with a token scoped to patching Deployments in one namespace. Workloads run under Pod Security Standards, except the runner pods, which need privileged mode for Docker-in-Docker and are separated from ordinary jobs by runner tag. The public blog endpoints are the one unauthenticated path into a service that is otherwise behind single sign-on, so they are served from a route that only reads published posts and never reaches the editing API.</p>
+      <p>Admin interfaces sit behind Authelia two-factor authentication. The development machine is reachable only over a self-hosted WireGuard mesh, never the public internet. Secrets that Terraform can generate are generated and held in state. The rest, mostly API tokens, sit in the repository in a SOPS file encrypted to two post-quantum age keys, one mine and one CI's. CI deploys with a token scoped to patching Deployments in the two site namespaces. Namespaces run at Talos's default baseline Pod Security level, except a handful whose workloads need host access, and the runner pods, which need privileged mode for BuildKit and are kept apart from ordinary jobs by runner tag. The public blog endpoints are the one unauthenticated path into a service that is otherwise behind single sign-on, so they are served from a route that only reads published posts and never reaches the editing API.</p>
     </li>
     <li>
       <h3>supply chain</h3>
-      <p>Base images and Terraform providers are pinned by digest or lockfile, so moving a tag cannot change what ships. Every push runs go vet and the Go tests, shellcheck, yamllint, and gitleaks over the full history; terraform fmt and tflint run before the plan they gate. Grype scans the runner image on a schedule, and a high or critical finding triggers a rebuild. Renovate opens the version bumps, grouped so a dozen digest updates arrive as one merge request, and major updates wait for review.</p>
+      <p>Base images and Terraform providers are pinned by digest or lockfile, so moving a tag cannot change what ships. Every merge request and production push runs gitleaks over the full history, plus go vet and the Go tests, shellcheck and yamllint when it touches the files they check; terraform fmt and tflint run before the plan they gate. Grype scans the runner image nightly, and a fixable high or critical finding triggers a rebuild. Trivy Operator scans every image running in the cluster and alerts on critical vulnerabilities and exposed secrets. Renovate opens the version bumps, grouped so a dozen digest updates arrive as one merge request, and major updates wait for review.</p>
     </li>
   </ul>
 </main>
