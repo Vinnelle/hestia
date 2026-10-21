@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>chat — vin.moe</title>
+<title>chat | vin.moe</title>
 <meta name="description" content="chat is a private group chat for the terminal: no server, no accounts, and nothing left behind. End-to-end encrypted with post-quantum keys, over the BitTorrent DHT, Nostr relays or Tor.">
 <link rel="canonical" href="https://chat.vin.moe/">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="https://vin.moe/feed.xml">
@@ -20,12 +20,12 @@
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://chat.vin.moe/">
-<meta property="og:title" content="chat — vin.moe">
+<meta property="og:title" content="chat | vin.moe">
 <meta property="og:description" content="Private group chat for the terminal. No server, no accounts, and nothing left behind.">
 <meta property="og:image" content="https://vin.moe/avatar.webp">
 <meta property="og:site_name" content="vin.moe">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="chat — vin.moe">
+<meta name="twitter:title" content="chat | vin.moe">
 <meta name="twitter:description" content="Private group chat for the terminal. No server, no accounts, and nothing left behind.">
 <meta name="twitter:image" content="https://vin.moe/avatar.webp">
 </head>
@@ -33,7 +33,7 @@
 <a class="skip" href="#main">skip to content</a>
 
 <div class="bar">
-  <a class="brand" href="https://vin.moe/">vin.moe</a>
+  <a class="brand" href="https://vin.moe/"><span class="chip">vin.moe</span></a>
   <nav class="bar-nav" aria-label="Site">
     <a class="tab" href="https://vin.moe/">about</a>
     <a class="tab" href="https://github.com/Vinnelle/chat">source</a>
@@ -48,7 +48,6 @@
 
 <main id="main" class="page">
   <header class="launch">
-    <p class="eyebrow">open source · linux, macos and windows</p>
     <h1>chat</h1>
     <p class="pitch">Private group chat for the terminal.</p>
     <p class="sub">No server, no accounts, and nothing left behind. Share a session id and a password, and everyone with both is in.</p>
@@ -116,7 +115,7 @@
 
   <figure class="tui">
     <div class="tui-window" role="img" aria-label="chat in a terminal. A sidebar lists one session, three peers, with bob and carol marked compared, and the network status. In the conversation, bob and carol join, alice says their verify codes match, bob mentions alice and offers photos.zip, and alice is typing a reply.">
-      <div class="tui-bar"><i></i><i></i><i></i><span>chat</span></div>
+      <div class="tui-bar"><span>chat</span></div>
       <div class="tui-screen">
         <div class="tui-frame">
           <div class="tui-side">
@@ -311,10 +310,10 @@
       <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
       <p class="muted ch-beta">The beta's runner is the same script with one line changed, <code class="nowrap">channel=beta</code>, so it runs the newest release, betas included, instead of the latest stable one.</p>
       <p class="sha ch-stable">SHA-256 <code>@@sha256:chat.sh@@</code></p>
-      <pre class="code script ch-stable"><code>@@script:chat.sh@@</code></pre>
+      <pre class="code script ch-stable" tabindex="0" aria-label="The chat.sh runner script"><code>@@script:chat.sh@@</code></pre>
       <p class="muted ch-stable">To check it before running anything, <code>curl -fsSL https://chat.vin.moe | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.sh">chat.vin.moe/chat.sh</a>.</p>
       <p class="sha ch-beta">SHA-256 <code>@@sha256:chat-beta.sh@@</code></p>
-      <pre class="code script ch-beta"><code>@@script:chat-beta.sh@@</code></pre>
+      <pre class="code script ch-beta" tabindex="0" aria-label="The chat-beta.sh runner script"><code>@@script:chat-beta.sh@@</code></pre>
       <p class="muted ch-beta">To check it before running anything, <code>curl -fsSL https://chat.vin.moe/beta | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.sh">chat.vin.moe/chat-beta.sh</a>.</p>
 
       <h3>by hand</h3>
@@ -322,12 +321,16 @@
       <pre class="code os-linux"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 sha256sum -c --ignore-missing SHA256SUMS
 install -Dm755 chat-linux-x86_64 ~/.local/bin/chat</code></pre>
+      <p class="muted os-linux">A release whose notes say the backup key signed it, since the release key was lost or stolen, checks against that key instead:</p>
+      <pre class="code os-linux"><code>minisign -Vm SHA256SUMS -P RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv</code></pre>
       <p class="muted os-macos">Download chat-macos-aarch64 for Apple silicon or chat-macos-x86_64 for an Intel Mac, with SHA256SUMS and SHA256SUMS.minisig, from the <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">latest release</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">newest release</a>. Check the signature, then the binary. A browser marks what it downloads, and macOS won't run a marked program that Apple hasn't notarized, which chat isn't, so take the mark off with xattr before you run it from a terminal:</p>
       <pre class="code os-macos"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 grep chat-macos-aarch64 SHA256SUMS | shasum -a 256 -c
 xattr -d com.apple.quarantine chat-macos-aarch64
 chmod +x chat-macos-aarch64
 ./chat-macos-aarch64</code></pre>
+      <p class="muted os-macos">A release whose notes say the backup key signed it, since the release key was lost or stolen, checks against that key instead:</p>
+      <pre class="code os-macos"><code>minisign -Vm SHA256SUMS -P RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv</code></pre>
     </div>
 
     <div class="os-windows">
@@ -355,10 +358,10 @@ chmod +x chat-macos-aarch64
       <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a new folder in your temporary folder, checks SHA256SUMS against chat's release key, checks the program against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
       <p class="muted ch-beta">The beta's runner is the same script with one line changed, <code class="nowrap">$channel = 'beta'</code>, so it runs the newest release, betas included, instead of the latest stable one.</p>
       <p class="sha ch-stable">SHA-256 <code>@@sha256:chat.ps1@@</code></p>
-      <pre class="code script ch-stable"><code>@@script:chat.ps1@@</code></pre>
+      <pre class="code script ch-stable" tabindex="0" aria-label="The chat.ps1 runner script"><code>@@script:chat.ps1@@</code></pre>
       <p class="muted ch-stable">To check it before running anything, <code>iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.ps1">chat.vin.moe/chat.ps1</a>.</p>
       <p class="sha ch-beta">SHA-256 <code>@@sha256:chat-beta.ps1@@</code></p>
-      <pre class="code script ch-beta"><code>@@script:chat-beta.ps1@@</code></pre>
+      <pre class="code script ch-beta" tabindex="0" aria-label="The chat-beta.ps1 runner script"><code>@@script:chat-beta.ps1@@</code></pre>
       <p class="muted ch-beta">To check it before running anything, <code>iwr https://chat.vin.moe/beta -OutFile chat-beta.ps1; Get-FileHash chat-beta.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.ps1">chat.vin.moe/chat-beta.ps1</a>.</p>
 
       <h3>by hand</h3>
@@ -366,6 +369,8 @@ chmod +x chat-macos-aarch64
       <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 Get-FileHash chat-windows-x86_64.exe
 .\chat-windows-x86_64.exe</code></pre>
+      <p class="muted">A release whose notes say the backup key signed it, since the release key was lost or stolen, checks against that key instead:</p>
+      <pre class="code"><code>minisign -Vm SHA256SUMS -P RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv</code></pre>
     </div>
   </section>
 

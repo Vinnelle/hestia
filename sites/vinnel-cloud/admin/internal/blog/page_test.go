@@ -29,7 +29,7 @@ func TestPage(t *testing.T) {
 	for _, want := range []string{
 		`<link rel="canonical" href="https://vin.moe/posts/hello">`,
 		`<meta property="og:url" content="https://vin.moe/posts/hello">`,
-		`<title>Hello &amp; Goodbye &mdash; vin.moe</title>`,
+		`<title>Hello &amp; Goodbye | vin.moe</title>`,
 		`<time datetime="2026-08-21">2026-08-21</time>`,
 		`<p>body text</p>`,
 		`href="/css/post.css"`,

@@ -3,8 +3,8 @@ variable "zone_id" {
   type        = string
 }
 
-variable "node_ip" {
-  description = "Cluster node IP the auth A record points to"
+variable "relay_ip" {
+  description = "Public relay IP the auth A record points to"
   type        = string
 }
 
@@ -30,8 +30,8 @@ variable "nextcloud_oidc_client_secret_hash" {
   sensitive   = true
 }
 
-variable "velero_ui_oidc_client_secret_hash" {
-  description = "bcrypt hash of the Velero UI OIDC client secret"
+variable "grafana_oidc_client_secret_hash" {
+  description = "bcrypt hash of the Grafana OIDC client secret"
   type        = string
   sensitive   = true
 }

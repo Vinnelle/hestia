@@ -1,0 +1,32 @@
+machine:
+  sysctls:
+    net.ipv4.conf.wg0.forwarding: "0"
+  kubelet:
+    nodeIP:
+      validSubnets:
+        - ${node_ip}/32
+  network:
+    interfaces:
+      - deviceSelector:
+          physical: true
+        dhcp: true
+      - interface: wg0
+        mtu: 1420
+        addresses:
+          - ${wg_address}
+        wireguard:
+          privateKey: "${wg_private_key}"
+          peers:
+            - publicKey: "${relay_public_key}"
+              endpoint: ${relay_endpoint}
+              persistentKeepaliveInterval: 25s
+              allowedIPs:
+                - ${relay_address}/32
+    extraHostEntries:
+      - ip: ${node_ip}
+        aliases:
+          - artifacts.vinnel.cloud
+cluster:
+  etcd:
+    advertisedSubnets:
+      - ${node_ip}/32

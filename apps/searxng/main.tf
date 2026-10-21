@@ -8,9 +8,9 @@ resource "cloudflare_dns_record" "search_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "search.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "searxng_secret" {
@@ -28,7 +28,13 @@ resource "kubernetes_secret_v1" "searxng" {
   }
 }
 
+locals {
+  deployment_enabled = false
+}
+
 resource "kubernetes_deployment_v1" "searxng" {
+  count = local.deployment_enabled ? 1 : 0
+
   metadata {
     name      = "searxng"
     namespace = kubernetes_namespace_v1.searxng.metadata[0].name
@@ -126,6 +132,7 @@ resource "kubernetes_deployment_v1" "searxng" {
 }
 
 module "vpa" {
+  count  = local.deployment_enabled ? 1 : 0
   source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.searxng]
@@ -133,7 +140,7 @@ module "vpa" {
   name        = "searxng"
   namespace   = kubernetes_namespace_v1.searxng.metadata[0].name
   target_kind = "Deployment"
-  target_name = kubernetes_deployment_v1.searxng.metadata[0].name
+  target_name = try(kubernetes_deployment_v1.searxng[0].metadata[0].name, "searxng")
   update_mode = "Auto"
   container_policies = [
     { container_name = "searxng", min_memory = "128Mi", max_memory = "512Mi" },

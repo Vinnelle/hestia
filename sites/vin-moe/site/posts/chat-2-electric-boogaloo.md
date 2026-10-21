@@ -13,7 +13,7 @@ I have spent so much time working on this it has changed so much.
 I am now on v0.1.12, I personally feel like it has improved massively.
 
 Here is a screenshot:
-![image](https://blog.vin.moe/media/image-c093ac9c.png)
+![image](https://blog.vin.moe/media/image-2f49ab4f.png)
 It now supports Tor routing as well as DHT routing. I am using Nostr nodes as a bridge between the two so Tor users can still talk to DHT users. Nostr also helps users under CGNATs connect to the service, as this was an issue before with pure DHT routing.
 
 To the limits of my technical ability and knowledge, this should be very difficult, at the very least, to track, sniff, de-anonymise, or know of, users using chat.

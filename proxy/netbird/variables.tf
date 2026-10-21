@@ -4,7 +4,12 @@ variable "zone_id" {
 }
 
 variable "node_ip" {
-  description = "Cluster node IP the NetBird A records point to"
+  description = "Cluster node IP the management server reaches Authelia on, without leaving the node"
+  type        = string
+}
+
+variable "relay_ip" {
+  description = "Public relay IP the NetBird A records point to"
   type        = string
 }
 

@@ -24,8 +24,10 @@
 #      folder.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
 #      key in $minisignPub below (the same key as minisign.pub in the chat
-#      repository). Releases are signed offline, never on GitHub, so even
-#      someone who took over the GitHub account couldn't pass this check.
+#      repository), or with its backup, $minisignBackupPub (the same as
+#      minisign-backup.pub there). Releases are signed offline, never on
+#      GitHub, so even someone who took over the GitHub account couldn't pass
+#      this check.
 #      Windows has no built-in way to check this kind of signature, so the
 #      check is written out in full further down, in C#.
 #   4. Check the downloaded program against its SHA-256 in SHA256SUMS.
@@ -67,6 +69,10 @@
     $repo = 'https://github.com/Vinnelle/chat'
     $api = 'https://api.github.com/repos/Vinnelle/chat'
     $minisignPub = 'RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB'
+    # The release key's backup, kept offline apart from it. A release is
+    # only signed with this one if the release key is lost or stolen, and
+    # then its release notes say so. A signature from either key is enough.
+    $minisignBackupPub = 'RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv'
     $site = 'https://chat.vin.moe'
     if ($channel -eq 'beta') { $site += '/beta' }
 
@@ -346,11 +352,15 @@ namespace ChatRunner
 '@
         }
         # The second line of the .minisig file is the signature in base64.
-        # Verify returns true only if SHA256SUMS is signed with chat's release
-        # key.
+        # Verify returns true only if SHA256SUMS is signed with the key it's
+        # given: the release key, or else its backup.
         $sig = [Convert]::FromBase64String((Get-Content (Join-Path $dir 'SHA256SUMS.minisig'))[1])
         $sums = [IO.File]::ReadAllBytes((Join-Path $dir 'SHA256SUMS'))
-        if (-not [ChatRunner.Minisign]::Verify([Convert]::FromBase64String($minisignPub), $sig, $sums)) {
+        $signed = $false
+        foreach ($key in $minisignPub, $minisignBackupPub) {
+            if ([ChatRunner.Minisign]::Verify([Convert]::FromBase64String($key), $sig, $sums)) { $signed = $true }
+        }
+        if (-not $signed) {
             Say "the release signature didn't verify"
             return
         }

@@ -2,9 +2,9 @@ resource "cloudflare_dns_record" "apex" {
   zone_id = var.zone_id
   name    = var.domain
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "cloudflare_dns_record" "extra" {
@@ -13,43 +13,10 @@ resource "cloudflare_dns_record" "extra" {
   zone_id = var.zone_id
   name    = each.value
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
-
-resource "cloudflare_ruleset" "cache" {
-  zone_id = var.zone_id
-  name    = "site cdn cache"
-  kind    = "zone"
-  phase   = "http_request_cache_settings"
-
-  rules = [{
-    ref         = "cache_site"
-    description = var.cache_description
-    expression  = join(" or ", [for h in concat([var.domain], var.extra_hosts) : format("http.host eq %q", h) if !contains(var.uncached_hosts, h)])
-    action      = "set_cache_settings"
-    action_parameters = {
-      cache = true
-      edge_ttl = {
-        mode    = "override_origin"
-        default = 300
-      }
-      browser_ttl = {
-        mode = "bypass"
-      }
-    }
-  }]
-}
-
-resource "kubectl_manifest" "letsencrypt" {
-  yaml_body = templatefile("${path.module}/cluster-issuer.yaml.tftpl", {
-    issuer_name            = var.cluster_issuer
-    email                  = var.acme_email
-    cloudflare_secret_name = var.cloudflare_secret_name
-  })
-}
-
 resource "kubernetes_pod_disruption_budget_v1" "this" {
   metadata {
     name      = "${var.site_slug}-site-pdb"

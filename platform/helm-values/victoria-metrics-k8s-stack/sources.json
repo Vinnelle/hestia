@@ -1,0 +1,43 @@
+{
+  "dashboards": {
+    "etcd": "https://raw.githubusercontent.com/monitoring-mixins/website/c73a3c16205512dc5036ecbd5fadf309e31497f5/assets/etcd/dashboards/etcd.json",
+    "kube-prometheus": "https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/f81c076ab8f542c457840cd4c62656b8d6b4f43a/manifests/grafana-dashboardDefinitions.yaml",
+    "kubernetes-system-api-server": "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/e4faf59e017a18e1b06fa64f11623bef15ce7507/dashboards/k8s-system-api-server.json",
+    "kubernetes-system-coredns": "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/e4faf59e017a18e1b06fa64f11623bef15ce7507/dashboards/k8s-system-coredns.json",
+    "kubernetes-views-global": "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/e4faf59e017a18e1b06fa64f11623bef15ce7507/dashboards/k8s-views-global.json",
+    "kubernetes-views-namespaces": "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/e4faf59e017a18e1b06fa64f11623bef15ce7507/dashboards/k8s-views-namespaces.json",
+    "kubernetes-views-nodes": "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/e4faf59e017a18e1b06fa64f11623bef15ce7507/dashboards/k8s-views-nodes.json",
+    "kubernetes-views-pods": "https://raw.githubusercontent.com/dotdc/grafana-dashboards-kubernetes/e4faf59e017a18e1b06fa64f11623bef15ce7507/dashboards/k8s-views-pods.json",
+    "node-exporter-full": "https://raw.githubusercontent.com/rfmoz/grafana-dashboards/b173daed1bb163ca320cc3624206e07832219113/prometheus/node-exporter-full.json",
+    "victorialogs-cluster": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaLogs/2721f2111df153f58fecdd8955641c35baaa2d10/dashboards/victorialogs-cluster.json",
+    "victorialogs-single-node": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaLogs/2721f2111df153f58fecdd8955641c35baaa2d10/dashboards/victorialogs.json",
+    "victorialogs-vlagent": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaLogs/2721f2111df153f58fecdd8955641c35baaa2d10/dashboards/vlagent.json",
+    "victoriametrics-backupmanager": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/dashboards/backupmanager.json",
+    "victoriametrics-cluster": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/dashboards/victoriametrics-cluster.json",
+    "victoriametrics-operator": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/dashboards/operator.json",
+    "victoriametrics-single-node": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/dashboards/victoriametrics.json",
+    "victoriametrics-vmagent": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/dashboards/vmagent.json",
+    "victoriametrics-vmalert": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/dashboards/vmalert.json",
+    "victoriatraces-cluster": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaTraces/15d2ef220dae7ca700879edd0cad2b12cf95f484/dashboards/victoriatraces-cluster.json",
+    "victoriatraces-single-node": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaTraces/15d2ef220dae7ca700879edd0cad2b12cf95f484/dashboards/victoriatraces.json"
+  },
+  "rules": {
+    "alertmanager": "https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/f81c076ab8f542c457840cd4c62656b8d6b4f43a/manifests/alertmanager-prometheusRule.yaml",
+    "etcd": "https://raw.githubusercontent.com/monitoring-mixins/website/c73a3c16205512dc5036ecbd5fadf309e31497f5/assets/etcd/alerts.yaml",
+    "kube-state-metrics": "https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/f81c076ab8f542c457840cd4c62656b8d6b4f43a/manifests/kubeStateMetrics-prometheusRule.yaml",
+    "kubernetes": "https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/f81c076ab8f542c457840cd4c62656b8d6b4f43a/manifests/kubePrometheus-prometheusRule.yaml",
+    "kubernetes-control-plane": "https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/f81c076ab8f542c457840cd4c62656b8d6b4f43a/manifests/kubernetesControlPlane-prometheusRule.yaml",
+    "node-exporter": "https://raw.githubusercontent.com/prometheus-operator/kube-prometheus/f81c076ab8f542c457840cd4c62656b8d6b4f43a/manifests/nodeExporter-prometheusRule.yaml",
+    "victorialogs": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaLogs/2721f2111df153f58fecdd8955641c35baaa2d10/deployment/docker/rules/alerts-vlogs.yml",
+    "victoriatraces": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaTraces/15d2ef220dae7ca700879edd0cad2b12cf95f484/deployment/docker/rules/alerts-vtraces.yml",
+    "vlagent": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaLogs/2721f2111df153f58fecdd8955641c35baaa2d10/deployment/docker/rules/alerts-vlagent.yml",
+    "vlhealth": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaLogs/2721f2111df153f58fecdd8955641c35baaa2d10/deployment/docker/rules/alerts-health.yml",
+    "vmagent": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/deployment/docker/rules/alerts-vmagent.yml",
+    "vmalert": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/deployment/docker/rules/alerts-vmalert.yml",
+    "vmcluster": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/deployment/docker/rules/alerts-cluster.yml",
+    "vmhealth": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/deployment/docker/rules/alerts-health.yml",
+    "vmoperator": "https://raw.githubusercontent.com/VictoriaMetrics/operator/37181adeea714510ca5cc502ecac985952e6a767/config/alerting/vmoperator-rules.yaml",
+    "vmsingle": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaMetrics/90b89d5806d54a4636e3a8ed15b6770d2b5bdd36/deployment/docker/rules/alerts-single-node.yml",
+    "vthealth": "https://raw.githubusercontent.com/VictoriaMetrics/VictoriaTraces/15d2ef220dae7ca700879edd0cad2b12cf95f484/deployment/docker/rules/alerts-health.yml"
+  }
+}

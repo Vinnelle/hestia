@@ -14,6 +14,7 @@ variables:
       - "vin_moe"
       - "vinnel_cloud"
       - "shell"
+      - "relay_image"
       - "ci_runner"
       - "ci_runner_scan"
       - "love"
@@ -27,9 +28,10 @@ variables:
   TF_IN_AUTOMATION: "1"
   TF_PLUGIN_CACHE_DIR: "${CI_PROJECT_DIR}/.terraform-plugin-cache"
   TF_REGISTRY_CLIENT_TIMEOUT: "30"
-  MEGA_S4_ENDPOINT_DOMAIN: "g.megas4.com"
   # renovate: datasource=github-releases depName=hashicorp/terraform
   TERRAFORM_VERSION: "1.16.2"
+  # renovate: datasource=github-releases depName=getsops/sops
+  SOPS_VERSION: "3.13.3"
   # renovate: datasource=golang-version depName=golang
   GO_VERSION: "1.27.1"
   # renovate: datasource=github-releases depName=gitleaks/gitleaks
@@ -50,4 +52,5 @@ include:
   - local: '.gitlab-ci/pipelines/renovate.yml'
   - local: '.gitlab-ci/pipelines/love.yml'
   - local: '.gitlab-ci/pipelines/sites.yml'
+  - local: '.gitlab-ci/pipelines/relay.yml'
   - local: '.gitlab-ci/pipelines/changelog.yml'

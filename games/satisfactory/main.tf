@@ -2,8 +2,8 @@ resource "cloudflare_dns_record" "factory_vin_moe" {
   zone_id = var.zone_id
   name    = "factory.vin.moe"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
+  content = var.relay_ip
+  ttl     = 60
   proxied = false
 }
 
@@ -75,7 +75,13 @@ resource "kubernetes_service_v1" "satisfactory_saves" {
   }
 }
 
+locals {
+  deployment_enabled = false
+}
+
 resource "kubernetes_deployment_v1" "satisfactory" {
+  count = local.deployment_enabled ? 1 : 0
+
   metadata {
     name      = "satisfactory"
     namespace = var.namespace
@@ -246,6 +252,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 }
 
 module "satisfactory_vpa" {
+  count  = local.deployment_enabled ? 1 : 0
   source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.satisfactory]
@@ -253,7 +260,7 @@ module "satisfactory_vpa" {
   name        = "satisfactory"
   namespace   = var.namespace
   target_kind = "Deployment"
-  target_name = kubernetes_deployment_v1.satisfactory.metadata[0].name
+  target_name = try(kubernetes_deployment_v1.satisfactory[0].metadata[0].name, "satisfactory")
   update_mode = "Initial"
   container_policies = [
     { container_name = "satisfactory", min_memory = "16Gi", max_memory = "28Gi" },

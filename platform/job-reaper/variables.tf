@@ -1,4 +1,4 @@
 variable "namespace" {
-  description = "Namespace the job reaper CronJob runs in"
+  description = "Namespace the reaper CronJobs run in"
   type        = string
 }

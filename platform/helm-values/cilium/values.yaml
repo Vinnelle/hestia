@@ -1,6 +1,8 @@
 ipam:
   mode: kubernetes
 kubeProxyReplacement: true
+devices:
+  - ens+
 k8sServiceHost: localhost
 k8sServicePort: 7445
 policyCIDRMatchMode:

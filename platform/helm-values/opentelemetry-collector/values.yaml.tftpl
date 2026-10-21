@@ -1,0 +1,57 @@
+mode: daemonset
+fullnameOverride: otel-collector
+
+image:
+  repository: otel/opentelemetry-collector-k8s
+
+presets:
+  logsCollection:
+    enabled: true
+    storeCheckpoints: true
+  kubernetesAttributes:
+    enabled: true
+
+service:
+  enabled: true
+  internalTrafficPolicy: Local
+
+ports:
+  jaeger-compact:
+    enabled: false
+  jaeger-thrift:
+    enabled: false
+  jaeger-grpc:
+    enabled: false
+  zipkin:
+    enabled: false
+  metrics:
+    enabled: true
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8888"
+
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    prometheus: null
+  exporters:
+    otlphttp/loki:
+      endpoint: http://loki.${namespace}.svc.cluster.local:3100/otlp
+    otlp/tempo:
+      endpoint: tempo.${namespace}.svc.cluster.local:4317
+      tls:
+        insecure: true
+    otlphttp/victoriametrics:
+      endpoint: http://vmsingle-vm.${namespace}.svc.cluster.local:8428/opentelemetry
+  service:
+    pipelines:
+      logs:
+        exporters: [otlphttp/loki]
+      traces:
+        receivers: [otlp]
+        exporters: [otlp/tempo]
+      metrics:
+        receivers: [otlp]
+        exporters: [otlphttp/victoriametrics]

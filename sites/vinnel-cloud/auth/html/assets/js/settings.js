@@ -16,7 +16,7 @@
   authShell.hidden = true;
   footer.hidden = true;
   app.hidden = false;
-  document.title = 'Account Settings — vinnel.cloud';
+  document.title = 'Account Settings | vinnel.cloud';
 
   function text(id, value) {
     const el = $(id);
@@ -421,7 +421,7 @@
   }
 
   async function refreshSecurity() {
-    model.user = await api('/api/user/info');
+    model.user = await api('/api/user/info', { method: 'POST' });
     model.totp = await optional('/api/secondfactor/totp');
     model.keys = model.user.has_webauthn ? (await api('/api/secondfactor/webauthn/credentials')) || [] : [];
     render();
@@ -495,7 +495,7 @@
   async function load() {
     try {
       model.state = await api('/api/state');
-      model.user = await api('/api/user/info');
+      model.user = await api('/api/user/info', { method: 'POST' });
       model.config = await api('/api/configuration');
       model.totp = await optional('/api/secondfactor/totp');
       model.keys = model.user.has_webauthn ? (await api('/api/secondfactor/webauthn/credentials')) || [] : [];

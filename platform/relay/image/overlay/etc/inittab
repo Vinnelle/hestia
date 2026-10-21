@@ -1,0 +1,7 @@
+::sysinit:/sbin/openrc sysinit
+::sysinit:/sbin/openrc boot
+::wait:/sbin/openrc default
+tty1::once:/bin/true
+ttyS0::once:/bin/true
+::ctrlaltdel:/sbin/reboot
+::shutdown:/sbin/openrc shutdown

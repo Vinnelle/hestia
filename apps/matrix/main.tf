@@ -8,9 +8,9 @@ resource "cloudflare_dns_record" "matrix_vinnel_cloud" {
   zone_id = var.zone_id
   name    = var.hostname
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "matrix_db_password" {
@@ -69,7 +69,13 @@ resource "kubernetes_service_v1" "matrix_postgres" {
   }
 }
 
+locals {
+  deployment_enabled = false
+}
+
 resource "kubernetes_stateful_set_v1" "matrix_postgres" {
+  count = local.deployment_enabled ? 1 : 0
+
   metadata {
     name      = "matrix-postgres"
     namespace = kubernetes_namespace_v1.matrix.metadata[0].name
@@ -195,6 +201,7 @@ resource "kubernetes_stateful_set_v1" "matrix_postgres" {
 }
 
 module "matrix_postgres_vpa" {
+  count  = local.deployment_enabled ? 1 : 0
   source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_stateful_set_v1.matrix_postgres]
@@ -202,7 +209,7 @@ module "matrix_postgres_vpa" {
   name        = "matrix-postgres"
   namespace   = kubernetes_namespace_v1.matrix.metadata[0].name
   target_kind = "StatefulSet"
-  target_name = kubernetes_stateful_set_v1.matrix_postgres.metadata[0].name
+  target_name = try(kubernetes_stateful_set_v1.matrix_postgres[0].metadata[0].name, "matrix-postgres")
   update_mode = "Initial"
   container_policies = [
     { container_name = "postgres", min_memory = "128Mi", max_memory = "512Mi" },
@@ -228,6 +235,8 @@ resource "kubernetes_service_v1" "matrix_synapse" {
 }
 
 resource "kubernetes_stateful_set_v1" "matrix_synapse" {
+  count = local.deployment_enabled ? 1 : 0
+
   metadata {
     name      = "matrix-synapse"
     namespace = kubernetes_namespace_v1.matrix.metadata[0].name
@@ -367,6 +376,7 @@ resource "kubernetes_stateful_set_v1" "matrix_synapse" {
 }
 
 module "matrix_synapse_vpa" {
+  count  = local.deployment_enabled ? 1 : 0
   source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_stateful_set_v1.matrix_synapse]
@@ -374,7 +384,7 @@ module "matrix_synapse_vpa" {
   name        = "matrix-synapse"
   namespace   = kubernetes_namespace_v1.matrix.metadata[0].name
   target_kind = "StatefulSet"
-  target_name = kubernetes_stateful_set_v1.matrix_synapse.metadata[0].name
+  target_name = try(kubernetes_stateful_set_v1.matrix_synapse[0].metadata[0].name, "matrix-synapse")
   update_mode = "Initial"
   container_policies = [
     { container_name = "synapse", min_memory = "256Mi", max_memory = "1Gi" },

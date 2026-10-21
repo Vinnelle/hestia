@@ -16,7 +16,7 @@ locals {
     telemetry_namespace = "observability"
     ingress_from        = []
     egress_to           = [{ namespace = "storage", ports = [8333] }]
-    egress_fqdns        = ["s3.g.megas4.com"]
+    egress_fqdns        = ["de-fra-1.linodeobjects.com"]
   }))
 
   rendered_no_egress = yamldecode(templatefile("${path.module}/../../platform/network-policy/policy/cilium-network-policy.yaml.tftpl", {

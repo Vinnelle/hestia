@@ -40,7 +40,7 @@ var postPage = template.Must(template.New("post").Parse(`<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{.Title}} &mdash; {{.SiteName}}</title>
+<title>{{.Title}} | {{.SiteName}}</title>
 <meta name="description" content="{{.Excerpt}}">
 <link rel="canonical" href="{{.URL}}">
 <link rel="alternate" type="application/atom+xml" title="{{.SiteName}} blog" href="/feed.xml">
@@ -77,11 +77,17 @@ var postPage = template.Must(template.New("post").Parse(`<!DOCTYPE html>
 <a class="skip" href="#main">skip to content</a>
 
 <div class="bar">
-  <a class="brand" href="{{.Site}}/">{{.SiteName}}</a>
+  <a class="brand" href="{{.Site}}/"><span class="chip">{{.SiteName}}</span></a>
   <nav class="bar-nav" aria-label="Site">
     <span class="tabs">
       <a class="tab" href="{{.Site}}/">about</a>
-      <a class="tab" href="{{.Site}}/#blog">blog</a>
+      <a class="tab" href="{{.Site}}/#blog" aria-current="true">blog</a>
+    </span>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
     </span>
   </nav>
 </div>
@@ -90,11 +96,11 @@ var postPage = template.Must(template.New("post").Parse(`<!DOCTYPE html>
   <article>
     <header class="page-head">
       <h1>{{.Title}}</h1>
-      <p class="dim"><time datetime="{{.Date}}">{{.Date}}</time></p>
+      <p class="post-meta"><time datetime="{{.Date}}">{{.Date}}</time></p>
     </header>
     <div class="post-body post-page">{{.Body}}</div>
   </article>
-  <p class="post-back"><a href="{{.Site}}/#blog">&larr; all posts</a></p>
+  <p class="post-back"><a href="{{.Site}}/#blog"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H3.5"/><path d="M7.5 4l-4 4 4 4"/></svg>all posts</a></p>
 </main>
 
 <footer>
@@ -104,6 +110,24 @@ var postPage = template.Must(template.New("post").Parse(`<!DOCTYPE html>
     <a href="https://github.com/Vinnelle/hestia">Infra source</a>
   </nav>
 </footer>
+<script>
+(() => {
+  const root = document.documentElement;
+  const opts = [...document.querySelectorAll('.theme-opt')];
+  const dark = matchMedia('(prefers-color-scheme: dark)');
+  const sync = () => {
+    const active = root.dataset.theme || (dark.matches ? 'dark' : 'light');
+    for (const b of opts) b.setAttribute('aria-pressed', b.dataset.themeChoice === active);
+  };
+  for (const b of opts) b.addEventListener('click', () => {
+    root.dataset.theme = b.dataset.themeChoice;
+    try { localStorage.theme = b.dataset.themeChoice; } catch {}
+    sync();
+  });
+  dark.addEventListener('change', sync);
+  sync();
+})();
+</script>
 </body>
 </html>
 `))

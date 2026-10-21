@@ -8,9 +8,9 @@ resource "cloudflare_dns_record" "cloud_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "cloud.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "nextcloud_admin_password" {
@@ -77,12 +77,14 @@ resource "kubernetes_secret_v1" "nextcloud_secrets" {
     namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
   data = {
-    "admin-password"     = random_password.nextcloud_admin_password.result
-    "oidc-client-secret" = random_password.nextcloud_oidc_client_secret.result
-    "s3-access-key"      = var.seaweedfs_s3_access_key
-    "s3-secret-key"      = var.seaweedfs_s3_secret_key
-    "mega-import-user"   = var.mega_import_user
-    "mega-import-pass"   = var.mega_import_pass
+    "admin-password"       = random_password.nextcloud_admin_password.result
+    "oidc-client-secret"   = random_password.nextcloud_oidc_client_secret.result
+    "s3-access-key"        = var.seaweedfs_s3_access_key
+    "s3-secret-key"        = var.seaweedfs_s3_secret_key
+    "import-s3-endpoint"   = var.import_s3_endpoint
+    "import-s3-bucket"     = var.import_s3_bucket
+    "import-s3-access-key" = var.import_s3_access_key
+    "import-s3-secret-key" = var.import_s3_secret_key
   }
 }
 
@@ -407,13 +409,17 @@ resource "kubernetes_ingress_v1" "cloud_vinnel_cloud" {
 }
 
 locals {
-  nextcloud_mega_import_sh = <<-EOT
+  nextcloud_import_sh = <<-EOT
     set -eu
     cat > /tmp/rclone.conf <<CONF
-    [mega-src]
-    type = mega
-    user = $MEGA_USER
-    pass = $(rclone obscure "$MEGA_PASS")
+    [import-src]
+    type = s3
+    provider = Mega
+    access_key_id = $IMPORT_ACCESS_KEY
+    secret_access_key = $IMPORT_SECRET_KEY
+    endpoint = https://$IMPORT_ENDPOINT
+    force_path_style = true
+    no_check_bucket = true
 
     [nextcloud-dst]
     type = webdav
@@ -422,15 +428,15 @@ locals {
     user = $NEXTCLOUD_USER
     pass = $(rclone obscure "$NEXTCLOUD_PASS")
     CONF
-    rclone sync mega-src: nextcloud-dst:/mega-import --config /tmp/rclone.conf --transfers 4 --checkers 8
+    rclone copy import-src:$IMPORT_BUCKET/nextcloud-import nextcloud-dst:/import --config /tmp/rclone.conf --transfers 4 --checkers 8
   EOT
 }
 
-resource "kubernetes_job_v1" "nextcloud_mega_import" {
+resource "kubernetes_job_v1" "nextcloud_import" {
   depends_on = [kubernetes_ingress_v1.cloud_api_vinnel_cloud]
 
   metadata {
-    name      = "nextcloud-mega-import"
+    name      = "nextcloud-import"
     namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
 
@@ -445,24 +451,44 @@ resource "kubernetes_job_v1" "nextcloud_mega_import" {
         container {
           name    = "import"
           image   = "rclone/rclone:1.75.1"
-          command = ["sh", "-c", local.nextcloud_mega_import_sh]
+          command = ["sh", "-c", local.nextcloud_import_sh]
 
           env {
-            name = "MEGA_USER"
+            name = "IMPORT_ENDPOINT"
             value_from {
               secret_key_ref {
                 name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "mega-import-user"
+                key  = "import-s3-endpoint"
               }
             }
           }
 
           env {
-            name = "MEGA_PASS"
+            name = "IMPORT_BUCKET"
             value_from {
               secret_key_ref {
                 name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "mega-import-pass"
+                key  = "import-s3-bucket"
+              }
+            }
+          }
+
+          env {
+            name = "IMPORT_ACCESS_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "import-s3-access-key"
+              }
+            }
+          }
+
+          env {
+            name = "IMPORT_SECRET_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
+                key  = "import-s3-secret-key"
               }
             }
           }

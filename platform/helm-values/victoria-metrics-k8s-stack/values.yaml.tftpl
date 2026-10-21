@@ -1,0 +1,286 @@
+fullnameOverride: vm
+
+defaultRules:
+  rules:
+    KubeCPUOvercommit:
+      enabled: false
+    KubeMemoryOvercommit:
+      enabled: false
+
+vmsingle:
+  enabled: true
+  spec:
+    retentionPeriod: "90d"
+    storage:
+      storageClassName: local-path-hostpath
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 30Gi
+    extraArgs:
+      opentelemetry.usePrometheusNaming: "true"
+
+vmagent:
+  spec:
+    scrapeInterval: 30s
+    externalLabels:
+      cluster: ${cluster_name}
+    inlineScrapeConfig: |
+      - job_name: annotated-pods
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__meta_kubernetes_pod_phase]
+            action: drop
+            regex: Pending|Succeeded|Failed
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            target_label: __tmp_port
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+            regex: (.+)
+            target_label: __tmp_port
+          - source_labels: [__meta_kubernetes_pod_container_port_number, __tmp_port]
+            action: keep_if_equal
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            regex: (.+)
+            target_label: __metrics_path__
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_container_name]
+            target_label: container
+      - job_name: annotated-services
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+            action: keep
+            regex: "true"
+          - source_labels: [__address__]
+            regex: .+:(\d+)
+            target_label: __tmp_endpoint_port
+          - source_labels: [__tmp_endpoint_port]
+            target_label: __tmp_port
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_port]
+            regex: (.+)
+            target_label: __tmp_port
+          - source_labels: [__tmp_endpoint_port, __tmp_port]
+            action: keep_if_equal
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+            regex: (.+)
+            target_label: __metrics_path__
+          - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: service
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+      - job_name: hubble
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [kube-system]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_k8s_app]
+            action: keep
+            regex: cilium
+          - source_labels: [__meta_kubernetes_pod_container_port_number]
+            action: keep
+            regex: "9965"
+          - source_labels: [__meta_kubernetes_pod_ip]
+            target_label: __address__
+            replacement: $1:9965
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+alertmanager:
+  spec:
+    secrets:
+      - ${smtp_secret_name}
+  config:
+    route:
+      receiver: email
+      group_by: [alertname, namespace]
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      routes:
+        - receiver: blackhole
+          matchers:
+            - alertname=~"Watchdog|InfoInhibitor"
+        - receiver: blackhole
+          matchers:
+            - severity=~"info|none"
+    inhibit_rules:
+      - source_matchers:
+          - severity="critical"
+        target_matchers:
+          - severity="warning"
+        equal: [namespace, alertname]
+    receivers:
+      - name: blackhole
+      - name: email
+        email_configs:
+          - to: ${alert_email}
+            from: Alerts <alerts@vinnel.cloud>
+            smarthost: smtp.resend.com:587
+            auth_username: resend
+            auth_password_file: /etc/vm/secrets/${smtp_secret_name}/password
+            require_tls: true
+            send_resolved: true
+
+defaultDatasources:
+  victoriametrics:
+    datasources:
+      - name: VictoriaMetrics
+        type: prometheus
+        access: proxy
+        uid: VictoriaMetrics
+        isDefault: true
+  extra:
+    - name: Loki
+      type: loki
+      uid: loki
+      access: proxy
+      url: http://loki.${namespace}.svc.cluster.local:3100
+      jsonData:
+        derivedFields:
+          - name: TraceID
+            matcherType: label
+            matcherRegex: trace_id
+            datasourceUid: tempo
+            url: "$${__value.raw}"
+    - name: Tempo
+      type: tempo
+      uid: tempo
+      access: proxy
+      url: http://tempo.${namespace}.svc.cluster.local:3200
+      jsonData:
+        tracesToLogsV2:
+          datasourceUid: loki
+          filterByTraceID: true
+          spanStartTimeShift: "-5m"
+          spanEndTimeShift: "5m"
+        tracesToMetrics:
+          datasourceUid: VictoriaMetrics
+        serviceMap:
+          datasourceUid: VictoriaMetrics
+        nodeGraph:
+          enabled: true
+        lokiSearch:
+          datasourceUid: loki
+
+grafana:
+  fullnameOverride: grafana
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: local-path-hostpath
+    size: 5Gi
+  hostAliases:
+    - ip: ${node_ip}
+      hostnames:
+        - auth.vinnel.cloud
+  extraSecretMounts:
+    - name: oidc
+      secretName: ${oidc_secret_name}
+      mountPath: /etc/secrets/oidc
+      readOnly: true
+  grafana.ini:
+    server:
+      root_url: https://grafana.vinnel.cloud
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+      check_for_plugin_updates: false
+      feedback_links_enabled: false
+    news:
+      news_feed_enabled: false
+    security:
+      allow_embedding: true
+      cookie_secure: true
+      disable_gravatar: true
+    users:
+      allow_sign_up: false
+    auth:
+      disable_login_form: true
+      signout_redirect_url: https://auth.vinnel.cloud/logout
+    auth.basic:
+      enabled: false
+    auth.anonymous:
+      enabled: false
+    auth.generic_oauth:
+      enabled: true
+      name: Authelia
+      client_id: grafana
+      client_secret: $__file{/etc/secrets/oidc/client-secret}
+      scopes: openid profile email groups
+      auth_url: https://auth.vinnel.cloud/api/oidc/authorization
+      token_url: https://auth.vinnel.cloud/api/oidc/token
+      api_url: https://auth.vinnel.cloud/api/oidc/userinfo
+      auth_style: InHeader
+      use_pkce: true
+      login_attribute_path: preferred_username
+      name_attribute_path: name
+      email_attribute_path: email
+      groups_attribute_path: groups
+      role_attribute_path: contains(groups[*], 'admins') && 'GrafanaAdmin' || 'Viewer'
+      role_attribute_strict: true
+      allow_assign_grafana_admin: true
+      allow_sign_up: true
+      auto_login: true
+
+prometheus-node-exporter:
+  service:
+    annotations: {}
+
+kube-state-metrics:
+  prometheusScrape: false
+
+kubeEtcd:
+  endpoints:
+    - ${node_ip}
+  service:
+    port: 2381
+    targetPort: 2381
+  vmScrape:
+    spec:
+      endpoints:
+        - port: http-metrics
+          scheme: http
+
+kubeControllerManager:
+  endpoints:
+    - ${node_ip}
+  vmScrape:
+    spec:
+      endpoints:
+        - port: http-metrics
+          scheme: https
+          bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+          tlsConfig:
+            insecureSkipVerify: true
+
+kubeScheduler:
+  endpoints:
+    - ${node_ip}
+  vmScrape:
+    spec:
+      endpoints:
+        - port: http-metrics
+          scheme: https
+          bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+          tlsConfig:
+            insecureSkipVerify: true

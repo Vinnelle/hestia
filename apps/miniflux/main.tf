@@ -8,9 +8,9 @@ resource "cloudflare_dns_record" "rss_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "rss.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "miniflux_admin_password" {

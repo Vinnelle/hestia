@@ -3,9 +3,9 @@ resource "cloudflare_dns_record" "status_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "status.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "kubernetes_ingress_v1" "status_vinnel_cloud" {

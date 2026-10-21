@@ -1,12 +1,10 @@
 #!/bin/sh
 set -eu
 
-zone=""
 namespace=""
 deployments=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --zone) zone="$2"; shift 2 ;;
     --namespace) namespace="$2"; shift 2 ;;
     *) deployments="$deployments $1"; shift ;;
   esac
@@ -24,9 +22,17 @@ done | jq -s 'add' > /tmp/images.json
 
 live=""
 for name in $deployments; do
-  if ! kubectl get "deployment/$name" -n "$namespace" >/dev/null 2>&1; then
-    echo "deployment/$name does not exist yet -- Terraform will create it from the recorded digest"
-    continue
+  if ! out=$(kubectl get "deployment/$name" -n "$namespace" -o name 2>&1); then
+    case "$out" in
+      *NotFound*)
+        echo "deployment/$name does not exist yet -- Terraform will create it from the recorded digest"
+        continue
+        ;;
+      *)
+        echo "$out" >&2
+        exit 1
+        ;;
+    esac
   fi
   image=$(jq -re --arg n "$name" '.[$n]' /tmp/images.json)
   kubectl set image "deployment/$name" -n "$namespace" "*=$image"
@@ -35,12 +41,3 @@ done
 for name in $live; do
   kubectl rollout status "deployment/$name" -n "$namespace"
 done
-
-if [ -n "$zone" ]; then
-  zone_id=$(curl -fsS -H "Authorization: Bearer $CF_API_TOKEN" \
-    "https://api.cloudflare.com/client/v4/zones?name=$zone" | jq -re '.result[0].id')
-  curl -fsS -X POST \
-    -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
-    --data '{"purge_everything":true}' \
-    "https://api.cloudflare.com/client/v4/zones/$zone_id/purge_cache" | jq -e '.success'
-fi

@@ -36,6 +36,7 @@ import (
 	"vinnel-cloud-admin/internal/minecraft"
 	"vinnel-cloud-admin/internal/portal"
 	"vinnel-cloud-admin/internal/satisfactory"
+	"vinnel-cloud-admin/internal/servers"
 	"vinnel-cloud-admin/internal/telemetry"
 )
 
@@ -51,6 +52,7 @@ type pageData struct {
 	FilesOrigin   string
 	Services      []portal.Service
 	ServiceGroups []portal.Group
+	Servers       []servers.Info
 }
 
 func env(key, def string) string {
@@ -134,6 +136,14 @@ func runBlogSync() {
 	if err != nil {
 		log.Fatalf("blog sync store: %v", err)
 	}
+	if len(posts) == 0 {
+		restored, err := repo.Restore(context.Background(), store)
+		if err != nil {
+			log.Fatalf("blog restore: %v", err)
+		}
+		log.Printf("blog store was empty: restored %d posts from the repository instead of syncing", restored)
+		return
+	}
 	if err := repo.Sync(context.Background(), posts, "nightly sync"); err != nil {
 		log.Fatalf("blog sync: %v", err)
 	}
@@ -144,17 +154,6 @@ func postLinkBase(publicURL string) string {
 		return ""
 	}
 	return publicURL + "/posts/"
-}
-
-func purgeTargets(siteURL, publicURL string) []string {
-	urls := []string{}
-	for _, host := range []string{strings.TrimRight(siteURL, "/"), publicURL} {
-		if host == "" {
-			continue
-		}
-		urls = append(urls, host+"/", host+"/posts.json", host+"/feed.xml", host+"/sitemap.xml")
-	}
-	return urls
 }
 
 var extraFrameSrc = []string{"https://auth.vinnel.cloud"}
@@ -372,15 +371,8 @@ type blogAPI struct {
 	store     *blog.Store
 	media     *blog.Media
 	repo      *blog.Repo
-	purger    *blog.Purger
 	feed      blog.FeedConfig
 	publicURL string
-}
-
-func (b *blogAPI) purge(ctx context.Context, extra ...string) {
-	if err := b.purger.Purge(ctx, extra...); err != nil {
-		log.Printf("blog purge: %v", err)
-	}
 }
 
 func (b *blogAPI) postURL(slug string) string {
@@ -704,9 +696,6 @@ func (b *blogAPI) save(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog save: user=%q slug=%q draft=%v", userFromRequest(r), in.Slug, in.Draft)
-	if !in.Draft {
-		b.purge(r.Context(), b.postURL(in.Slug))
-	}
 	writeJSON(w, &in)
 }
 
@@ -718,7 +707,6 @@ func (b *blogAPI) remove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog delete: user=%q slug=%q", user, slug)
-	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
@@ -740,7 +728,6 @@ func (b *blogAPI) publish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog publish: user=%q slug=%q", user, slug)
-	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true", "branch": b.repo.Branch})
 }
 
@@ -762,7 +749,6 @@ func (b *blogAPI) unpublish(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("blog unpublish: user=%q slug=%q", user, slug)
-	b.purge(r.Context(), b.postURL(slug))
 	writeJSON(w, map[string]string{"ok": "true"})
 }
 
@@ -805,6 +791,18 @@ func main() {
 	}
 	cache := &statsCache{kube: kubeClient, ttl: 15 * time.Second}
 
+	var relay *servers.Relay
+	if url := os.Getenv("RELAY_METRICS_URL"); url != "" {
+		relay = &servers.Relay{URL: url, Location: env("RELAY_LOCATION", "Infomaniak")}
+	}
+	serverStats := &servers.Collector{
+		Kube:         kubeClient,
+		ClusterStats: cache.get,
+		NodeLocation: env("NODE_LOCATION", "home"),
+		Relay:        relay,
+		TTL:          15 * time.Second,
+	}
+
 	satisfactorySvc := &satisfactory.Service{
 		Kube:          kubeClient,
 		Host:          env("SATISFACTORY_HOST", ""),
@@ -828,6 +826,10 @@ func main() {
 	if role == "game-sleeper" {
 		runGameSleeper(minecraftSvc, satisfactorySvc)
 		return
+	}
+
+	if relay != nil {
+		go relay.Run(context.Background(), 15*time.Second)
 	}
 
 	tmpl := template.Must(template.ParseFS(htmlFS, "html/index.html"))
@@ -855,17 +857,11 @@ func main() {
 	siteURL := env("BLOG_SITE_URL", "https://vin.moe")
 	publicURL := strings.TrimRight(env("BLOG_PUBLIC_URL", ""), "/")
 	filesOrigin := originOf(strings.TrimRight(env("BLOG_FILES_URL", "https://files.vinnel.cloud"), "/"))
-	purgeURLs := purgeTargets(siteURL, publicURL)
 	blogHandlers := &blogAPI{
 		store:     blogStore,
 		media:     blogMedia,
 		repo:      blogRepo,
 		publicURL: publicURL,
-		purger: &blog.Purger{
-			ZoneID: env("BLOG_ZONE_ID", ""),
-			Token:  os.Getenv("CF_CACHE_PURGE_TOKEN"),
-			URLs:   purgeURLs,
-		},
 		feed: blog.FeedConfig{
 			Title:        env("BLOG_TITLE", "vin.moe"),
 			Subtitle:     env("BLOG_SUBTITLE", "infrastructure, devops, software"),
@@ -874,9 +870,6 @@ func main() {
 			Email:        env("BLOG_AUTHOR_EMAIL", ""),
 			PostLinkBase: postLinkBase(publicURL),
 		},
-	}
-	if !blogHandlers.purger.Configured() {
-		log.Print("blog cache purge disabled: BLOG_ZONE_ID or CF_CACHE_PURGE_TOKEN unset")
 	}
 	if !blogRepo.Configured() {
 		log.Print("blog repository sync disabled: GITLAB_PROJECT_ID or GITLAB_TOKEN unset")
@@ -899,6 +892,10 @@ func main() {
 
 	mux.HandleFunc("GET /api/cluster", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, cache.get())
+	})
+
+	mux.HandleFunc("GET /api/servers", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, map[string][]servers.Server{"servers": serverStats.Servers()})
 	})
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory", func(w http.ResponseWriter, r *http.Request) {
@@ -964,7 +961,7 @@ func main() {
 		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(nonce, filesOrigin))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, FilesOrigin: filesOrigin, Services: portal.Services, ServiceGroups: portal.Groups()}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, FilesOrigin: filesOrigin, Services: portal.Services, ServiceGroups: portal.Groups(), Servers: serverStats.Infos()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})

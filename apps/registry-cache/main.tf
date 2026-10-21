@@ -8,8 +8,8 @@ resource "cloudflare_dns_record" "mirror_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "mirror.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
+  content = var.relay_ip
+  ttl     = 60
   proxied = false
 }
 

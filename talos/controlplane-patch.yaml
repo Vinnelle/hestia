@@ -38,10 +38,12 @@ machine:
     state:
       provider: luks2
       keys:
-        - nodeID: {}
-          slot: 0
+        - slot: 0
+          tpm:
+            checkSecurebootStatusOnEnroll: true
     ephemeral:
       provider: luks2
       keys:
-        - nodeID: {}
-          slot: 0
+        - slot: 0
+          tpm:
+            checkSecurebootStatusOnEnroll: true

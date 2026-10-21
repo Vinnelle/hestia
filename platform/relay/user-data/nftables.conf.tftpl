@@ -1,0 +1,66 @@
+flush ruleset
+
+table inet filter {
+  counter input_dropped {
+  }
+
+  counter forward_dropped {
+  }
+
+  counter output_dropped {
+  }
+%{ for name, counter in counters ~}
+
+  counter traffic_${counter} {
+  }
+%{ endfor ~}
+
+  chain input {
+    type filter hook input priority filter; policy drop;
+    iif "lo" accept
+    ct state established,related accept
+    ct state invalid counter name "input_dropped" drop
+    udp dport ${wireguard_port} accept
+    iifname "wg0" ip saddr ${node_address} tcp dport ${metrics_port} accept
+    icmp type echo-request limit rate 5/second accept
+    counter name "input_dropped" drop
+  }
+
+  chain forward {
+    type filter hook forward priority filter; policy drop;
+    tcp flags syn tcp option maxseg size set rt mtu
+%{ for name, f in forwards ~}
+    ct status dnat meta l4proto ${f.protocol} ct original proto-dst ${f.port} counter name "traffic_${counters[name]}"
+%{ endfor ~}
+    ct state established,related accept
+    oifname "wg0" ct status dnat accept
+    counter name "forward_dropped" drop
+  }
+
+  chain output {
+    type filter hook output priority filter; policy drop;
+    oif "lo" accept
+    ct state established,related accept
+    udp dport 67 accept
+    counter name "output_dropped" drop
+  }
+}
+
+table ip nat {
+%{ for name, counter in counters ~}
+  counter conn_${counter} {
+  }
+
+%{ endfor ~}
+  chain prerouting {
+    type nat hook prerouting priority dstnat; policy accept;
+%{ for name, f in forwards ~}
+    iifname != "wg0" ${f.protocol} dport ${f.port} counter name "conn_${counters[name]}" dnat to ${node_address}
+%{ endfor ~}
+  }
+
+  chain postrouting {
+    type nat hook postrouting priority srcnat; policy accept;
+    oifname "wg0" masquerade
+  }
+}

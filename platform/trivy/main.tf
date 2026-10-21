@@ -25,102 +25,47 @@ module "vpa" {
   ]
 }
 
-resource "signoz_rule" "critical_vulnerability_found" {
-  depends_on     = [helm_release.trivy_operator]
-  alert          = "CriticalVulnerabilityFound"
-  alert_type     = "METRIC_BASED_ALERT"
-  rule_type      = "promql_rule"
-  schema_version = "v2alpha1"
-  description    = "A running workload has a fixable critical CVE — trivy-operator reports it against the image it is running"
+resource "kubectl_manifest" "alert_rules" {
+  depends_on = [helm_release.trivy_operator]
 
-  condition = {
-    composite_query = {
-      panel_type = "graph"
-      query_type = "promql"
-      queries = [{
-        promql = {
-          type = "promql"
-          spec = {
-            name  = "A"
-            query = "sum(trivy_image_vulnerabilities{severity=\"Critical\"})"
-          }
-        }
+  yaml_body = yamlencode({
+    apiVersion = "operator.victoriametrics.com/v1beta1"
+    kind       = "VMRule"
+    metadata = {
+      name      = "trivy"
+      namespace = var.namespace
+    }
+    spec = {
+      groups = [{
+        name     = "trivy"
+        interval = "15m"
+        rules = [
+          {
+            alert = "CriticalVulnerabilityFound"
+            expr  = "sum by (namespace, resource_name) (label_replace(trivy_image_vulnerabilities{severity=\"Critical\"}, \"namespace\", \"$1\", \"exported_namespace\", \"(.+)\")) > 0"
+            for   = "1h"
+            labels = {
+              severity = "warning"
+            }
+            annotations = {
+              summary     = "{{ $labels.namespace }}/{{ $labels.resource_name }} runs an image with a critical CVE"
+              description = "trivy-operator reports it against the image the workload is running."
+            }
+          },
+          {
+            alert = "ExposedSecretFound"
+            expr  = "sum by (namespace, resource_name) (label_replace(trivy_image_exposedsecrets, \"namespace\", \"$1\", \"exported_namespace\", \"(.+)\")) > 0"
+            for   = "15m"
+            labels = {
+              severity = "critical"
+            }
+            annotations = {
+              summary     = "{{ $labels.namespace }}/{{ $labels.resource_name }} has a credential baked into its image"
+              description = "trivy-operator found it in the image layers, not in a Secret."
+            }
+          },
+        ]
       }]
     }
-    selected_query_name = "A"
-    thresholds = {
-      basic = {
-        kind = "basic"
-        spec = [{
-          name       = "critical"
-          op         = "above"
-          match_type = "at_least_once"
-          target     = 0
-          channels   = var.signoz_alert_channels
-        }]
-      }
-    }
-  }
-
-  evaluation = {
-    rolling = {
-      kind = "rolling"
-      spec = {
-        eval_window = "1h"
-        frequency   = "15m"
-      }
-    }
-  }
-
-  notification_settings = var.signoz_notification_settings
-}
-
-resource "signoz_rule" "exposed_secret_found" {
-  depends_on     = [helm_release.trivy_operator]
-  alert          = "ExposedSecretFound"
-  alert_type     = "METRIC_BASED_ALERT"
-  rule_type      = "promql_rule"
-  schema_version = "v2alpha1"
-  description    = "A credential is baked into a running image — trivy-operator found it in the image layers, not in a Secret"
-
-  condition = {
-    composite_query = {
-      panel_type = "graph"
-      query_type = "promql"
-      queries = [{
-        promql = {
-          type = "promql"
-          spec = {
-            name  = "A"
-            query = "sum(trivy_image_exposedsecrets)"
-          }
-        }
-      }]
-    }
-    selected_query_name = "A"
-    thresholds = {
-      basic = {
-        kind = "basic"
-        spec = [{
-          name       = "critical"
-          op         = "above"
-          match_type = "at_least_once"
-          target     = 0
-          channels   = var.signoz_alert_channels
-        }]
-      }
-    }
-  }
-
-  evaluation = {
-    rolling = {
-      kind = "rolling"
-      spec = {
-        eval_window = "1h"
-        frequency   = "15m"
-      }
-    }
-  }
-
-  notification_settings = var.signoz_notification_settings
+  })
 }

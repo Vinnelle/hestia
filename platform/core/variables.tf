@@ -3,3 +3,8 @@ variable "cloudflare_api_token" {
   type        = string
   sensitive   = true
 }
+
+variable "cluster_issuers" {
+  description = "Let's Encrypt ClusterIssuers to create, as name => ACME account email; each solves DNS-01 through the Cloudflare token"
+  type        = map(string)
+}

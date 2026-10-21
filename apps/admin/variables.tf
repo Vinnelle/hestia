@@ -17,14 +17,28 @@ variable "zone_id" {
   description = "Cloudflare zone ID the dashboard hostnames attach to"
   type        = string
 }
-
-variable "blog_zone_id" {
-  description = "Cloudflare zone ID holding the blog hostnames the cache purger clears"
+variable "node_ip" {
+  description = "Cluster node IP the dashboard reaches the host-network game servers on"
   type        = string
 }
 
-variable "node_ip" {
-  description = "Cluster node IP the dashboard A records point to"
+variable "relay_ip" {
+  description = "Public relay IP the dashboard's A records point to"
+  type        = string
+}
+
+variable "relay_address" {
+  description = "Relay's tunnel address, where its Prometheus endpoint listens"
+  type        = string
+}
+
+variable "relay_metrics_port" {
+  description = "Port of the relay's Prometheus endpoint the dashboard scrapes for its Servers pages"
+  type        = number
+}
+
+variable "relay_location" {
+  description = "Where the relay runs, shown next to it on the dashboard"
   type        = string
 }
 
@@ -81,10 +95,4 @@ variable "gitlab_project_id" {
 variable "gitlab_default_branch" {
   description = "Branch the dashboard opens merge requests against"
   type        = string
-}
-
-variable "cloudflare_cache_purge_token" {
-  description = "Cloudflare token the dashboard purges the site caches with"
-  type        = string
-  sensitive   = true
 }

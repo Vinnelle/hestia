@@ -22,15 +22,12 @@ module "vinnel_cloud_site" {
     kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud,
   ]
 
-  site_slug         = "vinnel-cloud"
-  domain            = "vinnel.cloud"
-  zone_id           = var.zone_id
-  node_ip           = var.node_ip
-  cache_description = "cache everything for vinnel.cloud site"
+  site_slug = "vinnel-cloud"
+  domain    = "vinnel.cloud"
+  zone_id   = var.zone_id
+  relay_ip  = var.relay_ip
 
-  cluster_issuer         = var.cluster_issuer
-  acme_email             = var.acme_email
-  cloudflare_secret_name = var.cloudflare_secret_name
+  cluster_issuer = var.cluster_issuer
 
   namespace            = kubernetes_namespace_v1.vinnel_cloud.metadata[0].name
   registry_secret_name = kubernetes_secret_v1.registry_dockerconfig_vinnel_cloud.metadata[0].name

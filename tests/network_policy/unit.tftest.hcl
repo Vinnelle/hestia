@@ -91,7 +91,7 @@ run "fqdn_egress_replaces_world_and_keeps_dns_visible" {
   assert {
     condition = anytrue([
       for rule in output.rendered_fqdns.spec.egress :
-      try(rule.toFQDNs[0].matchPattern, null) == "s3.g.megas4.com" &&
+      try(rule.toFQDNs[0].matchPattern, null) == "de-fra-1.linodeobjects.com" &&
       try(rule.toPorts[0].ports[0].port, null) == "443"
     ])
     error_message = "each egress_fqdns entry must render a toFQDNs rule on 443/TCP"

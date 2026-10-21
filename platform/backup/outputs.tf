@@ -1,9 +1,14 @@
-output "namespace" {
-  description = "Namespace holding the backup tooling"
-  value       = kubernetes_namespace_v1.backup.metadata[0].name
+output "bucket" {
+  description = "MEGA S4 bucket the Proxmox Backup Server datastore on the host writes the Talos VM's encrypted backups to"
+  value       = aws_s3_bucket.pbs.bucket
 }
 
-output "s3_credentials_secret_name" {
-  description = "Name of the Secret holding the backup bucket credentials"
-  value       = kubernetes_secret_v1.s3_backup_credentials.metadata[0].name
+output "import_bucket" {
+  description = "MEGA S4 bucket the one-off Nextcloud import reads nextcloud-import/ from"
+  value       = aws_s3_bucket.import.bucket
+}
+
+output "s3_endpoint" {
+  description = "MEGA S4 S3 endpoint both buckets live behind"
+  value       = "s3.${var.mega_s4_endpoint_domain}"
 }

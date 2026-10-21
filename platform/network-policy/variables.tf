@@ -3,7 +3,7 @@ variable "telemetry_namespace" {
   type        = string
 }
 
-variable "mega_s4_endpoint_domain" {
-  description = "MEGA S4 endpoint domain the backup namespace is allowed to reach, matching the root variable of the same name"
+variable "relay_address" {
+  description = "Relay's WireGuard address. Relayed visitors only ever reach the node itself, so no pod has a reason to accept traffic from it."
   type        = string
 }

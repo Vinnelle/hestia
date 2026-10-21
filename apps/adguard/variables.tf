@@ -3,8 +3,8 @@ variable "zone_id" {
   type        = string
 }
 
-variable "node_ip" {
-  description = "Cluster node IP the AdGuard admin A record points to"
+variable "relay_ip" {
+  description = "Public relay IP the AdGuard admin A record points to"
   type        = string
 }
 

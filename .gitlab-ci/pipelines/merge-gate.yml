@@ -35,6 +35,8 @@ sync_pre:
       optional: true
     - job: shell_build
       optional: true
+    - job: relay_image
+      optional: true
     - job: love_release
       optional: true
   resource_group: sync_pre

@@ -9,9 +9,10 @@ draft: false
 I have updated this to support **various** *markdown* ~~features~~!
 
 I have also inluded image support:
-![82134cc5bc92576f85bc6055e913ca11-910834124](https://blog.vin.moe/media/82134cc5bc92576f85bc6055e913ca11-910834124-67db2be8.png)
+![1703309817213-0](https://blog.vin.moe/media/1703309817213-0-ee06a857.jpeg)
+
 and files:
-[82134cc5bc92576f85bc6055e913ca11-910834124.png](https://blog.vin.moe/media/82134cc5bc92576f85bc6055e913ca11-910834124-67db2be8.png)
+[1789411732829003.png](https://blog.vin.moe/media/1789411732829003-0568ade0.png)
 
 I still have some stuff to change, like setting up something for large files, which should not be hard. But this is good progress.
 

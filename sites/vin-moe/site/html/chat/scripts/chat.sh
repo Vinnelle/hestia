@@ -25,8 +25,10 @@
 #      only you can read.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
 #      key in minisign_pub below (the same key as minisign.pub in the chat
-#      repository). Releases are signed offline, never on GitHub, so even
-#      someone who took over the GitHub account couldn't pass this check.
+#      repository), or with its backup, minisign_backup_pub (the same as
+#      minisign-backup.pub there). Releases are signed offline, never on
+#      GitHub, so even someone who took over the GitHub account couldn't pass
+#      this check.
 #   4. Check the downloaded program against its SHA-256 in SHA256SUMS.
 #   5. Run chat, and delete the temporary folder when it exits.
 #
@@ -62,6 +64,10 @@ channel=stable
 repo=https://github.com/Vinnelle/chat
 api=https://api.github.com/repos/Vinnelle/chat
 minisign_pub=RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
+# The release key's backup, kept offline apart from it. A release is only
+# signed with this one if the release key is lost or stolen, and then its
+# release notes say so. A signature from either key is enough.
+minisign_backup_pub=RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv
 
 # Print a status line. It goes to stderr, so it never mixes with chat's output.
 say() {
@@ -96,15 +102,16 @@ sha256() {
     fi | cut -d ' ' -f 1
 }
 
-# Check SHA256SUMS against SHA256SUMS.minisig with chat's release key. If
+# Check SHA256SUMS against SHA256SUMS.minisig with the public key given. If
 # minisign is installed, it does the check. Otherwise OpenSSL 3 does the same
 # check by hand: minisign signs the BLAKE2b-512 hash of a file with Ed25519,
 # so the steps below take the 64-byte signature out of the .minisig file, put
 # the 32-byte public key in the DER form OpenSSL reads, hash SHA256SUMS with
 # BLAKE2b-512, and ask OpenSSL whether the signature matches that hash.
-check_signature() {
+check_signature_with() {
     if command -v minisign >/dev/null 2>&1; then
-        minisign -Vqm "$dir/SHA256SUMS" -P "$minisign_pub"
+        # Quiet, since a signature from the other key is no error yet.
+        minisign -Vqm "$dir/SHA256SUMS" -P "$1" 2>/dev/null
         return
     fi
     # The second line of a .minisig file is the signature in base64: two bytes
@@ -120,11 +127,16 @@ check_signature() {
     # turns those 32 bytes into an Ed25519 public key file OpenSSL can read.
     {
         printf '\060\052\060\005\006\003\053\145\160\003\041\000'
-        printf '%s' "$minisign_pub" | openssl base64 -d -A | tail -c 32
+        printf '%s' "$1" | openssl base64 -d -A | tail -c 32
     } >"$dir/pub.der"
     openssl dgst -blake2b512 -binary "$dir/SHA256SUMS" >"$dir/SHA256SUMS.blake2b"
     openssl pkeyutl -verify -pubin -keyform DER -inkey "$dir/pub.der" -rawin \
-        -in "$dir/SHA256SUMS.blake2b" -sigfile "$dir/sig.ed25519" >/dev/null
+        -in "$dir/SHA256SUMS.blake2b" -sigfile "$dir/sig.ed25519" >/dev/null 2>&1
+}
+
+# The release key first, then its backup: a signature from either will do.
+check_signature() {
+    check_signature_with "$minisign_pub" || check_signature_with "$minisign_backup_pub"
 }
 
 main() {

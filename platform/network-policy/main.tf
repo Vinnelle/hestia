@@ -1,7 +1,6 @@
 locals {
   policied_namespaces = toset([
     "auth",
-    "backup",
     "dns",
     "files",
     "forge",
@@ -16,19 +15,17 @@ locals {
   ])
 
   network_policy_ingress_from = {
-    storage        = ["backup", "files", "forge"]
+    storage        = ["files", "forge"]
     "vinnel-cloud" = ["vin-moe"]
   }
 
   network_policy_egress_fqdns = {
-    backup    = ["s3.${var.mega_s4_endpoint_domain}"]
     matrix    = []
     storage   = []
     "vin-moe" = []
   }
 
   network_policy_egress_to = {
-    backup         = [{ namespace = "storage", ports = [8333] }]
     files          = [{ namespace = "storage", ports = [8333] }]
     forge          = [{ namespace = "storage", ports = [8333] }]
     "vin-moe"      = [{ namespace = "vinnel-cloud", ports = [8080] }]
@@ -46,4 +43,24 @@ module "network_policy" {
   ingress_from        = lookup(local.network_policy_ingress_from, each.key, [])
   egress_to           = lookup(local.network_policy_egress_to, each.key, [])
   egress_fqdns        = lookup(local.network_policy_egress_fqdns, each.key, null)
+}
+
+resource "kubectl_manifest" "deny_relay_to_pods" {
+  yaml_body = yamlencode({
+    apiVersion = "cilium.io/v2"
+    kind       = "CiliumClusterwideNetworkPolicy"
+    metadata = {
+      name = "deny-relay-to-pods"
+    }
+    spec = {
+      endpointSelector = {}
+      enableDefaultDeny = {
+        ingress = false
+        egress  = false
+      }
+      ingressDeny = [{
+        fromCIDR = ["${var.relay_address}/32"]
+      }]
+    }
+  })
 }

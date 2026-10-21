@@ -3,6 +3,7 @@ const home = document.getElementById('frame-empty');
 const satisfactoryPage = document.getElementById('page-satisfactory');
 const minecraftPage = document.getElementById('page-minecraft');
 const blogPage = document.getElementById('page-blog');
+const serverPage = document.getElementById('page-server');
 const back = document.getElementById('frame-back');
 const frameTitle = document.getElementById('frame-title');
 const fullscreenBtn = document.getElementById('frame-fullscreen');
@@ -18,6 +19,16 @@ const internalPages = {
   'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: loadMinecraftStatus },
   blog: { el: blogPage, title: 'Blog', onShow: loadBlogPosts },
 };
+
+let currentServer = null;
+for (const link of document.querySelectorAll('.sidebar-link[data-server]')) {
+  const id = link.dataset.server;
+  internalPages['servers/' + id] = {
+    el: serverPage,
+    title: link.dataset.label,
+    onShow: () => { currentServer = id; loadServer(id); },
+  };
+}
 
 function expandSectionFor(slug) {
   if (!slug) return;
@@ -56,6 +67,7 @@ function show(slug) {
   satisfactoryPage.hidden = true;
   minecraftPage.hidden = true;
   blogPage.hidden = true;
+  serverPage.hidden = true;
   frame.hidden = true;
   back.hidden = true;
   fullscreenBtn.hidden = true;
@@ -67,7 +79,7 @@ function show(slug) {
 
   if (page) {
     page.el.hidden = false;
-    document.title = page.title + ' — vinnel.cloud';
+    document.title = page.title + ' | vinnel.cloud';
     page.onShow();
     return;
   }
@@ -75,7 +87,7 @@ function show(slug) {
   if (!active) {
     frame.removeAttribute('src');
     home.hidden = false;
-    document.title = 'admin — vinnel.cloud';
+    document.title = 'admin | vinnel.cloud';
     refresh();
     return;
   }
@@ -84,7 +96,7 @@ function show(slug) {
   back.hidden = false;
   fullscreenBtn.hidden = false;
   frameTitle.textContent = active.dataset.label;
-  document.title = active.dataset.label + ' — vinnel.cloud';
+  document.title = active.dataset.label + ' | vinnel.cloud';
 
   if (frame.getAttribute('src') !== active.dataset.url) {
     frame.setAttribute('src', active.dataset.url);
@@ -230,6 +242,118 @@ const fmtDuration = (s) => {
   if (h) return h + 'h ' + m + 'm';
   return m + 'm';
 };
+
+const fmtSpan = (s) => {
+  s = Math.max(0, Math.floor(s || 0));
+  if (s < 60) return s + 's';
+  const d = Math.floor(s / 86400);
+  const h = Math.floor((s % 86400) / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (d) return d + 'd ' + h + 'h';
+  if (h) return h + 'h ' + m + 'm';
+  return m + 'm ' + (s % 60) + 's';
+};
+
+function fmtValue(v, unit) {
+  switch (unit) {
+    case 'bytes': return fmtBytes(v);
+    case 'bytes/s': return fmtBytes(v) + '/s';
+    case 'cores': return (v || 0).toFixed(2);
+    case 'seconds': return fmtSpan(v);
+    case 'ago': return v < 0 ? 'never' : fmtSpan(v) + ' ago';
+    case 'per-minute': return (v || 0).toFixed(1) + '/min';
+    default: return String(Math.round(v || 0));
+  }
+}
+
+function fmtStat(st) {
+  const value = st.unknown ? '—' : fmtValue(st.value, st.unit);
+  if (st.unit === 'cores') return value + (st.max ? ' / ' + st.max.toFixed(0) : '') + ' cores';
+  return value + (st.max ? ' / ' + fmtValue(st.max, st.unit) : '');
+}
+
+async function fetchServers() {
+  const data = await (await api('/api/servers')).json();
+  return data.servers || [];
+}
+
+function serverSummary(s) {
+  const parts = [];
+  for (const st of s.stats || []) {
+    if ((st.label === 'CPU' || st.label === 'Memory') && st.max && !st.unknown) {
+      parts.push(st.label.toLowerCase() + ' ' + pct((st.value / st.max) * 100));
+    }
+  }
+  return parts.concat([s.role, s.location]).filter(Boolean).join(' · ');
+}
+
+async function loadServers() {
+  try {
+    for (const s of await fetchServers()) {
+      const row = document.querySelector('[data-server-row="' + CSS.escape(s.id) + '"]');
+      if (!row) continue;
+      row.querySelector('.dot').className = 'dot ' + (s.up ? 'dot--ok' : 'dot--bad');
+      row.querySelector('.service-row-host').textContent = s.up ? serverSummary(s) : (s.status || 'down');
+    }
+  } catch {}
+}
+
+function renderServer(s) {
+  text('server-title', s.name);
+  text('server-meta', [s.role, s.location, s.status].filter(Boolean).join(' · '));
+  const err = document.getElementById('server-error');
+  err.hidden = !s.err;
+  if (s.err) err.textContent = s.err;
+
+  const stats = s.stats || [];
+  const row = document.getElementById('server-stats');
+  row.classList.toggle('stat-row--three', stats.length > 4 && stats.length % 3 === 0);
+  row.innerHTML = stats.map((st, i) => {
+    const meter = st.max
+      ? '<div class="stat-meter"><div class="meter"><span class="meter-fill" id="server-meter-' + i + '"></span></div>' +
+        '<span class="stat-sub">' + escapeHtml(fmtStat(st)) + '</span></div>'
+      : '';
+    const value = st.unknown ? '—' : st.max ? pct((st.value / st.max) * 100) : fmtStat(st);
+    return '<div class="stat"><div class="stat-label">' + escapeHtml(st.label) + '</div>' +
+      '<div class="stat-value">' + escapeHtml(value) + '</div>' + meter + '</div>';
+  }).join('');
+  stats.forEach((st, i) => { if (st.max) setMeter('server-meter-' + i, st.unknown ? 0 : (st.value / st.max) * 100); });
+
+  const groups = [];
+  for (const app of s.apps || []) {
+    let g = groups.find((x) => x.name === app.group);
+    if (!g) {
+      g = { name: app.group, apps: [], labels: [] };
+      groups.push(g);
+    }
+    g.apps.push(app);
+    for (const st of app.stats || []) if (!g.labels.includes(st.label)) g.labels.push(st.label);
+  }
+  document.getElementById('server-apps').innerHTML = groups.map((g) =>
+    '<div class="section-head"><h2 class="section-title">' + escapeHtml(g.name) + '</h2>' +
+    '<span class="section-meta">' + g.apps.length + '</span></div>' +
+    '<div class="table-scroll"><table class="data-table data-table--metrics"><thead><tr><th>Name</th>' +
+    g.labels.map((l) => '<th>' + escapeHtml(l) + '</th>').join('') + '</tr></thead><tbody>' +
+    g.apps.map((a) => '<tr><td><span><span class="dot ' + (a.ok ? 'dot--ok' : 'dot--bad') + '"></span>' +
+      escapeHtml(a.name) + '</span>' + (a.detail ? ' <span class="dim">' + escapeHtml(a.detail) + '</span>' : '') + '</td>' +
+      g.labels.map((l) => {
+        const st = (a.stats || []).find((x) => x.label === l);
+        return '<td>' + (st ? escapeHtml(fmtStat(st)) : '—') + '</td>';
+      }).join('') + '</tr>').join('') +
+    '</tbody></table></div>').join('');
+}
+
+async function loadServer(id) {
+  try {
+    const s = (await fetchServers()).find((x) => x.id === id);
+    if (!s) throw new Error('unknown server');
+    renderServer(s);
+  } catch (e) {
+    const err = document.getElementById('server-error');
+    err.hidden = false;
+    err.textContent = 'Could not load server metrics.';
+  }
+}
 
 async function loadSatisfactoryStatus() {
   const err = document.getElementById('satisfactory-error');
@@ -506,7 +630,11 @@ function escapeHtml(s) {
 
 function refresh() {
   if (document.hidden) return;
-  if (!home.hidden) loadCluster();
+  if (!home.hidden) {
+    loadCluster();
+    loadServers();
+  }
+  if (!serverPage.hidden && currentServer) loadServer(currentServer);
   if (!satisfactoryPage.hidden) loadSatisfactoryStatus();
   if (!minecraftPage.hidden) loadMinecraftStatus();
 }

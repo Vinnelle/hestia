@@ -40,21 +40,29 @@ terraform {
       source  = "netbirdio/netbird"
       version = "~> 0.0"
     }
-    signoz = {
-      source  = "SigNoz/signoz"
-      version = "~> 0.1"
-    }
-    restapi = {
-      source  = "thegeeklab/restapi"
-      version = "~> 0.3"
+    gitlab = {
+      source  = "gitlabhq/gitlab"
+      version = "~> 19.0"
     }
     aws = {
       source  = "hashicorp/aws"
       version = "~> 6.0"
     }
-    gitlab = {
-      source  = "gitlabhq/gitlab"
-      version = "~> 19.0"
+    linode = {
+      source  = "linode/linode"
+      version = "~> 4.7"
+    }
+    openstack = {
+      source  = "terraform-provider-openstack/openstack"
+      version = "~> 3.4"
+    }
+    wireguard = {
+      source  = "OJFord/wireguard"
+      version = "~> 0.4"
+    }
+    proxmox = {
+      source  = "bpg/proxmox"
+      version = "~> 0.116"
     }
   }
 }

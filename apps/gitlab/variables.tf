@@ -4,7 +4,12 @@ variable "zone_id" {
 }
 
 variable "node_ip" {
-  description = "Cluster node IP the GitLab A records point to"
+  description = "Cluster node IP CI job pods resolve the registry hostnames to, so image pushes and pulls stay on the node"
+  type        = string
+}
+
+variable "relay_ip" {
+  description = "Public relay IP the GitLab A records point to"
   type        = string
 }
 
@@ -28,13 +33,6 @@ variable "resend_api_key" {
   type        = string
   sensitive   = true
 }
-
-variable "cloudflare_cache_purge_token" {
-  description = "Cloudflare token CI uses to purge the site caches after a deploy"
-  type        = string
-  sensitive   = true
-}
-
 variable "gitlab_mirror_github_pat" {
   description = "GitHub PAT the outbound mirror jobs push with"
   type        = string
@@ -42,7 +40,13 @@ variable "gitlab_mirror_github_pat" {
 }
 
 variable "gitlab_tfc_api_token" {
-  description = "Terraform Cloud API token the pipeline plans and applies with"
+  description = "HCP Terraform API token the pipeline reads and writes the workspace state with"
+  type        = string
+  sensitive   = true
+}
+
+variable "sops_age_key" {
+  description = "CI's age identity, published as the hidden SOPS_AGE_KEY that CI decrypts secrets.sops.json with -- the workspace runs in local execution mode, so HCP Terraform supplies no variables"
   type        = string
   sensitive   = true
 }

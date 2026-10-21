@@ -13,8 +13,8 @@ resource "cloudflare_dns_record" "mc_vin_moe" {
   zone_id = var.zone_id
   name    = "mc.vin.moe"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
+  content = var.relay_ip
+  ttl     = 60
   proxied = false
 }
 
@@ -47,6 +47,8 @@ resource "kubernetes_secret_v1" "minecraft_rcon_admin" {
 }
 
 locals {
+  deployment_enabled = false
+
   minecraft_modpack_zip = "/data/.downloads/modpacks/create-ultimate-selection-2-11.1.0.zip"
 
   minecraft_config_hash = sha256(join("", [
@@ -78,6 +80,8 @@ resource "kubernetes_persistent_volume_claim_v1" "minecraft_data" {
 }
 
 resource "kubernetes_deployment_v1" "minecraft" {
+  count = local.deployment_enabled ? 1 : 0
+
   metadata {
     name      = "minecraft"
     namespace = kubernetes_namespace_v1.games.metadata[0].name
@@ -308,13 +312,15 @@ resource "kubernetes_deployment_v1" "minecraft" {
 }
 
 module "minecraft_vpa" {
+  count  = local.deployment_enabled ? 1 : 0
   source = "../../platform/vpa/resource"
 
+  depends_on = [kubernetes_deployment_v1.minecraft]
 
   name        = "minecraft"
   namespace   = kubernetes_namespace_v1.games.metadata[0].name
   target_kind = "Deployment"
-  target_name = kubernetes_deployment_v1.minecraft.metadata[0].name
+  target_name = try(kubernetes_deployment_v1.minecraft[0].metadata[0].name, "minecraft")
   update_mode = "Initial"
   container_policies = [
     { container_name = "minecraft", min_memory = "18Gi", max_memory = "18Gi" },

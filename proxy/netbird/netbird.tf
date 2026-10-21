@@ -10,7 +10,7 @@ resource "kubernetes_namespace_v1" "proxy" {
 }
 
 resource "netbird_user" "ida" {
-  role            = "admin"
+  role            = "owner"
   is_blocked      = false
   is_service_user = false
 }
@@ -42,13 +42,18 @@ resource "netbird_group" "devices" {
   name       = "User Devices"
 }
 
+resource "netbird_group" "servers" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "Servers"
+}
+
 resource "netbird_group" "adguard" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "Adguard"
   peers      = var.adguard_peer_ids
 }
 
-data "netbird_peer" "tv_1" {
+data "netbird_peers" "tv_1" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "tv-1"
 }
@@ -56,7 +61,7 @@ data "netbird_peer" "tv_1" {
 resource "netbird_group" "iot" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "IoT"
-  peers      = [data.netbird_peer.tv_1.id]
+  peers      = data.netbird_peers.tv_1.ids
 }
 
 resource "netbird_policy" "devices_dns_udp_to_services" {
@@ -119,8 +124,8 @@ resource "cloudflare_dns_record" "proxy_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "proxy.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
+  content = var.relay_ip
+  ttl     = 60
   proxied = false
 }
 
@@ -128,9 +133,9 @@ resource "cloudflare_dns_record" "netbird_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "netbird.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "netbird_relay_auth_secret" {

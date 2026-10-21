@@ -1,0 +1,17 @@
+#!/bin/sh
+set -eu
+exec >/dev/console 2>&1
+
+passwd -l root >/dev/null 2>&1
+
+apks=$(ls -d /media/*/relay/apks)
+apk add --quiet --no-progress --no-network --force-non-repository "$apks"/*.apk
+
+if ! drive=$(findfs LABEL=config-2 2>/dev/null); then
+  echo "relay: no config drive, so no user data; staying down"
+  exit 1
+fi
+mkdir -p /run/config
+mount -o ro "$drive" /run/config
+sh /run/config/openstack/latest/user_data
+umount /run/config

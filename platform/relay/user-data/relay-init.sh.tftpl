@@ -1,0 +1,37 @@
+#!/bin/sh
+set -eu
+
+nft -f - <<'NFT'
+${nftables}
+NFT
+
+ip link add wg0 type wireguard
+printf '%s\n' '${private_key}' | wg set wg0 listen-port ${port} private-key /dev/stdin \
+  peer '${node_public_key}' allowed-ips ${node_address}/32
+ip address add ${relay_address}/24 dev wg0
+ip link set wg0 up
+
+cat > /usr/local/bin/relay-metrics <<'METRICS'
+${metrics}
+METRICS
+
+cat > /etc/init.d/relay-metrics <<'SERVICE'
+#!/sbin/openrc-run
+supervisor=supervise-daemon
+command=/usr/local/bin/relay-metrics
+SERVICE
+
+cat > /etc/init.d/node-exporter <<'SERVICE'
+#!/sbin/openrc-run
+supervisor=supervise-daemon
+command=/usr/bin/node_exporter
+command_user=prometheus:prometheus
+command_args="--web.listen-address=${relay_address}:${metrics_port} --web.disable-exporter-metrics --collector.disable-defaults --collector.conntrack --collector.cpu --collector.filesystem --collector.loadavg --collector.meminfo --collector.netdev --collector.stat --collector.textfile --collector.textfile.directory=/run/relay-metrics --collector.time"
+SERVICE
+
+chmod 0755 /usr/local/bin/relay-metrics /etc/init.d/relay-metrics /etc/init.d/node-exporter
+rc-service relay-metrics start
+rc-service node-exporter start
+
+sysctl -qw kernel.modules_disabled=1
+echo "relay: wg0 up on ${port}/udp, metrics on ${relay_address}:${metrics_port}, forwarding ${summary}" > /dev/console

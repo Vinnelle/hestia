@@ -1,8 +1,14 @@
+locals {
+  deployment_enabled = false
+}
+
 resource "helm_release" "chaos_mesh" {
+  count = local.deployment_enabled ? 1 : 0
+
   name       = "chaos-mesh"
   repository = "https://charts.chaos-mesh.org"
   chart      = "chaos-mesh"
-  version    = "2.8.4"
+  version    = "2.8.5"
   namespace  = var.namespace
 
   values = [
@@ -29,6 +35,7 @@ resource "helm_release" "chaos_mesh" {
 }
 
 resource "kubectl_manifest" "chaos_pod_kill_sites" {
+  count      = local.deployment_enabled ? 1 : 0
   depends_on = [helm_release.chaos_mesh]
   yaml_body = yamlencode({
     apiVersion = "chaos-mesh.org/v1alpha1"
@@ -54,6 +61,7 @@ resource "kubectl_manifest" "chaos_pod_kill_sites" {
 }
 
 resource "kubectl_manifest" "chaos_stress_sites" {
+  count      = local.deployment_enabled ? 1 : 0
   depends_on = [helm_release.chaos_mesh]
   yaml_body = yamlencode({
     apiVersion = "chaos-mesh.org/v1alpha1"

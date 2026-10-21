@@ -7,6 +7,8 @@
   - "hestia/sites/site-images.json"
   - "hestia/apps/app-images.json"
   - "hestia/identity/identity-images.json"
+  - "hestia/platform/relay/image/**/*"
+  - "secrets.sops.json"
 
 .terraform_install:
   script:
@@ -16,6 +18,17 @@
     - chmod 0755 /tmp/bin/terraform
     - export PATH="/tmp/bin:${PATH}"
 
+.sops_install:
+  script:
+    - mkdir -p /tmp/bin
+    - curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.linux.amd64" -o "/tmp/sops-v${SOPS_VERSION}.linux.amd64"
+    - curl -fsSL "https://github.com/getsops/sops/releases/download/v${SOPS_VERSION}/sops-v${SOPS_VERSION}.checksums.txt" -o /tmp/sops.checksums.txt
+    - expected=$(grep " sops-v${SOPS_VERSION}.linux.amd64$" /tmp/sops.checksums.txt | cut -d' ' -f1)
+    - test -n "$expected"
+    - echo "$expected  /tmp/sops-v${SOPS_VERSION}.linux.amd64" | sha256sum -c -
+    - install -m 0755 "/tmp/sops-v${SOPS_VERSION}.linux.amd64" /tmp/bin/sops
+    - export PATH="/tmp/bin:${PATH}"
+
 .terraform_base:
   image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
   retry: 2
@@ -23,8 +36,10 @@
     GODEBUG: "http2client=0"
   before_script:
     - !reference [.terraform_install, script]
+    - !reference [.sops_install, script]
     - mkdir -p "${TF_PLUGIN_CACHE_DIR}"
     - cd hestia
+    - sops decrypt --output secrets.auto.tfvars.json ../secrets.sops.json
   cache:
     key:
       files:
@@ -45,7 +60,7 @@ terraform_plan:
     - terraform init -input=false
     - |
       set +e
-      terraform plan -input=false -detailed-exitcode
+      terraform plan -input=false -lock=false -detailed-exitcode
       exit_code=$?
       set -e
       # -detailed-exitcode returns 2 when the plan has changes, which is the normal
@@ -67,6 +82,8 @@ terraform_plan_apply:
       optional: true
     - job: shell_build
       optional: true
+    - job: relay_image
+      optional: true
     - job: lint
       optional: true
     - job: secrets_scan
@@ -76,10 +93,10 @@ terraform_plan_apply:
   rules:
     - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
       changes: *terraform_changes
-    - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "terraform"'
+    - if: '$CI_PIPELINE_SOURCE == "web" && ($RUN == "terraform" || $RUN == "relay_image")'
   script:
     - git -C "$CI_PROJECT_DIR" fetch --depth=1 origin "$CI_COMMIT_REF_NAME"
-    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json
+    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/platform/relay/image/image.json
     - terraform fmt -check -diff -recursive
     - tflint --recursive
     - terraform init -input=false
@@ -104,5 +121,5 @@ terraform_provider_mirror_sync:
     - terraform providers mirror /tmp/provider-mirror
     - curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/bin/mc
     - chmod 0755 /tmp/bin/mc
-    - mc alias set mega "https://s3.${MEGA_S4_ENDPOINT_DOMAIN}" "${MEGA_S4_ACCESS_KEY}" "${MEGA_S4_SECRET_KEY}"
-    - mc mirror --overwrite /tmp/provider-mirror mega/providers
+    - mc alias set mirror "https://${TF_PROVIDER_MIRROR_ENDPOINT}" "${TF_PROVIDER_MIRROR_ACCESS_KEY}" "${TF_PROVIDER_MIRROR_SECRET_KEY}"
+    - mc mirror --overwrite /tmp/provider-mirror "mirror/${TF_PROVIDER_MIRROR_BUCKET}"

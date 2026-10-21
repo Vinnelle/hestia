@@ -122,7 +122,7 @@ resource "kubernetes_deployment_v1" "game_sleeper" {
 
           env {
             name  = "OTEL_COLLECTOR_ENDPOINT"
-            value = "signoz-otel-collector.${var.observability_namespace}.svc.cluster.local:4317"
+            value = "otel-collector.${var.observability_namespace}.svc.cluster.local:4317"
           }
 
           env {

@@ -8,8 +8,8 @@ variable "zone_id" {
   type        = string
 }
 
-variable "node_ip" {
-  description = "Cluster node IP the SeaweedFS A records point to"
+variable "relay_ip" {
+  description = "Public relay IP the SeaweedFS A records point to"
   type        = string
 }
 

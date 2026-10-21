@@ -1,17 +1,4 @@
-variable "s3_backup_access_key" {
-  description = "Access key for the off-site backup bucket"
+variable "mega_s4_endpoint_domain" {
+  description = "MEGA S4 endpoint domain the buckets live behind; the S3 API is s3.<this>"
   type        = string
-  sensitive   = true
-}
-
-variable "s3_backup_secret_key" {
-  description = "Secret key for the off-site backup bucket"
-  type        = string
-  sensitive   = true
-}
-
-variable "backup_encryption_password" {
-  description = "Restic repository password encrypting snapshots client-side"
-  type        = string
-  sensitive   = true
 }

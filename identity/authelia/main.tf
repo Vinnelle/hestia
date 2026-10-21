@@ -8,9 +8,9 @@ resource "cloudflare_dns_record" "auth_vin_moe" {
   zone_id = var.zone_id
   name    = "auth.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "authelia_session_secret" {
@@ -56,8 +56,8 @@ locals {
     reset_password_jwt_secret       = random_password.authelia_reset_password_jwt_secret.result
     oidc_issuer_private_key         = tls_private_key.authelia_oidc_issuer.private_key_pem_pkcs8
     netbird_dashboard_client_secret = random_password.netbird_dashboard_oidc_client_secret.bcrypt_hash
-    velero_ui_client_secret         = var.velero_ui_oidc_client_secret_hash
     nextcloud_client_secret         = var.nextcloud_oidc_client_secret_hash
+    grafana_client_secret           = var.grafana_oidc_client_secret_hash
   })
 
   authelia_users_database_yaml = templatefile("${path.module}/users_database.yml.tftpl", {

@@ -19,9 +19,9 @@ resource "cloudflare_dns_record" "hubble_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "hubble.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "kubernetes_ingress_v1" "hubble_vinnel_cloud" {

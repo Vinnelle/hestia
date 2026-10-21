@@ -4,18 +4,6 @@ ingress: block
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
-name: web
-portSelector:
-  ports:
-    - 80
-    - 443
-  protocol: tcp
-ingress:
-  - subnet: 0.0.0.0/0
-  - subnet: ::/0
----
-apiVersion: v1alpha1
-kind: NetworkRuleConfig
 name: web-from-pods
 portSelector:
   ports:
@@ -34,8 +22,9 @@ portSelector:
     - 6443
   protocol: tcp
 ingress:
-  - subnet: 0.0.0.0/0
-  - subnet: ::/0
+  - subnet: ${lan_cidr}
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
@@ -45,8 +34,9 @@ portSelector:
     - 50000
   protocol: tcp
 ingress:
-  - subnet: 0.0.0.0/0
-  - subnet: ::/0
+  - subnet: ${lan_cidr}
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
@@ -65,6 +55,10 @@ name: metrics-from-pods
 portSelector:
   ports:
     - 9100
+    - 9962
+    - 9963
+    - 9964
+    - 9965
     - 10254
   protocol: tcp
 ingress:
@@ -108,29 +102,6 @@ ingress:
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
-name: satisfactory-game-tcp
-portSelector:
-  ports:
-    - 7777
-    - 8889
-  protocol: tcp
-ingress:
-  - subnet: 0.0.0.0/0
-  - subnet: ::/0
----
-apiVersion: v1alpha1
-kind: NetworkRuleConfig
-name: satisfactory-game-udp
-portSelector:
-  ports:
-    - 7777
-  protocol: udp
-ingress:
-  - subnet: 0.0.0.0/0
-  - subnet: ::/0
----
-apiVersion: v1alpha1
-kind: NetworkRuleConfig
 name: minecraft-rcon-from-pods
 portSelector:
   ports:
@@ -139,17 +110,21 @@ portSelector:
 ingress:
   - subnet: 10.244.0.0/16
   - subnet: ${node_ip}/32
+%{ for name, forward in forwards ~}
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig
-name: minecraft-game-tcp
+name: relay-${name}
 portSelector:
   ports:
-    - 25565
-  protocol: tcp
+    - ${forward.port}
+  protocol: ${forward.protocol}
 ingress:
-  - subnet: 0.0.0.0/0
-  - subnet: ::/0
+  - subnet: ${relay_subnet}
+  - subnet: ${lan_cidr}
+  - subnet: 10.244.0.0/16
+  - subnet: ${node_ip}/32
+%{ endfor ~}
 ---
 apiVersion: v1alpha1
 kind: NetworkRuleConfig

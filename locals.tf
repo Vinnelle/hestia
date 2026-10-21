@@ -26,7 +26,6 @@ locals {
 
   admin_frame_theme_js_app = {
     adguard = "localStorage.setItem('account_theme',t);"
-    signoz  = "localStorage.setItem('THEME',t);localStorage.setItem('THEME_AUTO_SWITCH','false');"
   }
 
   admin_frame_theme_js = {
@@ -76,10 +75,10 @@ locals {
     EOT
   }
 
-  admin_frame_css_slugs = ["adguard", "signoz", "hubble", "proxy", "velero", "seaweed"]
+  admin_frame_css_slugs = ["adguard", "hubble", "proxy", "seaweed"]
 
   admin_framed_annotations = {
-    for slug in ["adguard", "signoz", "hubble", "shell", "proxy", "velero", "seaweed", "cloud"] : slug => merge(
+    for slug in ["adguard", "grafana", "hubble", "shell", "proxy", "seaweed", "cloud"] : slug => merge(
       {
         "nginx.ingress.kubernetes.io/configuration-snippet" = join("\n", compact([
           "more_clear_headers \"X-Frame-Options\";",
@@ -111,4 +110,11 @@ locals {
     jsondecode(file("${path.module}/apps/app-images.json")),
     jsondecode(file("${path.module}/identity/identity-images.json")),
   )
+}
+
+locals {
+  talos_version    = "v1.14.4"
+  talos_iso_sha256 = "f3cdf0ca47ae2a3309a11be74003505771400048d128a4b703bd9acaf7cd0e5f"
+
+  relay_forwards = jsondecode(file("${path.module}/platform/relay/forwards.json"))
 }

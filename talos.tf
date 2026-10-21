@@ -5,6 +5,16 @@ resource "random_password" "seaweedfs_disk_encryption_key" {
 
 resource "talos_machine_secrets" "this" {}
 
+resource "talos_image_factory_schematic" "this" {
+  schematic = yamlencode({
+    customization = {
+      systemExtensions = {
+        officialExtensions = ["siderolabs/qemu-guest-agent"]
+      }
+    }
+  })
+}
+
 data "talos_machine_configuration" "controlplane" {
   cluster_name     = var.cluster_name
   cluster_endpoint = "https://${var.node_ip}:6443"
@@ -18,16 +28,30 @@ data "talos_machine_configuration" "controlplane" {
     file("${path.module}/talos/controlplane-patch.yaml"),
     file("${path.module}/talos/cilium-cni-patch.yaml"),
     templatefile("${path.module}/talos/firewall.yaml.tftpl", {
-      node_ip = var.node_ip
+      node_ip      = var.node_ip
+      lan_cidr     = var.lan_cidr
+      relay_subnet = module.platform_relay.subnet
+      forwards     = local.relay_forwards
+    }),
+    templatefile("${path.module}/talos/network.yaml.tftpl", {
+      node_ip          = var.node_ip
+      wg_address       = module.platform_relay.node_address
+      wg_private_key   = module.platform_relay.node_private_key
+      relay_public_key = module.platform_relay.public_key
+      relay_endpoint   = module.platform_relay.endpoint
+      relay_address    = module.platform_relay.relay_address
     }),
     templatefile("${path.module}/talos/seaweedfs-disks-patch.yaml.tftpl", {
       encryption_key = random_password.seaweedfs_disk_encryption_key.result
+      serials        = module.platform_proxmox.disk_serials
     }),
     yamlencode({
       machine = {
         install = {
-          disk  = "/dev/nvme1n1"
-          image = "factory.talos.dev/installer/701de97a42a3f87a071189c07cf8644fc67b28aed056e3546f1ecbe8a232279a:v1.14.1"
+          diskSelector = {
+            serial = module.platform_proxmox.disk_serials.system
+          }
+          image = "factory.talos.dev/installer-secureboot/${talos_image_factory_schematic.this.id}:${local.talos_version}"
         }
       }
     }),

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>colophon — vin.moe</title>
+<title>colophon | vin.moe</title>
 <meta name="description" content="How vin.moe runs: Talos Linux, a single-node Kubernetes cluster, Cilium, nginx, and the Terraform and CI that ship every change.">
 <link rel="canonical" href="https://vin.moe/colophon">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
@@ -19,12 +19,12 @@
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://vin.moe/colophon">
-<meta property="og:title" content="colophon — vin.moe">
+<meta property="og:title" content="colophon | vin.moe">
 <meta property="og:description" content="A full writeup of how this site is built, deployed and served.">
 <meta property="og:image" content="https://vin.moe/avatar.webp">
 <meta property="og:site_name" content="vin.moe">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="colophon — vin.moe">
+<meta name="twitter:title" content="colophon | vin.moe">
 <meta name="twitter:description" content="A full writeup of how this site is built, deployed and served.">
 <meta name="twitter:image" content="https://vin.moe/avatar.webp">
 </head>
@@ -32,7 +32,7 @@
 <a class="skip" href="#main">skip to content</a>
 
 <div class="bar">
-  <a class="brand" href="/">vin.moe</a>
+  <a class="brand" href="/"><span class="chip">vin.moe</span></a>
   <nav class="bar-nav" aria-label="Site">
     <a class="tab" href="/">about</a>
     <a class="tab" href="/#blog">blog</a>
@@ -50,14 +50,14 @@
 
 <main id="main" class="page">
   <header class="page-head">
-    <h1>How this site runs</h1>
+    <h1>how this site runs</h1>
     <p class="muted">This site is a static page served by nginx from a single-node Kubernetes cluster on dedicated hardware. One repository defines the cluster, the container image and the Deployment, in about 8,000 lines of Terraform that HCP Terraform applies. The repository is the source of truth: changes are made there and applied from there, never against the cluster by hand.</p>
     <p class="muted">The sections below follow one change from a commit to a running pod, and describe the platform it lands on.</p>
     <p class="dim note"><em>AI wrote the HTML/CSS on this page. I do infrastructure, not frontend.</em></p>
   </header>
 
   <h2>the cluster</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>the node</h3>
       <p>Talos Linux runs on dedicated hardware. It has no shell, no SSH and no package manager, so every change is a declarative machine config applied over an mTLS API. The ephemeral and state partitions use LUKS2. Boot media comes from an Image Factory schematic pinned by content hash, and the installer image uses that same schematic. Point it at the stock image instead and Talos removes every system extension when it writes to disk.</p>
@@ -74,10 +74,10 @@
       <h3>storage</h3>
       <p>local-path is the only storage class. It provisions a host-path volume per pod. One node has no second failure domain, so a replicated pool would not add durability.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>ingress and dns</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>ingress and certificates</h3>
       <p>ingress-nginx runs as a DaemonSet on the host network, bound to the node's public IP. There is no load balancer. cert-manager holds one ClusterIssuer per domain and solves DNS-01 challenges against Cloudflare. Every zone uses strict SSL, so TLS is validated independently on both hops: browser to Cloudflare, and Cloudflare to the origin.</p>
@@ -86,10 +86,10 @@
       <h3>dns and cdn</h3>
       <p>A proxied Cloudflare A record points at the node. Because certificates are issued over DNS-01, no ACME validation traffic reaches the origin. A Terraform-managed cache ruleset caches every response on this hostname, HTML included, so most requests never reach the cluster. The one exception is chat.vin.moe, which the rule leaves out: its front page answers curl and wget with a shell script, PowerShell with a PowerShell script, and everything else with a page, and a cache keyed only on the URL would hand one to the other.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>the image</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>the registry</h3>
       <p>Images live in GitLab's own container registry, which runs on the same cluster at artifacts.vinnel.cloud, one repository per site. Pods authenticate with a project deploy token mounted as an imagePullSecret rather than a personal one. Base images arrive through a pull-through cache at mirror.vinnel.cloud, so a rebuild does not re-fetch Alpine from Docker Hub against the node's shared anonymous rate limit.</p>
@@ -102,26 +102,26 @@
       <h3>assets</h3>
       <p>The web font is downloaded during the build and served from this origin, and the avatar is committed rather than hotlinked, so nothing third-party loads at runtime and the Content-Security-Policy stays at default-src 'self'. CSS and JavaScript are minified and renamed to include a hash of their contents, with every reference rewritten to match; that hash is what the one-year immutable cache header applies to. Text files are compressed once at build time with gzip -9 and brotli -q 11.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>serving</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>nginx</h3>
       <p>nginx serves the pre-compressed files directly, so it never compresses a response per request. Hashed assets get immutable cache headers and open_file_cache keeps hot file descriptors open. Every response carries HSTS, CSP, nosniff, frame and referrer policy headers. /healthz returns plain text for the probes, .html URLs redirect to their extensionless form, and the old /posts/ addresses and /chat redirect to their new homes on blog.vin.moe and chat.vin.moe. The same pods answer all three hostnames: one server block per host, with the blog host serving only the reader page, its stylesheet, and the public post endpoints, and the chat host only the chat page, its assets, and the two runner scripts.</p>
     </li>
     <li>
       <h3>the page</h3>
-      <p>The page uses no framework and no bundler. The font and the avatar are the only requests besides the stylesheet and script until you open the blog. One palette covers both themes through light-dark(), so the toggle changes a single property, and the section numbers are a CSS counter. The tabs are an ARIA tablist with arrow-key navigation and fragment links, animated by the View Transitions API where it exists. Posts render into details elements for inline reading, and each one opens full screen on blog.vin.moe under its own shareable fragment, rendered there from the same posts.json the tab loads. With JavaScript disabled the tab bar is hidden and every panel renders, except the blog, which points at the feed instead.</p>
+      <p>The page uses no framework and no bundler. The font and the avatar are the only requests besides the stylesheet and script until you open the blog. One palette covers both themes through light-dark(), so the toggle changes a single property. The tabs are an ARIA tablist with arrow-key navigation and fragment links, and the pink block marking the current tab slides to the next one when you switch. Posts render into details elements for inline reading, and each one opens full screen on blog.vin.moe under its own shareable fragment, rendered there from the same posts.json the tab loads. With JavaScript disabled the tab bar is hidden and every panel renders, except the blog, which points at the feed instead.</p>
     </li>
     <li>
       <h3>the deployment</h3>
       <p>Two replicas sit behind a ClusterIP Service. Each requests 50m CPU and 16Mi of memory, with limits of 200m and 64Mi. Containers run as non-root with all capabilities dropped, no privilege escalation and the RuntimeDefault seccomp profile. Startup, readiness and liveness probes call /healthz. Rollouts surge to 100% with zero unavailable pods and a pre-stop drain, a PodDisruptionBudget keeps one replica serving, and a VerticalPodAutoscaler adjusts memory within that band.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>posts</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>writing and reading</h3>
       <p>Posts are written in an editor at admin.vinnel.cloud, behind the same single sign-on as everything else, and stored on a volume beside it. The blog tab requests /posts.json, nginx proxies that path to the editor over the cluster network, and the markdown is rendered there rather than at build time. A new post therefore appears without rebuilding or redeploying anything.</p>
@@ -130,7 +130,7 @@
       <h3>the durable copy</h3>
       <p>Publishing also commits the markdown to the integration branch through the GitLab API, and CI opens the merge request. The repository keeps the durable copy and the volume serves the live one. Each write purges the four affected URLs at the edge, plus the post's own page, so the blog stays cached and still shows the change within about a second.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>deploying a change</h2>
   <ol class="topics">
@@ -153,7 +153,7 @@
   </ol>
 
   <h2>ci runners</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>the runners</h3>
       <p>Two gitlab-runner Deployments run in the cluster, both using the Kubernetes executor, neither sharing a Docker socket. One takes untagged jobs at a concurrency of 4. The other takes only jobs tagged privileged-build, so an ordinary lint or test job cannot land on a pod running privileged. Each job gets its own pod built from the image it declares, and no daemon survives between jobs. The runner config is a Secret, and a config-hash annotation restarts the Deployment when it changes.</p>
@@ -166,34 +166,34 @@
       <h3>registry access from jobs</h3>
       <p>registry.vinnel.cloud stays behind the Cloudflare proxy for public traffic, but the proxy's request-body limit is smaller than the runner image's base layer. A hostAliases entry routing to the node's ingress lives on the runner's executor config rather than on individual jobs, so every job pod inherits it, paired with a firewall rule that opens the web ports to the pod network.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>observability</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
-      <h3>signoz</h3>
-      <p>SigNoz stores metrics, logs and traces in ClickHouse. An OpenTelemetry collector discovers targets by pod annotation, so a new workload becomes observable by adding two labels, with no scrape config to edit. ingress-nginx exports OTLP spans, so a slow request and the logs behind it belong to one trace.</p>
+      <h3>grafana</h3>
+      <p>Grafana sits over VictoriaMetrics for metrics, Loki for logs and Tempo for traces, and signs in through Authelia. vmagent discovers targets by pod annotation, so a new workload becomes observable by adding two annotations, with no scrape config to edit, and an OpenTelemetry collector on the node ships every pod's logs. ingress-nginx exports OTLP spans, so a slow request and the logs behind it belong to one trace.</p>
     </li>
     <li>
       <h3>alerting</h3>
       <p>Alert rules are Terraform resources rather than clicks in an interface: node NotReady, PVC above 85%, certificate expiring within 14 days, and workload below desired replicas. They notify Slack and renotify every four hours while still firing, and dashboards go through the same API. A node that stops responding also stops alerting, so that check cannot live here: Better Stack polls from outside, and status.vinnel.cloud frames its status page.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>resilience</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>failure testing</h3>
       <p>Chaos Mesh deletes a random site pod every 30 minutes and stresses one hourly, which exercises the disruption budget and the probes above against real failures rather than assumptions. It is scoped to the per-site namespaces, and never touches authentication, the mesh, or the alerting meant to catch problems.</p>
     </li>
     <li>
       <h3>backups</h3>
-      <p>Velero takes two filesystem backups a night, one offsite at 03:00 and one into the cluster's own object store at 03:30, both expiring after seven days. restic snapshots the volumes separately, encrypted and deduplicated on the client so the bucket holds only ciphertext, keeping seven daily snapshots and running an integrity check each time.</p>
+      <p>Proxmox Backup Server snapshots the whole cluster's virtual machine every night at 03:00 and ships it offsite to object storage, encrypted on the host before it leaves, so the bucket only ever holds ciphertext. Backups are incremental and deduplicated, a week of dailies and a month of weeklies are kept, and a weekly job verifies every chunk. A restore brings the machine back exactly as it was, disks, keys and all.</p>
     </li>
-  </ol>
+  </ul>
 
   <h2>security</h2>
-  <ol class="topics">
+  <ul class="topics">
     <li>
       <h3>the firewall</h3>
       <p>The Talos host firewall defaults to deny. Ports 80 and 443 accept only Cloudflare's published edge ranges, so scans against the origin IP are dropped before nginx sees them. The Kubernetes and Talos APIs stay reachable on purpose: both are certificate-gated with no password surface, CI and Terraform have no fixed egress addresses to allow, and the Talos API is the recovery path for the firewall itself.</p>
@@ -206,7 +206,7 @@
       <h3>supply chain</h3>
       <p>Base images and Terraform providers are pinned by digest or lockfile, so moving a tag cannot change what ships. Every push runs go vet and the Go tests, shellcheck, yamllint, and gitleaks over the full history; terraform fmt and tflint run before the plan they gate. Grype scans the runner image on a schedule, and a high or critical finding triggers a rebuild. Renovate opens the version bumps, grouped so a dozen digest updates arrive as one merge request, and major updates wait for review.</p>
     </li>
-  </ol>
+  </ul>
 </main>
 
 <footer>

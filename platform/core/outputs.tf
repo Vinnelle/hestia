@@ -13,11 +13,6 @@ output "zone_id_vinnel_cloud" {
   value       = data.cloudflare_zone.vinnel_cloud.id
 }
 
-output "cloudflare_api_token_secret_name" {
-  description = "Name of the cert-manager namespace Secret holding the Cloudflare API token"
-  value       = kubernetes_secret_v1.cloudflare_api_token.metadata[0].name
-}
-
 output "ingress_class_name" {
   description = "IngressClass served by ingress-nginx; reading it orders an Ingress after the controller install"
   value       = "nginx"

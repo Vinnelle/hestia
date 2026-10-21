@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Finlay — vin.moe</title>
+<title>Finlay | vin.moe</title>
 <meta name="description" content="Finlay — infrastructure, DevOps, and software. Notes on running a Talos/Kubernetes homelab, GCP observability work, and how this site itself is built and deployed.">
 <link rel="canonical" href="https://vin.moe/">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="/feed.xml">
@@ -23,12 +23,12 @@
 
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://vin.moe/">
-<meta property="og:title" content="Finlay — vin.moe">
+<meta property="og:title" content="Finlay | vin.moe">
 <meta property="og:description" content="Infrastructure, DevOps, and software — plus a full writeup of how this site runs.">
 <meta property="og:image" content="https://vin.moe/avatar.webp">
 <meta property="og:site_name" content="vin.moe">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Finlay — vin.moe">
+<meta name="twitter:title" content="Finlay | vin.moe">
 <meta name="twitter:description" content="Infrastructure, DevOps, and software — plus a full writeup of how this site runs.">
 <meta name="twitter:image" content="https://vin.moe/avatar.webp">
 
@@ -50,9 +50,10 @@
 <a class="skip" href="#main">skip to content</a>
 
 <div class="bar">
-  <a class="brand" href="/">vin.moe</a>
+  <a class="brand" href="/"><span class="chip">vin.moe</span></a>
   <nav class="bar-nav" aria-label="Site">
     <span class="tabs" role="tablist" aria-label="Sections">
+      <span class="tab-mark" aria-hidden="true"></span>
       <button class="tab" role="tab" id="tab-about" aria-selected="true" aria-controls="about" data-tab="about">about</button>
       <button class="tab" role="tab" id="tab-blog" aria-selected="false" aria-controls="blog" tabindex="-1" data-tab="blog">blog</button>
       <button class="tab" role="tab" id="tab-work" aria-selected="false" aria-controls="work" tabindex="-1" data-tab="work">work</button>
@@ -71,33 +72,37 @@
 <main id="main">
   <section class="panel active" id="about" role="tabpanel" aria-labelledby="tab-about" tabindex="0">
     <header class="hero">
-      <img class="avatar" src="/avatar.webp" width="144" height="144" alt="Finlay" fetchpriority="high" decoding="async">
+      <img class="avatar" src="/avatar.webp" width="112" height="112" alt="Finlay" fetchpriority="high" decoding="async">
       <h1>Finlay K.</h1>
       <p class="tagline">infrastructure &middot; devops &middot; software</p>
-      <div class="hero-links">
-        <a href="https://tr.ee/vin">github</a>
-        <span class="sep" aria-hidden="true">&middot;</span>
-        <a rel="me" href="https://infosec.exchange/@ida">mastodon</a>
-        <span class="sep" aria-hidden="true">&middot;</span>
-        <a rel="me" href="https://ieji.de/@ida">mastodon (alt)</a>
-        <span class="sep" aria-hidden="true">&middot;</span>
-        <a href="mailto:a@vin.moe">email</a>
-        <span class="sep" aria-hidden="true">&middot;</span>
-        <a href="https://keys.openpgp.org/vks/v1/by-fingerprint/43B0BED0F5446DF54FD0D966C568F432345EC5F4">pgp</a>
-      </div>
     </header>
 
-    <div class="prose">
-      <p class="lead">Hello, my name is Finlay.</p>
-      <p class="muted">I’ve been working with computers since I was 11. game mods, QoL tools, operating systems, and whatever else looked interesting at the time.</p>
-      <p class="muted">Now an infrastructure engineer at a large UK FinTech, working on GCP. I’m the observability SME for the department, and the person people come to when something needs building.</p>
-      <p class="lead">Looking forward to seeing how far this goes.</p>
-    </div>
+    <section class="me" aria-labelledby="contact-me">
+      <h2 id="contact-me">contact me</h2>
+      <dl class="pairs">
+        <div><dt>github</dt><dd><a href="https://tr.ee/vin">@Vinnelle</a></dd></div>
+        <div><dt>mastodon</dt><dd><a rel="me" href="https://infosec.exchange/@ida">@ida@infosec<span class="tld">.exchange</span></a></dd></div>
+        <div><dt>mastodon alt</dt><dd><a rel="me" href="https://ieji.de/@ida">@ida@ieji<span class="tld">.de</span></a></dd></div>
+        <div><dt>email</dt><dd><a href="mailto:a@vin.moe">a@vin<span class="tld">.moe</span></a></dd></div>
+        <div><dt>pgp</dt><dd><a href="https://keys.openpgp.org/vks/v1/by-fingerprint/43B0BED0F5446DF54FD0D966C568F432345EC5F4" aria-label="PGP key C568 F432 345E C5F4">C568 F432 345E C5F4</a></dd></div>
+      </dl>
+    </section>
+
+    <section class="me" aria-labelledby="about-me">
+      <h2 id="about-me">about me</h2>
+      <ul class="facts">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/></svg><span>Infrastructure engineer at a large UK FinTech, working on GCP.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg><span>The observability SME for the department, and the person people come to when something needs building.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 6-6 6 6 6"/><path d="m16 6 6 6-6 6"/></svg><span>Working with computers since I was 11: game mods, QoL tools, operating systems, and whatever else looked interesting.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"/></svg><span>Made <a href="https://chat.vin.moe/">chat</a>, an encrypted group chat for the terminal.</span></li>
+      </ul>
+      <p class="signoff">Looking forward to seeing how far this goes.</p>
+    </section>
   </section>
 
   <section class="panel" id="blog" role="tabpanel" aria-labelledby="tab-blog" tabindex="0">
     <header class="page-head">
-      <h1>Blog</h1>
+      <h1>blog</h1>
       <p class="muted">These are just my own thoughts and opinions.</p>
     </header>
 
@@ -158,6 +163,17 @@ const loadFragment = (name) => {
   return fragmentInFlight[name];
 };
 
+const tablist = document.querySelector('.tabs');
+const selected = () => tabs.find((t) => t.getAttribute('aria-selected') === 'true') || tabs[0];
+
+const place = (tab, moving) => {
+  if (tablist.dataset.ready) tablist.dataset.ready = moving ? 'moving' : 'still';
+  tablist.style.setProperty('--mark-x', tab.offsetLeft + 'px');
+  tablist.style.setProperty('--mark-y', tab.offsetTop + 'px');
+  tablist.style.setProperty('--mark-w', tab.offsetWidth + 'px');
+  tablist.style.setProperty('--mark-h', tab.offsetHeight + 'px');
+};
+
 const render = (tab) => {
   for (const t of tabs) {
     const on = t === tab;
@@ -165,6 +181,7 @@ const render = (tab) => {
     t.tabIndex = on ? 0 : -1;
   }
   for (const p of panels) p.classList.toggle('active', p.id === tab.dataset.tab);
+  place(tab, true);
 };
 
 const activate = (tab) => {
@@ -172,7 +189,7 @@ const activate = (tab) => {
   if (tab.dataset.tab === 'blog') loadPosts();
   if (PAGES[tab.dataset.tab]) loadFragment(tab.dataset.tab);
   if (tab.getAttribute('aria-selected') === 'true') return;
-  document.startViewTransition ? document.startViewTransition(() => render(tab)) : render(tab);
+  render(tab);
 };
 
 const show = (tab, { focus = false } = {}) => {
@@ -326,6 +343,10 @@ const loadPosts = () => {
 
 addEventListener('hashchange', fromHash);
 fromHash();
+place(selected(), false);
+tablist.dataset.ready = 'still';
+document.fonts?.ready.then(() => place(selected(), false));
+addEventListener('resize', () => place(selected(), false));
 </script>
 </body>
 </html>

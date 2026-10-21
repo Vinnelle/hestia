@@ -170,6 +170,38 @@ func isPostFile(root, filePath string) bool {
 	return path.Dir(filePath) == path.Clean(root) && strings.HasSuffix(name, ".md") && ValidSlug(strings.TrimSuffix(name, ".md"))
 }
 
+func (r *Repo) Restore(ctx context.Context, store *Store) (int, error) {
+	if !r.Configured() {
+		return 0, fmt.Errorf("%w: repository sync is not configured", ErrInvalid)
+	}
+	entries, err := r.tree(ctx)
+	if err != nil {
+		return 0, err
+	}
+	restored := 0
+	for _, entry := range entries {
+		if entry.Type != "blob" || !isPostFile(r.PostsPath, entry.Path) {
+			continue
+		}
+		content, present, err := r.file(ctx, entry.Path)
+		if err != nil {
+			return restored, err
+		}
+		if !present {
+			continue
+		}
+		post, err := Unmarshal(strings.TrimSuffix(path.Base(entry.Path), ".md"), content)
+		if err != nil {
+			return restored, fmt.Errorf("restore %s: %w", entry.Path, err)
+		}
+		if err := store.Save(post); err != nil {
+			return restored, fmt.Errorf("restore %s: %w", entry.Path, err)
+		}
+		restored++
+	}
+	return restored, nil
+}
+
 func (r *Repo) Sync(ctx context.Context, posts []*Post, author string) error {
 	if !r.Configured() {
 		return fmt.Errorf("%w: repository sync is not configured", ErrInvalid)

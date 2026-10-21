@@ -15,38 +15,16 @@ variable "extra_hosts" {
 }
 
 variable "zone_id" {
-  description = "Cloudflare zone ID the site's DNS/cache rules attach to"
+  description = "Cloudflare zone ID the site's DNS records live in"
   type        = string
 }
 
-variable "node_ip" {
-  description = "Cluster node IP the site's apex A record points to"
+variable "relay_ip" {
+  description = "Public relay IP the site's apex A record points to"
   type        = string
 }
-
-variable "cache_description" {
-  description = "Description text for the zone's CDN cache ruleset rule"
-  type        = string
-}
-
-variable "uncached_hosts" {
-  description = "Hosts from extra_hosts the CDN cache rule leaves out, e.g. \"chat.vin.moe\", whose responses depend on the request's User-Agent"
-  type        = list(string)
-  default     = []
-}
-
 variable "cluster_issuer" {
   description = "cert-manager ClusterIssuer name for this site's TLS cert"
-  type        = string
-}
-
-variable "acme_email" {
-  description = "ACME registration email for the site's Let's Encrypt issuer"
-  type        = string
-}
-
-variable "cloudflare_secret_name" {
-  description = "Name of the k8s secret holding the Cloudflare API token, for DNS-01 solving"
   type        = string
 }
 

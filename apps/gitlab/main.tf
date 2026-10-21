@@ -13,17 +13,17 @@ resource "cloudflare_dns_record" "gitlab_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "gitlab.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "cloudflare_dns_record" "artifacts_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "artifacts.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
+  content = var.relay_ip
+  ttl     = 60
   proxied = false
 }
 
@@ -358,7 +358,170 @@ resource "kubernetes_service_v1" "gitlab" {
       port        = 5050
       target_port = "registry"
     }
+    port {
+      name        = "ssh"
+      port        = 22
+      target_port = 22
+    }
   }
+}
+
+resource "kubernetes_config_map_v1" "gitlab_ssh" {
+  metadata {
+    name      = "gitlab-ssh"
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
+  }
+
+  data = {
+    "nginx.conf" = <<-EOT
+    worker_processes 1;
+    error_log /dev/stderr notice;
+    pid /tmp/nginx.pid;
+
+    events {
+      worker_connections 512;
+    }
+
+    stream {
+      server {
+        listen 2222;
+        proxy_pass gitlab.${kubernetes_namespace_v1.forge.metadata[0].name}.svc.cluster.local:22;
+        proxy_connect_timeout 5s;
+        proxy_timeout 3600s;
+      }
+    }
+    EOT
+  }
+}
+
+resource "kubernetes_deployment_v1" "gitlab_ssh" {
+  metadata {
+    name      = "gitlab-ssh"
+    namespace = kubernetes_namespace_v1.forge.metadata[0].name
+    labels = {
+      app = "gitlab-ssh"
+    }
+  }
+
+  spec {
+    replicas = 1
+
+    strategy {
+      type = "Recreate"
+    }
+
+    selector {
+      match_labels = {
+        app = "gitlab-ssh"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "gitlab-ssh"
+        }
+        annotations = {
+          "checksum/config" = sha256(kubernetes_config_map_v1.gitlab_ssh.data["nginx.conf"])
+        }
+      }
+
+      spec {
+        enable_service_links = false
+        host_network         = true
+        dns_policy           = "ClusterFirstWithHostNet"
+
+        security_context {
+          run_as_non_root = true
+          run_as_user     = 101
+          run_as_group    = 101
+        }
+
+        container {
+          name  = "ssh"
+          image = "nginxinc/nginx-unprivileged:1.31-alpine@sha256:6a23acdfca2b9cfbcec61419e3f1426bcbedb91362f2f19306a8567423bb4612"
+
+          security_context {
+            allow_privilege_escalation = false
+            read_only_root_filesystem  = true
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
+          port {
+            name           = "ssh"
+            container_port = 2222
+          }
+
+          volume_mount {
+            name       = "config"
+            mount_path = "/etc/nginx/nginx.conf"
+            sub_path   = "nginx.conf"
+            read_only  = true
+          }
+
+          volume_mount {
+            name       = "tmp"
+            mount_path = "/tmp"
+          }
+
+          resources {
+            requests = {
+              cpu    = "10m"
+              memory = "16Mi"
+            }
+            limits = {
+              cpu    = "100m"
+              memory = "64Mi"
+            }
+          }
+
+          readiness_probe {
+            tcp_socket {
+              port = 2222
+            }
+            period_seconds = 10
+          }
+
+          liveness_probe {
+            tcp_socket {
+              port = 2222
+            }
+            period_seconds  = 30
+            timeout_seconds = 5
+          }
+        }
+
+        volume {
+          name = "config"
+          config_map {
+            name = kubernetes_config_map_v1.gitlab_ssh.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "tmp"
+          empty_dir {}
+        }
+      }
+    }
+  }
+}
+
+module "gitlab_ssh_vpa" {
+  source = "../../platform/vpa/resource"
+
+  depends_on = [kubernetes_deployment_v1.gitlab_ssh]
+
+  name        = "gitlab-ssh"
+  namespace   = kubernetes_namespace_v1.forge.metadata[0].name
+  target_kind = "Deployment"
+  target_name = kubernetes_deployment_v1.gitlab_ssh.metadata[0].name
+  update_mode = "Initial"
+  container_policies = [
+    { container_name = "ssh", min_memory = "16Mi", max_memory = "64Mi" },
+  ]
 }
 
 resource "kubernetes_ingress_v1" "gitlab_vinnel_cloud" {
@@ -578,7 +741,7 @@ locals {
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
         image              = "alpine:3.24"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
-        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud"] }]
+        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
   EOT
 
   gitlab_runner_config_hash = sha256(local.gitlab_runner_config_toml)
@@ -698,7 +861,7 @@ locals {
         service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
         image              = "alpine:3.24"
         image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
-        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud"] }]
+        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
         privileged         = true
   EOT
 
@@ -866,6 +1029,15 @@ resource "gitlab_project_variable" "tfc_api_token" {
   protected = false
 }
 
+resource "gitlab_project_variable" "sops_age_key" {
+  project   = gitlab_project.gaia.id
+  key       = "SOPS_AGE_KEY"
+  value     = var.sops_age_key
+  masked    = true
+  hidden    = true
+  protected = false
+}
+
 resource "gitlab_pipeline_trigger" "reconcile" {
   project     = gitlab_project.gaia.id
   description = "generic: re-trigger a pipeline after a bot commit (image digest record, ci-runner rebuild, etc.) that job-token pushes might not fire automatically"
@@ -895,12 +1067,4 @@ resource "gitlab_project_variable" "site_deploy_kubeconfig" {
   variable_type = "file"
   masked        = false
   protected     = false
-}
-
-resource "gitlab_project_variable" "cf_api_token" {
-  project   = gitlab_project.gaia.id
-  key       = "CF_API_TOKEN"
-  value     = var.cloudflare_cache_purge_token
-  masked    = true
-  protected = false
 }

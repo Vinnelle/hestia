@@ -1,6 +1,9 @@
 package portal
 
-import "html/template"
+import (
+	"html/template"
+	"strings"
+)
 
 type Service struct {
 	Slug      string
@@ -14,6 +17,18 @@ type Service struct {
 
 func (s Service) URL() string { return "https://" + s.Host + "/" }
 
+func (s Service) HostName() string {
+	name, _, _ := strings.Cut(s.Host, ".")
+	return name
+}
+
+func (s Service) HostDomain() string {
+	if _, domain, ok := strings.Cut(s.Host, "."); ok {
+		return "." + domain
+	}
+	return ""
+}
+
 const (
 	iconChart    = `<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>`
 	iconBox      = `<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>`
@@ -26,7 +41,6 @@ const (
 	iconMesh     = `<circle cx="12" cy="5" r="2"/><circle cx="5" cy="17" r="2"/><circle cx="19" cy="17" r="2"/><path d="M10.4 6.4L6.6 15.2"/><path d="M13.6 6.4l3.8 8.8"/><path d="M7 17h10"/>`
 	iconLayers   = `<path d="M12 3L3 7.5l9 4.5 9-4.5z"/><path d="M3 12l9 4.5 9-4.5"/><path d="M3 16.5L12 21l9-4.5"/>`
 	iconCloud    = `<path d="M7 19a4 4 0 01-.4-8A5.5 5.5 0 0117.5 10a4 4 0 01.5 9z"/>`
-	iconArchive  = `<path d="M3 4h18v4H3z"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/>`
 )
 
 var groupIcons = map[string]template.HTML{
@@ -37,13 +51,12 @@ var groupIcons = map[string]template.HTML{
 }
 
 var Services = []Service{
-	{"signoz", "SigNoz", "signoz.vinnel.cloud", "Observability", true, iconActivity, ""},
+	{"grafana", "Grafana", "grafana.vinnel.cloud", "Observability", true, iconActivity, ""},
 	{"hubble", "Hubble", "hubble.vinnel.cloud", "Observability", true, iconFlows, ""},
 	{"adguard", "AdGuard", "adguard.vinnel.cloud", "Network", true, iconShield, ""},
 	{"proxy", "Netbird", "netbird.vinnel.cloud", "Network", true, iconMesh, ""},
 	{"seaweed", "SeaweedFS", "seaweed.vinnel.cloud", "Storage", true, iconLayers, ""},
 	{"cloud", "Nextcloud", "cloud.vinnel.cloud", "Storage", true, iconCloud, ""},
-	{"velero", "Velero", "velero.vinnel.cloud", "Storage", true, iconArchive, ""},
 	{"shell", "Shell", "shell.vinnel.cloud", "Platform", true, iconTerminal, ""},
 }
 

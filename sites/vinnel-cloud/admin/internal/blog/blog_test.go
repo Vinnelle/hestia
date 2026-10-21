@@ -313,6 +313,62 @@ func TestSyncSkipsUnchangedPosts(t *testing.T) {
 	}
 }
 
+func TestRestoreFillsStoreFromRepo(t *testing.T) {
+	first := &Post{Slug: "first", Title: "First", Date: "2026-09-01", Body: "one\n"}
+	second := &Post{Slug: "second", Title: "Second", Date: "2026-09-02", Body: "two\n"}
+	remote := map[string][]byte{
+		"posts/first.md":  first.Marshal(),
+		"posts/second.md": second.Marshal(),
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.HasSuffix(r.URL.Path, "/repository/tree"):
+			json.NewEncoder(w).Encode([]treeEntry{
+				{Path: "posts/first.md", Type: "blob"},
+				{Path: "posts/second.md", Type: "blob"},
+				{Path: "posts/notes.txt", Type: "blob"},
+				{Path: "posts/drafts", Type: "tree"},
+				{Path: "posts/drafts/third.md", Type: "blob"},
+			})
+		case strings.Contains(r.URL.Path, "/repository/files/"):
+			name := r.URL.Path[strings.Index(r.URL.Path, "/repository/files/")+len("/repository/files/"):]
+			content, ok := remote[name]
+			if !ok {
+				t.Errorf("unexpected file lookup %s", name)
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+			json.NewEncoder(w).Encode(fileResponse{Content: base64.StdEncoding.EncodeToString(content), Encoding: "base64"})
+		default:
+			t.Errorf("unexpected request %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	store, err := NewStore(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := &Repo{BaseURL: srv.URL, ProjectID: "p", Token: "t", Branch: "pre", PostsPath: "posts", Client: srv.Client()}
+	restored, err := repo.Restore(context.Background(), store)
+	if err != nil {
+		t.Fatalf("Restore: %v", err)
+	}
+	if restored != 2 {
+		t.Fatalf("restored = %d, want 2", restored)
+	}
+	for _, want := range []*Post{first, second} {
+		got, err := store.Get(want.Slug)
+		if err != nil {
+			t.Fatalf("Get(%s): %v", want.Slug, err)
+		}
+		if string(got.Marshal()) != string(want.Marshal()) {
+			t.Errorf("%s = %q, want %q", want.Slug, got.Marshal(), want.Marshal())
+		}
+	}
+}
+
 func TestSyncRefusesUnconfigured(t *testing.T) {
 	if err := (&Repo{}).Sync(context.Background(), nil, "nightly sync"); !errors.Is(err, ErrInvalid) {
 		t.Errorf("Sync on unconfigured Repo = %v, want ErrInvalid", err)
@@ -438,65 +494,6 @@ func TestFeedUsesPostLinkBase(t *testing.T) {
 	}
 	if len(parsed.Entries) != 1 || parsed.Entries[0].Link.Href != "https://blog.vin.moe/posts/hello" {
 		t.Errorf("entries = %+v", parsed.Entries)
-	}
-}
-
-func TestPurgerSkipsWhenUnconfigured(t *testing.T) {
-	calls := 0
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		calls++
-	}))
-	defer srv.Close()
-
-	p := &Purger{Client: srv.Client()}
-	if err := p.Purge(context.Background()); err != nil {
-		t.Errorf("unconfigured Purge returned %v, want nil", err)
-	}
-	var nilPurger *Purger
-	if nilPurger.Configured() {
-		t.Error("nil Purger reported configured")
-	}
-	if err := nilPurger.Purge(context.Background()); err != nil {
-		t.Errorf("nil Purge returned %v, want nil", err)
-	}
-	if calls != 0 {
-		t.Errorf("unconfigured purger made %d requests", calls)
-	}
-}
-
-func TestPurgerPostsFileList(t *testing.T) {
-	var body map[string][]string
-	var auth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth = r.Header.Get("Authorization")
-		json.NewDecoder(r.Body).Decode(&body)
-		w.Write([]byte(`{"success":true}`))
-	}))
-	defer srv.Close()
-
-	p := &Purger{ZoneID: "zone", Token: "cf-token", URLs: []string{"https://vin.moe/posts.json"}, Client: srv.Client()}
-	if !p.Configured() {
-		t.Fatal("configured purger reported otherwise")
-	}
-	p.endpointOverride = srv.URL
-	if err := p.Purge(context.Background()); err != nil {
-		t.Fatalf("Purge: %v", err)
-	}
-	if auth != "Bearer cf-token" {
-		t.Errorf("Authorization = %q", auth)
-	}
-	if len(body["files"]) != 1 || body["files"][0] != "https://vin.moe/posts.json" {
-		t.Errorf("files = %v", body["files"])
-	}
-
-	if err := p.Purge(context.Background(), "https://vin.moe/posts/hello"); err != nil {
-		t.Fatalf("Purge with extra: %v", err)
-	}
-	if len(body["files"]) != 2 || body["files"][1] != "https://vin.moe/posts/hello" {
-		t.Errorf("files with extra = %v", body["files"])
-	}
-	if len(p.URLs) != 1 {
-		t.Errorf("extra URLs leaked into the purger: %v", p.URLs)
 	}
 }
 

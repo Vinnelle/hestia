@@ -3,8 +3,8 @@ variable "zone_id" {
   type        = string
 }
 
-variable "node_ip" {
-  description = "Cluster node IP the Nextcloud A record points to"
+variable "relay_ip" {
+  description = "Public relay IP the Nextcloud A record points to"
   type        = string
 }
 
@@ -23,14 +23,24 @@ variable "admin_frame_service_annotations" {
   type        = map(string)
 }
 
-variable "mega_import_user" {
-  description = "Mega account the one-off import job pulls files from"
+variable "import_s3_endpoint" {
+  description = "MEGA S4 endpoint the one-off import job reads nextcloud-import/ from"
+  type        = string
+}
+
+variable "import_s3_bucket" {
+  description = "MEGA S4 bucket the one-off import job reads from"
+  type        = string
+}
+
+variable "import_s3_access_key" {
+  description = "Read-only (S3ObjectReadAccess) MEGA S4 access key the import job reads with"
   type        = string
   sensitive   = true
 }
 
-variable "mega_import_pass" {
-  description = "Password for the Mega account the import job pulls files from"
+variable "import_s3_secret_key" {
+  description = "Secret of that read-only MEGA S4 key"
   type        = string
   sensitive   = true
 }

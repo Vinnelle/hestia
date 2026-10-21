@@ -8,7 +8,7 @@
   <meta name="files-origin" content="{{.FilesOrigin}}">
   <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
-  <title>admin — vinnel.cloud</title>
+  <title>admin | vinnel.cloud</title>
   <script src="/assets/js/theme.js"></script>
   <link rel="icon" type="image/webp" href="/assets/images/favicon.webp">
   <link rel="preload" href="/assets/css/app.css" as="style">
@@ -30,7 +30,7 @@
             <rect x="14" y="36" width="14" height="14" rx="3" opacity="0.55"/>
             <rect x="36" y="36" width="14" height="14" rx="3"/>
           </svg>
-          <span class="sidebar-brand-text">vinnel<span class="accent">.cloud</span></span>
+          <span class="sidebar-brand-text"><span class="chip">vinnel.cloud</span></span>
         </a>
       </div>
 
@@ -47,6 +47,20 @@
           </svg>
           <span class="sidebar-label">Blog</span>
         </a>
+
+        <button class="sidebar-section-label" type="button" data-section="servers" aria-expanded="false">
+          <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+          <span class="sidebar-section-label-text">Servers</span>
+          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="sidebar-section" data-section="servers" hidden>
+          {{range .Servers}}
+          <a class="sidebar-link sidebar-link--sub" href="#servers/{{.ID}}" data-slug="servers/{{.ID}}" data-server="{{.ID}}" data-label="{{.Name}}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="18" height="7" rx="1.5"/><path d="M7 7.5h.01M7 16.5h.01"/></svg>
+            <span class="sidebar-label">{{.Name}}</span>
+          </a>
+          {{end}}
+        </div>
 
         <button class="sidebar-section-label" type="button" data-section="gameservers" aria-expanded="false">
           <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
@@ -134,7 +148,7 @@
       <main class="app-main app-main--frame">
 
         <section class="frame-empty" id="frame-empty">
-          <h1 class="page-title">Cluster</h1>
+          <h1 class="page-title">cluster overview</h1>
 
           <div class="state-center error-msg" id="cluster-error" hidden></div>
 
@@ -166,6 +180,22 @@
           </div>
 
           <div class="section-head">
+            <h2 class="section-title">Servers</h2>
+          </div>
+
+          <div class="service-list">
+            {{range .Servers}}
+            <a class="service-row" href="#servers/{{.ID}}" data-server-row="{{.ID}}">
+              <span class="dot"></span>
+              <span class="service-row-body">
+                <span class="service-row-label">{{.Name}}</span>
+              </span>
+              <span class="service-row-host"></span>
+            </a>
+            {{end}}
+          </div>
+
+          <div class="section-head">
             <h2 class="section-title">Services</h2>
           </div>
 
@@ -175,14 +205,14 @@
               <span class="service-row-body">
                 <span class="service-row-label">Satisfactory</span>
                 </span>
-              <span class="service-row-host">factory.vin.moe</span>
+              <span class="service-row-host">factory<span class="tld">.vin.moe</span></span>
             </a>
             <a class="service-row service-link" href="#gameservers/minecraft" data-slug="gameservers/minecraft">
               <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
               <span class="service-row-body">
                 <span class="service-row-label">Minecraft</span>
                 </span>
-              <span class="service-row-host">mc.vin.moe</span>
+              <span class="service-row-host">mc<span class="tld">.vin.moe</span></span>
             </a>
             {{range .Services}}
             <a class="service-row service-link"
@@ -190,9 +220,9 @@
                data-slug="{{.Slug}}" data-url="{{.URL}}" data-label="{{.Label}}" data-frame="{{if .Frameable}}1{{else}}0{{end}}">
               <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
               <span class="service-row-body">
-                <span class="service-row-label">{{.Label}}{{if not .Frameable}} <span class="service-row-ext">↗</span>{{end}}</span>
+                <span class="service-row-label">{{.Label}}{{if not .Frameable}}<svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>{{end}}</span>
               </span>
-              <span class="service-row-host">{{.Host}}</span>
+              <span class="service-row-host">{{.HostName}}<span class="tld">{{.HostDomain}}</span></span>
             </a>
             {{end}}
           </div>
@@ -215,8 +245,16 @@
           </table>
         </section>
 
+        <section class="app-page" id="page-server" hidden>
+          <h1 class="page-title" id="server-title">—</h1>
+          <p class="page-subtitle" id="server-meta"></p>
+          <div class="state-center error-msg" id="server-error" hidden></div>
+          <div class="stat-row" id="server-stats"></div>
+          <div id="server-apps"></div>
+        </section>
+
         <section class="app-page" id="page-blog" hidden>
-          <h1 class="page-title">Blog</h1>
+          <h1 class="page-title">blog</h1>
 
           <div class="state-center error-msg" id="blog-error" hidden></div>
           <p class="hint">Posts sync to the repository nightly.</p>
@@ -254,11 +292,11 @@
                   <button class="blog-tool" type="button" data-md="italic" title="Italic &mdash; Ctrl+I"><em>I</em></button>
                   <button class="blog-tool" type="button" data-md="underline" title="Underline &mdash; Ctrl+U"><u>U</u></button>
                   <button class="blog-tool" type="button" data-md="strike" title="Strikethrough"><s>S</s></button>
-                  <button class="blog-tool" type="button" data-md="code" title="Inline code">&lt;/&gt;</button>
+                  <button class="blog-tool" type="button" data-md="code" title="Inline code">Code</button>
                   <span class="blog-tool-sep"></span>
-                  <button class="blog-tool" type="button" data-md="quote" title="Quote">&rdquo;</button>
-                  <button class="blog-tool" type="button" data-md="list" title="Bulleted list">&bull;</button>
-                  <button class="blog-tool" type="button" data-md="numbers" title="Numbered list">1.</button>
+                  <button class="blog-tool" type="button" data-md="quote" title="Quote">Quote</button>
+                  <button class="blog-tool" type="button" data-md="list" title="Bulleted list">List</button>
+                  <button class="blog-tool" type="button" data-md="numbers" title="Numbered list">Numbered</button>
                   <button class="blog-tool" type="button" data-md="link" title="Link &mdash; Ctrl+K">Link</button>
                   <span class="blog-tool-sep"></span>
                   <button class="blog-tool" type="button" id="blog-attach-image" title="Insert an image">Image</button>
@@ -370,7 +408,7 @@
 
           <div class="action-row">
             <a class="btn-action" id="sat-save-download" href="/api/gameservers/satisfactory/save" download>Download current save</a>
-            <a class="btn-action btn-action--quiet" href="https://satisfactory-calculator.com/en/interactive-map" target="_blank" rel="noopener noreferrer">Open interactive map ↗</a>
+            <a class="btn-action btn-action--quiet" href="https://satisfactory-calculator.com/en/interactive-map" target="_blank" rel="noopener noreferrer">Open interactive map<svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></a>
           </div>
           <p class="hint">There is no in-house building or resource map here — drop the downloaded save into satisfactory-calculator.com's own uploader for that.</p>
 

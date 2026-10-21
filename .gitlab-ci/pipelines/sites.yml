@@ -73,7 +73,7 @@ vin_moe_deploy:
       changes: *site_changes_vin_moe
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vin_moe"'
   script:
-    - sh .gitlab-ci/scripts/site-deploy.sh vin-moe-site --namespace vin-moe --zone vin.moe
+    - sh .gitlab-ci/scripts/site-deploy.sh vin-moe-site --namespace vin-moe
 
 vinnel_cloud_site_build:
   extends: .site_build
@@ -128,7 +128,7 @@ vinnel_cloud_deploy:
       changes: *site_changes_vinnel_cloud
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "vinnel_cloud"'
   script:
-    - sh .gitlab-ci/scripts/site-deploy.sh vinnel-cloud-site vinnel-cloud-admin vinnel-cloud-auth --namespace vinnel-cloud --zone vinnel.cloud
+    - sh .gitlab-ci/scripts/site-deploy.sh vinnel-cloud-site vinnel-cloud-admin vinnel-cloud-auth --namespace vinnel-cloud
 
 .shell_changes: &shell_changes
   - "hestia/apps/shell/Dockerfile"

@@ -120,18 +120,25 @@
   }
 
   function secondFactor(note) {
-    api('GET', '/api/user/info').then(function (res) {
-      if (res.data.method === 'webauthn' && canPasskey) {
+    api('POST', '/api/user/info').then(function (res) {
+      var u = res.data;
+      var method = u.method;
+      if (!(method === 'webauthn' && u.has_webauthn && canPasskey) && !(method === 'totp' && u.has_totp)) {
+        method = u.has_webauthn && canPasskey ? 'webauthn' : u.has_totp ? 'totp' : '';
+      }
+      if (method === 'webauthn') {
         show('webauthn', 'one more step.');
         if (!autoAsserted) {
           autoAsserted = true;
           webauthnAssert();
         }
-      } else if (res.data.method === 'totp') {
+      } else if (method === 'totp') {
         show('totp', 'one more step.');
       } else {
         show('totp', 'one more step.');
-        note = note || 'that 2FA method is not supported here — manage methods at /settings.';
+        note = note || (u.has_totp || u.has_webauthn || u.has_duo
+          ? 'that 2FA method is not supported here — manage methods at /settings.'
+          : 'no second factor is set up yet — add one at /settings.');
       }
       if (note) msg(note);
     });

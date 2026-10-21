@@ -2,18 +2,18 @@ resource "cloudflare_dns_record" "s3_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "s3.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "cloudflare_dns_record" "seaweed_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "seaweed.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "random_password" "seaweedfs_s3_access_key" {
@@ -62,7 +62,6 @@ locals {
       sleep 2
     done
     echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>&1
-    echo "s3.bucket.create -name velero" | weed shell -filer=localhost:8888 2>&1
     echo "s3.bucket.create -name harbor" | weed shell -filer=localhost:8888 2>&1
     echo "s3.bucket.create -name gitlab-registry" | weed shell -filer=localhost:8888 2>&1
     echo "s3.bucket.create -name nextcloud-primary" | weed shell -filer=localhost:8888 2>&1

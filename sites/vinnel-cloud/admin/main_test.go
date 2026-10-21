@@ -594,17 +594,3 @@ func TestBlogResumableUpload(t *testing.T) {
 		t.Fatalf("media = %d, body %q", w.Code, w.Body)
 	}
 }
-
-func TestPurgeTargetsCoverEveryCachedHost(t *testing.T) {
-	got := purgeTargets("https://vin.moe/", "https://blog.vin.moe")
-	want := []string{
-		"https://vin.moe/", "https://vin.moe/posts.json", "https://vin.moe/feed.xml", "https://vin.moe/sitemap.xml",
-		"https://blog.vin.moe/", "https://blog.vin.moe/posts.json", "https://blog.vin.moe/feed.xml", "https://blog.vin.moe/sitemap.xml",
-	}
-	if strings.Join(got, " ") != strings.Join(want, " ") {
-		t.Fatalf("purgeTargets = %q, want %q", got, want)
-	}
-	if got := purgeTargets("https://vin.moe", ""); len(got) != 4 {
-		t.Fatalf("no public host: got %q", got)
-	}
-}

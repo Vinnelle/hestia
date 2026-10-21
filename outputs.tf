@@ -8,6 +8,42 @@ output "talosconfig" {
   sensitive = true
 }
 
+output "talos_iso_url" {
+  description = "Image Factory Secure Boot ISO the Talos VM boots into maintenance mode from"
+  value       = "https://factory.talos.dev/image/${talos_image_factory_schematic.this.id}/${local.talos_version}/metal-amd64-secureboot.iso"
+}
+
+output "relay_ip" {
+  description = "Public IPv4 of the relay -- every public hostname points at it"
+  value       = module.platform_relay.ipv4
+}
+
+output "pbs_encryption_key" {
+  description = "Key every VM backup is encrypted with before it reaches PBS; keep a copy offline next to the state export"
+  value       = module.platform_proxmox.pbs_encryption_key
+  sensitive   = true
+}
+
+output "pbs_bucket" {
+  description = "MEGA S4 bucket for the Proxmox Backup Server datastore on the host"
+  value       = module.platform_backup.bucket
+}
+
+output "import_bucket" {
+  description = "MEGA S4 bucket the Nextcloud import reads nextcloud-import/ from"
+  value       = module.platform_backup.import_bucket
+}
+
+output "mega_s3_endpoint" {
+  description = "MEGA S4 endpoint for Proxmox Backup Server's S3 client and the import"
+  value       = module.platform_backup.s3_endpoint
+}
+
+output "relay_instance_id" {
+  description = "Relay instance ID -- its console log shows the boot status, since the relay has no login at all"
+  value       = module.platform_relay.instance_id
+}
+
 output "authelia_admin_password" {
   value     = module.identity_authelia.admin_password
   sensitive = true

@@ -3,7 +3,7 @@ kind: UserVolumeConfig
 name: seaweed-hdd1
 provisioning:
   diskSelector:
-    match: disk.wwid == 'naa.5000cca0bdde08b8'
+    match: disk.serial == '${serials.hdd1}'
   minSize: 10GB
 filesystem:
   type: xfs
@@ -11,6 +11,10 @@ encryption:
   provider: luks2
   keys:
     - slot: 0
+      tpm:
+        checkSecurebootStatusOnEnroll: true
+      lockToState: true
+    - slot: 1
       static:
         passphrase: ${encryption_key}
 ---
@@ -19,7 +23,7 @@ kind: UserVolumeConfig
 name: seaweed-hdd2
 provisioning:
   diskSelector:
-    match: disk.wwid == 'naa.5000cca0bddf0142'
+    match: disk.serial == '${serials.hdd2}'
   minSize: 10GB
 filesystem:
   type: xfs
@@ -27,6 +31,10 @@ encryption:
   provider: luks2
   keys:
     - slot: 0
+      tpm:
+        checkSecurebootStatusOnEnroll: true
+      lockToState: true
+    - slot: 1
       static:
         passphrase: ${encryption_key}
 ---
@@ -35,7 +43,7 @@ kind: UserVolumeConfig
 name: seaweed-ssd
 provisioning:
   diskSelector:
-    match: disk.serial == 'S63CNF0R415489'
+    match: disk.serial == '${serials.ssd}'
   minSize: 10GB
 filesystem:
   type: xfs
@@ -43,5 +51,9 @@ encryption:
   provider: luks2
   keys:
     - slot: 0
+      tpm:
+        checkSecurebootStatusOnEnroll: true
+      lockToState: true
+    - slot: 1
       static:
         passphrase: ${encryption_key}

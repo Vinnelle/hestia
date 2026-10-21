@@ -1,0 +1,32 @@
+#!/bin/sh
+set -u
+
+dir=/run/relay-metrics
+mkdir -p "$dir"
+
+while :; do
+  {
+    wg show wg0 dump | awk 'NR > 1 {
+      print "relay_wireguard_latest_handshake_seconds " $5
+      print "relay_wireguard_receive_bytes_total " $6
+      print "relay_wireguard_transmit_bytes_total " $7
+    }'
+    nft list counters | awk '
+      BEGIN {
+%{ for name, f in forwards ~}
+        label["${counters[name]}"] = "forward=\"${name}\",protocol=\"${f.protocol}\",port=\"${f.port}\""
+%{ endfor ~}
+      }
+      $1 == "counter" { name = $2 }
+      $1 == "packets" {
+        if (name ~ /_dropped$/) {
+          print "relay_firewall_dropped_packets_total{chain=\"" substr(name, 1, length(name) - 8) "\"} " $2
+        } else if (name ~ /^conn_/) {
+          print "relay_forward_connections_total{" label[substr(name, 6)] "} " $2
+        } else if (name ~ /^traffic_/) {
+          print "relay_forward_bytes_total{" label[substr(name, 9)] "} " $4
+        }
+      }'
+  } > "$dir/relay.prom.tmp" && mv "$dir/relay.prom.tmp" "$dir/relay.prom"
+  sleep 15
+done

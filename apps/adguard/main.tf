@@ -13,9 +13,9 @@ resource "cloudflare_dns_record" "adguard_admin_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "adguard.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 locals {

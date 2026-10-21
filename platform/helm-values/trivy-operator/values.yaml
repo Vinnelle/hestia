@@ -21,6 +21,56 @@ serviceMonitor:
 
 trivy:
   ignoreUnfixed: true
+  dbRegistry: ghcr.io
+  dbRepository: aquasecurity/trivy-db
+  javaDbRegistry: ghcr.io
+  javaDbRepository: aquasecurity/trivy-java-db
+  ignoreFileName: .trivyignore.yaml
+  ignoreFile:
+    vulnerabilities:
+      - id: CVE-2026-31789
+        statement: Only 32-bit OpenSSL builds are affected, and every node is amd64.
+      - id: CVE-2025-68121
+        paths:
+          - "**/gosu"
+        statement: gosu only drops privileges and never opens a TLS connection.
+      - id: CVE-2019-19919
+        paths: &vscode_handlebars
+          - "**/vscode/extensions/handlebars/package.json"
+        statement: &vscode_handlebars_statement VS Code's built-in Handlebars grammar extension, not the handlebars npm library.
+      - id: CVE-2021-23369
+        paths: *vscode_handlebars
+        statement: *vscode_handlebars_statement
+      - id: CVE-2021-23383
+        paths: *vscode_handlebars
+        statement: *vscode_handlebars_statement
+    secrets:
+      - id: gitlab-pat
+        paths:
+          - /opt/gitlab/embedded/service/gitlab-rails/config/gitleaks.toml
+          - /opt/gitlab/embedded/service/gitlab-rails/config/gitleaks-local.toml
+          - /opt/gitlab/embedded/service/gitlab-rails/app/models/concerns/integrations/base/diffblue_cover.rb
+        statement: GitLab's own secret-detection rules and an example token in its Diffblue integration.
+      - id: private-key
+        paths:
+          - /etc/ssh/ssh_host_rsa_key
+          - /etc/ssh/ssh_host_ecdsa_key
+          - /etc/ssh/ssh_host_ed25519_key
+        statement: gitlab-ce links these to per-instance keys under /etc/gitlab at start, so the image's keys are never served.
+      - id: private-key
+        paths:
+          - /opt/gitlab/embedded/lib/ruby/gems/*/gems/chef-*/lib/chef/resource/openssl_ec_public_key.rb
+          - /opt/gitlab/embedded/lib/ruby/gems/*/gems/chef-zero-*/lib/chef_zero.rb
+          - /opt/gitlab/embedded/lib/ruby/gems/*/gems/fog-aws-*/lib/fog/aws/models/compute/key_pairs.rb
+        statement: PEM headers and fixtures inside vendored Ruby gems.
+      - id: jwt-token
+        paths:
+          - /opt/gitlab/embedded/lib/ruby/gems/*/gems/aws-sdk-core-*/lib/aws-sdk-ssooidc/client.rb
+        statement: Example token in the AWS SDK's API documentation.
+      - id: azure-storage-account-key
+        paths:
+          - /usr/src/nextcloud/3rdparty/microsoft/azure-storage-common/src/Common/Internal/Resources.php
+        statement: Azurite's published development-storage key, shipped with the Azure SDK.
   resources:
     requests:
       cpu: 100m

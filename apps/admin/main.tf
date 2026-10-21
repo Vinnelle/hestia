@@ -2,17 +2,17 @@ resource "cloudflare_dns_record" "admin_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "admin.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
-  proxied = true
+  content = var.relay_ip
+  ttl     = 60
+  proxied = false
 }
 
 resource "cloudflare_dns_record" "files_vinnel_cloud" {
   zone_id = var.zone_id
   name    = "files.vinnel.cloud"
   type    = "A"
-  content = var.node_ip
-  ttl     = 1
+  content = var.relay_ip
+  ttl     = 60
   proxied = false
 }
 
@@ -61,6 +61,8 @@ resource "kubernetes_persistent_volume_claim_v1" "vinnel_cloud_admin_blog_media"
 }
 
 locals {
+  relay_metrics_host = "relay-metrics.internal"
+
   vinnel_cloud_admin_blog_media_migrate_sh = <<-EOT
     set -eu
     mkdir -p /media
@@ -158,8 +160,7 @@ resource "kubernetes_secret_v1" "vinnel_cloud_admin_blog" {
   }
 
   data = {
-    GITLAB_TOKEN         = gitlab_project_access_token.admin_blog.token
-    CF_CACHE_PURGE_TOKEN = var.cloudflare_cache_purge_token
+    GITLAB_TOKEN = gitlab_project_access_token.admin_blog.token
   }
 }
 
@@ -299,6 +300,11 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
       spec {
         service_account_name = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
 
+        host_aliases {
+          ip        = var.node_ip
+          hostnames = [local.relay_metrics_host]
+        }
+
         image_pull_secrets {
           name = var.registry_secret_name
         }
@@ -345,7 +351,17 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
 
           env {
             name  = "OTEL_COLLECTOR_ENDPOINT"
-            value = "signoz-otel-collector.${var.observability_namespace}.svc.cluster.local:4317"
+            value = "otel-collector.${var.observability_namespace}.svc.cluster.local:4317"
+          }
+
+          env {
+            name  = "RELAY_METRICS_URL"
+            value = "http://${local.relay_metrics_host}/metrics"
+          }
+
+          env {
+            name  = "RELAY_LOCATION"
+            value = var.relay_location
           }
 
           env {
@@ -448,20 +464,7 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
             value = "https://files.vinnel.cloud"
           }
 
-          env {
-            name  = "BLOG_ZONE_ID"
-            value = var.blog_zone_id
-          }
 
-          env {
-            name = "CF_CACHE_PURGE_TOKEN"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.vinnel_cloud_admin_blog.metadata[0].name
-                key  = "CF_CACHE_PURGE_TOKEN"
-              }
-            }
-          }
 
           resources {
             requests = {
@@ -746,6 +749,80 @@ resource "kubernetes_ingress_v1" "vinnel_cloud_admin_files" {
               name = kubernetes_service_v1.vinnel_cloud_admin.metadata[0].name
               port {
                 number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+resource "kubernetes_service_v1" "relay_metrics" {
+  metadata {
+    name      = "relay-metrics"
+    namespace = var.namespace
+  }
+
+  spec {
+    type = "ClusterIP"
+    port {
+      name        = "metrics"
+      port        = var.relay_metrics_port
+      target_port = tostring(var.relay_metrics_port)
+    }
+  }
+}
+
+resource "kubernetes_endpoint_slice_v1" "relay_metrics" {
+  metadata {
+    name      = "relay-metrics"
+    namespace = var.namespace
+    labels = {
+      "kubernetes.io/service-name" = kubernetes_service_v1.relay_metrics.metadata[0].name
+    }
+  }
+
+  address_type = "IPv4"
+
+  endpoint {
+    addresses = [var.relay_address]
+    condition {
+      ready = true
+    }
+  }
+
+  port {
+    name         = "metrics"
+    port         = tostring(var.relay_metrics_port)
+    protocol     = "TCP"
+    app_protocol = "http"
+  }
+}
+
+resource "kubernetes_ingress_v1" "relay_metrics" {
+  metadata {
+    name      = "relay-metrics"
+    namespace = var.namespace
+    annotations = {
+      "nginx.ingress.kubernetes.io/whitelist-source-range" = "10.244.0.0/16"
+    }
+  }
+
+  spec {
+    ingress_class_name = var.ingress_class_name
+
+    rule {
+      host = local.relay_metrics_host
+      http {
+        path {
+          path      = "/metrics"
+          path_type = "Exact"
+          backend {
+            service {
+              name = kubernetes_service_v1.relay_metrics.metadata[0].name
+              port {
+                number = var.relay_metrics_port
               }
             }
           }
