@@ -25,6 +25,9 @@ trivy:
   dbRepository: aquasecurity/trivy-db
   javaDbRegistry: ghcr.io
   javaDbRepository: aquasecurity/trivy-java-db
+  configFile:
+    cache:
+      backend: memory
   ignoreFileName: .trivyignore.yaml
   ignoreFile:
     vulnerabilities:
