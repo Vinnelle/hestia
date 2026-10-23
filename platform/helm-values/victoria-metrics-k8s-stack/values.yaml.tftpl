@@ -184,6 +184,9 @@ defaultDatasources:
 
 grafana:
   fullnameOverride: grafana
+  sidecar:
+    image:
+      tag: 2.14.1
   persistence:
     enabled: true
     type: pvc

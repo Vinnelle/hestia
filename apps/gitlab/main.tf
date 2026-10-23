@@ -1060,6 +1060,22 @@ resource "gitlab_pipeline_schedule" "ci_runner_scan" {
   active        = true
 }
 
+resource "gitlab_pipeline_schedule" "renovate" {
+  project       = gitlab_project.gaia.id
+  description   = "Renovate dependency bumps"
+  ref           = "refs/heads/prd"
+  cron          = "*/15 * * * *"
+  cron_timezone = "UTC"
+  active        = true
+}
+
+resource "gitlab_pipeline_schedule_variable" "renovate_run" {
+  project              = gitlab_project.gaia.id
+  pipeline_schedule_id = gitlab_pipeline_schedule.renovate.pipeline_schedule_id
+  key                  = "RUN"
+  value                = "renovate"
+}
+
 resource "gitlab_project_variable" "site_deploy_kubeconfig" {
   project       = gitlab_project.gaia.id
   key           = "SITE_DEPLOY_KUBECONFIG"

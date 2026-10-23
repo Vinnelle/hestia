@@ -28,6 +28,11 @@ loki:
   analytics:
     reporting_enabled: false
 
+sidecar:
+  image:
+    repository: quay.io/kiwigrid/k8s-sidecar
+    tag: 2.14.1
+
 singleBinary:
   replicas: 1
   persistence:

@@ -80,7 +80,11 @@ locals {
   seaweedfs_tier_move_sh = <<-EOT
     #!/bin/sh
     set -e
-    echo "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercent=95" | weed shell -master=seaweedfs.storage.svc.cluster.local:9333
+    # Cluster-wide shell commands need the admin lock, and `weed shell` spins
+    # forever on stdin EOF unless told to exit.
+    printf '%s\n' lock \
+      "volume.tier.move -fromDiskType=ssd -toDiskType=hdd -quietFor=24h -fullPercent=95 -apply" \
+      unlock exit | timeout 3600 weed shell -master=seaweedfs.storage.svc.cluster.local:9333
   EOT
 }
 
@@ -167,6 +171,11 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
           port {
             name           = "master"
             container_port = 9333
+          }
+
+          port {
+            name           = "master-grpc"
+            container_port = 19333
           }
 
           port {
@@ -316,6 +325,8 @@ resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
     job_template {
       metadata {}
       spec {
+        active_deadline_seconds = 7200
+        backoff_limit           = 1
         template {
           metadata {}
           spec {
@@ -362,6 +373,11 @@ resource "kubernetes_service_v1" "seaweedfs" {
       name        = "master"
       port        = 9333
       target_port = "master"
+    }
+    port {
+      name        = "master-grpc"
+      port        = 19333
+      target_port = "master-grpc"
     }
     port {
       name        = "volume"

@@ -1,9 +1,9 @@
 renovate:
   stage: sync
   allow_failure: true
+  resource_group: renovate
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "schedule"'
-    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "renovate"'
+    - if: '($CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "renovate"'
   image: renovate/renovate:44.115.10@sha256:e262ed52b23dd8c545c80faf5b1ad5c95a07b3f198888de8d7b8928f45c307c7
   variables:
     RENOVATE_PLATFORM: gitlab
