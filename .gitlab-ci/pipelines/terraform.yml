@@ -119,7 +119,12 @@ terraform_provider_mirror_sync:
   script:
     - terraform init -input=false -backend=false
     - terraform providers mirror /tmp/provider-mirror
-    - curl -fsSL https://dl.min.io/client/mc/release/linux-amd64/mc -o /tmp/bin/mc
-    - chmod 0755 /tmp/bin/mc
-    - mc alias set mirror "https://${TF_PROVIDER_MIRROR_ENDPOINT}" "${TF_PROVIDER_MIRROR_ACCESS_KEY}" "${TF_PROVIDER_MIRROR_SECRET_KEY}"
-    - mc mirror --overwrite /tmp/provider-mirror "mirror/${TF_PROVIDER_MIRROR_BUCKET}"
+    - curl -fsSL "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/rclone-v${RCLONE_VERSION}-linux-amd64.zip" -o /tmp/rclone.zip
+    - curl -fsSL "https://github.com/rclone/rclone/releases/download/v${RCLONE_VERSION}/SHA256SUMS" -o /tmp/rclone.sha256sums
+    - expected=$(grep " rclone-v${RCLONE_VERSION}-linux-amd64.zip$" /tmp/rclone.sha256sums | cut -d' ' -f1)
+    - test -n "$expected"
+    - echo "$expected  /tmp/rclone.zip" | sha256sum -c -
+    - unzip -q -j /tmp/rclone.zip "rclone-v${RCLONE_VERSION}-linux-amd64/rclone" -d /tmp/bin
+    - chmod 0755 /tmp/bin/rclone
+    - export RCLONE_S3_PROVIDER=Linode RCLONE_S3_NO_CHECK_BUCKET=true RCLONE_S3_ENDPOINT="${TF_PROVIDER_MIRROR_ENDPOINT}" RCLONE_S3_ACCESS_KEY_ID="${TF_PROVIDER_MIRROR_ACCESS_KEY}" RCLONE_S3_SECRET_ACCESS_KEY="${TF_PROVIDER_MIRROR_SECRET_KEY}"
+    - rclone copy /tmp/provider-mirror ":s3:${TF_PROVIDER_MIRROR_BUCKET}"
