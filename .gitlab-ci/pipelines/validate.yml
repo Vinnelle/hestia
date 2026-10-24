@@ -71,6 +71,7 @@ terraform_test:
     - if: '$CI_PIPELINE_SOURCE == "web" && $RUN == "validate"'
   before_script:
     - !reference [.terraform_install, script]
+    - mkdir -p "${TF_PLUGIN_CACHE_DIR}"
   script:
     - |
       for dir in $(find hestia/tests -name '*.tftest.hcl' -printf '%h\n' | sort -u); do

@@ -1,4 +1,4 @@
-FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS images
+FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS images
 RUN apk add --no-cache imagemagick librsvg libwebp-tools
 COPY src/images/favicon.png .
 COPY src/images/avatar.jpg .
@@ -8,7 +8,8 @@ RUN magick favicon.png -gravity center -background none -extent 530x530 \
 RUN magick favicon.png -gravity center -background none -extent 530x530 \
     -resize 180x180 apple-touch-icon.png
 
-FROM mirror.vinnel.cloud/library/nginx:1.31-alpine@sha256:df221db836e1754089190208cee7eeda94f233197056426eda74a43ab1abeac2 AS brotli-builder
+FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e AS brotli-builder
+USER root
 RUN apk add --no-cache git gcc musl-dev make pcre2-dev zlib-dev linux-headers openssl-dev brotli-dev
 RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx_brotli \
  && NGINX_VERSION=$(nginx -v 2>&1 | sed 's/.*\///') \
@@ -20,7 +21,7 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_filter_module.so /ngx_http_brotli_filter_module.so \
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
-FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:0b36e8c136b94cd4fcf02188228e76c31ad5872eef3fec8cbd2eee500cfd9e80 AS asset-build
+FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
@@ -35,7 +36,7 @@ COPY --from=images /avatar.webp .
 RUN sh /build/fetch-fonts.sh fonts && sh /build/embed-runner.sh && sh /build/build.sh
 RUN cp css/style.*.css css/post.css && cp fonts/jetbrains-mono.*.css fonts/post.css
 
-FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:6a23acdfca2b9cfbcec61419e3f1426bcbedb91362f2f19306a8567423bb4612
+FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 USER root
 RUN apk --no-cache upgrade && rm /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
 USER nginx

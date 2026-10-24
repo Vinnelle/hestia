@@ -170,7 +170,7 @@ resource "kubernetes_deployment_v1" "minecraft" {
 
         container {
           name  = "minecraft"
-          image = "itzg/minecraft-server:java21@sha256:a123cb954af214eba9a6e940fe24cc02a6341f1c760ab8adca51b104fbaffa28"
+          image = "itzg/minecraft-server:java21@sha256:d3678c0711702eb3d4b3ff2e890502f0b008c1778ddb2db9c01e8f3dde01c853"
 
           env {
             name  = "EULA"

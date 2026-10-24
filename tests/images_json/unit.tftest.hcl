@@ -1,4 +1,4 @@
-# Required-keys list mirrors `grep -rn 'images\[' hestia/main.tf` — update both
+# Required-keys list mirrors `grep -rn 'images\[' hestia/*.tf` — update both
 # together if a site/deployment starts or stops reading an image ref. The keys
 # come from the three per-domain maps merged in locals.tf.
 run "required_deployment_keys_exist" {
@@ -9,7 +9,7 @@ run "required_deployment_keys_exist" {
       for k in ["vin-moe-site", "vinnel-cloud-admin", "vinnel-cloud-auth", "vinnel-cloud-shell", "vinnel-cloud-site"] :
       contains(keys(output.images), k)
     ])
-    error_message = "a *-images.json map is missing a key that main.tf passes via local.images[...]"
+    error_message = "a *-images.json map is missing a key that the root module passes via local.images[...]"
   }
 }
 
