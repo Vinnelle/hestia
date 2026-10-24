@@ -278,7 +278,7 @@ resource "kubernetes_stateful_set_v1" "matrix_synapse" {
 
         init_container {
           name    = "generate-keys"
-          image   = "matrixdotorg/synapse:v1.161.0"
+          image   = "matrixdotorg/synapse:v1.163.2"
           command = ["python", "-m", "synapse.app.homeserver", "--config-path", "/config/homeserver.yaml", "--generate-keys"]
 
           volume_mount {
@@ -295,7 +295,7 @@ resource "kubernetes_stateful_set_v1" "matrix_synapse" {
 
         container {
           name    = "synapse"
-          image   = "matrixdotorg/synapse:v1.161.0"
+          image   = "matrixdotorg/synapse:v1.163.2"
           command = ["python", "-m", "synapse.app.homeserver", "--config-path", "/config/homeserver.yaml"]
 
           port {

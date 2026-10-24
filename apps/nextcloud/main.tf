@@ -450,7 +450,7 @@ resource "kubernetes_job_v1" "nextcloud_import" {
 
         container {
           name    = "import"
-          image   = "rclone/rclone:1.75.1"
+          image   = "rclone/rclone:1.75.2"
           command = ["sh", "-c", local.nextcloud_import_sh]
 
           env {

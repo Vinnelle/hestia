@@ -129,7 +129,7 @@ resource "kubernetes_stateful_set_v1" "tempo" {
 
         container {
           name  = "tempo"
-          image = "grafana/tempo:2.10.8"
+          image = "grafana/tempo:2.10.10"
           args  = ["-config.file=/conf/tempo.yaml"]
 
           port {
