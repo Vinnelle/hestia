@@ -138,7 +138,7 @@ resource "kubernetes_cron_job_v1" "pod_reaper" {
             service_account_name = kubernetes_service_account_v1.pod_reaper.metadata[0].name
             container {
               name    = "reaper"
-              image   = "docker.io/alpine/kubectl:1.37.1@sha256:8c72f6f732ce7ef11cdb1bea25faa4f4a521872a12c89e3f40ba9edb52a4d4f2"
+              image   = "docker.io/alpine/kubectl:1.37.1@sha256:a5d0fbecab3f7b6c2ab7398f1daa73a3e0ed6ece18556d21698233e9e3759cc7"
               command = ["sh", "-c", file("${path.module}/reap-pods.sh")]
             }
           }

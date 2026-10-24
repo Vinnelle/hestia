@@ -94,7 +94,7 @@ resource "openstack_compute_instance_v2" "relay" {
   lifecycle {
     precondition {
       condition     = can(regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", local.image.id))
-      error_message = "No relay image is published to Infomaniak yet: run just relay-image and just relay-publish first (README, Bootstrap)."
+      error_message = "No relay image is published to Infomaniak yet: run just relay build and just relay publish first (README, Bootstrap)."
     }
   }
 }

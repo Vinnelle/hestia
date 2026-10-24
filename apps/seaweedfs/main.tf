@@ -47,8 +47,9 @@ locals {
     set -e
     weed server -dir=/data,/data-hdd1,/data-hdd2,/data-ssd -volume.max=7,0,0,0 -volume.disk=hdd,hdd,hdd,ssd -filer.disk=hdd -s3 -s3.config=/etc/seaweedfs/s3.json -filer -ip.bind=0.0.0.0 &
     SERVER_PID=$!
-    # `weed shell` exits 0 even when the command inside it fails, so every wait
-    # and check here tests an observable effect, never an exit status. Wait on
+    # `weed shell`'s exit status can't be trusted (before 4.48 it was 0 even on
+    # failure; since 4.48 creating an existing bucket fails), so every wait and
+    # check here tests an observable effect and the setup commands may fail. Wait on
     # the filer's *gRPC* port (18888), which comes up about a second after its
     # HTTP port (8888) -- fs.configure needs gRPC, and the old loop waited on
     # HTTP only, so all three commands below fired into a filer that could not
@@ -61,17 +62,17 @@ locals {
       i=$((i + 1))
       sleep 2
     done
-    echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>&1
-    echo "s3.bucket.create -name harbor" | weed shell -filer=localhost:8888 2>&1
-    echo "s3.bucket.create -name gitlab-registry" | weed shell -filer=localhost:8888 2>&1
-    echo "s3.bucket.create -name nextcloud-primary" | weed shell -filer=localhost:8888 2>&1
+    echo "s3.bucket.create -name nextcloud" | weed shell -filer=localhost:8888 2>&1 || true
+    echo "s3.bucket.create -name harbor" | weed shell -filer=localhost:8888 2>&1 || true
+    echo "s3.bucket.create -name gitlab-registry" | weed shell -filer=localhost:8888 2>&1 || true
+    echo "s3.bucket.create -name nextcloud-primary" | weed shell -filer=localhost:8888 2>&1 || true
     # No -collection here: an S3 bucket is already 1:1 with a collection named
     # after it, and passing one makes the whole command fail with
     # "one s3 bucket goes to one collection and not customizable".
-    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -disk=ssd -apply" | weed shell -filer=localhost:8888 2>&1
+    echo "fs.configure -locationPrefix=/buckets/nextcloud/ -disk=ssd -apply" | weed shell -filer=localhost:8888 2>&1 || true
     echo "fs.configure" | weed shell -filer=localhost:8888 2>&1 | grep -q "/buckets/nextcloud/" ||
       echo "WARNING: seaweedfs ssd tier rule did not apply; new writes will land on hdd" >&2
-    echo "fs.configure -locationPrefix=/buckets/nextcloud-primary/ -disk=ssd -apply" | weed shell -filer=localhost:8888 2>&1
+    echo "fs.configure -locationPrefix=/buckets/nextcloud-primary/ -disk=ssd -apply" | weed shell -filer=localhost:8888 2>&1 || true
     echo "fs.configure" | weed shell -filer=localhost:8888 2>&1 | grep -q "/buckets/nextcloud-primary/" ||
       echo "WARNING: seaweedfs ssd tier rule did not apply; new writes will land on hdd" >&2
     wait "$SERVER_PID"
