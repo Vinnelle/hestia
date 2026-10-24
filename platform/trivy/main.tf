@@ -2,7 +2,7 @@ resource "helm_release" "trivy_operator" {
   name       = "trivy-operator"
   repository = "https://aquasecurity.github.io/helm-charts"
   chart      = "trivy-operator"
-  version    = "0.36.0"
+  version    = "0.37.0"
   namespace  = var.namespace
 
   values = [

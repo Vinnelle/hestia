@@ -121,7 +121,7 @@ resource "kubernetes_deployment_v1" "satisfactory" {
 
         container {
           name  = "satisfactory"
-          image = "wolveix/satisfactory-server:v1.9.10"
+          image = "wolveix/satisfactory-server:v1.9.11"
 
           env {
             name  = "SERVERMESSAGINGPORT"

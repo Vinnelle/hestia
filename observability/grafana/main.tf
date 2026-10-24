@@ -34,7 +34,7 @@ resource "helm_release" "victoria_metrics" {
   name       = "vm"
   repository = "https://victoriametrics.github.io/helm-charts/"
   chart      = "victoria-metrics-k8s-stack"
-  version    = "0.95.2"
+  version    = "0.96.0"
   namespace  = local.namespace
   timeout    = 900
 
