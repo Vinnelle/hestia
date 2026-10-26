@@ -1,0 +1,33 @@
+.automations_changes: &automations_changes
+  - "hestia/apps/automations/**/*"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/automations.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+automations_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *automations_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "automations"'
+  variables:
+    SITE_CONTEXT: hestia/apps/automations
+    SITE_DOCKERFILE: hestia/apps/automations
+    SITE_IMAGE: automations/automations
+    SITE_DEPLOYMENT: automations
+
+renovate_review:
+  stage: validate
+  image: artifacts.vinnel.cloud/vinnel-cloud/gaia/ci-runner/ci-runner:latest
+  timeout: 30m
+  rules:
+    - if: '$CI_MERGE_REQUEST_LABELS =~ /(^|,)review-accepted(,|$)/'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME =~ /^renovate\// && $RENOVATE_REVIEW_URL'
+  script:
+    - |
+      curl -sS --fail-with-body --max-time 1700 -H 'Content-Type: application/json' \
+        -d "{\"merge_request_iid\": ${CI_MERGE_REQUEST_IID}}" "$RENOVATE_REVIEW_URL" > review.json
+      jq . review.json
+      jq -e '.pass' review.json > /dev/null

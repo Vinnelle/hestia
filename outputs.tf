@@ -13,6 +13,11 @@ output "talos_iso_url" {
   value       = "https://factory.talos.dev/image/${talos_image_factory_schematic.this.id}/${local.talos_version}/metal-amd64-secureboot.iso"
 }
 
+output "talos_installer_image" {
+  description = "Secure Boot installer for the node's schematic and Talos version, which just talos upgrade installs"
+  value       = "factory.talos.dev/installer-secureboot/${talos_image_factory_schematic.this.id}:${local.talos_version}"
+}
+
 output "relay_ip" {
   description = "Public IPv4 of the relay -- every public hostname points at it"
   value       = module.platform_relay.ipv4

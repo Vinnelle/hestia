@@ -42,6 +42,24 @@ module "admin" {
   gitlab_default_branch             = module.gitlab.default_branch
 }
 
+# Automations
+
+module "automations" {
+  source = "./apps/automations"
+
+  depends_on = [module.platform_core, module.gitlab]
+
+  image                     = local.images["automations"]
+  registry_dockerconfigjson = module.gitlab.registry_dockerconfigjson
+  node_ip                   = var.node_ip
+  observability_namespace   = module.observability_grafana.namespace
+  gitlab_project_id         = module.gitlab.project_id
+  renovate_author_id        = module.gitlab.ci_bot_user_id
+  llm_base_url              = module.llm.base_url
+  llm_model                 = module.llm.model
+  llm_api_key               = module.llm.api_key
+}
+
 # GitLab
 
 module "gitlab" {
@@ -64,6 +82,16 @@ module "gitlab" {
   ci_kubeconfig            = module.platform_ci.ci_kubeconfig
   seaweedfs_s3_access_key  = module.seaweedfs.s3_access_key
   seaweedfs_s3_secret_key  = module.seaweedfs.s3_secret_key
+}
+
+# LLM
+
+module "llm" {
+  source = "./apps/llm"
+
+  depends_on = [module.platform_storage]
+
+  runtime_class_name = module.platform_gpu.runtime_class_name
 }
 
 # Mail

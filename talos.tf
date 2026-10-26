@@ -9,7 +9,11 @@ resource "talos_image_factory_schematic" "this" {
   schematic = yamlencode({
     customization = {
       systemExtensions = {
-        officialExtensions = ["siderolabs/qemu-guest-agent"]
+        officialExtensions = [
+          "siderolabs/nvidia-container-toolkit-lts",
+          "siderolabs/nvidia-open-gpu-kernel-modules-lts",
+          "siderolabs/qemu-guest-agent",
+        ]
       }
     }
   })
@@ -27,6 +31,7 @@ data "talos_machine_configuration" "controlplane" {
   config_patches = [
     file("${path.module}/talos/controlplane-patch.yaml"),
     file("${path.module}/talos/cilium-cni-patch.yaml"),
+    file("${path.module}/talos/nvidia-gpu-patch.yaml"),
     templatefile("${path.module}/talos/firewall.yaml.tftpl", {
       node_ip      = var.node_ip
       lan_cidr     = var.lan_cidr

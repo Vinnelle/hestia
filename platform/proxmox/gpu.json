@@ -1,0 +1,8 @@
+{
+  "mapping": "rtx-4070-ti",
+  "path": "0000:01:00",
+  "id": "10de:2782",
+  "subsystem_id": "1043:88dd",
+  "iommu_group": 13,
+  "vfio_ids": ["10de:2782", "10de:22bc"]
+}

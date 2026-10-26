@@ -62,6 +62,14 @@ module "platform_storage" {
   source = "./platform/storage"
 }
 
+# GPU
+
+module "platform_gpu" {
+  source = "./platform/gpu"
+
+  namespace = module.platform_core.namespace
+}
+
 # Backup
 
 module "platform_backup" {
@@ -137,8 +145,10 @@ module "platform_network_policy" {
     module.platform_cni,
     module.identity_authelia,
     module.adguard,
+    module.automations,
     module.nextcloud,
     module.gitlab,
+    module.llm,
     module.matrix,
     module.miniflux,
     module.proxy_netbird,

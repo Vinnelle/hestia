@@ -114,7 +114,7 @@ locals {
 
 locals {
   talos_version    = "v1.14.4"
-  talos_iso_sha256 = "f3cdf0ca47ae2a3309a11be74003505771400048d128a4b703bd9acaf7cd0e5f"
+  talos_iso_sha256 = "7929a1d5c8d6316dbd519a18084c9e173701e7240e50b8a89a2f9e72f036fb33"
 
   relay_forwards = jsondecode(file("${path.module}/platform/relay/forwards.json"))
 }

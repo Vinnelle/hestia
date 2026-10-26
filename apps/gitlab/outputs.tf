@@ -13,6 +13,11 @@ output "default_branch" {
   value       = gitlab_branch.pre.name
 }
 
+output "ci_bot_user_id" {
+  description = "ID of the gaia-ci-bot project access token's user, which Renovate opens merge requests as"
+  value       = gitlab_project_access_token.ci_bot.user_id
+}
+
 output "root_password" {
   description = "Password for the GitLab root user"
   value       = random_password.gitlab_root_password.result

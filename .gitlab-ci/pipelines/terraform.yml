@@ -82,6 +82,8 @@ terraform_plan_apply:
       optional: true
     - job: shell_build
       optional: true
+    - job: automations_build
+      optional: true
     - job: relay_image
       optional: true
     - job: lint

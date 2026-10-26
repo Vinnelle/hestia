@@ -5,6 +5,8 @@ locals {
     virtio2 = { serial = "hestia-hdd2", size = 600 }
     virtio3 = { serial = "hestia-ssd", size = 200 }
   }
+
+  gpu = jsondecode(file("${path.module}/gpu.json"))
 }
 
 resource "proxmox_apt_standard_repository" "no_subscription" {
@@ -90,19 +92,32 @@ resource "proxmox_download_file" "talos_iso" {
   upload_timeout     = 1800
 }
 
+resource "proxmox_hardware_mapping_pci" "gpu" {
+  name    = local.gpu.mapping
+  comment = "RTX 4070 Ti and its HDMI audio function, passed through to the Talos VM"
+  map = [{
+    node         = var.node_name
+    path         = local.gpu.path
+    id           = local.gpu.id
+    subsystem_id = local.gpu.subsystem_id
+    iommu_group  = local.gpu.iommu_group
+  }]
+}
+
 resource "proxmox_virtual_environment_vm" "hestia" {
-  node_name       = var.node_name
-  vm_id           = 100
-  name            = "hestia"
-  description     = "Talos node, managed by Terraform (hestia/platform/proxmox)"
-  tags            = ["gaia"]
-  machine         = "q35"
-  bios            = "ovmf"
-  on_boot         = false
-  started         = true
-  protection      = true
-  stop_on_destroy = true
-  boot_order      = ["virtio0", "ide2"]
+  node_name           = var.node_name
+  vm_id               = 100
+  name                = "hestia"
+  description         = "Talos node, managed by Terraform (hestia/platform/proxmox)"
+  tags                = ["gaia"]
+  machine             = "q35"
+  bios                = "ovmf"
+  on_boot             = false
+  started             = true
+  protection          = true
+  stop_on_destroy     = true
+  reboot_after_update = false
+  boot_order          = ["virtio0", "ide2"]
 
   agent {
     enabled = true
@@ -150,6 +165,12 @@ resource "proxmox_virtual_environment_vm" "hestia" {
   cdrom {
     file_id   = proxmox_download_file.talos_iso.id
     interface = "ide2"
+  }
+
+  hostpci {
+    device  = "hostpci0"
+    mapping = proxmox_hardware_mapping_pci.gpu.name
+    pcie    = true
   }
 
   network_device {

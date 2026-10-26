@@ -1,0 +1,7 @@
+{
+  "alias": "gemma-4-12b-it",
+  "file": "gemma-4-12b-it-qat-q4_0.gguf",
+  "url": "https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-gguf/resolve/29d097773436b69ff9feafd636ab4cf873786537/gemma-4-12b-it-qat-q4_0.gguf",
+  "sha256": "93567e57a8fe10b23569b9d9ec38cd005deedf71e29477c421a4b83f418a538b",
+  "context": 32768
+}
