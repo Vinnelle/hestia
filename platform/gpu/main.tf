@@ -69,8 +69,8 @@ resource "helm_release" "dcgm_exporter" {
         { name = "counters", mountPath = "/etc/dcgm-exporter/counters.csv", subPath = "counters.csv" },
       ]
       resources = {
-        requests = { cpu = "20m", memory = "64Mi" }
-        limits   = { cpu = "200m", memory = "256Mi" }
+        requests = { cpu = "20m", memory = "128Mi" }
+        limits   = { cpu = "200m", memory = "512Mi" }
       }
     })
   ]

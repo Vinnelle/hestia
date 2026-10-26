@@ -155,8 +155,8 @@ var summarySchema = json.RawMessage(`{
   "required": ["status", "headline", "summary", "concerns", "suggestions"],
   "properties": {
     "status": {"type": "string", "enum": ["healthy", "attention", "action"]},
-    "headline": {"type": "string"},
-    "summary": {"type": "string"},
+    "headline": {"type": "string", "maxLength": 90},
+    "summary": {"type": "string", "maxLength": 700},
     "concerns": {
       "type": "array",
       "maxItems": 5,
@@ -166,11 +166,11 @@ var summarySchema = json.RawMessage(`{
         "required": ["severity", "text"],
         "properties": {
           "severity": {"type": "string", "enum": ["info", "warning", "critical"]},
-          "text": {"type": "string"}
+          "text": {"type": "string", "maxLength": 300}
         }
       }
     },
-    "suggestions": {"type": "array", "maxItems": 3, "items": {"type": "string"}}
+    "suggestions": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLength": 200}}
   }
 }`)
 
@@ -184,22 +184,25 @@ func Summarize(ctx context.Context, client *llm.Client, f Facts, checks []Concer
 	if err != nil {
 		return Summary{}, err
 	}
-	reply, err := client.Complete(ctx, "digest_summary", summarySchema,
+	var s Summary
+	err = client.Ask(ctx, "digest_summary", summarySchema, func(reply string) error {
+		reply = strings.TrimSpace(reply)
+		if strings.HasPrefix(reply, "<think>") {
+			if i := strings.Index(reply, "</think>"); i >= 0 {
+				reply = strings.TrimSpace(reply[i+len("</think>"):])
+			}
+		}
+		s = Summary{}
+		if err := json.Unmarshal([]byte(reply), &s); err != nil {
+			return fmt.Errorf("model reply is not the summary JSON: %w", err)
+		}
+		return nil
+	},
 		llm.Message{Role: "system", Content: systemPrompt},
 		llm.Message{Role: "user", Content: "<checks>\n" + string(listed) + "\n</checks>\n\n<facts>\n" + string(facts) + "\n</facts>"},
 	)
 	if err != nil {
 		return Summary{}, err
-	}
-	reply = strings.TrimSpace(reply)
-	if strings.HasPrefix(reply, "<think>") {
-		if i := strings.Index(reply, "</think>"); i >= 0 {
-			reply = strings.TrimSpace(reply[i+len("</think>"):])
-		}
-	}
-	var s Summary
-	if err := json.Unmarshal([]byte(reply), &s); err != nil {
-		return Summary{}, fmt.Errorf("model reply is not the summary JSON: %w", err)
 	}
 	if _, ok := statusRank[s.Status]; !ok || statusRank[s.Status] < statusRank[floor] {
 		s.Status = floor

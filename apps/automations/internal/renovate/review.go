@@ -61,7 +61,7 @@ var schema = json.RawMessage(`{
   "required": ["verdict", "summary", "findings"],
   "properties": {
     "verdict": {"type": "string", "enum": ["safe", "check", "breaking"]},
-    "summary": {"type": "string"},
+    "summary": {"type": "string", "maxLength": 600},
     "findings": {
       "type": "array",
       "maxItems": 8,
@@ -71,8 +71,8 @@ var schema = json.RawMessage(`{
         "required": ["severity", "detail", "file"],
         "properties": {
           "severity": {"type": "string", "enum": ["info", "warning", "breaking"]},
-          "detail": {"type": "string"},
-          "file": {"type": "string"}
+          "detail": {"type": "string", "maxLength": 400},
+          "file": {"type": "string", "maxLength": 200}
         }
       }
     }
@@ -133,14 +133,15 @@ func (r *Reviewer) Review(ctx context.Context, iid int64, post bool) (Result, er
 	if err != nil {
 		return Result{}, err
 	}
-	reply, err := r.LLM.Complete(ctx, "renovate_review", schema,
+	var a Assessment
+	err = r.LLM.Ask(ctx, "renovate_review", schema, func(reply string) error {
+		var err error
+		a, err = parseAssessment(reply)
+		return err
+	},
 		llm.Message{Role: "system", Content: systemPrompt},
 		llm.Message{Role: "user", Content: buildPrompt(mr, diffs, files, r.MaxPrompt)},
 	)
-	if err != nil {
-		return Result{}, err
-	}
-	a, err := parseAssessment(reply)
 	if err != nil {
 		return Result{}, err
 	}

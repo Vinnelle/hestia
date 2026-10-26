@@ -13,11 +13,14 @@ import (
 )
 
 type Client struct {
-	BaseURL string
-	Model   string
-	APIKey  string
-	HTTP    *http.Client
+	BaseURL   string
+	Model     string
+	APIKey    string
+	MaxTokens int
+	HTTP      *http.Client
 }
+
+var retryTemperatures = []float64{0, 0.7}
 
 type Message struct {
 	Role    string `json:"role"`
@@ -39,6 +42,7 @@ type request struct {
 	Model          string          `json:"model"`
 	Messages       []Message       `json:"messages"`
 	Temperature    float64         `json:"temperature"`
+	MaxTokens      int             `json:"max_tokens,omitempty"`
 	Stream         bool            `json:"stream"`
 	ResponseFormat *responseFormat `json:"response_format,omitempty"`
 }
@@ -59,8 +63,25 @@ func (c *Client) client() *http.Client {
 	return &http.Client{Timeout: 15 * time.Minute}
 }
 
-func (c *Client) Complete(ctx context.Context, schemaName string, schema json.RawMessage, messages ...Message) (string, error) {
-	in := request{Model: c.Model, Messages: messages}
+func (c *Client) Ask(ctx context.Context, schemaName string, schema json.RawMessage, accept func(reply string) error, messages ...Message) error {
+	var last error
+	for _, temperature := range retryTemperatures {
+		reply, err := c.Complete(ctx, schemaName, schema, temperature, messages...)
+		if err == nil {
+			if err = accept(reply); err == nil {
+				return nil
+			}
+		}
+		last = err
+		if ctx.Err() != nil {
+			break
+		}
+	}
+	return last
+}
+
+func (c *Client) Complete(ctx context.Context, schemaName string, schema json.RawMessage, temperature float64, messages ...Message) (string, error) {
+	in := request{Model: c.Model, Messages: messages, Temperature: temperature, MaxTokens: c.MaxTokens}
 	if schema != nil {
 		in.ResponseFormat = &responseFormat{
 			Type:       "json_schema",

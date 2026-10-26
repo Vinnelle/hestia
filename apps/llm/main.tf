@@ -146,6 +146,9 @@ resource "kubernetes_deployment_v1" "llm" {
             "--api-key-file", "/run/secrets/llm/api-keys",
             "--no-webui",
             "--metrics",
+            "--reasoning-budget", "2048",
+            "--reasoning-budget-message", "Enough thinking; I will answer now.",
+            "--dry-multiplier", "0.8",
           ]
 
           security_context {
