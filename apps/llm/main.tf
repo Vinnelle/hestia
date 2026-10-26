@@ -145,6 +145,7 @@ resource "kubernetes_deployment_v1" "llm" {
             "--port", tostring(local.port),
             "--api-key-file", "/run/secrets/llm/api-keys",
             "--no-webui",
+            "--metrics",
           ]
 
           security_context {
@@ -263,4 +264,30 @@ resource "kubernetes_service_v1" "llm" {
       target_port = "http"
     }
   }
+}
+
+resource "kubectl_manifest" "scrape" {
+  yaml_body = yamlencode({
+    apiVersion = "operator.victoriametrics.com/v1beta1"
+    kind       = "VMPodScrape"
+    metadata = {
+      name      = "llm"
+      namespace = kubernetes_namespace_v1.llm.metadata[0].name
+    }
+    spec = {
+      selector = {
+        matchLabels = {
+          app = "llm"
+        }
+      }
+      podMetricsEndpoints = [{
+        port = "http"
+        path = "/metrics"
+        bearerTokenSecret = {
+          name = kubernetes_secret_v1.llm.metadata[0].name
+          key  = "api-keys"
+        }
+      }]
+    }
+  })
 }

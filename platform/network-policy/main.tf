@@ -24,7 +24,7 @@ locals {
   }
 
   network_policy_egress_fqdns = {
-    automations = []
+    automations = ["api.resend.com"]
     llm         = ["huggingface.co", "**.hf.co"]
     matrix      = []
     storage     = []

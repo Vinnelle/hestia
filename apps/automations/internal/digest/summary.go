@@ -88,10 +88,18 @@ func Checks(f Facts) []Concern {
 	if p := percent(f.Cluster.Memory.Peak, f.Cluster.Memory.Total); p >= 90 {
 		add("warning", "Memory peaked at %.0f%% of the node.", p)
 	}
+	var heavy []Restart
 	for _, r := range f.Cluster.Restarts {
 		if r.Count >= 5 {
-			add("warning", "%s/%s restarted %d times.", r.Namespace, r.Pod, r.Count)
+			heavy = append(heavy, r)
 		}
+	}
+	switch len(heavy) {
+	case 0:
+	case 1:
+		add("warning", "%s/%s restarted %d times.", heavy[0].Namespace, heavy[0].Pod, heavy[0].Count)
+	default:
+		add("warning", "%d pods restarted 5 times or more, %s/%s most (%d).", len(heavy), heavy[0].Namespace, heavy[0].Pod, heavy[0].Count)
 	}
 	for _, c := range f.Certificates {
 		switch {

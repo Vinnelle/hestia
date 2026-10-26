@@ -62,6 +62,22 @@
           {{end}}
         </div>
 
+        {{if .AI}}
+        <button class="sidebar-section-label" type="button" data-section="ai" aria-expanded="false">
+          <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/><path d="M10 10h4v4h-4zM9 2.5V6M15 2.5V6M9 18v3.5M15 18v3.5M2.5 9H6M2.5 15H6M18 9h3.5M18 15h3.5"/></svg>
+          <span class="sidebar-section-label-text">AI</span>
+          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="sidebar-section" data-section="ai" hidden>
+          {{range .AI}}
+          <a class="sidebar-link sidebar-link--sub" href="#ai/{{.ID}}" data-slug="ai/{{.ID}}" data-server="{{.ID}}" data-label="{{.Name}}">
+            {{if eq .ID "llm"}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h13"/></svg>{{else}}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>{{end}}
+            <span class="sidebar-label">{{.Name}}</span>
+          </a>
+          {{end}}
+        </div>
+        {{end}}
+
         <button class="sidebar-section-label" type="button" data-section="gameservers" aria-expanded="false">
           <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
           <span class="sidebar-section-label-text">Game servers</span>
@@ -194,6 +210,24 @@
             </a>
             {{end}}
           </div>
+
+          {{if .AI}}
+          <div class="section-head">
+            <h2 class="section-title">AI</h2>
+          </div>
+
+          <div class="service-list">
+            {{range .AI}}
+            <a class="service-row" href="#ai/{{.ID}}" data-server-row="{{.ID}}">
+              <span class="dot"></span>
+              <span class="service-row-body">
+                <span class="service-row-label">{{.Name}}</span>
+              </span>
+              <span class="service-row-host"></span>
+            </a>
+            {{end}}
+          </div>
+          {{end}}
 
           <div class="section-head">
             <h2 class="section-title">Services</h2>

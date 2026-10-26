@@ -23,7 +23,7 @@ const internalPages = {
 let currentServer = null;
 for (const link of document.querySelectorAll('.sidebar-link[data-server]')) {
   const id = link.dataset.server;
-  internalPages['servers/' + id] = {
+  internalPages[link.dataset.slug] = {
     el: serverPage,
     title: link.dataset.label,
     onShow: () => { currentServer = id; loadServer(id); },
@@ -262,12 +262,29 @@ function fmtValue(v, unit) {
     case 'seconds': return fmtSpan(v);
     case 'ago': return v < 0 ? 'never' : fmtSpan(v) + ' ago';
     case 'per-minute': return (v || 0).toFixed(1) + '/min';
+    case 'in': return v < 0 ? '—' : 'in ' + fmtSpan(v);
+    case 'percent': return Math.round(v || 0) + '%';
+    case 'celsius': return Math.round(v || 0) + ' °C';
+    case 'watts': return Math.round(v || 0) + ' W';
+    case 'mhz': return Math.round(v || 0) + ' MHz';
+    case 'kwh': return (v || 0).toFixed(2) + ' kWh';
+    case 'tokens/s': return (v || 0).toFixed(1) + ' tok/s';
+    case 'tokens': return fmtCount(v);
     default: return String(Math.round(v || 0));
   }
 }
 
+function fmtCount(v) {
+  const n = Math.round(v || 0);
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e4) return Math.round(n / 1e3) + 'k';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'k';
+  return String(n);
+}
+
 function fmtStat(st) {
   const value = st.unknown ? '—' : fmtValue(st.value, st.unit);
+  if (st.unit === 'percent') return value;
   if (st.unit === 'cores') return value + (st.max ? ' / ' + st.max.toFixed(0) : '') + ' cores';
   return value + (st.max ? ' / ' + fmtValue(st.max, st.unit) : '');
 }
@@ -311,7 +328,7 @@ function renderServer(s) {
   row.innerHTML = stats.map((st, i) => {
     const meter = st.max
       ? '<div class="stat-meter"><div class="meter"><span class="meter-fill" id="server-meter-' + i + '"></span></div>' +
-        '<span class="stat-sub">' + escapeHtml(fmtStat(st)) + '</span></div>'
+        '<span class="stat-sub">' + (st.unit === 'percent' ? '' : escapeHtml(fmtStat(st))) + '</span></div>'
       : '';
     const value = st.unknown ? '—' : st.max ? pct((st.value / st.max) * 100) : fmtStat(st);
     return '<div class="stat"><div class="stat-label">' + escapeHtml(st.label) + '</div>' +

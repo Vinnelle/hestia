@@ -365,6 +365,16 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           }
 
           env {
+            name  = "VICTORIA_METRICS_URL"
+            value = "http://vmsingle-vm.${var.observability_namespace}.svc.cluster.local:8428"
+          }
+
+          env {
+            name  = "LLM_MODEL"
+            value = var.llm_model
+          }
+
+          env {
             name  = "SATISFACTORY_HOST"
             value = var.node_ip
           }

@@ -40,6 +40,7 @@ module "admin" {
   satisfactory_admin_secret_name    = module.satisfactory.admin_secret_name
   gitlab_project_id                 = module.gitlab.project_id
   gitlab_default_branch             = module.gitlab.default_branch
+  llm_model                         = module.llm.model
 }
 
 # Automations
@@ -58,6 +59,8 @@ module "automations" {
   llm_base_url              = module.llm.base_url
   llm_model                 = module.llm.model
   llm_api_key               = module.llm.api_key
+  resend_api_key            = var.resend_api_key
+  digest_to                 = var.alert_email
 }
 
 # GitLab

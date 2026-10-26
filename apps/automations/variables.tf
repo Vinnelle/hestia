@@ -44,3 +44,14 @@ variable "llm_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "resend_api_key" {
+  description = "Resend API key the morning digest is sent with"
+  type        = string
+  sensitive   = true
+}
+
+variable "digest_to" {
+  description = "Address the morning digest goes to"
+  type        = string
+}

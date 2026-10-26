@@ -259,6 +259,11 @@ func previewDigest(factsFile, summaryFile, out string) {
 			s = digest.Fallback(checks, err)
 		}
 		summary = s
+		if data, err := json.MarshalIndent(summary, "", "  "); err == nil {
+			if err := os.WriteFile(out+".summary.json", data, 0o644); err != nil {
+				log.Printf("digest: %v", err)
+			}
+		}
 	}
 	view := digest.Build(facts, summary, checks, location(), env("ADMIN_URL", "https://admin.vinnel.cloud"))
 	html, err := digest.Render(view)

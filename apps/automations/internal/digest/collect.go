@@ -277,7 +277,7 @@ func (r *run) ai() AI {
 		GPUTempMax:      r.one(s, `max(max_over_time(DCGM_FI_DEV_GPU_TEMP[$W]))`),
 		GPUPowerAvg:     r.one(s, `avg(avg_over_time(DCGM_FI_DEV_POWER_USAGE[$W]))`),
 		VRAMUsed:        r.one(s, `max(DCGM_FI_DEV_FB_USED)`) * (1 << 20),
-		VRAMTotal:       r.one(s, `max(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE + DCGM_FI_DEV_FB_RESERVED)`) * (1 << 20),
+		VRAMTotal:       r.one(s, `max(DCGM_FI_DEV_FB_USED + DCGM_FI_DEV_FB_FREE)`) * (1 << 20),
 	}
 	if gpus := r.vec(s, `max by (modelName) (DCGM_FI_DEV_GPU_TEMP)`); len(gpus) > 0 {
 		a.GPU = strings.TrimPrefix(gpus[0].Labels["modelName"], "NVIDIA ")

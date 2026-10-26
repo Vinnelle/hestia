@@ -247,7 +247,8 @@ grafana:
 
 prometheus-node-exporter:
   service:
-    annotations: {}
+    annotations:
+      prometheus.io/scrape: null
 
 kube-state-metrics:
   prometheusScrape: false

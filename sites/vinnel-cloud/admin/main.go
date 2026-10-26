@@ -30,6 +30,7 @@ import (
 	sentryhttp "github.com/getsentry/sentry-go/http"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"vinnel-cloud-admin/internal/ai"
 	"vinnel-cloud-admin/internal/blog"
 	"vinnel-cloud-admin/internal/cluster"
 	"vinnel-cloud-admin/internal/kube"
@@ -53,6 +54,7 @@ type pageData struct {
 	Services      []portal.Service
 	ServiceGroups []portal.Group
 	Servers       []servers.Info
+	AI            []servers.Info
 }
 
 func env(key, def string) string {
@@ -802,6 +804,11 @@ func main() {
 		Relay:        relay,
 		TTL:          15 * time.Second,
 	}
+	aiStats := &ai.Collector{
+		URL:   os.Getenv("VICTORIA_METRICS_URL"),
+		Model: env("LLM_MODEL", "llm"),
+		TTL:   15 * time.Second,
+	}
 
 	satisfactorySvc := &satisfactory.Service{
 		Kube:          kubeClient,
@@ -895,7 +902,7 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /api/servers", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, map[string][]servers.Server{"servers": serverStats.Servers()})
+		writeJSON(w, map[string][]servers.Server{"servers": append(serverStats.Servers(), aiStats.Servers()...)})
 	})
 
 	mux.HandleFunc("GET /api/gameservers/satisfactory", func(w http.ResponseWriter, r *http.Request) {
@@ -961,7 +968,7 @@ func main() {
 		w.Header().Set("Content-Security-Policy", contentSecurityPolicy(nonce, filesOrigin))
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, FilesOrigin: filesOrigin, Services: portal.Services, ServiceGroups: portal.Groups(), Servers: serverStats.Infos()}); err != nil {
+		if err := tmpl.Execute(w, pageData{User: userFromRequest(r), Nonce: nonce, MediaOrigin: mediaOrigin, FilesOrigin: filesOrigin, Services: portal.Services, ServiceGroups: portal.Groups(), Servers: serverStats.Infos(), AI: aiStats.Infos()}); err != nil {
 			log.Printf("render portal: %v", err)
 		}
 	})

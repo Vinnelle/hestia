@@ -96,3 +96,8 @@ variable "gitlab_default_branch" {
   description = "Branch the dashboard opens merge requests against"
   type        = string
 }
+
+variable "llm_model" {
+  description = "Model name the LLM page of the dashboard shows"
+  type        = string
+}
