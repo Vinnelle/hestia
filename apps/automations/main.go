@@ -13,13 +13,25 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	_ "time/tzdata"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
+	"automations/internal/digest"
 	"automations/internal/gitlab"
+	"automations/internal/kube"
 	"automations/internal/llm"
+	"automations/internal/metrics"
+	"automations/internal/prom"
 	"automations/internal/renovate"
 	"automations/internal/telemetry"
+)
+
+var (
+	reviewRequests = metrics.NewCounter("automations_renovate_requests_total", "Review requests from the renovate_review job, by result", "result")
+	reviewVerdicts = metrics.NewCounter("automations_renovate_verdicts_total", "Fresh Renovate reviews, by verdict", "verdict")
+	reviewSeconds  = metrics.NewCounter("automations_renovate_review_seconds_total", "Seconds spent on fresh Renovate reviews", "")
+	lastReview     = metrics.NewGauge("automations_renovate_last_review_timestamp_seconds", "Unix time the last fresh Renovate review finished", "")
 )
 
 func env(key, def string) string {
@@ -92,15 +104,27 @@ func reviewHandler(reviewer *renovate.Reviewer) http.HandlerFunc {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"err": "malformed request"})
 			return
 		}
+		started := time.Now()
 		result, err := reviewer.Review(r.Context(), in.MergeRequestIID, true)
 		if err != nil {
 			status := http.StatusBadGateway
+			outcome := "failed"
 			if errors.Is(err, renovate.ErrNotRenovate) {
 				status = http.StatusUnprocessableEntity
+				outcome = "refused"
 			}
+			reviewRequests.Add(outcome, 1)
 			log.Printf("renovate review: mr=!%d err=%v", in.MergeRequestIID, err)
 			writeJSON(w, status, map[string]string{"err": err.Error()})
 			return
+		}
+		if result.Cached {
+			reviewRequests.Add("cached", 1)
+		} else {
+			reviewRequests.Add("reviewed", 1)
+			reviewVerdicts.Add(string(result.Verdict), 1)
+			reviewSeconds.Add("", time.Since(started).Seconds())
+			lastReview.Set("", float64(time.Now().Unix()))
 		}
 		log.Printf("renovate review: mr=!%d sha=%s verdict=%s accepted=%v pass=%v", result.MergeRequest, result.SHA, result.Verdict, result.Accepted, result.Pass)
 		writeJSON(w, http.StatusOK, result)
@@ -122,6 +146,16 @@ func serve() {
 	})
 	mux.HandleFunc("POST /renovate/reviews", reviewHandler(newReviewer()))
 
+	metricsAddr := env("METRICS_ADDR", ":9090")
+	go func() {
+		ms := &http.Server{
+			Addr:              metricsAddr,
+			Handler:           metrics.Handler(reviewRequests, reviewVerdicts, reviewSeconds, lastReview),
+			ReadHeaderTimeout: 5 * time.Second,
+		}
+		log.Fatal(ms.ListenAndServe())
+	}()
+
 	addr := env("LISTEN_ADDR", ":8080")
 	srv := &http.Server{
 		Addr:              addr,
@@ -129,8 +163,124 @@ func serve() {
 		ReadHeaderTimeout: 5 * time.Second,
 		IdleTimeout:       60 * time.Second,
 	}
-	log.Printf("automations listening on %s", addr)
+	log.Printf("automations listening on %s, metrics on %s", addr, metricsAddr)
 	log.Fatal(srv.ListenAndServe())
+}
+
+func location() *time.Location {
+	loc, err := time.LoadLocation(env("DIGEST_TIMEZONE", "Europe/London"))
+	if err != nil {
+		log.Fatalf("DIGEST_TIMEZONE: %v", err)
+	}
+	return loc
+}
+
+func runDigest(args []string) {
+	flags := flag.NewFlagSet("digest", flag.ExitOnError)
+	preview := flags.String("preview", "", "render the email from a facts JSON file instead of collecting and sending")
+	summaryFile := flags.String("summary", "", "with -preview, the summary JSON to render; without it the LLM at LLM_BASE_URL writes one")
+	out := flags.String("out", "digest.html", "with -preview, where to write the HTML")
+	collect := flags.String("collect", "", "collect the last 24 hours of facts into this JSON file, from VICTORIA_METRICS_URL and GitLab when GITLAB_TOKEN is set, then exit")
+	flags.Parse(args)
+
+	if *preview != "" {
+		previewDigest(*preview, *summaryFile, *out)
+		return
+	}
+	if *collect != "" {
+		collectFacts(*collect)
+		return
+	}
+
+	require("GITLAB_PROJECT_ID", "GITLAB_TOKEN", "LLM_BASE_URL", "LLM_MODEL", "RESEND_API_KEY", "DIGEST_TO", "POD_NAMESPACE")
+	client, err := kube.InCluster()
+	if err != nil {
+		log.Fatalf("digest: %v", err)
+	}
+	reviewer := newReviewer()
+	d := &digest.Digest{
+		Collector: &digest.Collector{
+			Prom:           &prom.Client{BaseURL: env("VICTORIA_METRICS_URL", "http://vmsingle-vm.observability.svc.cluster.local:8428")},
+			Kube:           client,
+			GitLab:         reviewer.GitLab,
+			DefaultBranch:  env("GITLAB_DEFAULT_BRANCH", "prd"),
+			RenovatePrefix: reviewer.BranchPrefix,
+		},
+		LLM:      reviewer.LLM,
+		State:    &digest.State{Kube: client, Namespace: os.Getenv("POD_NAMESPACE"), Name: env("DIGEST_STATE", "digest-state")},
+		Mailer:   &digest.Resend{APIKey: os.Getenv("RESEND_API_KEY")},
+		From:     env("DIGEST_FROM", "hestia <digest@vinnel.cloud>"),
+		To:       strings.Split(os.Getenv("DIGEST_TO"), ","),
+		Location: location(),
+		AdminURL: env("ADMIN_URL", "https://admin.vinnel.cloud"),
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+	if err := d.Run(ctx); err != nil {
+		log.Fatalf("digest: %v", err)
+	}
+}
+
+func collectFacts(out string) {
+	require("VICTORIA_METRICS_URL")
+	c := &digest.Collector{
+		Prom:           &prom.Client{BaseURL: os.Getenv("VICTORIA_METRICS_URL")},
+		DefaultBranch:  env("GITLAB_DEFAULT_BRANCH", "prd"),
+		RenovatePrefix: env("RENOVATE_BRANCH_PREFIX", "renovate/"),
+	}
+	if os.Getenv("GITLAB_TOKEN") != "" {
+		c.GitLab = newReviewer().GitLab
+	}
+	to := time.Now().UTC().Truncate(time.Minute)
+	facts, _ := c.Collect(context.Background(), to.Add(-24*time.Hour), to, digest.Snapshot{})
+	data, err := json.MarshalIndent(facts, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := os.WriteFile(out, data, 0o644); err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("wrote %s (%d gaps)", out, len(facts.Gaps))
+}
+
+func previewDigest(factsFile, summaryFile, out string) {
+	var facts digest.Facts
+	readJSON(factsFile, &facts)
+	checks := digest.Checks(facts)
+	var summary digest.Summary
+	if summaryFile != "" {
+		readJSON(summaryFile, &summary)
+		summary.Model = env("LLM_MODEL", summary.Model)
+	} else {
+		require("LLM_BASE_URL", "LLM_MODEL")
+		s, err := digest.Summarize(context.Background(), newReviewer().LLM, facts, checks)
+		if err != nil {
+			log.Printf("digest summary: %v", err)
+			s = digest.Fallback(checks, err)
+		}
+		summary = s
+	}
+	view := digest.Build(facts, summary, checks, location(), env("ADMIN_URL", "https://admin.vinnel.cloud"))
+	html, err := digest.Render(view)
+	if err != nil {
+		log.Fatalf("digest render: %v", err)
+	}
+	if err := os.WriteFile(out, []byte(html), 0o644); err != nil {
+		log.Fatalf("digest: %v", err)
+	}
+	fmt.Println(digest.Subject(summary, facts.To.In(location())))
+	fmt.Print(digest.Text(view))
+	log.Printf("wrote %s (%d bytes)", out, len(html))
+}
+
+func readJSON(path string, v any) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := json.Unmarshal(data, v); err != nil {
+		log.Fatalf("%s: %v", path, err)
+	}
 }
 
 func review(args []string) {
@@ -156,9 +306,15 @@ func review(args []string) {
 }
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "review" {
-		review(os.Args[2:])
-		return
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "review":
+			review(os.Args[2:])
+			return
+		case "digest":
+			runDigest(os.Args[2:])
+			return
+		}
 	}
 	serve()
 }

@@ -34,16 +34,34 @@ type User struct {
 }
 
 type MergeRequest struct {
-	IID          int64    `json:"iid"`
-	Title        string   `json:"title"`
-	Description  string   `json:"description"`
-	State        string   `json:"state"`
-	SourceBranch string   `json:"source_branch"`
-	TargetBranch string   `json:"target_branch"`
-	SHA          string   `json:"sha"`
-	WebURL       string   `json:"web_url"`
-	Labels       []string `json:"labels"`
-	Author       User     `json:"author"`
+	IID          int64      `json:"iid"`
+	Title        string     `json:"title"`
+	Description  string     `json:"description"`
+	State        string     `json:"state"`
+	SourceBranch string     `json:"source_branch"`
+	TargetBranch string     `json:"target_branch"`
+	SHA          string     `json:"sha"`
+	WebURL       string     `json:"web_url"`
+	Labels       []string   `json:"labels"`
+	Author       User       `json:"author"`
+	MergedAt     *time.Time `json:"merged_at"`
+}
+
+type Commit struct {
+	ShortID       string    `json:"short_id"`
+	Title         string    `json:"title"`
+	AuthorName    string    `json:"author_name"`
+	CommittedDate time.Time `json:"committed_date"`
+	WebURL        string    `json:"web_url"`
+}
+
+type Pipeline struct {
+	ID        int64     `json:"id"`
+	Status    string    `json:"status"`
+	Ref       string    `json:"ref"`
+	Source    string    `json:"source"`
+	WebURL    string    `json:"web_url"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type Diff struct {
@@ -171,6 +189,26 @@ func (c *Client) File(ctx context.Context, filePath, ref string) ([]byte, error)
 	endpoint := c.api("/projects/", url.PathEscape(c.ProjectID), "/repository/files/", url.PathEscape(filePath), "/raw?ref=", url.QueryEscape(ref))
 	_, err := c.do(ctx, http.MethodGet, endpoint, nil, &data)
 	return data, err
+}
+
+func (c *Client) project(parts ...string) string {
+	return c.api(append([]string{"/projects/", url.PathEscape(c.ProjectID)}, parts...)...)
+}
+
+func since(t time.Time) string {
+	return url.QueryEscape(t.UTC().Format(time.RFC3339))
+}
+
+func (c *Client) Commits(ctx context.Context, ref string, after time.Time) ([]Commit, error) {
+	return paged[Commit](ctx, c, c.project("/repository/commits?first_parent=true&ref_name=", url.QueryEscape(ref), "&since=", since(after)))
+}
+
+func (c *Client) MergeRequests(ctx context.Context, state string, after time.Time) ([]MergeRequest, error) {
+	return paged[MergeRequest](ctx, c, c.project("/merge_requests?scope=all&state=", url.QueryEscape(state), "&updated_after=", since(after)))
+}
+
+func (c *Client) Pipelines(ctx context.Context, status string, after time.Time) ([]Pipeline, error) {
+	return paged[Pipeline](ctx, c, c.project("/pipelines?status=", url.QueryEscape(status), "&updated_after=", since(after)))
 }
 
 func (c *Client) Notes(ctx context.Context, iid int64) ([]Note, error) {

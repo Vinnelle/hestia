@@ -1,5 +1,5 @@
 {
-  "automations": "artifacts.vinnel.cloud/vinnel-cloud/gaia/automations/automations@sha256:0000000000000000000000000000000000000000000000000000000000000000",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:cd5f8a5ac96ca88f4309a924cd3f96a169a467ec42f849a310791d43aca674fb",
-  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:c57287f0cc79f053392c7af004d6df7560ab0beb8695208586e423f7a4d105e6"
+  "automations": "artifacts.vinnel.cloud/vinnel-cloud/gaia/automations/automations@sha256:d126997dd20dac4a3ba0a71d29172cec9e5b65a699b6e3edd579adda3cf6a423",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:54880ea980ae1967bec9148d97ad18e72fe96271aa3e9ded61e44442415ddc9b",
+  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:88e740a6b7cd44ee4e3d876550635945467bc199483067c7fcce6e5f7ecc4021"
 }

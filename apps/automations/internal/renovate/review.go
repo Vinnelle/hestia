@@ -50,6 +50,7 @@ type Result struct {
 	Verdict      Verdict `json:"verdict"`
 	Accepted     bool    `json:"accepted"`
 	Pass         bool    `json:"pass"`
+	Cached       bool    `json:"cached"`
 	NoteURL      string  `json:"note_url,omitempty"`
 	Note         string  `json:"-"`
 }
@@ -120,6 +121,7 @@ func (r *Reviewer) Review(ctx context.Context, iid int64, post bool) (Result, er
 	if cached, ok := r.cache[mr.SHA]; ok && post {
 		cached.Accepted = accepted
 		cached.Pass = pass(cached.Verdict, accepted)
+		cached.Cached = true
 		return cached, nil
 	}
 

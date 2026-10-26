@@ -279,7 +279,7 @@ resource "kubernetes_ingress_v1" "netbird_grpc" {
     annotations = {
       "cert-manager.io/cluster-issuer"                    = var.cluster_issuer
       "nginx.ingress.kubernetes.io/backend-protocol"      = "GRPC"
-      "nginx.ingress.kubernetes.io/configuration-snippet" = "client_body_timeout 3600s;"
+      "nginx.ingress.kubernetes.io/configuration-snippet" = "client_body_timeout 3600s; grpc_next_upstream_tries 3;"
       "nginx.ingress.kubernetes.io/proxy-read-timeout"    = "86400"
       "nginx.ingress.kubernetes.io/proxy-send-timeout"    = "86400"
       "nginx.ingress.kubernetes.io/service-upstream"      = "true"

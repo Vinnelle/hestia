@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>hestia · {{.Date}}</title>
+<style>
+body,.wrap{margin:0;padding:0;background:#f3efe9}
+.card{background:#faf8f5;border-color:#e6e0d8}
+.rule{border-color:#e6e0d8}
+.strong{color:#161514}.fg{color:#2a2825}.muted{color:#625e57}.faint{color:#8a847a}
+.ok{color:#2f7a45}.warn{color:#a76a12}.danger{color:#b3261e}.info{color:#625e57}.accent,a{color:#b3466b}
+.bg-ok{background:#2f7a45}.bg-warn{background:#a76a12}.bg-danger{background:#b3261e}.bg-accent{background:#b3466b}.bg-track{background:#e6e0d8}
+.pill-ok{background:#e2efe5;color:#2f7a45}.pill-warn{background:#f6ead6;color:#a76a12}.pill-danger{background:#f6dedc;color:#b3261e}
+@media (prefers-color-scheme:dark){
+body,.wrap{background:#0c0c0d!important}
+.card{background:#131316!important;border-color:#1e1e1f!important}
+.rule{border-color:#1e1e1f!important}
+.strong{color:#ededea!important}.fg{color:#cececa!important}.muted{color:#a9a9a3!important}.faint{color:#7d7d78!important}
+.ok{color:#4a9d5f!important}.warn{color:#e0a34a!important}.danger{color:#f87171!important}.info{color:#a9a9a3!important}.accent,a{color:#f7b9d1!important}
+.bg-ok{background:#4a9d5f!important}.bg-warn{background:#e0a34a!important}.bg-danger{background:#f87171!important}.bg-accent{background:#f7b9d1!important}.bg-track{background:#232326!important}
+.pill-ok{background:#16261b!important;color:#4a9d5f!important}.pill-warn{background:#2b2214!important;color:#e0a34a!important}.pill-danger{background:#2e1716!important;color:#f87171!important}
+}
+@media (max-width:600px){.px{padding-left:20px!important;padding-right:20px!important}.kpi{display:block!important;width:100%!important;padding:0 0 14px 0!important}}
+</style>
+</head>
+<body class="wrap" style="margin:0;padding:0;background:#f3efe9;">
+<div style="display:none;max-height:0;overflow:hidden;">{{.StatusLabel}} · {{.Headline}}</div>
+<table role="presentation" class="wrap" width="100%" cellpadding="0" cellspacing="0" style="background:#f3efe9;font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;">
+<tr><td align="center" style="padding:28px 12px;">
+<table role="presentation" class="card" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;background:#faf8f5;border:1px solid #e6e0d8;border-radius:10px;">
+
+<tr><td class="px" style="padding:28px 32px 0 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+    <td class="strong" style="font-size:14px;font-weight:700;color:#161514;letter-spacing:.02em;"><span class="accent" style="color:#b3466b;">▲</span> hestia</td>
+    <td class="muted" align="right" style="font-size:12px;color:#625e57;">{{.Date}}</td>
+  </tr></table>
+</td></tr>
+
+<tr><td class="px" style="padding:22px 32px 0 32px;">
+  <span class="pill-{{.StatusTone}}" style="display:inline-block;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;{{pill .StatusTone}}">● {{.StatusLabel}}</span>
+  <div class="strong" style="margin-top:14px;font-size:21px;line-height:1.3;font-weight:700;color:#161514;">{{.Headline}}</div>
+  {{if .Summary}}<div class="fg" style="margin-top:10px;font-size:13px;line-height:1.65;color:#2a2825;">{{.Summary}}</div>{{end}}
+  <div class="faint" style="margin-top:10px;font-size:11px;color:#8a847a;">{{.Window}}</div>
+</td></tr>
+
+{{if .Attention}}
+<tr><td class="px" style="padding:24px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;padding-bottom:8px;">Needs attention</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  {{range .Attention}}<tr>
+    <td class="{{.Tone}}" valign="top" width="18" style="padding:7px 0;font-size:13px;line-height:1.5;{{color .Tone}}">●</td>
+    <td class="fg rule" style="padding:7px 0;font-size:13px;line-height:1.5;color:#2a2825;">{{.Text}}</td>
+  </tr>{{end}}
+  </table>
+</td></tr>
+{{end}}
+
+<tr><td class="px" style="padding:24px 32px 0 32px;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+  {{range .KPIs}}<td class="kpi" valign="top" width="25%" style="padding-right:12px;">
+    <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">{{.Label}}</div>
+    <div class="strong" style="margin-top:6px;font-size:22px;font-weight:700;color:#161514;"><span class="{{.Tone}}" style="font-size:10px;vertical-align:middle;{{color .Tone}}">●</span> {{.Value}}</div>
+    <div class="muted" style="margin-top:4px;font-size:11px;line-height:1.4;color:#625e57;">{{.Sub}}</div>
+  </td>{{end}}
+  </tr></table>
+</td></tr>
+
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">Cluster</div>
+  {{if .Versions}}<div class="muted" style="margin-top:6px;font-size:12px;color:#625e57;">{{.Versions}}</div>{{end}}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:10px;">
+  {{range .Disks}}<tr>
+    <td class="fg" style="padding:8px 0 4px 0;font-size:12px;color:#2a2825;">{{.Label}}</td>
+    <td class="muted" align="right" style="padding:8px 0 4px 0;font-size:12px;color:#625e57;white-space:nowrap;">{{.Value}}</td>
+  </tr><tr><td colspan="2">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td class="bg-{{.Tone}}" width="{{.Pct}}%" style="height:5px;line-height:5px;font-size:0;border-radius:3px;{{bg .Tone}}">&nbsp;</td>
+      <td class="bg-track" style="height:5px;line-height:5px;font-size:0;background:#e6e0d8;border-radius:3px;">&nbsp;</td>
+    </tr></table>
+  </td></tr>{{end}}
+  </table>
+  {{if .PodIssues}}{{template "rows" .PodIssues}}{{end}}
+  {{if .Restarts}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Restarts</div>{{template "rows" .Restarts}}{{end}}
+  {{if .TopMemory}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Biggest namespaces</div>{{template "rows" .TopMemory}}{{end}}
+</td></tr>
+
+{{if .Hosts}}
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">Traffic</div>
+  {{if .TrafficNote}}<div class="muted" style="margin-top:6px;font-size:12px;line-height:1.5;color:#625e57;">{{.TrafficNote}}</div>{{end}}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+  {{range .Hosts}}<tr>
+    <td class="fg" style="padding:8px 0 3px 0;font-size:12px;color:#2a2825;">{{.Text}}{{if .Left}} <span class="{{.Tone}}" style="{{color .Tone}}">{{.Left}}</span>{{end}}</td>
+    <td class="muted" align="right" style="padding:8px 0 3px 0;font-size:12px;color:#625e57;white-space:nowrap;">{{.Right}}</td>
+  </tr><tr><td colspan="2">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      <td class="bg-accent" width="{{.Pct}}%" style="height:3px;line-height:3px;font-size:0;border-radius:2px;background:#b3466b;">&nbsp;</td>
+      <td style="height:3px;line-height:3px;font-size:0;">&nbsp;</td>
+    </tr></table>
+  </td></tr>{{end}}
+  </table>
+</td></tr>
+{{end}}
+
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">Changes</div>
+  {{if .NoChanges}}<div class="muted" style="margin-top:8px;font-size:12px;color:#625e57;">Nothing changed.</div>{{end}}
+  {{if .Upgrades}}{{template "rows" .Upgrades}}{{end}}
+  {{if .MergedNote}}<div class="muted" style="margin-top:8px;font-size:12px;line-height:1.5;color:#625e57;">{{.MergedNote}}</div>{{end}}
+  {{if .Reviews}}<div class="muted" style="margin-top:4px;font-size:12px;line-height:1.5;color:#625e57;">{{.Reviews}}</div>{{end}}
+  {{if .Commits}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Commits on prd</div>{{template "rows" .Commits}}{{end}}
+  {{if .Merged}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Merged</div>{{template "rows" .Merged}}{{end}}
+  {{if .Images}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">New images</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+  {{range .Images}}<tr><td class="rule" style="padding:7px 0;border-top:1px solid #e6e0d8;font-size:12px;line-height:1.5;">
+    <div class="fg" style="color:#2a2825;">{{.Text}}</div>
+    <div class="muted" style="color:#625e57;font-size:11px;word-break:break-all;">{{.Left}} <span class="accent" style="color:#b3466b;">→</span> {{.Right}}</div>
+  </td></tr>{{end}}
+  </table>{{end}}
+  {{if .Workloads}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Workloads</div>{{template "rows" .Workloads}}{{end}}
+  {{if .Pipelines}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Failed pipelines</div>{{template "rows" .Pipelines}}{{end}}
+</td></tr>
+
+{{if .Alerts}}
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">Alerts</div>
+  {{template "rows" .Alerts}}
+</td></tr>
+{{end}}
+
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">Security</div>
+  <div class="fg" style="margin-top:8px;font-size:13px;color:#2a2825;">{{.Vulns}}{{if .VulnNote}} <span class="muted" style="color:#625e57;font-size:12px;">· {{.VulnNote}}</span>{{end}}</div>
+  {{if .Worst}}{{template "rows" .Worst}}{{end}}
+  {{if .Certs}}<div class="muted" style="margin-top:14px;font-size:12px;color:#625e57;">Certificates, soonest first</div>{{template "rows" .Certs}}{{end}}
+</td></tr>
+
+{{if .AI}}
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">LLM and GPU</div>
+  {{template "rows" .AI}}
+</td></tr>
+{{end}}
+
+{{if .Suggestions}}
+<tr><td class="px" style="padding:26px 32px 0 32px;">
+  <div class="faint" style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8a847a;">Worth doing</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+  {{range .Suggestions}}<tr>
+    <td class="accent" valign="top" width="18" style="padding:7px 0;font-size:13px;line-height:1.5;color:#b3466b;">→</td>
+    <td class="fg" style="padding:7px 0;font-size:13px;line-height:1.5;color:#2a2825;">{{.}}</td>
+  </tr>{{end}}
+  </table>
+</td></tr>
+{{end}}
+
+<tr><td class="px" style="padding:30px 32px 28px 32px;">
+  <div class="rule" style="border-top:1px solid #e6e0d8;padding-top:14px;"></div>
+  {{if .ModelErr}}<div class="warn" style="font-size:11px;line-height:1.5;color:#a76a12;padding-bottom:6px;">No summary today: {{.ModelErr}}</div>{{end}}
+  {{range .Gaps}}<div class="warn" style="font-size:11px;line-height:1.5;color:#a76a12;">Missing {{.}}</div>{{end}}
+  <div class="faint" style="font-size:11px;line-height:1.6;color:#8a847a;">{{.Footer}}</div>
+  {{if .AdminURL}}<div style="margin-top:6px;font-size:11px;"><a href="{{.AdminURL}}" style="color:#b3466b;text-decoration:none;">{{.AdminURL}}</a></div>{{end}}
+</td></tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>
+{{define "rows"}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+{{range .}}<tr>
+  <td class="fg rule" style="padding:7px 0;border-top:1px solid #e6e0d8;font-size:12px;line-height:1.5;color:#2a2825;">{{if .Left}}<span class="{{if .Tone}}{{.Tone}}{{else}}muted{{end}}" style="{{color .Tone}}">{{.Left}}</span> {{end}}{{if .URL}}<a href="{{.URL}}" style="color:#2a2825;text-decoration:none;" class="fg">{{.Text}}</a>{{else}}{{.Text}}{{end}}</td>
+  {{if .Right}}<td class="muted rule" align="right" style="padding:7px 0 7px 12px;border-top:1px solid #e6e0d8;font-size:12px;line-height:1.5;color:#625e57;white-space:nowrap;">{{.Right}}</td>{{end}}
+</tr>{{end}}
+</table>{{end}}
