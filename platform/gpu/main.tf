@@ -61,6 +61,7 @@ resource "helm_release" "dcgm_exporter" {
       }
       extraEnv = [
         { name = "NVIDIA_VISIBLE_DEVICES", value = "all" },
+        { name = "DCGM_EXPORTER_KUBERNETES", value = "false" },
       ]
       extraConfigMapVolumes = [
         { name = "counters", configMap = { name = kubernetes_config_map_v1.dcgm_counters.metadata[0].name } },

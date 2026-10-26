@@ -122,6 +122,7 @@ resource "kubernetes_deployment_v1" "automations" {
 
           security_context {
             allow_privilege_escalation = false
+            run_as_non_root            = true
             read_only_root_filesystem  = true
             capabilities {
               drop = ["ALL"]
@@ -408,6 +409,7 @@ resource "kubernetes_cron_job_v1" "digest" {
 
               security_context {
                 allow_privilege_escalation = false
+                run_as_non_root            = true
                 read_only_root_filesystem  = true
                 capabilities {
                   drop = ["ALL"]

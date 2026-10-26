@@ -95,6 +95,7 @@ resource "kubernetes_deployment_v1" "llm" {
 
           security_context {
             allow_privilege_escalation = false
+            run_as_non_root            = true
             read_only_root_filesystem  = true
             capabilities {
               drop = ["ALL"]
@@ -153,6 +154,7 @@ resource "kubernetes_deployment_v1" "llm" {
 
           security_context {
             allow_privilege_escalation = false
+            run_as_non_root            = true
             read_only_root_filesystem  = true
             capabilities {
               drop = ["ALL"]
