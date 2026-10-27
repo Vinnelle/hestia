@@ -23,14 +23,17 @@ const syncPicks = () => {
   const channel = root.dataset.channel === 'beta' ? 'beta' : 'stable';
   for (const b of document.querySelectorAll('[data-os-choice]')) b.setAttribute('aria-pressed', b.dataset.osChoice === os);
   for (const b of document.querySelectorAll('[data-channel-choice]')) b.setAttribute('aria-pressed', b.dataset.channelChoice === channel);
+  for (const b of document.querySelectorAll('[data-party-toggle]')) b.setAttribute('aria-pressed', root.dataset.party === 'on');
 };
 syncPicks();
 new MutationObserver(syncPicks).observe(document.body, { childList: true, subtree: true });
 
 document.addEventListener('click', (e) => {
-  const tab = e.target.closest('[data-os-choice], [data-channel-choice]');
+  const tab = e.target.closest('[data-os-choice], [data-channel-choice], [data-party-toggle]');
   if (!tab) return;
-  const [key, value] = tab.dataset.osChoice ? ['os', tab.dataset.osChoice] : ['channel', tab.dataset.channelChoice];
+  const [key, value] = tab.dataset.osChoice ? ['os', tab.dataset.osChoice]
+    : tab.dataset.channelChoice ? ['channel', tab.dataset.channelChoice]
+    : ['party', root.dataset.party === 'on' ? 'off' : 'on'];
   root.dataset[key] = value;
   try { localStorage[key] = value; } catch {}
   syncPicks();

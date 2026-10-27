@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
 <script>try{const t=localStorage.theme;if(t){const r=document.documentElement;r.dataset.theme=t}}catch{}</script>
-<script>(()=>{const r=document.documentElement,p=navigator.userAgentData?.platform||navigator.platform||'';let o,c;try{o=localStorage.os;c=localStorage.channel}catch{}r.dataset.os=['linux','macos','windows'].includes(o)?o:/^Win/i.test(p)?'windows':/^Mac/i.test(p)?'macos':'linux';r.dataset.channel=location.pathname==='/beta'||c==='beta'?'beta':'stable'})()</script>
+<script>(()=>{const r=document.documentElement,p=navigator.userAgentData?.platform||navigator.platform||'';let o,c,y;try{o=localStorage.os;c=localStorage.channel;y=localStorage.party}catch{}r.dataset.os=['linux','macos','windows'].includes(o)?o:/^Win/i.test(p)?'windows':/^Mac/i.test(p)?'macos':'linux';r.dataset.channel=/^\/beta(\/party)?$/.test(location.pathname)||c==='beta'?'beta':'stable';r.dataset.party=/^(\/beta)?\/party$/.test(location.pathname)||y==='on'?'on':'off'})()</script>
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="/fonts/jetbrains-mono.css">
@@ -63,10 +63,12 @@
           <button class="os-tab" type="button" data-channel-choice="stable" aria-pressed="true">stable</button>
           <button class="os-tab" type="button" data-channel-choice="beta" aria-pressed="false">beta</button>
         </div>
+        <span class="picks-sep" aria-hidden="true"></span>
+        <button class="os-tab" type="button" data-party-toggle aria-pressed="false">join vin-moe-party</button>
       </div>
       <div class="os-unix">
         <p class="cmd-label">In bash, zsh, fish or any other shell</p>
-        <div class="cmd ch-stable">
+        <div class="cmd ch-stable party-off">
           <code>curl -fsSL <span class="nowrap">https://chat.vin.moe | sh</span></code>
           <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux and macOS command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
@@ -74,9 +76,25 @@
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
           </button>
         </div>
-        <div class="cmd ch-beta">
+        <div class="cmd ch-stable party-on">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/party | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/party | sh" aria-label="Copy the Linux and macOS command that joins vin-moe-party">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ch-beta party-off">
           <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/beta | sh</span></code>
           <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/beta | sh" aria-label="Copy the Linux and macOS beta command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ch-beta party-on">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/beta/party | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/beta/party | sh" aria-label="Copy the Linux and macOS beta command that joins vin-moe-party">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
             <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
@@ -85,7 +103,7 @@
       </div>
       <div class="os-windows">
         <p class="cmd-label">In PowerShell</p>
-        <div class="cmd ps ch-stable">
+        <div class="cmd ps ch-stable party-off">
           <code>irm <span class="nowrap">https://chat.vin.moe | iex</span></code>
           <button class="copy" type="button" data-copy="irm https://chat.vin.moe | iex" aria-label="Copy the PowerShell command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
@@ -93,7 +111,15 @@
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
           </button>
         </div>
-        <div class="cmd ps ch-beta">
+        <div class="cmd ps ch-stable party-on">
+          <code>irm <span class="nowrap">https://chat.vin.moe/party | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe/party | iex" aria-label="Copy the PowerShell command that joins vin-moe-party">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ps ch-beta party-off">
           <code>irm <span class="nowrap">https://chat.vin.moe/beta | iex</span></code>
           <button class="copy" type="button" data-copy="irm https://chat.vin.moe/beta | iex" aria-label="Copy the PowerShell beta command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
@@ -101,7 +127,16 @@
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
           </button>
         </div>
+        <div class="cmd ps ch-beta party-on">
+          <code>irm <span class="nowrap">https://chat.vin.moe/beta/party | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe/beta/party | iex" aria-label="Copy the PowerShell beta command that joins vin-moe-party">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
       </div>
+      <p class="party-note party-on">chat joins vin-moe-party, the vin.moe group chat, as it starts. Its password is blank, so anyone can read along.</p>
       <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.5.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
     </div>
     <p class="cmd-note">I know some of you guys hate curl installs, <a href="#runner">so see what the script runs.</a></p>
@@ -280,13 +315,15 @@
         <button class="os-tab" type="button" data-channel-choice="stable" aria-pressed="true">stable</button>
         <button class="os-tab" type="button" data-channel-choice="beta" aria-pressed="false">beta</button>
       </div>
+      <span class="picks-sep" aria-hidden="true"></span>
+      <button class="os-tab" type="button" data-party-toggle aria-pressed="false">join vin-moe-party</button>
     </div>
 
     <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.5.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
 
     <div class="os-unix">
       <div class="cmds">
-        <div class="cmd ch-stable">
+        <div class="cmd ch-stable party-off">
           <code>curl -fsSL <span class="nowrap">https://chat.vin.moe | sh</span></code>
           <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe | sh" aria-label="Copy the Linux and macOS command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
@@ -294,9 +331,25 @@
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
           </button>
         </div>
-        <div class="cmd ch-beta">
+        <div class="cmd ch-stable party-on">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/party | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/party | sh" aria-label="Copy the Linux and macOS command that joins vin-moe-party">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ch-beta party-off">
           <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/beta | sh</span></code>
           <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/beta | sh" aria-label="Copy the Linux and macOS beta command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ch-beta party-on">
+          <code>curl -fsSL <span class="nowrap">https://chat.vin.moe/beta/party | sh</span></code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chat.vin.moe/beta/party | sh" aria-label="Copy the Linux and macOS beta command that joins vin-moe-party">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
             <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
@@ -309,12 +362,19 @@
       <h3>the script</h3>
       <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a private temporary folder, checks SHA256SUMS against chat's release key, checks the binary against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
       <p class="muted ch-beta">The beta's runner is the same script with one line changed, <code class="nowrap">channel=beta</code>, so it runs the newest release, betas included, instead of the latest stable one.</p>
-      <p class="sha ch-stable">SHA-256 <code>@@sha256:chat.sh@@</code></p>
-      <pre class="code script ch-stable" tabindex="0" aria-label="The chat.sh runner script"><code>@@script:chat.sh@@</code></pre>
-      <p class="muted ch-stable">To check it before running anything, <code>curl -fsSL https://chat.vin.moe | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.sh">chat.vin.moe/chat.sh</a>.</p>
-      <p class="sha ch-beta">SHA-256 <code>@@sha256:chat-beta.sh@@</code></p>
-      <pre class="code script ch-beta" tabindex="0" aria-label="The chat-beta.sh runner script"><code>@@script:chat-beta.sh@@</code></pre>
-      <p class="muted ch-beta">To check it before running anything, <code>curl -fsSL https://chat.vin.moe/beta | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.sh">chat.vin.moe/chat-beta.sh</a>.</p>
+      <p class="muted party-on">To join vin-moe-party, the line <code class="nowrap">session=</code> becomes <code class="nowrap">session=vin-moe-party</code>, so chat joins the vin.moe group chat as it starts, with a blank password. Anyone can join it, and read what's said there.</p>
+      <p class="sha ch-stable party-off">SHA-256 <code>@@sha256:chat.sh@@</code></p>
+      <pre class="code script ch-stable party-off" tabindex="0" aria-label="The chat.sh runner script"><code>@@script:chat.sh@@</code></pre>
+      <p class="muted ch-stable party-off">To check it before running anything, <code>curl -fsSL https://chat.vin.moe | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.sh">chat.vin.moe/chat.sh</a>.</p>
+      <p class="sha ch-stable party-on">SHA-256 <code>@@sha256:chat-party.sh@@</code></p>
+      <pre class="code script ch-stable party-on" tabindex="0" aria-label="The chat-party.sh runner script"><code>@@script:chat-party.sh@@</code></pre>
+      <p class="muted ch-stable party-on">To check it before running anything, <code>curl -fsSL https://chat.vin.moe/party | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-party.sh">chat.vin.moe/chat-party.sh</a>.</p>
+      <p class="sha ch-beta party-off">SHA-256 <code>@@sha256:chat-beta.sh@@</code></p>
+      <pre class="code script ch-beta party-off" tabindex="0" aria-label="The chat-beta.sh runner script"><code>@@script:chat-beta.sh@@</code></pre>
+      <p class="muted ch-beta party-off">To check it before running anything, <code>curl -fsSL https://chat.vin.moe/beta | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.sh">chat.vin.moe/chat-beta.sh</a>.</p>
+      <p class="sha ch-beta party-on">SHA-256 <code>@@sha256:chat-beta-party.sh@@</code></p>
+      <pre class="code script ch-beta party-on" tabindex="0" aria-label="The chat-beta-party.sh runner script"><code>@@script:chat-beta-party.sh@@</code></pre>
+      <p class="muted ch-beta party-on">To check it before running anything, <code>curl -fsSL https://chat.vin.moe/beta/party | sha256sum</code> (or <code class="nowrap">shasum -a 256</code> on a Mac) prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta-party.sh">chat.vin.moe/chat-beta-party.sh</a>.</p>
 
       <h3>by hand</h3>
       <p class="muted os-linux">Download chat-linux-x86_64, SHA256SUMS and SHA256SUMS.minisig from the <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">latest release</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">newest release</a>. Check the signature, then the binary, and put chat wherever you like:</p>
@@ -335,7 +395,7 @@ chmod +x chat-macos-aarch64
 
     <div class="os-windows">
       <div class="cmds">
-        <div class="cmd ps ch-stable">
+        <div class="cmd ps ch-stable party-off">
           <code>irm <span class="nowrap">https://chat.vin.moe | iex</span></code>
           <button class="copy" type="button" data-copy="irm https://chat.vin.moe | iex" aria-label="Copy the PowerShell command">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
@@ -343,9 +403,25 @@ chmod +x chat-macos-aarch64
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
           </button>
         </div>
-        <div class="cmd ps ch-beta">
+        <div class="cmd ps ch-stable party-on">
+          <code>irm <span class="nowrap">https://chat.vin.moe/party | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe/party | iex" aria-label="Copy the PowerShell command that joins vin-moe-party">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ps ch-beta party-off">
           <code>irm <span class="nowrap">https://chat.vin.moe/beta | iex</span></code>
           <button class="copy" type="button" data-copy="irm https://chat.vin.moe/beta | iex" aria-label="Copy the PowerShell beta command">
+            <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+            <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          </button>
+        </div>
+        <div class="cmd ps ch-beta party-on">
+          <code>irm <span class="nowrap">https://chat.vin.moe/beta/party | iex</span></code>
+          <button class="copy" type="button" data-copy="irm https://chat.vin.moe/beta/party | iex" aria-label="Copy the PowerShell beta command that joins vin-moe-party">
             <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
             <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
             <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
@@ -357,12 +433,19 @@ chmod +x chat-macos-aarch64
       <h3>the script</h3>
       <p class="muted">It's less of an install script, and more a runner. It downloads the latest release into a new folder in your temporary folder, checks SHA256SUMS against chat's release key, checks the program against SHA256SUMS, runs it, and deletes it again when chat exits. Nothing is installed, and nothing is left behind.</p>
       <p class="muted ch-beta">The beta's runner is the same script with one line changed, <code class="nowrap">$channel = 'beta'</code>, so it runs the newest release, betas included, instead of the latest stable one.</p>
-      <p class="sha ch-stable">SHA-256 <code>@@sha256:chat.ps1@@</code></p>
-      <pre class="code script ch-stable" tabindex="0" aria-label="The chat.ps1 runner script"><code>@@script:chat.ps1@@</code></pre>
-      <p class="muted ch-stable">To check it before running anything, <code>iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.ps1">chat.vin.moe/chat.ps1</a>.</p>
-      <p class="sha ch-beta">SHA-256 <code>@@sha256:chat-beta.ps1@@</code></p>
-      <pre class="code script ch-beta" tabindex="0" aria-label="The chat-beta.ps1 runner script"><code>@@script:chat-beta.ps1@@</code></pre>
-      <p class="muted ch-beta">To check it before running anything, <code>iwr https://chat.vin.moe/beta -OutFile chat-beta.ps1; Get-FileHash chat-beta.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.ps1">chat.vin.moe/chat-beta.ps1</a>.</p>
+      <p class="muted party-on">To join vin-moe-party, the line <code class="nowrap">$session = ''</code> becomes <code class="nowrap">$session = 'vin-moe-party'</code>, so chat joins the vin.moe group chat as it starts, with a blank password. Anyone can join it, and read what's said there.</p>
+      <p class="sha ch-stable party-off">SHA-256 <code>@@sha256:chat.ps1@@</code></p>
+      <pre class="code script ch-stable party-off" tabindex="0" aria-label="The chat.ps1 runner script"><code>@@script:chat.ps1@@</code></pre>
+      <p class="muted ch-stable party-off">To check it before running anything, <code>iwr https://chat.vin.moe -OutFile chat.ps1; Get-FileHash chat.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat.ps1">chat.vin.moe/chat.ps1</a>.</p>
+      <p class="sha ch-stable party-on">SHA-256 <code>@@sha256:chat-party.ps1@@</code></p>
+      <pre class="code script ch-stable party-on" tabindex="0" aria-label="The chat-party.ps1 runner script"><code>@@script:chat-party.ps1@@</code></pre>
+      <p class="muted ch-stable party-on">To check it before running anything, <code>iwr https://chat.vin.moe/party -OutFile chat-party.ps1; Get-FileHash chat-party.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-party.ps1">chat.vin.moe/chat-party.ps1</a>.</p>
+      <p class="sha ch-beta party-off">SHA-256 <code>@@sha256:chat-beta.ps1@@</code></p>
+      <pre class="code script ch-beta party-off" tabindex="0" aria-label="The chat-beta.ps1 runner script"><code>@@script:chat-beta.ps1@@</code></pre>
+      <p class="muted ch-beta party-off">To check it before running anything, <code>iwr https://chat.vin.moe/beta -OutFile chat-beta.ps1; Get-FileHash chat-beta.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta.ps1">chat.vin.moe/chat-beta.ps1</a>.</p>
+      <p class="sha ch-beta party-on">SHA-256 <code>@@sha256:chat-beta-party.ps1@@</code></p>
+      <pre class="code script ch-beta party-on" tabindex="0" aria-label="The chat-beta-party.ps1 runner script"><code>@@script:chat-beta-party.ps1@@</code></pre>
+      <p class="muted ch-beta party-on">To check it before running anything, <code>iwr https://chat.vin.moe/beta/party -OutFile chat-beta-party.ps1; Get-FileHash chat-beta-party.ps1</code> prints the same SHA-256. Browsers get the same file at <a href="https://chat.vin.moe/chat-beta-party.ps1">chat.vin.moe/chat-beta-party.ps1</a>.</p>
 
       <h3>by hand</h3>
       <p class="muted">Download chat-windows-x86_64.exe, SHA256SUMS and SHA256SUMS.minisig from the <a class="ch-stable" href="https://github.com/Vinnelle/chat/releases/latest">latest release</a><a class="ch-beta" href="https://github.com/Vinnelle/chat/releases">newest release</a>. If you have minisign, check the signature. Then check that the hash Get-FileHash prints matches the line for chat-windows-x86_64.exe in SHA256SUMS, and run chat from a terminal:</p>

@@ -8,6 +8,9 @@
 #
 #   irm https://chat.vin.moe/beta | iex
 #
+# To join vin-moe-party, the vin.moe group chat, as chat starts, use
+# https://chat.vin.moe/party instead (or /beta/party for the beta).
+#
 # This script downloads the latest release of chat from GitHub, checks that
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for administrator rights, and
@@ -63,6 +66,12 @@
     # to beta, which runs the newest release, betas included.
     $channel = 'stable'
 
+    # The session chat joins as it starts, if any. https://chat.vin.moe/party
+    # (and /beta/party) is this same script with the line below set to
+    # vin-moe-party, the vin.moe group chat. Its password is blank, so
+    # anyone who knows the name can join it and read along.
+    $session = ''
+
     # Where releases come from, and the public half of chat's release key.
     # Only the public half is here: it can check signatures, but it can't
     # make them.
@@ -75,6 +84,7 @@
     $minisignBackupPub = 'RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv'
     $site = 'https://chat.vin.moe'
     if ($channel -eq 'beta') { $site += '/beta' }
+    if ($session) { $site += '/party' }
 
     # Print a status line on stderr.
     function Say([string] $text) {
@@ -386,7 +396,26 @@ namespace ChatRunner
         $exe = Join-Path $dir 'chat.exe'
         Move-Item (Join-Path $dir $asset) $exe
         Say 'signature and checksum match. Starting chat, which is deleted again when it exits'
-        & $exe @args
+        if (-not $session) {
+            & $exe @args
+            return
+        }
+        # With a session to join, chat gets --session first, so an argument
+        # of your own can still change it, and a blank CHAT_PASSWORD, which
+        # it uses instead of asking for the session's password. PowerShell
+        # deletes a variable set to '', so it's set with Windows' own
+        # SetEnvironmentVariable instead. "irm | iex" runs in your own
+        # PowerShell, so the variable is put back as it was once chat exits.
+        if (-not ('ChatRunner.Env' -as [type])) {
+            Add-Type -Namespace ChatRunner -Name Env -MemberDefinition '[DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern bool SetEnvironmentVariable(string name, string value);'
+        }
+        $password = $env:CHAT_PASSWORD
+        [void][ChatRunner.Env]::SetEnvironmentVariable('CHAT_PASSWORD', '')
+        try {
+            & $exe --session $session @args
+        } finally {
+            $env:CHAT_PASSWORD = $password
+        }
     } finally {
         Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue
     }

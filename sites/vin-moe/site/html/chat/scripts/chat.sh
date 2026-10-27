@@ -10,6 +10,9 @@
 #
 #   curl -fsSL https://chat.vin.moe/beta | sh
 #
+# To join vin-moe-party, the vin.moe group chat, as chat starts, use
+# https://chat.vin.moe/party instead (or /beta/party for the beta).
+#
 # This script downloads the latest release of chat from GitHub, checks that
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for root, and changes no
@@ -58,6 +61,12 @@ set -eu
 # https://chat.vin.moe/beta, is this same script with that one line set to
 # beta, which runs the newest release, betas included.
 channel=stable
+
+# The session chat joins as it starts, if any. https://chat.vin.moe/party
+# (and /beta/party) is this same script with the line below set to
+# vin-moe-party, the vin.moe group chat. Its password is blank, so anyone
+# who knows the name can join it and read along.
+session=
 
 # Where releases come from, and the public half of chat's release key. Only
 # the public half is here: it can check signatures, but it can't make them.
@@ -233,6 +242,13 @@ main() {
     # folder, and the program with it.
     mv "$dir/$asset" "$dir/$bin"
     chmod 700 "$dir/$bin"
+    # With a session to join, chat gets --session first, so an option of
+    # your own can still change it, and a blank CHAT_PASSWORD, which it uses
+    # instead of asking for the session's password.
+    if [ -n "$session" ]; then
+        set -- --session "$session" "$@"
+        export CHAT_PASSWORD=
+    fi
     say "signature and checksum match. Starting chat, which is deleted again when it exits"
     "$dir/$bin" "$@" </dev/tty
 }

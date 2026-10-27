@@ -464,6 +464,7 @@ ol.topics h3::before {
 
 .cmds { max-width: 31rem; margin: 0 auto; text-align: left; }
 .cmd-label { margin: 0 0 0.4rem 0.1rem; color: var(--faint); font-size: 0.8rem; line-height: 1.5; }
+.party-note { margin: 0.5rem 0 0; color: var(--faint); font-size: 0.8rem; line-height: 1.5; text-align: center; text-wrap: balance; }
 .picks { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 1rem; margin: 0 0 0.7rem; }
 .picks-sep { width: 1px; height: 1rem; background: var(--border-strong); }
 .os-tabs { display: flex; gap: 0.3rem; }
@@ -484,7 +485,8 @@ ol.topics h3::before {
 :root[data-os="macos"] .os-tab[data-os-choice="macos"],
 :root[data-os="windows"] .os-tab[data-os-choice="windows"],
 :root:not([data-channel="beta"]) .os-tab[data-channel-choice="stable"],
-:root[data-channel="beta"] .os-tab[data-channel-choice="beta"] { color: var(--on-accent); background: var(--accent); }
+:root[data-channel="beta"] .os-tab[data-channel-choice="beta"],
+:root[data-party="on"] .os-tab[data-party-toggle] { color: var(--on-accent); background: var(--accent); }
 :root:not([data-os]) .picks,
 :root:not([data-os="macos"]) .no-release,
 :root[data-os="linux"] :is(.os-macos, .os-windows),
@@ -492,7 +494,9 @@ ol.topics h3::before {
 :root[data-os="macos"]:not([data-channel="beta"]) .os-unix,
 :root[data-os="windows"] :is(.os-linux, .os-macos, .os-unix),
 :root:not([data-channel="beta"]) .ch-beta,
-:root[data-channel="beta"] .ch-stable { display: none; }
+:root[data-channel="beta"] .ch-stable,
+:root:not([data-party="on"]) .party-on,
+:root[data-party="on"] .party-off { display: none; }
 :root:not([data-os]) div.os-unix + div.os-windows { margin-top: 1.4rem; }
 .no-release {
   margin: 0;

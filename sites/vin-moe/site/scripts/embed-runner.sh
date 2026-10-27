@@ -3,16 +3,22 @@ set -eu
 
 page=chat/index.html
 
-beta() {
+variant() {
   [ "$(grep -c "$2" "chat/scripts/$1")" = 1 ] || {
     echo "embed-runner.sh: chat/scripts/$1 needs exactly one line matching $2" >&2
     exit 1
   }
-  sed "/$2/s/stable/beta/" "chat/scripts/$1" >"chat/scripts/${1%.*}-beta.${1##*.}"
+  sed "/$2/s/$3/$4/" "chat/scripts/$1" >"chat/scripts/${1%.*}-$5.${1##*.}"
 }
 
-beta chat.sh '^channel=stable$'
-beta chat.ps1 "^ *\\\$channel = 'stable'\$"
+variant chat.sh '^channel=stable$' stable beta beta
+variant chat.ps1 "^ *\\\$channel = 'stable'\$" stable beta beta
+for script in chat.sh chat-beta.sh; do
+  variant "$script" '^session=$' '$' vin-moe-party party
+done
+for script in chat.ps1 chat-beta.ps1; do
+  variant "$script" "^ *\\\$session = ''\$" "''" "'vin-moe-party'" party
+done
 
 for script in chat/scripts/*; do
   name="${script##*/}"
