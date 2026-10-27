@@ -387,6 +387,62 @@ func TestRenderHTML(t *testing.T) {
 	}
 }
 
+func TestRenderHTMLGFM(t *testing.T) {
+	source := `# Title
+
+Some *emphasis*, **strong** and ~~struck~~ text with a [link](https://vin.moe/) and https://example.com/bare.
+
+| a | b |
+|---|:-:|
+| 1 | 2 |
+
+- [x] done
+- [ ] todo
+
+<div class="note">raw <b>html</b></div>
+
+![alt](/media/pic.png "title")
+
+~~~go
+fmt.Println("<hi>")
+~~~
+
+Line with <span>inline html</span> & an ampersand.
+`
+	want := `<h1>Title</h1>
+<p>Some <em>emphasis</em>, <strong>strong</strong> and <del>struck</del> text with a <a href="https://vin.moe/">link</a> and <a href="https://example.com/bare">https://example.com/bare</a>.</p>
+<table>
+<thead>
+<tr>
+<th>a</th>
+<th style="text-align:center">b</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:center">2</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><input checked="" disabled="" type="checkbox"> done</li>
+<li><input disabled="" type="checkbox"> todo</li>
+</ul>
+<div class="note">raw <b>html</b></div>
+<p><img src="/media/pic.png" alt="alt" title="title"></p>
+<pre><code class="language-go">fmt.Println(&quot;&lt;hi&gt;&quot;)
+</code></pre>
+<p>Line with <span>inline html</span> &amp; an ampersand.</p>`
+	got, err := RenderHTML(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("RenderHTML =\n%s\nwant\n%s", got, want)
+	}
+}
+
 func TestPublishedExcludesDrafts(t *testing.T) {
 	s, err := NewStore(t.TempDir())
 	if err != nil {

@@ -78,22 +78,6 @@
         </div>
         {{end}}
 
-        <button class="sidebar-section-label" type="button" data-section="gameservers" aria-expanded="false">
-          <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
-          <span class="sidebar-section-label-text">Game servers</span>
-          <svg class="sidebar-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-        </button>
-        <div class="sidebar-section" data-section="gameservers" hidden>
-          <a class="sidebar-link sidebar-link--sub" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
-            <span class="sidebar-label">Satisfactory</span>
-          </a>
-          <a class="sidebar-link sidebar-link--sub" href="#gameservers/minecraft" data-slug="gameservers/minecraft">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-            <span class="sidebar-label">Minecraft</span>
-          </a>
-        </div>
-
         {{range .ServiceGroups}}
         <button class="sidebar-section-label" type="button" data-section="{{.Name}}" aria-expanded="false">
           <svg class="sidebar-section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{{.Icon}}</svg>
@@ -234,20 +218,6 @@
           </div>
 
           <div class="service-list">
-            <a class="service-row service-link" href="#gameservers/satisfactory" data-slug="gameservers/satisfactory">
-              <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19.5V9l6 3.75V9l6 3.75V5.5h6v14z"/></svg>
-              <span class="service-row-body">
-                <span class="service-row-label">Satisfactory</span>
-                </span>
-              <span class="service-row-host">factory<span class="tld">.vin.moe</span></span>
-            </a>
-            <a class="service-row service-link" href="#gameservers/minecraft" data-slug="gameservers/minecraft">
-              <svg class="service-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
-              <span class="service-row-body">
-                <span class="service-row-label">Minecraft</span>
-                </span>
-              <span class="service-row-host">mc<span class="tld">.vin.moe</span></span>
-            </a>
             {{range .Services}}
             <a class="service-row service-link"
                href="#{{.Slug}}"
@@ -382,136 +352,6 @@
               </div>
             </div>
           </div>
-        </section>
-
-        <section class="app-page" id="page-satisfactory" hidden>
-          <h1 class="page-title">Satisfactory</h1>
-          <p class="page-subtitle">factory.vin.moe</p>
-
-          <div class="state-center error-msg" id="satisfactory-error" hidden></div>
-
-          <div class="stat-row stat-row--three">
-            <div class="stat">
-              <div class="stat-label">Status</div>
-              <div class="stat-value" id="sat-status"><span class="dot" id="sat-status-dot"></span><span id="sat-status-text">—</span></div>
-              <div class="stat-sub" id="sat-status-sub"></div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Players</div>
-              <div class="stat-value" id="sat-players">—</div>
-              <div class="stat-sub" id="sat-tickrate"></div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">CPU / Memory</div>
-              <div class="stat-value" id="sat-resources">—</div>
-            </div>
-          </div>
-
-          <div class="action-row">
-            <button class="btn-action" id="sat-power-start" type="button" hidden>Start server</button>
-            <button class="btn-action btn-action--danger" id="sat-power-stop" type="button" hidden>Stop server</button>
-          </div>
-          <p class="hint" id="sat-power-hint" hidden>Stopping frees the node's RAM and CPU for everything else. Players are disconnected; the world is exactly as it was last saved.</p>
-
-          <h2 class="section-title">Pod</h2>
-          <table class="data-table data-table--pairs">
-            <tbody>
-              <tr><td>Session</td><td id="sat-session">—</td></tr>
-              <tr><td>Game phase</td><td id="sat-phase">—</td></tr>
-              <tr><td>Tech tier</td><td id="sat-tier">—</td></tr>
-              <tr><td>Node</td><td id="sat-node">—</td></tr>
-              <tr><td>Image</td><td id="sat-image">—</td></tr>
-              <tr><td>Restarts</td><td id="sat-restarts">—</td></tr>
-              <tr><td>Pod started</td><td id="sat-started">—</td></tr>
-            </tbody>
-          </table>
-
-          <div class="section-head">
-            <h2 class="section-title">Save and map</h2>
-          </div>
-          <table class="data-table data-table--pairs">
-            <tbody>
-              <tr><td>File</td><td id="sat-save-file">—</td></tr>
-              <tr><td>Map</td><td id="sat-save-map">—</td></tr>
-              <tr><td>Session name</td><td id="sat-save-session">—</td></tr>
-              <tr><td>Play time</td><td id="sat-save-playtime">—</td></tr>
-              <tr><td>Last saved</td><td id="sat-save-time">—</td></tr>
-              <tr><td>Creative mode</td><td id="sat-save-creative">—</td></tr>
-            </tbody>
-          </table>
-
-          <div class="action-row">
-            <a class="btn-action" id="sat-save-download" href="/api/gameservers/satisfactory/save" download>Download current save</a>
-            <a class="btn-action btn-action--quiet" href="https://satisfactory-calculator.com/en/interactive-map" target="_blank" rel="noopener noreferrer">Open interactive map<svg class="ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg></a>
-          </div>
-          <p class="hint">There is no in-house building or resource map here — drop the downloaded save into satisfactory-calculator.com's own uploader for that.</p>
-
-          <div class="section-head">
-            <h2 class="section-title">Console</h2>
-            <button class="console-follow" id="sat-console-follow" type="button" aria-pressed="true">Following</button>
-          </div>
-          <pre class="console-output" id="sat-console" aria-live="polite" aria-label="Console output">Attaching to the server log. Type a command below — try <b>help</b>.</pre>
-          <form class="console-form" id="sat-console-form" autocomplete="off">
-            <label class="console-prompt" for="sat-console-input" aria-hidden="true">&gt;</label>
-            <input class="text-input console-input" id="sat-console-input" name="command" type="text" maxlength="512"
-                   placeholder="help" aria-label="Satisfactory server command" spellcheck="false" required>
-            <button class="btn-action" type="submit" id="sat-console-send">Run</button>
-          </form>
-        </section>
-
-        <section class="app-page" id="page-minecraft" hidden>
-          <h1 class="page-title">Minecraft</h1>
-          <p class="page-subtitle"><span id="mc-address">mc.vin.moe</span></p>
-
-          <div class="state-center error-msg" id="minecraft-error" hidden></div>
-
-          <div class="stat-row stat-row--three">
-            <div class="stat">
-              <div class="stat-label">Status</div>
-              <div class="stat-value" id="mc-status"><span class="dot" id="mc-status-dot"></span><span id="mc-status-text">—</span></div>
-              <div class="stat-sub" id="mc-status-sub"></div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">Players</div>
-              <div class="stat-value" id="mc-players">—</div>
-              <div class="stat-sub" id="mc-player-names"></div>
-            </div>
-            <div class="stat">
-              <div class="stat-label">CPU / Memory</div>
-              <div class="stat-value" id="mc-resources">—</div>
-              <div class="stat-sub" id="mc-latency"></div>
-            </div>
-          </div>
-
-          <div class="action-row">
-            <button class="btn-action" id="mc-power-start" type="button" hidden>Start server</button>
-            <button class="btn-action btn-action--danger" id="mc-power-stop" type="button" hidden>Stop server</button>
-          </div>
-          <p class="hint" id="mc-power-hint" hidden>Stopping frees the node's RAM and CPU for everything else. Players are disconnected; the world is exactly as it was at the last autosave.</p>
-
-          <h2 class="section-title">Pod</h2>
-          <table class="data-table data-table--pairs">
-            <tbody>
-              <tr><td>MOTD</td><td id="mc-motd">—</td></tr>
-              <tr><td>Version</td><td id="mc-version">—</td></tr>
-              <tr><td>Node</td><td id="mc-node">—</td></tr>
-              <tr><td>Image</td><td id="mc-image">—</td></tr>
-              <tr><td>Restarts</td><td id="mc-restarts">—</td></tr>
-              <tr><td>Pod started</td><td id="mc-started">—</td></tr>
-            </tbody>
-          </table>
-
-          <div class="section-head">
-            <h2 class="section-title">Console</h2>
-            <button class="console-follow" id="mc-console-follow" type="button" aria-pressed="true">Following</button>
-          </div>
-          <pre class="console-output" id="mc-console" aria-live="polite" aria-label="Console output">Attaching to the server log. Type a command below — try <b>list</b>, <b>tps</b>, <b>seed</b>, or <b>help</b>.</pre>
-          <form class="console-form" id="mc-console-form" autocomplete="off">
-            <label class="console-prompt" for="mc-console-input" aria-hidden="true">&gt;</label>
-            <input class="text-input console-input" id="mc-console-input" name="command" type="text" maxlength="512"
-                   placeholder="help" aria-label="Minecraft server command" spellcheck="false" required>
-            <button class="btn-action" type="submit" id="mc-console-send">Run</button>
-          </form>
         </section>
 
         <iframe class="service-frame" id="service-frame" title="Service" allowfullscreen hidden></iframe>

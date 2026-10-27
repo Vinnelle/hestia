@@ -1,15 +1,11 @@
 package kube
 
 import (
-	"bytes"
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -19,10 +15,9 @@ import (
 const saDir = "/var/run/secrets/kubernetes.io/serviceaccount"
 
 type Client struct {
-	host   string
-	token  string
-	http   *http.Client
-	stream *http.Client
+	host  string
+	token string
+	http  *http.Client
 }
 
 func New() (*Client, error) {
@@ -48,10 +43,9 @@ func New() (*Client, error) {
 	}
 	transport := &http.Transport{TLSClientConfig: &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}}
 	return &Client{
-		host:   "https://" + host + ":" + port,
-		token:  strings.TrimSpace(string(token)),
-		http:   &http.Client{Timeout: 10 * time.Second, Transport: transport},
-		stream: &http.Client{Transport: transport},
+		host:  "https://" + host + ":" + port,
+		token: strings.TrimSpace(string(token)),
+		http:  &http.Client{Timeout: 10 * time.Second, Transport: transport},
 	}, nil
 }
 
@@ -71,54 +65,6 @@ func (k *Client) Get(path string, out any) error {
 		return fmt.Errorf("GET %s: %s", path, resp.Status)
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
-}
-
-// ScaleDeployment sets a Deployment's replica count via the `scale`
-// subresource rather than patching the Deployment itself — narrower RBAC
-// (a caller granted only `deployments/scale` can change replica count and
-// nothing else about the spec) for a control reachable from a browser
-// button. Content-Type merge-patch+json + a bare `{spec:{replicas}}` body is
-// the documented shape for this subresource.
-func (k *Client) ScaleDeployment(ns, name string, replicas int32) error {
-	body, err := json.Marshal(map[string]any{"spec": map[string]any{"replicas": replicas}})
-	if err != nil {
-		return err
-	}
-	path := fmt.Sprintf("/apis/apps/v1/namespaces/%s/deployments/%s/scale", ns, name)
-	req, err := http.NewRequest("PATCH", k.host+path, bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+k.token)
-	req.Header.Set("Content-Type", "application/merge-patch+json")
-	req.Header.Set("Accept", "application/json")
-	resp, err := k.http.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		detail, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return fmt.Errorf("PATCH %s: %s: %s", path, resp.Status, strings.TrimSpace(string(detail)))
-	}
-	return nil
-}
-
-// DeploymentDesired reads a Deployment's desired replica count off the same
-// `scale` subresource ScaleDeployment writes to — same narrow RBAC, and lets
-// the caller tell "stopped on purpose" (desired 0) apart from "should be
-// running but isn't" without needing the base `deployments` get rule too.
-func (k *Client) DeploymentDesired(ns, name string) (int32, error) {
-	var out struct {
-		Spec struct {
-			Replicas int32 `json:"replicas"`
-		} `json:"spec"`
-	}
-	path := fmt.Sprintf("/apis/apps/v1/namespaces/%s/deployments/%s/scale", ns, name)
-	if err := k.Get(path, &out); err != nil {
-		return 0, err
-	}
-	return out.Spec.Replicas, nil
 }
 
 func ParseCPU(s string) float64 {
@@ -155,100 +101,4 @@ func ParseMem(s string) float64 {
 	}
 	v, _ := strconv.ParseFloat(s, 64)
 	return v
-}
-
-type PodSummary struct {
-	Name      string    `json:"name"`
-	Phase     string    `json:"phase"`
-	Ready     bool      `json:"ready"`
-	Restarts  int32     `json:"restarts"`
-	Node      string    `json:"node"`
-	Image     string    `json:"image"`
-	StartTime time.Time `json:"startTime"`
-	CPUUsed   float64   `json:"cpuUsed"`
-	MemUsed   float64   `json:"memUsed"`
-}
-
-func (k *Client) PodByLabel(ns, labelSelector string) (PodSummary, error) {
-	var out PodSummary
-	var pods struct {
-		Items []struct {
-			Metadata struct {
-				Name string `json:"name"`
-			} `json:"metadata"`
-			Spec struct {
-				NodeName string `json:"nodeName"`
-			} `json:"spec"`
-			Status struct {
-				Phase             string `json:"phase"`
-				StartTime         string `json:"startTime"`
-				ContainerStatuses []struct {
-					Ready        bool   `json:"ready"`
-					RestartCount int32  `json:"restartCount"`
-					Image        string `json:"image"`
-				} `json:"containerStatuses"`
-			} `json:"status"`
-		} `json:"items"`
-	}
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods?labelSelector=%s", ns, url.QueryEscape(labelSelector))
-	if err := k.Get(path, &pods); err != nil {
-		return out, err
-	}
-	if len(pods.Items) == 0 {
-		return out, fmt.Errorf("no pod matching %q in namespace %s", labelSelector, ns)
-	}
-	p := pods.Items[0]
-	out.Name = p.Metadata.Name
-	out.Phase = p.Status.Phase
-	out.Node = p.Spec.NodeName
-	if t, err := time.Parse(time.RFC3339, p.Status.StartTime); err == nil {
-		out.StartTime = t
-	}
-	if len(p.Status.ContainerStatuses) > 0 {
-		cs := p.Status.ContainerStatuses[0]
-		out.Ready = cs.Ready
-		out.Restarts = cs.RestartCount
-		out.Image = cs.Image
-	}
-
-	var metrics struct {
-		Items []struct {
-			Metadata struct {
-				Name string `json:"name"`
-			} `json:"metadata"`
-			Containers []struct {
-				Usage map[string]string `json:"usage"`
-			} `json:"containers"`
-		} `json:"items"`
-	}
-	metricsPath := fmt.Sprintf("/apis/metrics.k8s.io/v1beta1/namespaces/%s/pods?labelSelector=%s", ns, url.QueryEscape(labelSelector))
-	if err := k.Get(metricsPath, &metrics); err == nil {
-		for _, m := range metrics.Items {
-			if m.Metadata.Name == out.Name && len(m.Containers) > 0 {
-				out.CPUUsed = ParseCPU(m.Containers[0].Usage["cpu"])
-				out.MemUsed = ParseMem(m.Containers[0].Usage["memory"])
-			}
-		}
-	}
-	return out, nil
-}
-
-// PodLogStream follows a container's log. The caller closes the reader, and
-// cancelling ctx is what ends the request.
-func (k *Client) PodLogStream(ctx context.Context, ns, pod, container string, tailLines int) (io.ReadCloser, error) {
-	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log?container=%s&tailLines=%d&follow=true", ns, pod, container, tailLines)
-	req, err := http.NewRequestWithContext(ctx, "GET", k.host+path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Authorization", "Bearer "+k.token)
-	resp, err := k.stream.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		return nil, fmt.Errorf("GET %s: %s", path, resp.Status)
-	}
-	return resp.Body, nil
 }

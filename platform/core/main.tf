@@ -42,6 +42,30 @@ resource "helm_release" "cert_manager" {
     {
       name  = "extraArgs[1]"
       value = "--dns01-recursive-nameservers-only"
+    },
+    {
+      name  = "resources.requests.memory"
+      value = "96Mi"
+    },
+    {
+      name  = "resources.limits.memory"
+      value = "512Mi"
+    },
+    {
+      name  = "cainjector.resources.requests.memory"
+      value = "64Mi"
+    },
+    {
+      name  = "cainjector.resources.limits.memory"
+      value = "384Mi"
+    },
+    {
+      name  = "webhook.resources.requests.memory"
+      value = "64Mi"
+    },
+    {
+      name  = "webhook.resources.limits.memory"
+      value = "256Mi"
     }
   ]
 }

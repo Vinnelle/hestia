@@ -233,11 +233,11 @@ resource "kubernetes_deployment_v1" "gitlab" {
           resources {
             requests = {
               cpu    = "2000m"
-              memory = "8Gi"
+              memory = "7Gi"
             }
             limits = {
               cpu    = "4000m"
-              memory = "20Gi"
+              memory = "10Gi"
             }
           }
 
@@ -333,7 +333,7 @@ module "gitlab_vpa" {
   target_name = kubernetes_deployment_v1.gitlab.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "gitlab", min_memory = "4Gi", max_memory = "20Gi" },
+    { container_name = "gitlab", min_memory = "4Gi", max_memory = "7Gi" },
   ]
 }
 
@@ -737,11 +737,15 @@ locals {
       executor = "kubernetes"
 
       [runners.kubernetes]
-        namespace          = "${kubernetes_namespace_v1.forge.metadata[0].name}"
-        service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
-        image              = "alpine:3.24"
-        image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
-        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
+        namespace             = "${kubernetes_namespace_v1.forge.metadata[0].name}"
+        service_account       = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
+        image                 = "alpine:3.24"
+        image_pull_secrets    = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
+        host_aliases          = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
+        memory_request        = "256Mi"
+        memory_limit          = "3Gi"
+        helper_memory_request = "32Mi"
+        helper_memory_limit   = "768Mi"
   EOT
 
   gitlab_runner_config_hash = sha256(local.gitlab_runner_config_toml)
@@ -857,12 +861,16 @@ locals {
       executor = "kubernetes"
 
       [runners.kubernetes]
-        namespace          = "${kubernetes_namespace_v1.forge.metadata[0].name}"
-        service_account    = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
-        image              = "alpine:3.24"
-        image_pull_secrets = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
-        host_aliases       = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
-        privileged         = true
+        namespace             = "${kubernetes_namespace_v1.forge.metadata[0].name}"
+        service_account       = "${kubernetes_service_account_v1.gitlab_runner.metadata[0].name}"
+        image                 = "alpine:3.24"
+        image_pull_secrets    = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
+        host_aliases          = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
+        privileged            = true
+        memory_request        = "256Mi"
+        memory_limit          = "3Gi"
+        helper_memory_request = "32Mi"
+        helper_memory_limit   = "768Mi"
   EOT
 
   gitlab_runner_privileged_config_hash = sha256(local.gitlab_runner_privileged_config_toml)

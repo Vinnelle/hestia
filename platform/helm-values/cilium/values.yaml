@@ -7,15 +7,48 @@ k8sServiceHost: localhost
 k8sServicePort: 7445
 policyCIDRMatchMode:
   - nodes
+resources:
+  requests:
+    memory: 384Mi
+  limits:
+    memory: 2Gi
 operator:
   replicas: 1
+  resources:
+    requests:
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+envoy:
+  resources:
+    requests:
+      memory: 64Mi
+    limits:
+      memory: 512Mi
 hubble:
   relay:
     enabled: true
     prometheus:
       enabled: true
+    resources:
+      requests:
+        memory: 64Mi
+      limits:
+        memory: 256Mi
   ui:
     enabled: true
+    backend:
+      resources:
+        requests:
+          memory: 48Mi
+        limits:
+          memory: 256Mi
+    frontend:
+      resources:
+        requests:
+          memory: 16Mi
+        limits:
+          memory: 128Mi
   metrics:
     enabled:
       - dns:query;ignoreAAAA

@@ -7,7 +7,8 @@ resource "helm_release" "metrics_server" {
 
   values = [
     yamlencode({
-      args = ["--kubelet-insecure-tls"]
+      args      = ["--kubelet-insecure-tls"]
+      resources = { requests = { memory = "128Mi" }, limits = { memory = "256Mi" } }
     })
   ]
 }
@@ -21,9 +22,20 @@ resource "helm_release" "vpa" {
 
   values = [
     yamlencode({
-      recommender         = { enabled = true }
-      updater             = { enabled = true, extraArgs = { "min-replicas" = "1" } }
-      admissionController = { enabled = true }
+      recommender = {
+        enabled   = true
+        extraArgs = { "pod-recommendation-min-memory-mb" = 32 }
+        resources = { requests = { memory = "64Mi" }, limits = { memory = "512Mi" } }
+      }
+      updater = {
+        enabled   = true
+        extraArgs = { "min-replicas" = "1" }
+        resources = { requests = { memory = "64Mi" }, limits = { memory = "512Mi" } }
+      }
+      admissionController = {
+        enabled   = true
+        resources = { requests = { memory = "64Mi" }, limits = { memory = "256Mi" } }
+      }
     })
   ]
 

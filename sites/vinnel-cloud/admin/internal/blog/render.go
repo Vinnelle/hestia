@@ -7,19 +7,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/v2/extension"
+	"github.com/yuin/goldmark/v2/parser"
+	"github.com/yuin/goldmark/v2/renderer/html"
 )
 
-var markdown = goldmark.New(
-	goldmark.WithExtensions(extension.GFM),
-	goldmark.WithRendererOptions(html.WithUnsafe()),
+var (
+	markdownParser   = parser.New(parser.WithExtensions(extension.GFMParser))
+	markdownRenderer = html.New(html.WithExtensions(extension.GFMHTMLRenderer), html.WithUnsafe())
 )
 
 func RenderHTML(source string) (string, error) {
+	src := []byte(source)
 	var out bytes.Buffer
-	if err := markdown.Convert([]byte(source), &out); err != nil {
+	if err := markdownRenderer.Render(&out, src, markdownParser.Parse(src)); err != nil {
 		return "", err
 	}
 	return strings.TrimSpace(out.String()), nil

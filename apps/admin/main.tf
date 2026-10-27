@@ -183,12 +183,6 @@ resource "kubernetes_cluster_role_v1" "vinnel_cloud_admin" {
   }
 
   rule {
-    api_groups = [""]
-    resources  = ["pods/log"]
-    verbs      = ["get"]
-  }
-
-  rule {
     api_groups = ["metrics.k8s.io"]
     resources  = ["nodes", "pods"]
     verbs      = ["get", "list"]
@@ -204,38 +198,6 @@ resource "kubernetes_cluster_role_binding_v1" "vinnel_cloud_admin" {
     api_group = "rbac.authorization.k8s.io"
     kind      = "ClusterRole"
     name      = kubernetes_cluster_role_v1.vinnel_cloud_admin.metadata[0].name
-  }
-
-  subject {
-    kind      = "ServiceAccount"
-    name      = kubernetes_service_account_v1.vinnel_cloud_admin.metadata[0].name
-    namespace = var.namespace
-  }
-}
-
-resource "kubernetes_role_v1" "vinnel_cloud_admin_gameserver_scale" {
-  metadata {
-    name      = "vinnel-cloud-admin-gameserver-scale"
-    namespace = var.games_namespace
-  }
-
-  rule {
-    api_groups = ["apps"]
-    resources  = ["deployments/scale"]
-    verbs      = ["get", "patch"]
-  }
-}
-
-resource "kubernetes_role_binding_v1" "vinnel_cloud_admin_gameserver_scale" {
-  metadata {
-    name      = "vinnel-cloud-admin-gameserver-scale"
-    namespace = var.games_namespace
-  }
-
-  role_ref {
-    api_group = "rbac.authorization.k8s.io"
-    kind      = "Role"
-    name      = kubernetes_role_v1.vinnel_cloud_admin_gameserver_scale.metadata[0].name
   }
 
   subject {
@@ -372,51 +334,6 @@ resource "kubernetes_deployment_v1" "vinnel_cloud_admin" {
           env {
             name  = "LLM_MODEL"
             value = var.llm_model
-          }
-
-          env {
-            name  = "SATISFACTORY_HOST"
-            value = var.node_ip
-          }
-
-          env {
-            name  = "SATISFACTORY_SAVES_URL"
-            value = "http://${var.satisfactory_saves_service_name}.${var.games_namespace}.svc.cluster.local:8080"
-          }
-
-          env {
-            name = "SATISFACTORY_ADMIN_PASSWORD"
-            value_from {
-              secret_key_ref {
-                name = var.satisfactory_admin_secret_name
-                key  = "ADMIN_PASSWORD"
-              }
-            }
-          }
-
-          env {
-            name  = "MINECRAFT_HOST"
-            value = var.node_ip
-          }
-
-          env {
-            name  = "MINECRAFT_ADDRESS"
-            value = trimsuffix(var.minecraft_dns_record_name, ".")
-          }
-
-          env {
-            name  = "MINECRAFT_RCON_ADDR"
-            value = "${var.node_ip}:25575"
-          }
-
-          env {
-            name = "MINECRAFT_RCON_PASSWORD"
-            value_from {
-              secret_key_ref {
-                name = var.minecraft_rcon_secret_name
-                key  = "RCON_PASSWORD"
-              }
-            }
           }
 
           env {

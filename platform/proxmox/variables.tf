@@ -30,9 +30,9 @@ variable "cores" {
 }
 
 variable "memory_mb" {
-  description = "RAM for the Talos VM -- of the host's 32 GB, the rest covers Proxmox, PBS and the 3 GB ZFS ARC cap"
+  description = "RAM for the Talos VM -- the passed-through GPU pins all of it, so the rest of the host's 32 GB has to cover QEMU, Proxmox, PBS, the 2 GiB ZFS ARC and the kernel's reserve"
   type        = number
-  default     = 24576
+  default     = 22528
 }
 
 variable "mac_address" {

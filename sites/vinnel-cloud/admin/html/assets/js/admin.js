@@ -1,7 +1,5 @@
 const frame = document.getElementById('service-frame');
 const home = document.getElementById('frame-empty');
-const satisfactoryPage = document.getElementById('page-satisfactory');
-const minecraftPage = document.getElementById('page-minecraft');
 const blogPage = document.getElementById('page-blog');
 const serverPage = document.getElementById('page-server');
 const back = document.getElementById('frame-back');
@@ -15,8 +13,6 @@ const sidebarBackdrop = document.getElementById('sidebar-backdrop');
 const mobileSidebarQuery = matchMedia('(max-width: 640px)');
 
 const internalPages = {
-  'gameservers/satisfactory': { el: satisfactoryPage, title: 'Satisfactory', onShow: loadSatisfactoryStatus },
-  'gameservers/minecraft': { el: minecraftPage, title: 'Minecraft', onShow: loadMinecraftStatus },
   blog: { el: blogPage, title: 'Blog', onShow: loadBlogPosts },
 };
 
@@ -64,18 +60,11 @@ function show(slug) {
   if (document.fullscreenElement) document.exitFullscreen();
 
   home.hidden = true;
-  satisfactoryPage.hidden = true;
-  minecraftPage.hidden = true;
   blogPage.hidden = true;
   serverPage.hidden = true;
   frame.hidden = true;
   back.hidden = true;
   fullscreenBtn.hidden = true;
-
-  for (const [consoleSlug, c] of Object.entries(consoles)) {
-    if (consoleSlug === slug) c.start();
-    else c.stop();
-  }
 
   if (page) {
     page.el.hidden = false;
@@ -235,14 +224,6 @@ function renderStorage(c) {
   }).join('');
 }
 
-const fmtDuration = (s) => {
-  s = Math.floor(s || 0);
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  if (h) return h + 'h ' + m + 'm';
-  return m + 'm';
-};
-
 const fmtSpan = (s) => {
   s = Math.max(0, Math.floor(s || 0));
   if (s < 60) return s + 's';
@@ -372,274 +353,6 @@ async function loadServer(id) {
   }
 }
 
-async function loadSatisfactoryStatus() {
-  const err = document.getElementById('satisfactory-error');
-  let s;
-  try {
-    s = await (await api('/api/gameservers/satisfactory')).json();
-  } catch (e) {
-    err.hidden = false;
-    err.textContent = 'Could not load server status.';
-    return;
-  }
-
-  const stopped = renderPower('sat', s.desired);
-
-  const problems = stopped ? [] : [s.podErr, s.apiErr, s.saveErr].filter(Boolean);
-  err.hidden = problems.length === 0;
-  err.textContent = problems.join(' · ');
-
-  const dot = document.getElementById('sat-status-dot');
-  const up = !!(s.api && s.api.healthy);
-  dot.className = 'dot' + (stopped ? '' : up ? ' dot--ok' : ' dot--bad');
-  text('sat-status-text', stopped ? 'Stopped' : (up ? 'Online' : 'Offline'));
-  text('sat-status-sub', stopped ? 'Scaled to 0 replicas' : (s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || '')));
-
-  if (s.api) {
-    text('sat-players', s.api.connectedPlayers + ' / ' + s.api.playerLimit);
-    text('sat-tickrate', s.api.averageTickRate ? s.api.averageTickRate.toFixed(1) + ' ticks/s' : '');
-    text('sat-session', s.api.sessionName || '—');
-    text('sat-phase', s.api.gamePhase || '—');
-    text('sat-tier', s.api.techTier != null ? String(s.api.techTier) : '—');
-  } else {
-    text('sat-players', '—');
-    text('sat-tickrate', '');
-    text('sat-session', '—');
-    text('sat-phase', '—');
-    text('sat-tier', '—');
-  }
-
-  if (s.pod) {
-    text('sat-resources', s.pod.cpuUsed.toFixed(2) + ' / ' + fmtBytes(s.pod.memUsed));
-    text('sat-node', s.pod.node || '—');
-    text('sat-image', s.pod.image || '—');
-    text('sat-restarts', String(s.pod.restarts));
-    text('sat-started', s.pod.startTime && s.pod.startTime !== '0001-01-01T00:00:00Z' ? new Date(s.pod.startTime).toLocaleString() : '—');
-  } else {
-    text('sat-resources', '—');
-    text('sat-node', '—');
-    text('sat-image', '—');
-    text('sat-restarts', '—');
-    text('sat-started', '—');
-  }
-
-  if (s.save) {
-    text('sat-save-file', s.save.fileName || '—');
-    text('sat-save-map', s.save.mapName || '—');
-    text('sat-save-session', s.save.sessionName || '—');
-    text('sat-save-playtime', fmtDuration(s.save.playDurationSeconds));
-    text('sat-save-time', s.save.savedAt ? new Date(s.save.savedAt).toLocaleString() : '—');
-    text('sat-save-creative', s.save.isCreativeModeEnabled ? 'Yes' : 'No');
-    document.getElementById('sat-save-download').removeAttribute('hidden');
-  } else {
-    text('sat-save-file', '—');
-    text('sat-save-map', '—');
-    text('sat-save-session', '—');
-    text('sat-save-playtime', '—');
-    text('sat-save-time', '—');
-    text('sat-save-creative', '—');
-    document.getElementById('sat-save-download').setAttribute('hidden', '');
-  }
-}
-
-async function loadMinecraftStatus() {
-  const err = document.getElementById('minecraft-error');
-  let s;
-  try {
-    s = await (await api('/api/gameservers/minecraft')).json();
-  } catch (e) {
-    err.hidden = false;
-    err.textContent = 'Could not load server status.';
-    return;
-  }
-
-  const stopped = renderPower('mc', s.desired);
-
-  const problems = stopped ? [] : [s.podErr, s.pingErr].filter(Boolean);
-  err.hidden = problems.length === 0;
-  err.textContent = problems.join(' · ');
-
-  if (s.address) text('mc-address', s.address);
-
-  const up = !!s.ping;
-  document.getElementById('mc-status-dot').className = 'dot' + (stopped ? '' : up ? ' dot--ok' : ' dot--bad');
-  text('mc-status-text', stopped ? 'Stopped' : (up ? 'Online' : 'Offline'));
-  text('mc-status-sub', stopped ? 'Scaled to 0 replicas' : (s.pod ? s.pod.phase + (s.pod.ready ? ', ready' : '') : (s.podErr || '')));
-
-  if (s.ping) {
-    text('mc-players', s.ping.playersOnline + ' / ' + s.ping.playersMax);
-    text('mc-player-names', (s.ping.players || []).join(', '));
-    text('mc-latency', s.ping.latencyMs + ' ms ping');
-    text('mc-motd', s.ping.motd || '—');
-    text('mc-version', s.ping.version ? s.ping.version + ' (protocol ' + s.ping.protocol + ')' : '—');
-  } else {
-    text('mc-players', '—');
-    text('mc-player-names', '');
-    text('mc-latency', '');
-    text('mc-motd', '—');
-    text('mc-version', '—');
-  }
-
-  if (s.pod) {
-    text('mc-resources', s.pod.cpuUsed.toFixed(2) + ' / ' + fmtBytes(s.pod.memUsed));
-    text('mc-node', s.pod.node || '—');
-    text('mc-image', s.pod.image || '—');
-    text('mc-restarts', String(s.pod.restarts));
-    text('mc-started', s.pod.startTime && s.pod.startTime !== '0001-01-01T00:00:00Z' ? new Date(s.pod.startTime).toLocaleString() : '—');
-  } else {
-    text('mc-resources', '—');
-    text('mc-node', '—');
-    text('mc-image', '—');
-    text('mc-restarts', '—');
-    text('mc-started', '—');
-  }
-}
-
-function renderPower(prefix, desired) {
-  const stopped = desired === 0;
-  const known = desired === 0 || desired === 1;
-  document.getElementById(prefix + '-power-start').hidden = !known || !stopped;
-  document.getElementById(prefix + '-power-stop').hidden = !known || stopped;
-  document.getElementById(prefix + '-power-hint').hidden = !stopped;
-  return stopped;
-}
-
-function wirePower(prefix, startUrl, stopUrl, statusLoader) {
-  const startBtn = document.getElementById(prefix + '-power-start');
-  const stopBtn = document.getElementById(prefix + '-power-stop');
-
-  async function call(url) {
-    startBtn.disabled = true;
-    stopBtn.disabled = true;
-    try {
-      const r = await (await api(url, { method: 'POST' })).json();
-      if (r.err) alert(r.err);
-    } catch (e) {
-      alert('Request failed.');
-    } finally {
-      startBtn.disabled = false;
-      stopBtn.disabled = false;
-      statusLoader();
-    }
-  }
-
-  startBtn.addEventListener('click', () => call(startUrl));
-  stopBtn.addEventListener('click', () => {
-    if (confirm('Stop the server? Connected players will be disconnected.')) call(stopUrl);
-  });
-}
-
-wirePower('sat', '/api/gameservers/satisfactory/start', '/api/gameservers/satisfactory/stop', loadSatisfactoryStatus);
-wirePower('mc', '/api/gameservers/minecraft/start', '/api/gameservers/minecraft/stop', loadMinecraftStatus);
-
-const CONSOLE_MAX_LINES = 500;
-
-function wireConsole(prefix, endpoint, streamUrl, after) {
-  const out = document.getElementById(prefix + '-console');
-  const form = document.getElementById(prefix + '-console-form');
-  const input = document.getElementById(prefix + '-console-input');
-  const send = document.getElementById(prefix + '-console-send');
-  const followBtn = document.getElementById(prefix + '-console-follow');
-  const history = [];
-  let historyIndex = 0;
-  let stream = null;
-  let streamBroken = false;
-  let follow = true;
-
-  const setFollow = (on) => {
-    follow = on;
-    followBtn.setAttribute('aria-pressed', String(on));
-    followBtn.textContent = on ? 'Following' : 'Paused';
-    if (on) out.scrollTop = out.scrollHeight;
-  };
-
-  const write = (cls, s) => {
-    const line = document.createElement('div');
-    if (cls) line.className = cls;
-    line.textContent = s;
-    out.appendChild(line);
-    while (out.childElementCount > CONSOLE_MAX_LINES) out.removeChild(out.firstElementChild);
-    if (follow) out.scrollTop = out.scrollHeight;
-  };
-
-  followBtn.addEventListener('click', () => setFollow(!follow));
-
-  out.addEventListener('scroll', () => {
-    const atBottom = out.scrollHeight - out.scrollTop - out.clientHeight < 40;
-    if (atBottom !== follow) setFollow(atBottom);
-  });
-
-  const start = () => {
-    if (stream) return;
-    setFollow(true);
-    stream = new EventSource(streamUrl);
-    stream.addEventListener('open', () => {
-      if (streamBroken) write('console-log', '— reconnected —');
-      streamBroken = false;
-    });
-    stream.addEventListener('message', (e) => write('console-log', e.data));
-    stream.addEventListener('error', () => {
-      if (streamBroken) return;
-      streamBroken = true;
-      write('console-err', '— log stream lost, reconnecting —');
-      api('/api/cluster').catch(() => {});
-    });
-  };
-
-  const stop = () => {
-    if (!stream) return;
-    stream.close();
-    stream = null;
-  };
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const cmd = input.value.trim();
-    if (!cmd) return;
-
-    history.push(cmd);
-    historyIndex = history.length;
-    write('console-echo', '> ' + cmd);
-    input.value = '';
-    input.disabled = true;
-    send.disabled = true;
-
-    try {
-      const res = await api(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: cmd }),
-      });
-      const r = await res.json();
-      if (r.err) write('console-err', r.err);
-      else write(null, r.output && r.output.trim() ? r.output : '(no output)');
-    } catch (e) {
-      write('console-err', 'Request failed.');
-    } finally {
-      input.disabled = false;
-      send.disabled = false;
-      input.focus();
-      after();
-    }
-  });
-
-  input.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
-    if (!history.length) return;
-    e.preventDefault();
-    historyIndex += e.key === 'ArrowUp' ? -1 : 1;
-    historyIndex = Math.max(0, Math.min(historyIndex, history.length));
-    input.value = history[historyIndex] || '';
-  });
-
-  return { start, stop };
-}
-
-const consoles = {
-  'gameservers/minecraft': wireConsole('mc', '/api/gameservers/minecraft/command', '/api/gameservers/minecraft/logs/stream?lines=200', loadMinecraftStatus),
-  'gameservers/satisfactory': wireConsole('sat', '/api/gameservers/satisfactory/command', '/api/gameservers/satisfactory/logs/stream?lines=200', loadSatisfactoryStatus),
-};
-
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -652,8 +365,6 @@ function refresh() {
     loadServers();
   }
   if (!serverPage.hidden && currentServer) loadServer(currentServer);
-  if (!satisfactoryPage.hidden) loadSatisfactoryStatus();
-  if (!minecraftPage.hidden) loadMinecraftStatus();
 }
 
 setInterval(refresh, 30000);

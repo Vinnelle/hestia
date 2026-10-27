@@ -159,6 +159,15 @@ resource "kubernetes_deployment_v1" "local_path_provisioner" {
             name  = "CONFIG_MOUNT_PATH"
             value = "/etc/config/"
           }
+
+          resources {
+            requests = {
+              memory = "64Mi"
+            }
+            limits = {
+              memory = "256Mi"
+            }
+          }
         }
 
         volume {

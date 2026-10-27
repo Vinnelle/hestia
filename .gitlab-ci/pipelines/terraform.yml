@@ -108,7 +108,12 @@ terraform_plan_apply:
       exit_code=$?
       set -e
       if [ "$exit_code" -eq 1 ]; then exit 1; fi
-      if [ "$exit_code" -eq 2 ]; then terraform apply -input=false tfplan; fi
+      if [ "$exit_code" -eq 2 ]; then
+        terraform apply -input=false tfplan || {
+          echo "first apply failed, applying again"
+          terraform apply -input=false -auto-approve
+        }
+      fi
 
 terraform_provider_mirror_sync:
   extends: .terraform_base

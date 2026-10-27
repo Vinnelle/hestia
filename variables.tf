@@ -175,25 +175,6 @@ variable "gitlab_ci_age_key" {
   sensitive   = true
 }
 
-variable "minecraft_modpack_zip_url" {
-  description = "URL the fetch-modpack init container downloads the Create: Ultimate Selection 2 client zip from. Required because the modpack's authors set allowModDistribution=false, so the CurseForge API refuses to serve the pack archive and it has to be downloaded by hand once and self-hosted. Any URL the cluster can reach works (seaweedfs/S3 presigned, a GitHub release asset, momus). Set in secrets.sops.json."
-  type        = string
-  sensitive   = true
-}
-
-variable "curseforge_api_key" {
-  description = "CurseForge Eternal API key, minted at https://console.curseforge.com/ (Account -> API Keys), used by the itzg/minecraft-server image's AUTO_CURSEFORGE installer to resolve and download the modpack. Set in secrets.sops.json."
-  type        = string
-  sensitive   = true
-}
-
-variable "satisfactory_admin_password" {
-  description = "Admin password set by hand through the Satisfactory Server Manager UI when the server was claimed. Used by admin.vinnel.cloud's Satisfactory console to PasswordLogin for an Administrator token before each RunCommand. Set in secrets.sops.json. Leave empty to fall back to PasswordlessLogin, which only works on an unclaimed server."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 variable "docker_hub_username" {
   description = "Docker Hub account used solely to authenticate gitlab_group_dependency_proxy.vinnel_cloud's upstream pull-through connection -- never exposed to CI, never stored as a GitLab/GitHub secret. Anonymous proxy pulls share the node's egress IP with every other anonymous Docker Hub client on this host and hit the same per-IP rate limit as a direct anonymous pull would; an authenticated free account gets its own per-account limit instead. Mint/reuse a free Docker Hub account and set it in secrets.sops.json."
   type        = string

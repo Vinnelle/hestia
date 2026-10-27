@@ -62,31 +62,6 @@ variable "observability_namespace" {
   type        = string
 }
 
-variable "games_namespace" {
-  description = "Namespace the game servers share, reached for RCON and save files"
-  type        = string
-}
-
-variable "minecraft_rcon_secret_name" {
-  description = "Name of the Secret holding the Minecraft RCON password"
-  type        = string
-}
-
-variable "minecraft_dns_record_name" {
-  description = "Hostname the Minecraft server is reachable at"
-  type        = string
-}
-
-variable "satisfactory_saves_service_name" {
-  description = "Name of the Service exposing the Satisfactory save files"
-  type        = string
-}
-
-variable "satisfactory_admin_secret_name" {
-  description = "Name of the Secret holding the Satisfactory admin password"
-  type        = string
-}
-
 variable "gitlab_project_id" {
   description = "ID of the gaia project the dashboard drives pipelines on"
   type        = string

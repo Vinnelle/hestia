@@ -649,31 +649,6 @@ a:hover { color: var(--accent); }
 
 .data-table--metrics td:first-child > span { white-space: nowrap; }
 
-.data-table--pairs td:first-child {
-  width: 180px;
-  padding-top: 11px;
-  padding-bottom: 11px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--dim);
-}
-
-.data-table--pairs td:last-child {
-  padding-top: 11px;
-  padding-bottom: 11px;
-  text-align: left;
-  overflow-wrap: anywhere;
-}
-
-.data-table--pairs tr:first-child td { border-top: 1px solid var(--border); }
-
-.action-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 24px 0 10px;
-}
-
 .btn-action {
   display: inline-flex;
   align-items: center;
@@ -752,65 +727,6 @@ a:hover { color: var(--accent); }
 }
 
 .error-msg { color: var(--danger); }
-
-.console-follow {
-  font: inherit;
-  font-size: 11px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  color: var(--accent);
-  transition: color 0.15s;
-}
-
-.console-follow[aria-pressed="false"] { color: var(--faint); }
-
-.console-output {
-  margin-bottom: 10px;
-  padding: 16px 18px;
-  background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  font: inherit;
-  font-size: 12px;
-  line-height: 1.75;
-  color: var(--dim);
-  white-space: pre-wrap;
-  word-break: break-word;
-  min-height: 9rem;
-  max-height: 340px;
-  overflow-y: auto;
-}
-
-.console-echo { color: var(--accent); }
-.console-err { color: var(--danger); }
-.console-log { color: var(--dim); }
-
-.console-form {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 40px;
-}
-
-.console-prompt {
-  color: var(--accent);
-  user-select: none;
-}
-
-.console-input {
-  flex: 1;
-  min-width: 0;
-  font-size: 12px;
-  padding: 7px 11px;
-}
-
-.console-input:disabled,
-.console-form .btn-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
 
 #page-blog { display: flex; flex-direction: column; }
 
@@ -1108,7 +1024,6 @@ a:hover { color: var(--accent); }
   #user-email, .chevron { display: none; }
 
   .data-table td:first-child { white-space: normal; overflow-wrap: anywhere; }
-  .data-table--pairs td:first-child { width: 120px; }
 
   .sidebar {
     position: fixed;
@@ -1151,7 +1066,7 @@ a:hover { color: var(--accent); }
 }
 
 @media (pointer: coarse) {
-  .text-input, .console-input { font-size: 16px; }
+  .text-input { font-size: 16px; }
   .blog-input .cm-scroller { font-size: 16px; }
   .blog-tool { padding: 8px 10px; }
   .btn-action { padding: 10px 14px; }

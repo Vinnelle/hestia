@@ -33,11 +33,6 @@ module "admin" {
   ingress_class_name                = module.platform_core.ingress_class_name
   authelia_forward_auth_annotations = local.authelia_forward_auth_annotations
   observability_namespace           = module.observability_grafana.namespace
-  games_namespace                   = module.minecraft.namespace
-  minecraft_rcon_secret_name        = module.minecraft.rcon_secret_name
-  minecraft_dns_record_name         = module.minecraft.dns_record_name
-  satisfactory_saves_service_name   = module.satisfactory.saves_service_name
-  satisfactory_admin_secret_name    = module.satisfactory.admin_secret_name
   gitlab_project_id                 = module.gitlab.project_id
   gitlab_default_branch             = module.gitlab.default_branch
   llm_model                         = module.llm.model

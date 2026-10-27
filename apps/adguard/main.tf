@@ -146,7 +146,7 @@ resource "kubernetes_stateful_set_v1" "adguard" {
             }
             limits = {
               cpu    = "500m"
-              memory = "512Mi"
+              memory = "256Mi"
             }
           }
 
@@ -329,7 +329,7 @@ module "vpa" {
   target_name = kubernetes_stateful_set_v1.adguard.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "adguard", min_memory = "64Mi", max_memory = "512Mi" },
+    { container_name = "adguard", min_memory = "64Mi", max_memory = "256Mi" },
     { container_name = "netbird", min_memory = "16Mi", max_memory = "128Mi" },
   ]
 }

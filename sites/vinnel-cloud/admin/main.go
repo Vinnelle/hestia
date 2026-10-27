@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"crypto/rand"
@@ -18,12 +17,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -34,17 +31,13 @@ import (
 	"vinnel-cloud-admin/internal/blog"
 	"vinnel-cloud-admin/internal/cluster"
 	"vinnel-cloud-admin/internal/kube"
-	"vinnel-cloud-admin/internal/minecraft"
 	"vinnel-cloud-admin/internal/portal"
-	"vinnel-cloud-admin/internal/satisfactory"
 	"vinnel-cloud-admin/internal/servers"
 	"vinnel-cloud-admin/internal/telemetry"
 )
 
 //go:embed html
 var htmlFS embed.FS
-
-const streamHeartbeat = 20 * time.Second
 
 type pageData struct {
 	User          string
@@ -75,51 +68,6 @@ func setupSentry() error {
 		TracesSampleRate: 0.1,
 		Environment:      env("SENTRY_ENVIRONMENT", "production"),
 	})
-}
-
-func envDuration(key string, def time.Duration) time.Duration {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	d, err := time.ParseDuration(v)
-	if err != nil {
-		log.Fatalf("%s: %v", key, err)
-	}
-	return d
-}
-
-func runGameSleeper(mc *minecraft.Service, sf *satisfactory.Service) {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	idle := envDuration("GAME_IDLE_TIMEOUT", 15*time.Minute)
-	poll := envDuration("GAME_SLEEP_POLL", 30*time.Second)
-
-	sleeper := &minecraft.Sleeper{
-		Service:     mc,
-		Addr:        env("MINECRAFT_SLEEPER_ADDR", ""),
-		IdleTimeout: idle,
-		Poll:        poll,
-		MOTD:        env("MINECRAFT_SLEEP_MOTD", ""),
-	}
-	idler := &satisfactory.Idler{Service: sf, IdleTimeout: idle, Poll: poll}
-
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		if err := sleeper.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			log.Printf("minecraft sleeper: %v", err)
-		}
-	}()
-	go func() {
-		defer wg.Done()
-		if err := idler.Run(ctx); err != nil && !errors.Is(err, context.Canceled) {
-			log.Printf("satisfactory idler: %v", err)
-		}
-	}()
-	wg.Wait()
 }
 
 func runBlogSync() {
@@ -245,99 +193,6 @@ func userFromRequest(r *http.Request) string {
 		return email
 	}
 	return r.Header.Get("Remote-User")
-}
-
-func logLines(r *http.Request) int {
-	if v := r.URL.Query().Get("lines"); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 && n <= 2000 {
-			return n
-		}
-	}
-	return 200
-}
-
-func commandHandler(audit string, run func(string) (string, error)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var req struct {
-			Command string `json:"command"`
-		}
-		if err := json.NewDecoder(io.LimitReader(r.Body, 4096)).Decode(&req); err != nil {
-			writeJSON(w, map[string]string{"err": "malformed request"})
-			return
-		}
-		log.Printf("%s: user=%q command=%q", audit, userFromRequest(r), req.Command)
-		out, err := run(req.Command)
-		if err != nil {
-			writeJSON(w, map[string]string{"err": err.Error()})
-			return
-		}
-		writeJSON(w, map[string]string{"output": out})
-	}
-}
-
-func scaleHandler(audit string, run func() error) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s: user=%q", audit, userFromRequest(r))
-		if err := run(); err != nil {
-			writeJSON(w, map[string]string{"err": err.Error()})
-			return
-		}
-		writeJSON(w, map[string]string{"ok": "true"})
-	}
-}
-
-func streamHandler(open func(context.Context, int) (io.ReadCloser, error)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		src, err := open(r.Context(), logLines(r))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
-			return
-		}
-		defer src.Close()
-
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-store")
-		w.Header().Set("X-Accel-Buffering", "no")
-		w.WriteHeader(http.StatusOK)
-		ctrl := http.NewResponseController(w)
-		ctrl.Flush()
-
-		lines := make(chan string, 256)
-		go func() {
-			defer close(lines)
-			sc := bufio.NewScanner(src)
-			sc.Buffer(make([]byte, 0, 64<<10), 1<<20)
-			for sc.Scan() {
-				select {
-				case lines <- sc.Text():
-				case <-r.Context().Done():
-					return
-				}
-			}
-		}()
-
-		beat := time.NewTicker(streamHeartbeat)
-		defer beat.Stop()
-		for {
-			select {
-			case <-r.Context().Done():
-				return
-			case line, ok := <-lines:
-				if !ok {
-					return
-				}
-				if _, err := fmt.Fprintf(w, "data: %s\n\n", strings.TrimRight(line, "\r")); err != nil {
-					return
-				}
-				ctrl.Flush()
-			case <-beat.C:
-				if _, err := io.WriteString(w, ": beat\n\n"); err != nil {
-					return
-				}
-				ctrl.Flush()
-			}
-		}
-	}
 }
 
 func writeJSON(w http.ResponseWriter, v any) {
@@ -810,31 +665,6 @@ func main() {
 		TTL:   15 * time.Second,
 	}
 
-	satisfactorySvc := &satisfactory.Service{
-		Kube:          kubeClient,
-		Host:          env("SATISFACTORY_HOST", ""),
-		SavesURL:      env("SATISFACTORY_SAVES_URL", "http://satisfactory-saves.games.svc.cluster.local:8080"),
-		AdminPassword: os.Getenv("SATISFACTORY_ADMIN_PASSWORD"),
-	}
-
-	mcPort, err := strconv.Atoi(env("MINECRAFT_PORT", "25565"))
-	if err != nil {
-		log.Fatalf("MINECRAFT_PORT: %v", err)
-	}
-	minecraftSvc := &minecraft.Service{
-		Kube:         kubeClient,
-		Host:         env("MINECRAFT_HOST", ""),
-		Port:         mcPort,
-		Address:      env("MINECRAFT_ADDRESS", "mc.vin.moe"),
-		RconAddr:     env("MINECRAFT_RCON_ADDR", ""),
-		RconPassword: os.Getenv("MINECRAFT_RCON_PASSWORD"),
-	}
-
-	if role == "game-sleeper" {
-		runGameSleeper(minecraftSvc, satisfactorySvc)
-		return
-	}
-
 	if relay != nil {
 		go relay.Run(context.Background(), 15*time.Second)
 	}
@@ -904,35 +734,6 @@ func main() {
 	mux.HandleFunc("GET /api/servers", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, map[string][]servers.Server{"servers": append(serverStats.Servers(), aiStats.Servers()...)})
 	})
-
-	mux.HandleFunc("GET /api/gameservers/satisfactory", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, satisfactorySvc.Status())
-	})
-
-	mux.HandleFunc("GET /api/gameservers/satisfactory/logs/stream", streamHandler(satisfactorySvc.LogStream))
-
-	mux.HandleFunc("GET /api/gameservers/minecraft/logs/stream", streamHandler(minecraftSvc.LogStream))
-
-	mux.HandleFunc("GET /api/gameservers/satisfactory/save", func(w http.ResponseWriter, r *http.Request) {
-		if err := satisfactorySvc.WriteSaveFile(w); err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-		}
-	})
-
-	mux.HandleFunc("GET /api/gameservers/minecraft", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, minecraftSvc.Status())
-	})
-
-	mux.HandleFunc("POST /api/gameservers/minecraft/command", commandHandler("minecraft rcon", minecraftSvc.Command))
-
-	mux.HandleFunc("POST /api/gameservers/satisfactory/command", commandHandler("satisfactory api", satisfactorySvc.Command))
-
-	mux.HandleFunc("POST /api/gameservers/minecraft/start", scaleHandler("minecraft start", minecraftSvc.Start))
-
-	mux.HandleFunc("POST /api/gameservers/minecraft/stop", scaleHandler("minecraft stop", minecraftSvc.Stop))
-
-	mux.HandleFunc("POST /api/gameservers/satisfactory/start", scaleHandler("satisfactory start", satisfactorySvc.Start))
-	mux.HandleFunc("POST /api/gameservers/satisfactory/stop", scaleHandler("satisfactory stop", satisfactorySvc.Stop))
 
 	mux.HandleFunc("GET /public/posts.json", blogHandlers.publicPosts)
 	mux.HandleFunc("GET /public/feed.xml", blogHandlers.publicFeed)

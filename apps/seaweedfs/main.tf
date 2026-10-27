@@ -206,7 +206,7 @@ resource "kubernetes_deployment_v1" "seaweedfs" {
             }
             limits = {
               cpu    = "1000m"
-              memory = "4Gi"
+              memory = "3Gi"
             }
           }
 
@@ -336,6 +336,15 @@ resource "kubernetes_cron_job_v1" "seaweedfs_tier_move" {
               name    = "tier-move"
               image   = "chrislusf/seaweedfs:4.48"
               command = ["/bin/sh", "-c", local.seaweedfs_tier_move_sh]
+
+              resources {
+                requests = {
+                  memory = "128Mi"
+                }
+                limits = {
+                  memory = "512Mi"
+                }
+              }
             }
           }
         }
@@ -355,7 +364,7 @@ module "vpa" {
   target_name = kubernetes_deployment_v1.seaweedfs.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "4Gi" },
+    { container_name = "seaweedfs", min_memory = "128Mi", max_memory = "1Gi" },
   ]
 }
 

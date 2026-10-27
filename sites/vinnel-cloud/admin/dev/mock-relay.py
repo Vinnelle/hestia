@@ -10,10 +10,6 @@ MIB = 1 << 20
 RATES = {
     "http": (0.15, 2_000),
     "https": (0.8, 60_000),
-    "minecraft": (0.002, 3_000_000),
-    "satisfactory-tcp": (0.001, 5_000_000),
-    "satisfactory-udp": (0.0005, 8_000_000),
-    "satisfactory-messaging": (0.0003, 40_000),
     "gitlab-ssh": (0.0008, 200_000),
 }
 DROPS = {"input": 2.0, "forward": 0.05, "output": 0.0}

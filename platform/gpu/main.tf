@@ -16,6 +16,10 @@ resource "helm_release" "nvidia_device_plugin" {
   values = [
     yamlencode({
       runtimeClassName = kubernetes_runtime_class_v1.nvidia.metadata[0].name
+      resources = {
+        requests = { memory = "48Mi" }
+        limits   = { memory = "128Mi" }
+      }
     })
   ]
 }
@@ -70,8 +74,8 @@ resource "helm_release" "dcgm_exporter" {
         { name = "counters", mountPath = "/etc/dcgm-exporter/counters.csv", subPath = "counters.csv" },
       ]
       resources = {
-        requests = { cpu = "20m", memory = "128Mi" }
-        limits   = { cpu = "200m", memory = "512Mi" }
+        requests = { cpu = "20m", memory = "384Mi" }
+        limits   = { cpu = "200m", memory = "1Gi" }
       }
     })
   ]

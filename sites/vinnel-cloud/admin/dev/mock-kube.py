@@ -16,7 +16,6 @@ WORKLOADS = {
     "forge": [("gitlab-0", 450, 3600), ("gitlab-runner", 20, 90), ("gitlab-runner-privileged", 15, 80)],
     "observability": [("vmsingle-vm", 120, 900), ("vmagent-vm", 40, 220), ("grafana", 30, 260), ("loki-0", 80, 700), ("tempo-0", 40, 380), ("otel-collector", 50, 200)],
     "files": [("nextcloud", 90, 700), ("nextcloud-cron", 5, 60)],
-    "games": [("minecraft", 900, 6100), ("satisfactory", 1200, 9200), ("game-sleeper", 3, 25)],
     "storage": [("seaweedfs-master-0", 40, 180), ("seaweedfs-volume-0", 70, 600), ("seaweedfs-filer-0", 50, 300)],
     "auth": [("authelia", 10, 60)],
     "matrix": [("synapse", 60, 420), ("synapse-postgres", 25, 180)],
@@ -34,7 +33,7 @@ WORKLOADS = {
 
 VOLUMES = [
     ("forge", "gitlab-data", 50), ("forge", "gitlab-config", 1), ("observability", "vmsingle-vm", 30),
-    ("files", "nextcloud-data", 10), ("games", "minecraft-world", 20), ("games", "satisfactory-saves", 10),
+    ("files", "nextcloud-data", 10),
     ("matrix", "synapse-media", 10), ("vinnel-cloud", "vinnel-cloud-admin-blog-pvc", 1),
     ("vinnel-cloud", "vinnel-cloud-admin-blog-media-pvc", 5), ("dns", "adguard-work", 1),
 ]
@@ -54,7 +53,7 @@ def pods():
     for ns, workloads in WORKLOADS.items():
         for name, _, _ in workloads:
             status = {"phase": "Running", "containerStatuses": [{"restartCount": 0, "state": {"running": {}}}]}
-            if name == "satisfactory" and crashlooping():
+            if name == "searxng" and crashlooping():
                 status["containerStatuses"] = [{"restartCount": 7, "state": {"waiting": {"reason": "CrashLoopBackOff"}}}]
             items.append({"metadata": {"name": name, "namespace": ns}, "spec": {"nodeName": NODE}, "status": status})
     items.append({"metadata": {"name": "vinnel-cloud-admin-blog-sync-29340720", "namespace": "vinnel-cloud"}, "spec": {"nodeName": NODE},
@@ -66,7 +65,7 @@ def pod_metrics():
     items = []
     for ns, workloads in WORKLOADS.items():
         for name, cpu, mem in workloads:
-            if name == "satisfactory" and crashlooping():
+            if name == "searxng" and crashlooping():
                 continue
             usage = {"cpu": f"{int(cpu * wave(name)) * 1000000}n", "memory": f"{int(mem * MIB * wave(name, 600, 0.08)) // 1024}Ki"}
             items.append({"metadata": {"name": name, "namespace": ns}, "containers": [{"name": name, "usage": usage}]})

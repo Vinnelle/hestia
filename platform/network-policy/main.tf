@@ -38,8 +38,7 @@ locals {
       { namespace = "storage", ports = [8333] },
       { namespace = "automations", ports = [8080] },
     ]
-    "vin-moe"      = [{ namespace = "vinnel-cloud", ports = [8080] }]
-    "vinnel-cloud" = [{ namespace = "games", ports = [8080] }]
+    "vin-moe" = [{ namespace = "vinnel-cloud", ports = [8080] }]
   }
 }
 

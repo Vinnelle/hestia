@@ -21,7 +21,7 @@ module "vpa" {
   target_name = "trivy-operator"
   update_mode = "Auto"
   container_policies = [
-    { container_name = "trivy-operator", min_memory = "64Mi", max_memory = "512Mi" },
+    { container_name = "trivy-operator", min_memory = "64Mi", max_memory = "1Gi" },
   ]
 }
 

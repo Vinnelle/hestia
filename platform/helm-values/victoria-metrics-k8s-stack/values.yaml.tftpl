@@ -20,10 +20,24 @@ vmsingle:
           storage: 30Gi
     extraArgs:
       opentelemetry.usePrometheusNaming: "true"
+    resources:
+      requests:
+        cpu: 150m
+        memory: 640Mi
+      limits:
+        cpu: 1200m
+        memory: 2Gi
 
 vmagent:
   spec:
     scrapeInterval: 30s
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 500Mi
     externalLabels:
       cluster: ${cluster_name}
     inlineScrapeConfig: |
@@ -105,6 +119,16 @@ vmagent:
           - source_labels: [__meta_kubernetes_pod_name]
             target_label: pod
 
+vmalert:
+  spec:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
 alertmanager:
   spec:
     secrets:
@@ -184,9 +208,19 @@ defaultDatasources:
 
 grafana:
   fullnameOverride: grafana
+  resources:
+    requests:
+      memory: 768Mi
+    limits:
+      memory: 2Gi
   sidecar:
     image:
       tag: 2.14.1
+    resources:
+      requests:
+        memory: 96Mi
+      limits:
+        memory: 256Mi
   persistence:
     enabled: true
     type: pvc
@@ -246,12 +280,29 @@ grafana:
       auto_login: true
 
 prometheus-node-exporter:
+  resources:
+    requests:
+      memory: 32Mi
+    limits:
+      memory: 128Mi
   service:
     annotations:
       prometheus.io/scrape: null
 
 kube-state-metrics:
   prometheusScrape: false
+  resources:
+    requests:
+      memory: 96Mi
+    limits:
+      memory: 256Mi
+
+victoria-metrics-operator:
+  resources:
+    requests:
+      memory: 128Mi
+    limits:
+      memory: 512Mi
 
 kubeEtcd:
   endpoints:

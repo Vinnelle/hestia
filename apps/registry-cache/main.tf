@@ -136,7 +136,7 @@ resource "kubernetes_deployment_v1" "registry_cache" {
             }
             limits = {
               cpu    = "1000m"
-              memory = "1Gi"
+              memory = "512Mi"
             }
           }
 
@@ -205,7 +205,7 @@ module "registry_cache_vpa" {
   target_name = kubernetes_deployment_v1.registry_cache.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "registry", min_memory = "128Mi", max_memory = "1Gi" },
+    { container_name = "registry", min_memory = "128Mi", max_memory = "512Mi" },
   ]
 }
 

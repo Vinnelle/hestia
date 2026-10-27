@@ -1,9 +1,5 @@
 {
   "http": { "protocol": "tcp", "port": 80 },
   "https": { "protocol": "tcp", "port": 443 },
-  "minecraft": { "protocol": "tcp", "port": 25565 },
-  "satisfactory-tcp": { "protocol": "tcp", "port": 7777 },
-  "satisfactory-udp": { "protocol": "udp", "port": 7777 },
-  "satisfactory-messaging": { "protocol": "tcp", "port": 8889 },
   "gitlab-ssh": { "protocol": "tcp", "port": 2222 }
 }

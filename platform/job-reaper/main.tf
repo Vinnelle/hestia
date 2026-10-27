@@ -65,6 +65,15 @@ resource "kubernetes_cron_job_v1" "job_reaper" {
                 "--field-selector",
                 "status.successful=1",
               ]
+
+              resources {
+                requests = {
+                  memory = "64Mi"
+                }
+                limits = {
+                  memory = "256Mi"
+                }
+              }
             }
           }
         }
@@ -140,6 +149,15 @@ resource "kubernetes_cron_job_v1" "pod_reaper" {
               name    = "reaper"
               image   = "docker.io/alpine/kubectl:1.37.1@sha256:a5d0fbecab3f7b6c2ab7398f1daa73a3e0ed6ece18556d21698233e9e3759cc7"
               command = ["sh", "-c", file("${path.module}/reap-pods.sh")]
+
+              resources {
+                requests = {
+                  memory = "64Mi"
+                }
+                limits = {
+                  memory = "256Mi"
+                }
+              }
             }
           }
         }
