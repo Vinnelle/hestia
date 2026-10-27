@@ -14,11 +14,6 @@ locals {
         }
       }
     }
-    compactor = {
-      compaction = {
-        block_retention = "168h"
-      }
-    }
     metrics_generator = {
       registry = {
         external_labels = { source = "tempo" }
@@ -30,12 +25,6 @@ locals {
           send_exemplars = true
         }]
       }
-      traces_storage = {
-        path = "/var/tempo/generator/traces"
-      }
-      processor = {
-        local_blocks = { flush_to_storage = true }
-      }
     }
     storage = {
       trace = {
@@ -46,8 +35,11 @@ locals {
     }
     overrides = {
       defaults = {
+        compaction = {
+          block_retention = "168h"
+        }
         metrics_generator = {
-          processors = ["service-graphs", "span-metrics", "local-blocks"]
+          processors = ["service-graphs", "span-metrics"]
         }
       }
     }
@@ -129,7 +121,7 @@ resource "kubernetes_stateful_set_v1" "tempo" {
 
         container {
           name  = "tempo"
-          image = "grafana/tempo:2.10.10"
+          image = "grafana/tempo:3.1.1"
           args  = ["-config.file=/conf/tempo.yaml"]
 
           port {

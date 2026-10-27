@@ -1,0 +1,4 @@
+# Finlay K. (vin.moe): chat signing identity
+# chat fingerprint: bd32 57db e823 84f5 f70a 967a 21f7 803e
+# In chat, :verify NICK shows this fingerprint for me. age -R chat-identity.txt encrypts files to me.
+age1wnv5fv5zv8p9tgs5lpzxw27z2ts3xnk57zua4jky7j9c76faxswqtvcdn0

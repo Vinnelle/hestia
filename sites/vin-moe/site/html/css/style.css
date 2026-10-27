@@ -243,6 +243,7 @@ h2 {
 .pairs { width: min(25rem, 100%); margin: 0 auto; }
 .pairs > div {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
   gap: 0.4rem 1.5rem;
@@ -253,7 +254,7 @@ h2 {
 }
 .pairs dt { color: var(--fg-strong); font-weight: 700; }
 .pairs dd {
-  margin: 0;
+  margin: 0 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
