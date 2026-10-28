@@ -34,11 +34,22 @@ variable "session" {
 variable "nick" {
   description = "Nick the bot uses in chat; its signing identity is derived from this and a generated password, so changing it changes the bot's fingerprint"
   type        = string
-  default     = "vin-bot"
+  default     = "Gemma"
 
   validation {
     condition     = can(regex("^[A-Za-z0-9._-]{1,24}$", var.nick))
     error_message = "nick must be 1-24 letters, digits, dots, dashes or underscores."
+  }
+}
+
+variable "owner_fingerprint" {
+  description = "Finlay's chat signing identity fingerprint, as :verify shows it; the bot tells the model which messages it signed"
+  type        = string
+  default     = "2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a"
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{4}( [0-9a-f]{4}){7}$", var.owner_fingerprint))
+    error_message = "owner_fingerprint must be eight groups of four lowercase hex digits."
   }
 }
 

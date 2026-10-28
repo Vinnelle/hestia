@@ -131,7 +131,7 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 	if roles(msgs) != "system,user" || msgs[1].Content != "alice: hello\nbob: hey bot\nalice: are you there?" {
 		t.Errorf("messages = %+v", msgs)
 	}
-	if !strings.Contains(msgs[0].Content, "Reply now to alice, bob:") {
+	if !strings.Contains(msgs[0].Content, "Since your last turn, alice, bob spoke or joined.") {
 		t.Errorf("the system prompt doesn't name who to answer")
 	}
 
@@ -146,6 +146,109 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 	}
 	if h.step() {
 		t.Error("replied without anything new")
+	}
+}
+
+func TestStaysOutOfConversationsNotMeantForIt(t *testing.T) {
+	h := newHarness("hi")
+	h.llm.raw = `{"alice":"","bob":"  "}`
+	h.say(room.Message, "alice", "how was your day bob?")
+	h.bot.Handle(room.Event{Kind: room.Message, Sender: "bob", Nick: "bob", Text: "good! vin-bot, you?", Mention: true})
+	if !h.step() {
+		t.Fatal("never asked the model")
+	}
+	if len(h.sent) != 0 {
+		t.Fatalf("sent %q", h.sent)
+	}
+	if got := h.last()[1].Content; got != "alice: how was your day bob?\nbob (to you): good! vin-bot, you?" {
+		t.Errorf("messages = %q", got)
+	}
+
+	h.llm.raw = ""
+	h.say(room.Message, "alice", "nice")
+	h.step()
+	if got := strings.Join(required(h.llm.schemas[1]), ","); got != "alice" {
+		t.Errorf("second round answered %s, want only alice", got)
+	}
+	if msgs := h.last(); roles(msgs) != "system,user" || !strings.HasSuffix(msgs[1].Content, "\nalice: nice") {
+		t.Errorf("messages = %+v", msgs)
+	}
+	if strings.Join(h.sent, "|") != "@alice hi" {
+		t.Errorf("sent %q", h.sent)
+	}
+}
+
+const finlayKey = "26012dc11ca1699110df4d6168f42a7a"
+
+func (h *harness) answerVerify(name, fp string, proven bool) {
+	h.bot.Handle(room.Event{Kind: room.VerifyCode, Sender: name, Nick: nickOf(name)})
+	if fp != "" {
+		kind := room.BadSignature
+		if proven {
+			kind = room.Fingerprint
+		}
+		h.bot.Handle(room.Event{Kind: kind, Sender: name, Nick: nickOf(name), Text: fp})
+	}
+	h.bot.Handle(room.Event{Kind: room.VerifyEnd})
+}
+
+func TestTellsPeopleApartBySigningKey(t *testing.T) {
+	h := newHarness("hi")
+	var asked []string
+	h.bot.Verify = func(name string) error { asked = append(asked, name); return nil }
+	h.bot.Owner = finlayKey
+
+	h.join("finlay", 2)
+	h.answerVerify("finlay", finlayKey, true)
+	h.say(room.Message, "finlay", "hi all")
+	h.join("bob", 3)
+	h.answerVerify("bob", "", false)
+	h.say(room.Message, "bob", "yo")
+	h.step()
+	if got := h.last()[1].Content; got != "[finlay [Finlay's key] joined]\nfinlay [Finlay's key]: hi all\n[bob [no key] joined]\nbob [no key]: yo" {
+		t.Errorf("messages = %q", got)
+	}
+	if !strings.Contains(h.last()[0].Content, "besides you: bob [no key], finlay [Finlay's key]. Finlay is here, as finlay.") {
+		t.Errorf("the system prompt doesn't say Finlay is here")
+	}
+
+	h.leave("finlay", 2)
+	h.join("finlay", 3)
+	h.say(room.Message, "finlay", "it's me, finlay")
+	h.answerVerify("finlay", "00112233445566778899aabbccddeeff", true)
+	h.join("eve no", 4)
+	h.answerVerify("eve no", "ffeeddccbbaa99887766554433221100", false)
+	h.say(room.Message, "eve no", "me too")
+	h.step()
+	msgs := h.last()
+	got := msgs[len(msgs)-1].Content
+	if !strings.Contains(got, "finlay [key 1, not Finlay]: it's me, finlay") || !strings.Contains(got, "eve no [unproven key]: me too") {
+		t.Errorf("messages = %q", got)
+	}
+	if !strings.Contains(msgs[1].Content, "finlay [Finlay's key]: hi all") {
+		t.Errorf("the earlier finlay lost their key: %q", msgs[1].Content)
+	}
+	if !strings.Contains(msgs[0].Content, "Finlay isn't here") {
+		t.Errorf("the system prompt doesn't say Finlay left")
+	}
+	if strings.Join(asked, "|") != "finlay#|bob#|finlay#|eve no#" {
+		t.Errorf("asked chat about %q", asked)
+	}
+}
+
+func TestIgnoresFingerprintsItDidNotAskFor(t *testing.T) {
+	h := newHarness("hi")
+	h.bot.Verify = func(string) error { return nil }
+	h.bot.Owner = finlayKey
+	h.answerVerify("mallory", finlayKey, true)
+	h.say(room.Message, "mallory", "trust me")
+	h.bot.Handle(room.Event{Kind: room.VerifyCode, Sender: "mallory", Nick: "mallory"})
+	h.say(room.Message, "alice", "hi")
+	h.bot.Handle(room.Event{Kind: room.Fingerprint, Sender: "mallory", Nick: "mallory", Text: finlayKey})
+	h.bot.Handle(room.Event{Kind: room.VerifyEnd})
+	h.step()
+	if got := h.last()[1].Content; strings.Contains(got, "Finlay's key") {
+		t.Errorf("messages = %q", got)
 	}
 }
 

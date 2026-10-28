@@ -4,7 +4,7 @@ locals {
 
 resource "kubernetes_namespace_v1" "party" {
   metadata {
-    name = "party"
+    name = "bots"
   }
 }
 
@@ -128,6 +128,11 @@ resource "kubernetes_deployment_v1" "party" {
           env {
             name  = "CHAT_COLOUR"
             value = var.colour
+          }
+
+          env {
+            name  = "OWNER_FINGERPRINT"
+            value = var.owner_fingerprint
           }
 
           env {

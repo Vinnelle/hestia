@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -26,6 +27,7 @@ const (
 	maxSenders     = 512
 	maxListed      = 40
 	maxAddressed   = 8
+	maxAsking      = 16
 	replyChars     = 600
 	replyTokens    = 200
 	directTokens   = 256
@@ -50,10 +52,17 @@ type Bot struct {
 	LLM     Asker
 	Send    func(line string) error
 	Peers   func() error
+	Verify  func(name string) error
+	Owner   string
 	Logf    func(format string, args ...any)
 	Now     func() time.Time
 	Timeout time.Duration
 
+	keys      map[string]string
+	aliases   map[string]string
+	counted   int
+	asking    []string
+	checking  *check
 	started   time.Time
 	room      conversation
 	direct    map[string]*conversation
@@ -68,6 +77,11 @@ type Bot struct {
 	busy      bool
 	readyAt   time.Time
 	failures  int
+}
+
+type check struct {
+	name string
+	key  string
 }
 
 type bucket struct {
@@ -111,24 +125,33 @@ func (b *Bot) Handle(ev room.Event) {
 	if b.roster != nil && ev.Kind != room.PeersEntry {
 		b.listedNow()
 	}
+	if b.checking != nil && ev.Kind != room.Fingerprint && ev.Kind != room.BadSignature && ev.Kind != room.VerifyEnd {
+		b.checking = nil
+	}
 	now := b.now()
 	switch ev.Kind {
 	case room.Message:
-		b.heard(&b.room, ev.Nick, ev.Nick+": "+ev.Text, now)
+		b.heard(&b.room, ev, now)
 	case room.Direct:
-		b.heard(b.dm(ev.Sender), ev.Nick, ev.Nick+": "+ev.Text, now)
+		ev.Mention = false
+		b.heard(b.dm(ev.Sender), ev, now)
 	case room.Join:
 		b.online[ev.Nick]++
+		delete(b.keys, ev.Sender)
+		delete(b.keys, ev.Nick)
+		b.identify(ev.Sender)
 		if b.online[ev.Nick] > 1 || now.Sub(b.started) < alreadyHere {
 			return
 		}
 		greet := b.greets(ev.Nick, now)
-		b.room.add(turn{role: "user", text: "[" + ev.Nick + " joined]", nick: ev.Nick, join: true, trigger: greet}, 0)
+		b.room.add(turn{role: "user", nick: ev.Nick, from: ev.Sender, join: true, trigger: greet}, 0)
 		if greet && !b.room.pending {
 			b.room.heard = now
 			b.mark(&b.room, now.Add(joinGrace), now)
 		}
 	case room.Leave:
+		delete(b.keys, ev.Sender)
+		delete(b.keys, ev.Nick)
 		if n := b.online[ev.Nick]; n > 1 {
 			b.online[ev.Nick] = n - 1
 		} else if n == 1 {
@@ -138,6 +161,7 @@ func (b *Bot) Handle(ev room.Event) {
 			for nick := range b.online {
 				b.gone(nick)
 			}
+			clear(b.keys)
 		}
 	case room.PeersHead:
 		if b.waiting != nil && !b.listed {
@@ -152,7 +176,83 @@ func (b *Bot) Handle(ev room.Event) {
 			b.roster = map[string]int{}
 			b.listedNow()
 		}
+	case room.VerifyCode:
+		for i, name := range b.asking {
+			if strings.EqualFold(bare(name), ev.Nick) {
+				b.asking = b.asking[i+1:]
+				b.checking = &check{name: ev.Sender, key: noKey}
+				break
+			}
+		}
+	case room.Fingerprint, room.BadSignature:
+		if c := b.checking; c != nil && c.name == ev.Sender {
+			c.key = b.alias(ev.Text, ev.Kind == room.Fingerprint)
+		} else {
+			b.checking = nil
+		}
+	case room.VerifyEnd:
+		if c := b.checking; c != nil {
+			if len(b.keys) >= maxSenders {
+				b.keys = map[string]string{}
+			}
+			b.keys[c.name] = c.key
+			b.checking = nil
+		}
+	case room.VerifyMiss:
+		if len(b.asking) > 0 {
+			b.asking = b.asking[1:]
+		}
 	}
+}
+
+func (b *Bot) identify(name string) {
+	if b.Verify == nil || name == "" || len(name) > 64 || strings.IndexFunc(name, unicode.IsControl) >= 0 {
+		return
+	}
+	if _, ok := b.keys[name]; ok || slices.Contains(b.asking, name) {
+		return
+	}
+	nick, id, _ := strings.Cut(name, "#")
+	if err := b.Verify(nick + "#" + id); err != nil {
+		b.logf("couldn't ask chat for a signing key: %v", err)
+		return
+	}
+	if len(b.asking) >= maxAsking {
+		b.asking = b.asking[1:]
+	}
+	b.asking = append(b.asking, name)
+}
+
+func (b *Bot) alias(fp string, proven bool) string {
+	switch {
+	case !proven:
+		return unprovenKey
+	case b.Owner != "" && fp == b.Owner:
+		return ownerKey
+	}
+	if a, ok := b.aliases[fp]; ok {
+		return a
+	}
+	if len(b.aliases) >= maxSenders {
+		b.aliases = map[string]string{}
+	}
+	b.counted++
+	a := fmt.Sprintf("key %d", b.counted)
+	b.aliases[fp] = a
+	return a
+}
+
+func (b *Bot) keyOf(name, nick string) string {
+	key := b.keys[name]
+	if key != "" && key != ownerKey && b.Owner != "" && looksLikeOwner(nick) {
+		key += ", not Finlay"
+	}
+	return key
+}
+
+func bare(name string) string {
+	nick, _, _ := strings.Cut(name, "#")
+	return nick
 }
 
 func (b *Bot) init() {
@@ -162,6 +262,8 @@ func (b *Bot) init() {
 		b.senders = map[string]*bucket{}
 		b.greeted = map[string]time.Time{}
 		b.online = map[string]int{}
+		b.keys = map[string]string{}
+		b.aliases = map[string]string{}
 	}
 }
 
@@ -209,9 +311,10 @@ func (b *Bot) greets(nick string, now time.Time) bool {
 	return true
 }
 
-func (b *Bot) heard(c *conversation, nick, text string, now time.Time) {
-	trigger := b.allow(nick, now)
-	c.add(turn{role: "user", text: text, nick: nick, trigger: trigger}, 0)
+func (b *Bot) heard(c *conversation, ev room.Event, now time.Time) {
+	trigger := b.allow(ev.Nick, now)
+	b.identify(ev.Sender)
+	c.add(turn{role: "user", text: ev.Text, nick: ev.Nick, from: ev.Sender, key: b.keyOf(ev.Sender, ev.Nick), mention: ev.Mention, trigger: trigger}, 0)
 	c.heard = now
 	if trigger {
 		b.mark(c, now.Add(settle), now)
@@ -341,6 +444,11 @@ func (b *Bot) due(now time.Time) (int, time.Duration) {
 }
 
 func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result) {
+	for i := range c.turns {
+		if t := &c.turns[i]; t.from != "" && t.key == "" {
+			t.key = b.keyOf(t.from, t.nick)
+		}
+	}
 	system := b.system(c)
 	var to []string
 	var schema json.RawMessage
@@ -351,8 +459,9 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 		}
 		schema = replySchema(to)
 		tokens = 64 + replyTokens*len(to)
-		system += "\n\nReply now to " + strings.Join(to, ", ") + ": one reply each, in the field named after them. " +
-			"Each reply answers everything that person said since your last reply, as a whole, and greets them if they just joined. " +
+		system += "\n\nSince your last turn, " + strings.Join(to, ", ") + " spoke or joined. Each has a field named after them: write your reply to them there, " +
+			"or leave it empty to stay out of it when they weren't talking to you. Someone who just joined always gets a greeting. " +
+			"A reply answers everything that person said since your last reply, as a whole. " +
 			"Don't start a reply with their @nick; it's added for you."
 	}
 	msgs, after := c.messages(system)
@@ -374,14 +483,10 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 }
 
 func (b *Bot) addressees(c *conversation) []string {
-	from := len(c.turns)
-	for from > 0 && c.turns[from-1].role != "assistant" {
-		from--
-	}
 	var to []string
 	seen := map[string]bool{}
-	for _, t := range c.turns[from:] {
-		if !t.trigger || seen[t.nick] || (t.join && b.online[t.nick] == 0) {
+	for _, t := range c.turns {
+		if t.seq <= c.done || !t.trigger || seen[t.nick] || (t.join && b.online[t.nick] == 0) {
 			continue
 		}
 		seen[t.nick] = true
@@ -403,7 +508,7 @@ func replySchema(to []string) json.RawMessage {
 		}
 		key, _ := json.Marshal(nick)
 		s.Write(key)
-		fmt.Fprintf(&s, `:{"type":"string","minLength":1,"maxLength":%d}`, replyChars)
+		fmt.Fprintf(&s, `:{"type":"string","maxLength":%d}`, replyChars)
 	}
 	required, _ := json.Marshal(to)
 	s.WriteString(`},"required":`)
@@ -431,8 +536,10 @@ func (b *Bot) finish(r result) {
 	}
 	b.failures = 0
 	b.readyAt = now.Add(spacing)
+	r.conv.done = r.after
 
 	var lines, shown []string
+	quiet := 0
 	if r.conv.peer != "" {
 		prefix := ":msg " + r.conv.peer + " "
 		if text := room.Clean(trimSelf(r.reply, b.Nick), room.MaxLine-len(prefix)); text != "" {
@@ -440,6 +547,10 @@ func (b *Bot) finish(r result) {
 		}
 	} else {
 		for _, nick := range r.to {
+			if strings.TrimSpace(replies[nick]) == "" {
+				quiet++
+				continue
+			}
 			prefix := "@" + nick + " "
 			if text := room.Clean(trimTo(trimSelf(replies[nick], b.Nick), nick), room.MaxLine-len(prefix)); text != "" {
 				lines, shown = append(lines, prefix+text), append(shown, prefix+text)
@@ -447,7 +558,11 @@ func (b *Bot) finish(r result) {
 		}
 	}
 	if len(lines) == 0 {
-		b.logf("the reply to %s was empty once cleaned", r.conv.where())
+		if quiet == len(r.to) && quiet > 0 {
+			b.logf("stayed out of the room's conversation")
+		} else {
+			b.logf("the reply to %s was empty once cleaned", r.conv.where())
+		}
 		return
 	}
 	sent := 0
@@ -471,20 +586,36 @@ func (b *Bot) finish(r result) {
 
 func (b *Bot) system(c *conversation) string {
 	if c.peer != "" {
-		return b.Prompt + "\n\nThis conversation is a direct message from " + c.peer + ": only the two of you see it."
+		s := b.Prompt + "\n\nThis conversation is a direct message from " + c.peer + ": only the two of you see it."
+		if b.Owner != "" {
+			s += ownerTalking(b.keys[c.peer] == ownerKey)
+		}
+		return s
 	}
 	if len(b.online) == 0 {
 		return b.Prompt + "\n\nNobody else is in the room right now."
 	}
 	names := make([]string, 0, len(b.online))
+	owner := ""
 	for nick := range b.online {
+		key := b.keyOf(nick, nick)
+		if key == ownerKey {
+			owner = nick
+		}
+		if key != "" {
+			nick += " [" + key + "]"
+		}
 		names = append(names, nick)
 	}
 	sort.Strings(names)
 	if len(names) > maxListed {
 		names = append(names[:maxListed], fmt.Sprintf("and %d more", len(names)-maxListed))
 	}
-	return b.Prompt + "\n\nIn the room right now, besides you: " + strings.Join(names, ", ") + "."
+	s := b.Prompt + "\n\nIn the room right now, besides you: " + strings.Join(names, ", ") + "."
+	if b.Owner != "" {
+		s += ownerHere(owner)
+	}
+	return s
 }
 
 func trimSelf(reply, nick string) string {
@@ -516,8 +647,28 @@ type turn struct {
 	role    string
 	text    string
 	nick    string
+	from    string
+	key     string
+	mention bool
 	join    bool
 	trigger bool
+}
+
+func (t turn) line() string {
+	if t.from == "" {
+		return t.text
+	}
+	who := t.nick
+	if t.key != "" {
+		who += " [" + t.key + "]"
+	}
+	if t.join {
+		return "[" + who + " joined]"
+	}
+	if t.mention {
+		who += " (to you)"
+	}
+	return who + ": " + t.text
 }
 
 type conversation struct {
@@ -525,6 +676,7 @@ type conversation struct {
 	turns   []turn
 	size    int
 	seq     uint64
+	done    uint64
 	pending bool
 	queued  bool
 	heard   time.Time
@@ -555,9 +707,9 @@ func (c *conversation) add(t turn, after uint64) {
 	c.turns = append(c.turns, turn{})
 	copy(c.turns[at+1:], c.turns[at:])
 	c.turns[at] = t
-	c.size += len(t.text)
+	c.size += len(t.text) + len(t.nick)
 	for len(c.turns) > maxTurns || (c.size > maxBytes && len(c.turns) > 1) {
-		c.size -= len(c.turns[0].text)
+		c.size -= len(c.turns[0].text) + len(c.turns[0].nick)
 		c.turns = c.turns[1:]
 	}
 }
@@ -570,9 +722,9 @@ func (c *conversation) messages(system string) ([]llm.Message, uint64) {
 			continue
 		}
 		if prev := &msgs[len(msgs)-1]; len(msgs) > 1 && prev.Role == t.role {
-			prev.Content += "\n" + t.text
+			prev.Content += "\n" + t.line()
 		} else {
-			msgs = append(msgs, llm.Message{Role: t.role, Content: t.text})
+			msgs = append(msgs, llm.Message{Role: t.role, Content: t.line()})
 		}
 		last = t.seq
 	}

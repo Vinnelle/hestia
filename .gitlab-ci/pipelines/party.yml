@@ -35,12 +35,12 @@ party_deploy:
       changes: *party_changes
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "party"'
   script:
-    - sh .gitlab-ci/scripts/site-deploy.sh party --namespace party
+    - sh .gitlab-ci/scripts/site-deploy.sh party --namespace bots
 
 party_redeploy:
   extends: .site_deploy
   rules:
     - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "party_redeploy"'
   script:
-    - kubectl rollout restart deployment/party -n party
-    - kubectl rollout status deployment/party -n party
+    - kubectl rollout restart deployment/party -n bots
+    - kubectl rollout status deployment/party -n bots

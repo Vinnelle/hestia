@@ -86,7 +86,7 @@ func run(ctx context.Context) error {
 	if len(missing) > 0 {
 		return fmt.Errorf("missing %s", strings.Join(missing, ", "))
 	}
-	nick := env("CHAT_NICK", "vin-bot")
+	nick := env("CHAT_NICK", "Gemma")
 	knowledge, err := os.ReadFile(env("KNOWLEDGE_FILE", "/etc/party/knowledge.md"))
 	if err != nil {
 		return err
@@ -135,7 +135,12 @@ func run(ctx context.Context) error {
 			_, err := io.WriteString(stdin, ":peers\n:timer\n")
 			return err
 		},
-		Logf: log.Printf,
+		Verify: func(name string) error {
+			_, err := io.WriteString(stdin, ":verify "+name+"\n")
+			return err
+		},
+		Owner: strings.ToLower(strings.ReplaceAll(os.Getenv("OWNER_FINGERPRINT"), " ", "")),
+		Logf:  log.Printf,
 	}
 	botDone := make(chan error, 1)
 	go func() { botDone <- b.Run(ctx, events) }()

@@ -37,7 +37,7 @@ locals {
   }))
 
   rendered_world_ports = yamldecode(templatefile("${path.module}/../../platform/network-policy/policy/cilium-network-policy.yaml.tftpl", {
-    namespace           = "party"
+    namespace           = "bots"
     telemetry_namespace = "observability"
     ingress_from        = []
     egress_to           = [{ namespace = "llm", ports = [8080] }]

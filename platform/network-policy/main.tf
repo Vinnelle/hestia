@@ -2,13 +2,13 @@ locals {
   policied_namespaces = toset([
     "auth",
     "automations",
+    "bots",
     "dns",
     "files",
     "forge",
     "llm",
     "matrix",
     "miniflux",
-    "party",
     "proxy",
     "registry",
     "searxng",
@@ -19,40 +19,40 @@ locals {
 
   network_policy_ingress_from = {
     automations    = ["forge"]
-    llm            = ["automations", "party"]
+    llm            = ["automations", "bots"]
     storage        = ["files", "forge"]
     "vinnel-cloud" = ["vin-moe"]
   }
 
   network_policy_egress_fqdns = {
     automations = ["api.resend.com"]
+    bots        = []
     llm         = ["huggingface.co", "**.hf.co"]
     matrix      = []
-    party       = []
     storage     = []
     "vin-moe"   = []
   }
 
   network_policy_egress_telemetry = {
-    party = false
+    bots = false
   }
 
   network_policy_egress_world_ports = {
-    party = [443]
+    bots = [443]
   }
 
   network_policy_egress_entities = {
-    party = []
+    bots = []
   }
 
   network_policy_egress_to = {
     automations = [{ namespace = "llm", ports = [8080] }]
+    bots        = [{ namespace = "llm", ports = [8080] }]
     files       = [{ namespace = "storage", ports = [8333] }]
     forge = [
       { namespace = "storage", ports = [8333] },
       { namespace = "automations", ports = [8080] },
     ]
-    party     = [{ namespace = "llm", ports = [8080] }]
     "vin-moe" = [{ namespace = "vinnel-cloud", ports = [8080] }]
   }
 }

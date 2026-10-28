@@ -14,7 +14,7 @@ func TestParse(t *testing.T) {
 		{"session 'vin-moe-party', you are vin-bot (peer 1a2b3c4d). encrypted, over Tor only. :quit or EOF to stop.", Event{Kind: Banner}},
 		{"new session id: X", Event{Kind: Other}},
 		{"[12:00] bob: hi there", Event{Kind: Message, Sender: "bob", Text: "hi there"}},
-		{"[12:00] @ bob: hey vin-bot: you there?", Event{Kind: Message, Sender: "bob", Text: "hey vin-bot: you there?"}},
+		{"[12:00] @ bob: hey vin-bot: you there?", Event{Kind: Message, Sender: "bob", Text: "hey vin-bot: you there?", Mention: true}},
 		{"[12:00] bob smith#1a2b3c4d: hi", Event{Kind: Message, Sender: "bob smith#1a2b3c4d", Text: "hi"}},
 		{"[12:00] eve#0badf00d (via bob): relayed", Event{Kind: Message, Sender: "eve#0badf00d", Text: "relayed"}},
 		{"[12:00] eve#0badf00d (via bob (code compared)): relayed", Event{Kind: Message, Sender: "eve#0badf00d", Text: "relayed"}},
@@ -37,13 +37,19 @@ func TestParse(t *testing.T) {
 		{"[12:00] * messages here go after 10m, as bob asked", Event{Kind: Timer}},
 		{"[12:00] * online: vin-bot: (you), and:", Event{Kind: Console}},
 		{"[12:00] * sandbox: on - from now on chat can only write", Event{Kind: Console}},
+		{"[12:00] * finlay: verify code able acid also apex (in hex 0a1b 2c3d) - not compared yet", Event{Kind: VerifyCode, Sender: "finlay", Nick: "finlay"}},
+		{"[12:00] * finlay#6125e90b: signing identity fingerprint 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a (verified)", Event{Kind: Fingerprint, Sender: "finlay#6125e90b", Nick: "finlay", Text: "26012dc11ca1699110df4d6168f42a7a"}},
+		{"[12:00] * finlay: signing identity fingerprint 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a (⚠ signature invalid)", Event{Kind: BadSignature, Sender: "finlay", Text: "26012dc11ca1699110df4d6168f42a7a"}},
+		{"[12:00] * read the code out to them over another channel (in person, a call); if theirs is the same, :verify finlay ok - if not, :verify finlay no", Event{Kind: VerifyEnd}},
+		{"[12:00] * no online peer named 'finlay'", Event{Kind: VerifyMiss}},
+		{"[12:00] * more than one peer is called finlay - add the #id :peers shows (:verify finlay#1a2b...)", Event{Kind: VerifyMiss}},
 		{"[12:00] * bob: spoofed console line", Event{Kind: Console}},
 		{"[12:00] bob (admin): unknown tag", Event{Kind: Console}},
 		{"[12:00] no separator here", Event{Kind: Console}},
 	}
 	for _, c := range cases {
 		got := Parse(c.line)
-		if got.Kind != c.want.Kind || got.Sender != c.want.Sender || got.Online != c.want.Online ||
+		if got.Kind != c.want.Kind || got.Sender != c.want.Sender || got.Online != c.want.Online || got.Mention != c.want.Mention ||
 			(c.want.Nick != "" && got.Nick != c.want.Nick) || (c.want.Text != "" && got.Text != c.want.Text) {
 			t.Errorf("Parse(%q) = %+v, want %+v", c.line, got, c.want)
 		}

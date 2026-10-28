@@ -23,14 +23,20 @@ const (
 	PeersEntry
 	PeersNone
 	Timer
+	VerifyCode
+	Fingerprint
+	BadSignature
+	VerifyEnd
+	VerifyMiss
 )
 
 type Event struct {
-	Kind   Kind
-	Sender string
-	Nick   string
-	Text   string
-	Online int
+	Kind    Kind
+	Sender  string
+	Nick    string
+	Text    string
+	Online  int
+	Mention bool
 }
 
 const MaxLine = 880
@@ -45,6 +51,10 @@ var (
 	peers  = regexp.MustCompile(`^\* online: [^()#:@]+ \(you\), and:$`)
 	peer   = regexp.MustCompile(`^\*   ([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8}) \(verify .*\)$`)
 	timer  = regexp.MustCompile(`^\* (?:no message timer here|messages here go after) `)
+	code   = regexp.MustCompile(`^\* ([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8})?: verify code `)
+	signer = regexp.MustCompile(`^\* ([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8})?: signing identity fingerprint ([0-9a-f]{4}(?: [0-9a-f]{4})+) \((verified|unverified|\x{26A0} signature invalid)\)$`)
+	ended  = regexp.MustCompile(`^\* read the code out to them over another channel `)
+	missed = regexp.MustCompile(`^\* (?:no online peer named '|more than one peer is called )`)
 )
 
 func Parse(line string) Event {
@@ -68,7 +78,21 @@ func Parse(line string) Event {
 		if m := peer.FindStringSubmatch(body); m != nil {
 			return Event{Kind: PeersEntry, Sender: m[1] + m[2], Nick: m[1]}
 		}
+		if m := code.FindStringSubmatch(body); m != nil {
+			return Event{Kind: VerifyCode, Sender: m[1] + m[2], Nick: m[1]}
+		}
+		if m := signer.FindStringSubmatch(body); m != nil {
+			kind := BadSignature
+			if m[4] == "verified" {
+				kind = Fingerprint
+			}
+			return Event{Kind: kind, Sender: m[1] + m[2], Nick: m[1], Text: strings.ReplaceAll(m[3], " ", "")}
+		}
 		switch {
+		case ended.MatchString(body):
+			return Event{Kind: VerifyEnd}
+		case missed.MatchString(body):
+			return Event{Kind: VerifyMiss}
 		case peers.MatchString(body):
 			return Event{Kind: PeersHead}
 		case body == "* nobody else yet":
@@ -82,6 +106,7 @@ func Parse(line string) Event {
 		}
 		return Event{Kind: Console, Text: body}
 	}
+	mention := strings.HasPrefix(body, "@ ")
 	head, text, ok := strings.Cut(strings.TrimPrefix(body, "@ "), ": ")
 	m := sender.FindStringSubmatch(head)
 	if !ok || m == nil {
@@ -102,7 +127,7 @@ func Parse(line string) Event {
 			return Event{Kind: Console, Text: body}
 		}
 	}
-	return Event{Kind: kind, Sender: m[1] + m[2], Nick: m[1], Text: text}
+	return Event{Kind: kind, Sender: m[1] + m[2], Nick: m[1], Text: text, Mention: mention}
 }
 
 func Clean(s string, max int) string {
