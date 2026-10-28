@@ -1,0 +1,18 @@
+.party_changes: &party_changes
+  - "hestia/bots/party/**/*"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/party.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+party_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *party_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "party"'
+  variables:
+    SITE_CONTEXT: hestia/bots/party
+    SITE_DOCKERFILE: hestia/bots/party
+    SITE_IMAGE: party/party
+    SITE_DEPLOYMENT: party

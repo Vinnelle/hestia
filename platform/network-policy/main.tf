@@ -8,6 +8,7 @@ locals {
     "llm",
     "matrix",
     "miniflux",
+    "party",
     "proxy",
     "registry",
     "searxng",
@@ -18,7 +19,7 @@ locals {
 
   network_policy_ingress_from = {
     automations    = ["forge"]
-    llm            = ["automations"]
+    llm            = ["automations", "party"]
     storage        = ["files", "forge"]
     "vinnel-cloud" = ["vin-moe"]
   }
@@ -27,8 +28,21 @@ locals {
     automations = ["api.resend.com"]
     llm         = ["huggingface.co", "**.hf.co"]
     matrix      = []
+    party       = []
     storage     = []
     "vin-moe"   = []
+  }
+
+  network_policy_egress_telemetry = {
+    party = false
+  }
+
+  network_policy_egress_world_ports = {
+    party = [443]
+  }
+
+  network_policy_egress_entities = {
+    party = []
   }
 
   network_policy_egress_to = {
@@ -38,6 +52,7 @@ locals {
       { namespace = "storage", ports = [8333] },
       { namespace = "automations", ports = [8080] },
     ]
+    party     = [{ namespace = "llm", ports = [8080] }]
     "vin-moe" = [{ namespace = "vinnel-cloud", ports = [8080] }]
   }
 }
@@ -51,6 +66,9 @@ module "network_policy" {
   telemetry_namespace = var.telemetry_namespace
   ingress_from        = lookup(local.network_policy_ingress_from, each.key, [])
   egress_to           = lookup(local.network_policy_egress_to, each.key, [])
+  egress_telemetry    = lookup(local.network_policy_egress_telemetry, each.key, null)
+  egress_world_ports  = lookup(local.network_policy_egress_world_ports, each.key, null)
+  egress_entities     = lookup(local.network_policy_egress_entities, each.key, null)
   egress_fqdns        = lookup(local.network_policy_egress_fqdns, each.key, null)
 }
 

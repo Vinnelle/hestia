@@ -20,8 +20,10 @@ spec:
     - toEndpoints:
         - matchLabels:
             "k8s:io.kubernetes.pod.namespace": ${namespace}
+%{ if egress_telemetry ~}
         - matchLabels:
             "k8s:io.kubernetes.pod.namespace": ${telemetry_namespace}
+%{ endif ~}
     - toEndpoints:
         - matchLabels:
             "k8s:io.kubernetes.pod.namespace": kube-system
@@ -58,10 +60,31 @@ spec:
             - port: "443"
               protocol: TCP
 %{ endif ~}
+%{ if length(egress_world_ports) > 0 ~}
+    - toCIDRSet:
+        - cidr: 0.0.0.0/0
+          except:
+            - 0.0.0.0/8
+            - 10.0.0.0/8
+            - 100.64.0.0/10
+            - 127.0.0.0/8
+            - 169.254.0.0/16
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 224.0.0.0/3
+      toPorts:
+        - ports:
+%{ for port in egress_world_ports ~}
+            - port: "${port}"
+              protocol: TCP
+%{ endfor ~}
+%{ endif ~}
+%{ if length(egress_entities) > 0 || egress_fqdns == null ~}
     - toEntities:
-        - host
-        - remote-node
-        - kube-apiserver
+%{ for entity in egress_entities ~}
+        - ${entity}
+%{ endfor ~}
 %{ if egress_fqdns == null ~}
         - world
+%{ endif ~}
 %{ endif ~}

@@ -15,6 +15,7 @@ variables:
       - "vinnel_cloud"
       - "shell"
       - "automations"
+      - "party"
       - "relay_image"
       - "ci_runner"
       - "ci_runner_scan"
@@ -56,5 +57,6 @@ include:
   - local: '.gitlab-ci/pipelines/love.yml'
   - local: '.gitlab-ci/pipelines/sites.yml'
   - local: '.gitlab-ci/pipelines/automations.yml'
+  - local: '.gitlab-ci/pipelines/party.yml'
   - local: '.gitlab-ci/pipelines/relay.yml'
   - local: '.gitlab-ci/pipelines/changelog.yml'

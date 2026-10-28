@@ -16,7 +16,7 @@ if [ -z "$namespace" ]; then
 fi
 
 git fetch --depth=1 origin "$CI_COMMIT_REF_NAME"
-for f in hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json; do
+for f in hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/bots/bot-images.json; do
   git show "FETCH_HEAD:$f"
 done | jq -s 'add' > /tmp/images.json
 

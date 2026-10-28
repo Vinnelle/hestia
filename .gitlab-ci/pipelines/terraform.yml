@@ -7,7 +7,9 @@
   - "hestia/sites/site-images.json"
   - "hestia/apps/app-images.json"
   - "hestia/identity/identity-images.json"
+  - "hestia/bots/bot-images.json"
   - "hestia/platform/relay/image/**/*"
+  - "hestia/bots/party/knowledge.md"
   - "secrets.sops.json"
 
 .terraform_install:
@@ -84,6 +86,8 @@ terraform_plan_apply:
       optional: true
     - job: automations_build
       optional: true
+    - job: party_build
+      optional: true
     - job: relay_image
       optional: true
     - job: lint
@@ -98,7 +102,7 @@ terraform_plan_apply:
     - if: '$CI_PIPELINE_SOURCE == "web" && ($RUN == "terraform" || $RUN == "relay_image")'
   script:
     - git -C "$CI_PROJECT_DIR" fetch --depth=1 origin "$CI_COMMIT_REF_NAME"
-    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/platform/relay/image/image.json
+    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/bots/bot-images.json hestia/platform/relay/image/image.json
     - terraform fmt -check -diff -recursive
     - tflint --recursive
     - terraform init -input=false

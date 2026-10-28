@@ -23,7 +23,7 @@ for attempt in 1 2 3 4 5; do
   git reset --hard FETCH_HEAD
 
   target=""
-  for f in hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json; do
+  for f in hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/bots/bot-images.json; do
     if jq -e --arg d "$deployment" 'has($d)' "$f" >/dev/null; then
       target="$f"
       break

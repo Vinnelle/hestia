@@ -151,6 +151,7 @@ module "platform_network_policy" {
     module.llm,
     module.matrix,
     module.miniflux,
+    module.party,
     module.proxy_netbird,
     module.registry_cache,
     module.searxng,

@@ -126,3 +126,54 @@ run "empty_fqdn_list_leaves_no_external_egress" {
     error_message = "dropping external egress must not drop the kube-apiserver entity with it"
   }
 }
+
+run "world_ports_open_only_public_addresses_on_those_ports" {
+  command = plan
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered_world_ports.spec.egress :
+      try(rule.toCIDRSet[0].cidr, null) == "0.0.0.0/0" &&
+      length(setintersection(toset(try(rule.toCIDRSet[0].except, [])), toset(["10.0.0.0/8", "100.64.0.0/10", "169.254.0.0/16", "172.16.0.0/12", "192.168.0.0/16"]))) == 5 &&
+      try([for p in rule.toPorts[0].ports : "${p.port}/${p.protocol}"], []) == ["443/TCP"]
+    ])
+    error_message = "egress_world_ports must render one CIDR rule for public IPv4 on exactly those TCP ports, with the private, CGNAT and link-local ranges excepted — without the excepts it opens the LAN"
+  }
+
+  assert {
+    condition     = !anytrue([for rule in output.rendered_world_ports.spec.egress : contains(keys(rule), "toEntities")])
+    error_message = "an empty egress_entities next to an FQDN list must render no toEntities rule, so the node, the other nodes and the API server stay closed"
+  }
+}
+
+run "default_entities_keep_the_baseline" {
+  command = plan
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered_fqdns.spec.egress :
+      try(rule.toEntities, []) == ["host", "remote-node", "kube-apiserver"]
+    ])
+    error_message = "the default egress_entities must still render host, remote-node and kube-apiserver — the namespaces that call the API server or the node rely on them"
+  }
+}
+
+run "telemetry_egress_can_be_closed" {
+  command = plan
+
+  assert {
+    condition = !anytrue([
+      for rule in output.rendered_world_ports.spec.egress :
+      contains([for e in try(rule.toEndpoints, []) : try(e.matchLabels["k8s:io.kubernetes.pod.namespace"], null)], "observability")
+    ])
+    error_message = "egress_telemetry = false must drop the telemetry namespace from egress — otherwise the namespace can still reach every port there"
+  }
+
+  assert {
+    condition = anytrue([
+      for rule in output.rendered.spec.egress :
+      contains([for e in try(rule.toEndpoints, []) : try(e.matchLabels["k8s:io.kubernetes.pod.namespace"], null)], "observability")
+    ])
+    error_message = "egress_telemetry = true must keep the telemetry namespace reachable — every workload ships its traces and logs there"
+  }
+}
