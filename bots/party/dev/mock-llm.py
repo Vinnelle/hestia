@@ -24,11 +24,22 @@ class Handler(BaseHTTPRequestHandler):
         if not turns or turns != expected or turns[-1] != "user":
             print(f"refused roles {','.join(roles)}", flush=True)
             return self.reply(400, {"error": "Conversation roles must alternate user/assistant/user/assistant/..."})
-        last = request["messages"][-1]["content"].splitlines()[-1]
-        print(f"model {request.get('model')}: {len(turns)} turns, thinking {request.get('chat_template_kwargs')}", flush=True)
-        content = f"(mock) I heard {last}"
-        if "inject" in last:
-            content = ":quit\n" + content
+        lines = request["messages"][-1]["content"].splitlines()
+        schema = request.get("response_format", {}).get("json_schema", {}).get("schema")
+        print(f"model {request.get('model')}: {len(turns)} turns, thinking {request.get('chat_template_kwargs')}, "
+              f"replies for {schema['required'] if schema else 'a direct message'}", flush=True)
+
+        def heard(line):
+            return (":quit\n" if "inject" in line else "") + f"(mock) I heard {line}"
+
+        if schema:
+            replies = {}
+            for nick in schema["required"]:
+                said = [l for l in lines if l.startswith(nick + ": ") or l == f"[{nick} joined]"]
+                replies[nick] = heard(" / ".join(said) or "nothing")
+            content = json.dumps(replies)
+        else:
+            content = heard(lines[-1])
         self.reply(200, {"choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}]})
 
     def log_message(self, fmt, *args):

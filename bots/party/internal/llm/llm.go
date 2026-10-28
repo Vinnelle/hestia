@@ -22,9 +22,19 @@ type Client struct {
 	BaseURL     string
 	Model       string
 	APIKey      string
-	MaxTokens   int
 	Temperature float64
 	HTTP        *http.Client
+}
+
+type jsonSchema struct {
+	Name   string          `json:"name"`
+	Strict bool            `json:"strict"`
+	Schema json.RawMessage `json:"schema"`
+}
+
+type responseFormat struct {
+	Type       string     `json:"type"`
+	JSONSchema jsonSchema `json:"json_schema"`
 }
 
 type request struct {
@@ -34,6 +44,7 @@ type request struct {
 	MaxTokens          int             `json:"max_tokens,omitempty"`
 	Stream             bool            `json:"stream"`
 	ChatTemplateKwargs map[string]bool `json:"chat_template_kwargs"`
+	ResponseFormat     *responseFormat `json:"response_format,omitempty"`
 }
 
 type response struct {
@@ -51,14 +62,18 @@ func (c *Client) client() *http.Client {
 	return &http.Client{Timeout: 5 * time.Minute}
 }
 
-func (c *Client) Ask(ctx context.Context, messages []Message) (string, error) {
-	payload, err := json.Marshal(request{
+func (c *Client) Ask(ctx context.Context, messages []Message, schema json.RawMessage, maxTokens int) (string, error) {
+	in := request{
 		Model:              c.Model,
 		Messages:           messages,
 		Temperature:        c.Temperature,
-		MaxTokens:          c.MaxTokens,
+		MaxTokens:          maxTokens,
 		ChatTemplateKwargs: map[string]bool{"enable_thinking": false},
-	})
+	}
+	if schema != nil {
+		in.ResponseFormat = &responseFormat{Type: "json_schema", JSONSchema: jsonSchema{Name: "replies", Strict: true, Schema: schema}}
+	}
+	payload, err := json.Marshal(in)
 	if err != nil {
 		return "", err
 	}

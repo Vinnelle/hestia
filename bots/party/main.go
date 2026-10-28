@@ -125,11 +125,14 @@ func run(ctx context.Context) error {
 			BaseURL:     os.Getenv("LLM_BASE_URL"),
 			Model:       os.Getenv("LLM_MODEL"),
 			APIKey:      os.Getenv("LLM_API_KEY"),
-			MaxTokens:   256,
 			Temperature: 0.7,
 		},
 		Send: func(line string) error {
 			_, err := io.WriteString(stdin, line+"\n")
+			return err
+		},
+		Peers: func() error {
+			_, err := io.WriteString(stdin, ":peers\n:timer\n")
 			return err
 		},
 		Logf: log.Printf,

@@ -19,11 +19,16 @@ const (
 	Own
 	Join
 	Leave
+	PeersHead
+	PeersEntry
+	PeersNone
+	Timer
 )
 
 type Event struct {
 	Kind   Kind
 	Sender string
+	Nick   string
 	Text   string
 	Online int
 }
@@ -34,8 +39,12 @@ var (
 	stamp  = regexp.MustCompile(`^\[\d{2}:\d{2}\] `)
 	sender = regexp.MustCompile(`^([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8})?((?: \((?:[^()]|\([^()]*\))*\))*)$`)
 	tag    = regexp.MustCompile(` \(((?:[^()]|\([^()]*\))*)\)`)
-	joined = regexp.MustCompile(`^\* ([^()#:@\s][^()#:@]*?(?:#[0-9a-f]{8})?) \((?:verified|unverified|\x{26A0} signature invalid)\)(?: \[keeps history\])? joined \((\d+) online\)$`)
+	joined = regexp.MustCompile(`^\* ([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8})? \((?:verified|unverified|\x{26A0} signature invalid)\)(?: \[keeps history\])? joined \((\d+) online\)$`)
+	left   = regexp.MustCompile(`^\* ([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8})? (?:left|timed out|went offline) \((\d+) online\)$`)
 	online = regexp.MustCompile(` \((\d+) online\)$`)
+	peers  = regexp.MustCompile(`^\* online: [^()#:@]+ \(you\), and:$`)
+	peer   = regexp.MustCompile(`^\*   ([^()#:@\s][^()#:@]*?)(#[0-9a-f]{8}) \(verify .*\)$`)
+	timer  = regexp.MustCompile(`^\* (?:no message timer here|messages here go after) `)
 )
 
 func Parse(line string) Event {
@@ -49,8 +58,23 @@ func Parse(line string) Event {
 	body := line[loc[1]:]
 	if strings.HasPrefix(body, "* ") {
 		if m := joined.FindStringSubmatch(body); m != nil {
-			n, _ := strconv.Atoi(m[2])
-			return Event{Kind: Join, Sender: m[1], Online: n}
+			n, _ := strconv.Atoi(m[3])
+			return Event{Kind: Join, Sender: m[1] + m[2], Nick: m[1], Online: n}
+		}
+		if m := left.FindStringSubmatch(body); m != nil {
+			n, _ := strconv.Atoi(m[3])
+			return Event{Kind: Leave, Sender: m[1] + m[2], Nick: m[1], Online: n}
+		}
+		if m := peer.FindStringSubmatch(body); m != nil {
+			return Event{Kind: PeersEntry, Sender: m[1] + m[2], Nick: m[1]}
+		}
+		switch {
+		case peers.MatchString(body):
+			return Event{Kind: PeersHead}
+		case body == "* nobody else yet":
+			return Event{Kind: PeersNone}
+		case timer.MatchString(body):
+			return Event{Kind: Timer, Text: body}
 		}
 		if m := online.FindStringSubmatch(body); m != nil {
 			n, _ := strconv.Atoi(m[1])
@@ -78,7 +102,7 @@ func Parse(line string) Event {
 			return Event{Kind: Console, Text: body}
 		}
 	}
-	return Event{Kind: kind, Sender: m[1] + m[2], Text: text}
+	return Event{Kind: kind, Sender: m[1] + m[2], Nick: m[1], Text: text}
 }
 
 func Clean(s string, max int) string {

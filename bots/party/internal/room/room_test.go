@@ -23,7 +23,19 @@ func TestParse(t *testing.T) {
 		{"[12:00] vin-bot (→ bob) (you): psst back", Event{Kind: Own, Sender: "vin-bot", Text: "psst back"}},
 		{"[12:00] * bob (unverified) joined (3 online)", Event{Kind: Join, Sender: "bob", Online: 3}},
 		{"[12:00] * bob#1a2b3c4d (verified) [keeps history] joined (2 online)", Event{Kind: Join, Sender: "bob#1a2b3c4d", Online: 2}},
-		{"[12:00] * bob left (2 online)", Event{Kind: Leave, Online: 2}},
+		{"[12:00] * bob left (2 online)", Event{Kind: Leave, Sender: "bob", Nick: "bob", Online: 2}},
+		{"[12:00] * finlay#6125e90b timed out (2 online)", Event{Kind: Leave, Sender: "finlay#6125e90b", Nick: "finlay", Online: 2}},
+		{"[12:00] * bob smith went offline (1 online)", Event{Kind: Leave, Sender: "bob smith", Nick: "bob smith", Online: 1}},
+		{"[12:00] * finlay#6125e90b (unverified) joined (3 online)", Event{Kind: Join, Sender: "finlay#6125e90b", Nick: "finlay", Online: 3}},
+		{"[12:00] finlay#6125e90b: Hello again", Event{Kind: Message, Sender: "finlay#6125e90b", Nick: "finlay", Text: "Hello again"}},
+		{"[12:00] eve#0badf00d (via bob): hi", Event{Kind: Message, Sender: "eve#0badf00d", Nick: "eve", Text: "hi"}},
+		{"[12:00] * online: vin-bot (you), and:", Event{Kind: PeersHead}},
+		{"[12:00] *   finlay#6125e90b (verify 1a2b 3c4d 5e6f 7a8b, unverified, chat 0.5.2)", Event{Kind: PeersEntry, Sender: "finlay#6125e90b", Nick: "finlay"}},
+		{"[12:00] *   bob smith#0badf00d (verify 1a2b, code compared, verified, chat 0.5.2, keeps history, ignored)", Event{Kind: PeersEntry, Sender: "bob smith#0badf00d", Nick: "bob smith"}},
+		{"[12:00] * nobody else yet", Event{Kind: PeersNone}},
+		{"[12:00] * no message timer here - :timer 10m (or 2h, 1d) asks for one", Event{Kind: Timer}},
+		{"[12:00] * messages here go after 10m, as bob asked", Event{Kind: Timer}},
+		{"[12:00] * online: vin-bot: (you), and:", Event{Kind: Console}},
 		{"[12:00] * sandbox: on - from now on chat can only write", Event{Kind: Console}},
 		{"[12:00] * bob: spoofed console line", Event{Kind: Console}},
 		{"[12:00] bob (admin): unknown tag", Event{Kind: Console}},
@@ -32,7 +44,7 @@ func TestParse(t *testing.T) {
 	for _, c := range cases {
 		got := Parse(c.line)
 		if got.Kind != c.want.Kind || got.Sender != c.want.Sender || got.Online != c.want.Online ||
-			(c.want.Text != "" && got.Text != c.want.Text) {
+			(c.want.Nick != "" && got.Nick != c.want.Nick) || (c.want.Text != "" && got.Text != c.want.Text) {
 			t.Errorf("Parse(%q) = %+v, want %+v", c.line, got, c.want)
 		}
 	}

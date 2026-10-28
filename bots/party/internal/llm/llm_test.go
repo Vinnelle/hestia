@@ -20,16 +20,24 @@ func TestAsk(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := &Client{BaseURL: srv.URL + "/v1/", Model: "m", APIKey: "key", MaxTokens: 64, Temperature: 0.7}
-	reply, err := c.Ask(context.Background(), []Message{{Role: "user", Content: "bob: hello"}})
+	c := &Client{BaseURL: srv.URL + "/v1/", Model: "m", APIKey: "key", Temperature: 0.7}
+	reply, err := c.Ask(context.Background(), []Message{{Role: "user", Content: "bob: hello"}}, nil, 64)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if reply != "hi @bob" {
 		t.Errorf("reply = %q", reply)
 	}
-	if got.Model != "m" || got.MaxTokens != 64 || got.Stream || got.ChatTemplateKwargs["enable_thinking"] {
+	if got.Model != "m" || got.MaxTokens != 64 || got.Stream || got.ChatTemplateKwargs["enable_thinking"] || got.ResponseFormat != nil {
 		t.Errorf("request = %+v", got)
+	}
+
+	if _, err := c.Ask(context.Background(), nil, json.RawMessage(`{"type":"object"}`), 300); err != nil {
+		t.Fatal(err)
+	}
+	if got.ResponseFormat == nil || got.ResponseFormat.Type != "json_schema" || !got.ResponseFormat.JSONSchema.Strict ||
+		string(got.ResponseFormat.JSONSchema.Schema) != `{"type":"object"}` || got.MaxTokens != 300 {
+		t.Errorf("request with a schema = %+v", got)
 	}
 }
 
@@ -41,7 +49,7 @@ func TestAskRejectsEmptyAndFailedReplies(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(body))
 		}))
-		if _, err := (&Client{BaseURL: srv.URL}).Ask(context.Background(), nil); err == nil {
+		if _, err := (&Client{BaseURL: srv.URL}).Ask(context.Background(), nil, nil, 0); err == nil {
 			t.Errorf("no error for %s", body)
 		}
 		srv.Close()
@@ -51,7 +59,7 @@ func TestAskRejectsEmptyAndFailedReplies(t *testing.T) {
 		http.Error(w, "busy", http.StatusServiceUnavailable)
 	}))
 	defer srv.Close()
-	if _, err := (&Client{BaseURL: srv.URL}).Ask(context.Background(), nil); err == nil {
+	if _, err := (&Client{BaseURL: srv.URL}).Ask(context.Background(), nil, nil, 0); err == nil {
 		t.Error("no error for a 503")
 	}
 }

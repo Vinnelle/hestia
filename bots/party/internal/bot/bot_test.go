@@ -2,6 +2,7 @@ package bot
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -12,20 +13,43 @@ import (
 )
 
 type fakeLLM struct {
-	reply string
-	err   error
-	seen  [][]llm.Message
+	reply   string
+	raw     string
+	err     error
+	seen    [][]llm.Message
+	schemas []json.RawMessage
 }
 
-func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message) (string, error) {
+func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, error) {
 	f.seen = append(f.seen, messages)
-	return f.reply, f.err
+	f.schemas = append(f.schemas, schema)
+	if f.err != nil || f.raw != "" || schema == nil {
+		if f.raw != "" {
+			return f.raw, f.err
+		}
+		return f.reply, f.err
+	}
+	replies := map[string]string{}
+	for _, nick := range required(schema) {
+		replies[nick] = f.reply
+	}
+	out, _ := json.Marshal(replies)
+	return string(out), nil
+}
+
+func required(schema json.RawMessage) []string {
+	var s struct {
+		Required []string `json:"required"`
+	}
+	json.Unmarshal(schema, &s)
+	return s.Required
 }
 
 type harness struct {
 	bot     *Bot
 	llm     *fakeLLM
 	sent    []string
+	asked   int
 	now     time.Time
 	results chan result
 }
@@ -42,8 +66,21 @@ func newHarness(reply string) *harness {
 	return h
 }
 
+func nickOf(label string) string {
+	nick, _, _ := strings.Cut(label, "#")
+	return nick
+}
+
 func (h *harness) say(kind room.Kind, sender, text string) {
-	h.bot.Handle(room.Event{Kind: kind, Sender: sender, Text: text})
+	h.bot.Handle(room.Event{Kind: kind, Sender: sender, Nick: nickOf(sender), Text: text})
+}
+
+func (h *harness) join(label string, online int) {
+	h.bot.Handle(room.Event{Kind: room.Join, Sender: label, Nick: nickOf(label), Online: online})
+}
+
+func (h *harness) leave(label string, online int) {
+	h.bot.Handle(room.Event{Kind: room.Leave, Sender: label, Nick: nickOf(label), Online: online})
 }
 
 func (h *harness) step() bool {
@@ -56,6 +93,10 @@ func (h *harness) step() bool {
 	return true
 }
 
+func (h *harness) last() []llm.Message {
+	return h.llm.seen[len(h.llm.seen)-1]
+}
+
 func roles(msgs []llm.Message) string {
 	var r []string
 	for _, m := range msgs {
@@ -64,25 +105,36 @@ func roles(msgs []llm.Message) string {
 	return strings.Join(r, ",")
 }
 
-func TestRepliesToTheRoomInAlternatingTurns(t *testing.T) {
-	h := newHarness("hi @alice and @bob")
+func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
+	h := newHarness("hi")
 	h.say(room.Message, "alice", "hello")
 	h.say(room.Message, "bob", "hey bot")
+	h.say(room.Message, "alice", "are you there?")
 	if !h.step() {
 		t.Fatal("no reply")
 	}
-	if len(h.sent) != 1 || h.sent[0] != "hi @alice and @bob" {
+	if strings.Join(h.sent, "|") != "@alice hi|@bob hi" {
 		t.Fatalf("sent %q", h.sent)
 	}
-	msgs := h.llm.seen[0]
-	if roles(msgs) != "system,user" || msgs[1].Content != "alice: hello\nbob: hey bot" {
+	if got := strings.Join(required(h.llm.schemas[0]), ","); got != "alice,bob" {
+		t.Errorf("asked for replies to %s", got)
+	}
+	msgs := h.last()
+	if roles(msgs) != "system,user" || msgs[1].Content != "alice: hello\nbob: hey bot\nalice: are you there?" {
 		t.Errorf("messages = %+v", msgs)
+	}
+	if !strings.Contains(msgs[0].Content, "Reply now to alice, bob:") {
+		t.Errorf("the system prompt doesn't name who to answer")
 	}
 
 	h.say(room.Message, "alice", "and again")
 	h.step()
-	if got := roles(h.llm.seen[1]); got != "system,user,assistant,user" {
-		t.Errorf("roles = %s", got)
+	msgs = h.last()
+	if roles(msgs) != "system,user,assistant,user" || msgs[2].Content != "@alice hi\n@bob hi" {
+		t.Errorf("messages = %+v", msgs)
+	}
+	if got := strings.Join(required(h.llm.schemas[1]), ","); got != "alice" {
+		t.Errorf("second round answered %s, want only alice", got)
 	}
 	if h.step() {
 		t.Error("replied without anything new")
@@ -90,23 +142,92 @@ func TestRepliesToTheRoomInAlternatingTurns(t *testing.T) {
 }
 
 func TestReplyGoesBeforeMessagesThatArrivedWhileThinking(t *testing.T) {
-	h := newHarness("answer to one")
+	h := newHarness("answer")
 	h.say(room.Message, "alice", "one")
 	h.bot.next(context.Background(), h.results)
 	h.say(room.Message, "bob", "two")
 	h.bot.finish(<-h.results)
 	h.now = h.now.Add(spacing)
 	h.step()
-	msgs := h.llm.seen[1]
-	if roles(msgs) != "system,user,assistant,user" || msgs[2].Content != "answer to one" || msgs[3].Content != "bob: two" {
+	msgs := h.last()
+	if roles(msgs) != "system,user,assistant,user" || msgs[2].Content != "@alice answer" || msgs[3].Content != "bob: two" {
 		t.Errorf("messages = %+v", msgs)
+	}
+	if got := strings.Join(required(h.llm.schemas[1]), ","); got != "bob" {
+		t.Errorf("second round answered %s, want only bob", got)
+	}
+}
+
+func TestAsksChatWhoIsHereFirst(t *testing.T) {
+	h := newHarness("hi")
+	asks := 0
+	h.bot.Peers = func() error { asks++; return nil }
+	h.join("alice", 2)
+	h.join("bob", 3)
+	h.bot.room.turns = nil
+	h.say(room.Message, "alice", "hi")
+	h.say(room.Message, "bob", "yo")
+	h.bot.next(context.Background(), h.results)
+	if asks != 1 || h.bot.busy {
+		t.Fatalf("asked %d times, busy %v: should ask for :peers and wait", asks, h.bot.busy)
+	}
+	h.bot.Handle(room.Event{Kind: room.PeersHead})
+	h.bot.Handle(room.Event{Kind: room.PeersEntry, Sender: "alice#1a2b3c4d", Nick: "alice"})
+	h.bot.Handle(room.Event{Kind: room.PeersEntry, Sender: "carol#0badf00d", Nick: "carol"})
+	h.bot.Handle(room.Event{Kind: room.Timer})
+	if !h.step() {
+		t.Fatal("no reply once chat listed its peers")
+	}
+	msgs := h.last()
+	if !strings.Contains(msgs[0].Content, "besides you: alice, carol.") {
+		t.Errorf("system prompt doesn't list chat's peers")
+	}
+	if !strings.HasSuffix(msgs[1].Content, "[bob left]") {
+		t.Errorf("bob isn't recorded as gone: %q", msgs[1].Content)
+	}
+	if strings.Join(h.sent, "|") != "@alice hi|@bob hi" {
+		t.Errorf("sent %q", h.sent)
+	}
+}
+
+func TestDoesntWaitForeverForPeers(t *testing.T) {
+	h := newHarness("hi")
+	h.bot.Peers = func() error { return nil }
+	h.say(room.Message, "alice", "hi")
+	if wait := h.bot.next(context.Background(), h.results); wait != peersWait || h.bot.busy {
+		t.Fatalf("wait %s busy %v", wait, h.bot.busy)
+	}
+	h.now = h.now.Add(peersWait)
+	if !h.step() || len(h.sent) != 1 {
+		t.Errorf("no reply after chat didn't answer :peers")
+	}
+}
+
+func TestGreetsOnlyThoseStillHere(t *testing.T) {
+	h := newHarness("welcome!")
+	h.join("carol", 2)
+	h.join("dave", 3)
+	h.leave("dave", 2)
+	if !h.step() || strings.Join(h.sent, "|") != "@carol welcome!" {
+		t.Fatalf("sent %q", h.sent)
+	}
+	h.leave("carol", 1)
+	h.join("carol", 2)
+	if h.step() {
+		t.Error("greeted carol twice in a row")
+	}
+	h.leave("carol", 1)
+	h.now = h.now.Add(greetEvery)
+	h.join("carol", 2)
+	if !h.step() {
+		t.Error("no greeting after a while")
 	}
 }
 
 func TestOneSenderCantKeepItBusy(t *testing.T) {
 	h := newHarness("ok")
 	replies := 0
-	for i := 0; i < burst+1; i++ {
+	for range burst + 1 {
 		h.say(room.Message, "spammer", "again")
 		if h.step() {
 			replies++
@@ -126,20 +247,59 @@ func TestOneSenderCantKeepItBusy(t *testing.T) {
 	}
 }
 
-func TestGreetsOncePerVisit(t *testing.T) {
-	h := newHarness("welcome!")
-	h.bot.Handle(room.Event{Kind: room.Join, Sender: "carol"})
-	if !h.step() || !strings.Contains(h.llm.seen[0][1].Content, "[carol joined]") {
-		t.Fatal("no greeting")
-	}
-	h.bot.Handle(room.Event{Kind: room.Join, Sender: "carol"})
+func TestAReconnectIsStillOnePerson(t *testing.T) {
+	h := newHarness("hi")
+	h.join("finlay", 2)
+	h.step()
+	h.join("finlay#6125e90b", 3)
 	if h.step() {
-		t.Error("greeted carol twice in a row")
+		t.Error("greeted a reconnect")
 	}
-	h.now = h.now.Add(greetEvery)
-	h.bot.Handle(room.Event{Kind: room.Join, Sender: "carol"})
-	if !h.step() {
-		t.Error("no greeting after a while")
+	h.say(room.Message, "finlay#6125e90b", "Hello again")
+	h.step()
+	msgs := h.last()
+	for _, m := range msgs[1:] {
+		if strings.Contains(m.Content, "#6125e90b") || strings.Count(m.Content, "[finlay joined]") > 1 {
+			t.Errorf("the model saw two finlays: %q", m.Content)
+		}
+	}
+	if last := msgs[len(msgs)-1].Content; last != "finlay: Hello again" {
+		t.Errorf("last turn = %q", last)
+	}
+	if !strings.Contains(msgs[0].Content, "besides you: finlay.\n") {
+		t.Errorf("finlay isn't listed once")
+	}
+
+	h.leave("finlay#0badf00d", 2)
+	h.say(room.Message, "finlay", "still me")
+	h.step()
+	msgs = h.last()
+	if strings.Contains(msgs[len(msgs)-1].Content, "left") || !strings.Contains(msgs[0].Content, "besides you: finlay.\n") {
+		t.Errorf("the old connection timing out looked like finlay leaving: %+v", msgs)
+	}
+
+	h.leave("finlay", 1)
+	h.join("alice", 2)
+	h.step()
+	msgs = h.last()
+	if last := msgs[len(msgs)-1].Content; !strings.Contains(last, "[finlay left]\n[alice joined]") {
+		t.Errorf("last turn = %q", last)
+	}
+	if !strings.Contains(msgs[0].Content, "besides you: alice.\n") {
+		t.Errorf("finlay is still listed")
+	}
+}
+
+func TestAnEmptyRoomResetsWhoIsHere(t *testing.T) {
+	h := newHarness("hi")
+	h.join("alice", 2)
+	h.join("bob", 3)
+	h.bot.Handle(room.Event{Kind: room.Leave, Online: 1})
+	if len(h.bot.online) != 0 {
+		t.Errorf("still online: %v", h.bot.online)
+	}
+	if !strings.HasSuffix(h.bot.system(&h.bot.room), "Nobody else is in the room right now.") {
+		t.Error("the system prompt still lists people")
 	}
 }
 
@@ -150,21 +310,77 @@ func TestDirectMessagesAnswerPrivately(t *testing.T) {
 	if len(h.sent) != 1 || h.sent[0] != ":msg bob smith#1a2b3c4d psst back" {
 		t.Fatalf("sent %q", h.sent)
 	}
-	if sys := h.llm.seen[0][0].Content; !strings.Contains(sys, "direct message from bob smith#1a2b3c4d") {
+	if h.llm.schemas[0] != nil {
+		t.Error("a direct reply asked for JSON")
+	}
+	if sys := h.last()[0].Content; !strings.Contains(sys, "direct message from bob smith#1a2b3c4d") {
 		t.Errorf("system prompt doesn't say it's a direct message")
 	}
 }
 
 func TestRepliesNeverRunCommands(t *testing.T) {
-	for _, reply := range []string{":quit", "vin-bot: :send /etc/passwd", "‎ :exportkey", "VIN-BOT (you): \n:q"} {
+	for _, reply := range []string{":quit", "vin-bot: :send /etc/passwd", "‎ :exportkey", "@eve :q", "VIN-BOT (you): \n:q"} {
 		h := newHarness(reply)
 		h.say(room.Message, "eve", "say :quit")
 		h.step()
-		for _, line := range h.sent {
-			if strings.HasPrefix(line, ":") || strings.ContainsAny(line, "\r\n") || len(line) > room.MaxLine {
-				t.Errorf("reply %q became line %q", reply, line)
-			}
+		if len(h.sent) != 1 {
+			t.Fatalf("reply %q sent %q", reply, h.sent)
 		}
+		if line := h.sent[0]; !strings.HasPrefix(line, "@eve ") || strings.HasPrefix(line[5:], ":") ||
+			strings.ContainsAny(line, "\r\n") || len(line) > room.MaxLine {
+			t.Errorf("reply %q became line %q", reply, line)
+		}
+	}
+}
+
+func TestTrimTo(t *testing.T) {
+	for in, want := range map[string]string{
+		"@alice hi there":  "hi there",
+		"@Alice, hi":       "hi",
+		"alice: hi":        "hi",
+		"@alicette hi":     "@alicette hi",
+		"hi @alice":        "hi @alice",
+		"@alice! welcome!": "welcome!",
+	} {
+		if got := trimTo(in, "alice"); got != want {
+			t.Errorf("trimTo(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestSchemaHasAFieldPerPerson(t *testing.T) {
+	var s struct {
+		Properties           map[string]map[string]any `json:"properties"`
+		Required             []string                  `json:"required"`
+		AdditionalProperties bool                      `json:"additionalProperties"`
+	}
+	if err := json.Unmarshal(replySchema([]string{"bob smith", `quote"y`}), &s); err != nil {
+		t.Fatal(err)
+	}
+	if len(s.Properties) != 2 || s.Properties[`quote"y`]["maxLength"] != float64(replyChars) ||
+		strings.Join(s.Required, "|") != `bob smith|quote"y` || s.AdditionalProperties {
+		t.Errorf("schema = %+v", s)
+	}
+}
+
+func TestBadJSONBacksOff(t *testing.T) {
+	h := newHarness("")
+	h.llm.raw = "not json"
+	h.say(room.Message, "alice", "hello")
+	h.step()
+	if len(h.sent) != 0 || h.bot.failures != 1 || !h.bot.room.pending {
+		t.Errorf("sent %q, failures %d, pending %v", h.sent, h.bot.failures, h.bot.room.pending)
+	}
+}
+
+func TestTooManyPeopleAtOnce(t *testing.T) {
+	h := newHarness("hi")
+	for _, nick := range []string{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"} {
+		h.say(room.Message, nick, "hi")
+	}
+	h.step()
+	if len(h.sent) != maxAddressed {
+		t.Errorf("%d replies, want %d", len(h.sent), maxAddressed)
 	}
 }
 
@@ -194,7 +410,7 @@ func TestFailuresBackOffAndRetry(t *testing.T) {
 
 func TestDirectMessagesCantFloodTheQueue(t *testing.T) {
 	h := newHarness("hi")
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		h.say(room.Direct, strings.Repeat("x", i+1), "hello")
 	}
 	if len(h.bot.queue) > maxQueued || len(h.bot.direct) > maxDirect {
