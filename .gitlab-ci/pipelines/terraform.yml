@@ -10,7 +10,10 @@
   - "hestia/bots/bot-images.json"
   - "hestia/platform/relay/image/**/*"
   - "hestia/bots/party/knowledge.md"
+  - "hestia/apps/automations/**/*"
+  - "hestia/sites/vinnel-cloud/admin/**/*"
   - "secrets.sops.json"
+  - ".gitlab-ci/pipelines/terraform.yml"
 
 .terraform_install:
   script:
