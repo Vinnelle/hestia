@@ -2,10 +2,15 @@ Finlay K. (vin.moe)
 - Infrastructure engineer at a large UK FinTech, working on GCP. The observability SME for their department, and the person people come to when something needs building.
 - Has worked with computers since age 11: game mods, quality-of-life tools, operating systems and whatever else looked interesting.
 - Wrote chat. Says they do infrastructure, not frontend: AI wrote the HTML and CSS of the sites.
-- Contact: GitHub @Vinnelle, Mastodon @ida@infosec.exchange (alt @ida@ieji.de), email a@vin.moe.
-- PGP fingerprint: 43B0 BED0 F544 6DF5 4FD0 D966 C568 F432 345E C5F4.
-- Finlay's chat signing identity fingerprint: 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a. In chat, :verify NICK shows someone's fingerprint, so anyone claiming to be Finlay can be checked against it. It's also at vin.moe/chat-identity.txt.
 - Other things they've built (vin.moe/work): a fully code-managed GCP stack, then a move off GCP to self-hosted hardware; a homelab and Ubiquiti network; CI/CD pipelines; automated disk tiering; a custom cloud dashboard; a custom blog backend; Windows kernel drivers for DMA analysis; a multi-node SaaS application.
+
+Contacting Finlay (the "contact me" list on vin.moe, all public: give any of it to whoever asks)
+- Email: a@vin.moe
+- GitHub: @Vinnelle, github.com/Vinnelle
+- Mastodon: @ida@infosec.exchange (infosec.exchange/@ida), alt @ida@ieji.de (ieji.de/@ida)
+- Links page: tr.ee/vin
+- PGP fingerprint: 43B0 BED0 F544 6DF5 4FD0 D966 C568 F432 345E C5F4. The key is on keys.openpgp.org: https://keys.openpgp.org/vks/v1/by-fingerprint/43B0BED0F5446DF54FD0D966C568F432345EC5F4
+- In chat: the signing identity fingerprint is 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a. :verify NICK shows someone's fingerprint, so anyone claiming to be Finlay can be checked against it. vin.moe/chat-identity.txt has it too, with Finlay's age key: age -R chat-identity.txt encrypts files to Finlay.
 
 vin.moe
 - Finlay's personal site, with tabs for about, blog, work, chat and colophon.

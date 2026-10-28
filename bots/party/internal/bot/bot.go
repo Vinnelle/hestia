@@ -30,6 +30,8 @@ const (
 	maxAsking      = 16
 	replyChars     = 600
 	replyTokens    = 200
+	whyChars       = 160
+	whyTokens      = 48
 	directTokens   = 256
 	burst          = 4
 	refill         = 15 * time.Second
@@ -90,12 +92,18 @@ type bucket struct {
 }
 
 type result struct {
-	conv  *conversation
-	after uint64
-	to    []string
-	reply string
-	err   error
-	took  time.Duration
+	conv   *conversation
+	after  uint64
+	to     []string
+	joined map[string]bool
+	reply  string
+	err    error
+	took   time.Duration
+}
+
+type roomReply struct {
+	TalkingTo string `json:"talking_to"`
+	Reply     string `json:"reply"`
 }
 
 func (b *Bot) Run(ctx context.Context, events <-chan room.Event) error {
@@ -203,6 +211,37 @@ func (b *Bot) Handle(ev room.Event) {
 			b.asking = b.asking[1:]
 		}
 	}
+}
+
+func (b *Bot) aimedAt(ev room.Event) string {
+	if strings.Contains(strings.ToLower(ev.Text), strings.ToLower(b.Nick)) {
+		return ""
+	}
+	if rest, ok := strings.CutPrefix(ev.Text, "↪ "); ok {
+		if nick, _, ok := strings.Cut(rest, ": "); ok && !strings.EqualFold(nick, ev.Nick) {
+			return nick
+		}
+		return ""
+	}
+	target := ""
+	lower := strings.ToLower(ev.Text)
+	for nick := range b.online {
+		if strings.EqualFold(nick, ev.Nick) || len(nick) <= len(target) {
+			continue
+		}
+		for at := lower; ; {
+			i := strings.Index(at, "@"+strings.ToLower(nick))
+			if i < 0 {
+				break
+			}
+			at = at[i+1+len(nick):]
+			if r, _ := utf8.DecodeRuneInString(at); !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '-' && r != '_' {
+				target = nick
+				break
+			}
+		}
+	}
+	return target
 }
 
 func (b *Bot) identify(name string) {
@@ -314,7 +353,11 @@ func (b *Bot) greets(nick string, now time.Time) bool {
 func (b *Bot) heard(c *conversation, ev room.Event, now time.Time) {
 	trigger := b.allow(ev.Nick, now)
 	b.identify(ev.Sender)
-	c.add(turn{role: "user", text: ev.Text, nick: ev.Nick, from: ev.Sender, key: b.keyOf(ev.Sender, ev.Nick), mention: ev.Mention, trigger: trigger}, 0)
+	t := turn{role: "user", text: ev.Text, nick: ev.Nick, from: ev.Sender, key: b.keyOf(ev.Sender, ev.Nick), mention: ev.Mention, trigger: trigger}
+	if c.peer == "" && !ev.Mention {
+		t.target = b.aimedAt(ev)
+	}
+	c.add(t, 0)
 	c.heard = now
 	if trigger {
 		b.mark(c, now.Add(settle), now)
@@ -451,16 +494,22 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 	}
 	system := b.system(c)
 	var to []string
+	var joined map[string]bool
 	var schema json.RawMessage
 	tokens := directTokens
 	if c.peer == "" {
-		if to = b.addressees(c); len(to) == 0 {
+		if to, joined = b.addressees(c); len(to) == 0 {
 			return
 		}
-		schema = replySchema(to)
-		tokens = 64 + replyTokens*len(to)
-		system += "\n\nSince your last turn, " + strings.Join(to, ", ") + " spoke or joined. Each has a field named after them: write your reply to them there, " +
-			"or leave it empty to stay out of it when they weren't talking to you. Someone who just joined always gets a greeting. " +
+		schema = replySchema(to, joined)
+		tokens = 64 + (whyTokens+replyTokens)*len(to)
+		system += "\n\nSince your last turn, " + strings.Join(to, ", ") + " spoke or joined. Each has a field named after them, filled in order. " +
+			"why: a few words on who they were talking to and how you can tell (who spoke just before them, whether they named or answered you or someone else, " +
+			"whether they talk to you or about you). " +
+			`talking_to: "you", "someone else" (another person, or about you rather than to you) or "everyone" (the room in general); ` +
+			`it's "just joined" for someone who just joined. ` +
+			`reply: your answer for "you", empty for "someone else", for "everyone" only when you can really help and nobody else has, ` +
+			"and a greeting for someone who just joined, answering anything they said too. " +
 			"A reply answers everything that person said since your last reply, as a whole. " +
 			"Don't start a reply with their @nick; it's added for you."
 	}
@@ -478,28 +527,43 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 		defer cancel()
 		start := time.Now()
 		reply, err := b.LLM.Ask(ctx, msgs, schema, tokens)
-		results <- result{conv: c, after: after, to: to, reply: reply, err: err, took: time.Since(start)}
+		results <- result{conv: c, after: after, to: to, joined: joined, reply: reply, err: err, took: time.Since(start)}
 	}()
 }
 
-func (b *Bot) addressees(c *conversation) []string {
+func (b *Bot) addressees(c *conversation) ([]string, map[string]bool) {
 	var to []string
-	seen := map[string]bool{}
+	joined := map[string]bool{}
+	open := map[string]bool{}
 	for _, t := range c.turns {
-		if t.seq <= c.done || !t.trigger || seen[t.nick] || (t.join && b.online[t.nick] == 0) {
+		if t.seq <= c.done || !t.trigger || (t.join && b.online[t.nick] == 0) {
 			continue
 		}
-		seen[t.nick] = true
-		to = append(to, t.nick)
+		if _, seen := open[t.nick]; !seen {
+			to = append(to, t.nick)
+			open[t.nick] = false
+		}
+		if t.join {
+			joined[t.nick] = true
+		}
+		if t.join || t.target == "" {
+			open[t.nick] = true
+		}
 	}
+	to = slices.DeleteFunc(to, func(nick string) bool { return !open[nick] })
 	if len(to) > maxAddressed {
 		b.logf("%d people to answer at once; answering the first %d", len(to), maxAddressed)
 		to = to[:maxAddressed]
 	}
-	return to
+	return to, joined
 }
 
-func replySchema(to []string) json.RawMessage {
+func replySchema(to []string, joined map[string]bool) json.RawMessage {
+	branch := func(talkingTo string, minReply, maxReply int) string {
+		return fmt.Sprintf(`{"type":"object","properties":{"why":{"type":"string","minLength":1,"maxLength":%d},"talking_to":{"const":%q},`+
+			`"reply":{"type":"string","minLength":%d,"maxLength":%d}},"required":["why","talking_to","reply"],"additionalProperties":false}`,
+			whyChars, talkingTo, minReply, maxReply)
+	}
 	var s strings.Builder
 	s.WriteString(`{"type":"object","properties":{`)
 	for i, nick := range to {
@@ -508,7 +572,12 @@ func replySchema(to []string) json.RawMessage {
 		}
 		key, _ := json.Marshal(nick)
 		s.Write(key)
-		fmt.Fprintf(&s, `:{"type":"string","maxLength":%d}`, replyChars)
+		s.WriteByte(':')
+		if joined[nick] {
+			s.WriteString(branch("just joined", 1, replyChars))
+		} else {
+			fmt.Fprintf(&s, `{"anyOf":[%s,%s,%s]}`, branch("you", 1, replyChars), branch("someone else", 0, 0), branch("everyone", 0, replyChars))
+		}
 	}
 	required, _ := json.Marshal(to)
 	s.WriteString(`},"required":`)
@@ -520,7 +589,7 @@ func replySchema(to []string) json.RawMessage {
 func (b *Bot) finish(r result) {
 	b.busy = false
 	now := b.now()
-	var replies map[string]string
+	var replies map[string]roomReply
 	if r.err == nil && r.conv.peer == "" {
 		if err := json.Unmarshal([]byte(r.reply), &replies); err != nil {
 			r.err = fmt.Errorf("the replies weren't the JSON asked for: %w", err)
@@ -547,12 +616,13 @@ func (b *Bot) finish(r result) {
 		}
 	} else {
 		for _, nick := range r.to {
-			if strings.TrimSpace(replies[nick]) == "" {
+			reply := replies[nick]
+			if strings.TrimSpace(reply.Reply) == "" || (reply.TalkingTo == "someone else" && !r.joined[nick]) {
 				quiet++
 				continue
 			}
 			prefix := "@" + nick + " "
-			if text := room.Clean(trimTo(trimSelf(replies[nick], b.Nick), nick), room.MaxLine-len(prefix)); text != "" {
+			if text := room.Clean(trimTo(trimSelf(reply.Reply, b.Nick), nick), room.MaxLine-len(prefix)); text != "" {
 				lines, shown = append(lines, prefix+text), append(shown, prefix+text)
 			}
 		}
@@ -649,6 +719,7 @@ type turn struct {
 	nick    string
 	from    string
 	key     string
+	target  string
 	mention bool
 	join    bool
 	trigger bool
@@ -667,6 +738,8 @@ func (t turn) line() string {
 	}
 	if t.mention {
 		who += " (to you)"
+	} else if t.target != "" {
+		who += " (to " + t.target + ")"
 	}
 	return who + ": " + t.text
 }

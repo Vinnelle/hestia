@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -29,9 +30,9 @@ func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.R
 		}
 		return f.reply, f.err
 	}
-	replies := map[string]string{}
+	replies := map[string]roomReply{}
 	for _, nick := range required(schema) {
-		replies[nick] = f.reply
+		replies[nick] = roomReply{TalkingTo: "you", Reply: f.reply}
 	}
 	out, _ := json.Marshal(replies)
 	return string(out), nil
@@ -151,7 +152,7 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 
 func TestStaysOutOfConversationsNotMeantForIt(t *testing.T) {
 	h := newHarness("hi")
-	h.llm.raw = `{"alice":"","bob":"  "}`
+	h.llm.raw = `{"alice":{"talking_to":"someone else","reply":"butting in"},"bob":{"talking_to":"you","reply":"  "}}`
 	h.say(room.Message, "alice", "how was your day bob?")
 	h.bot.Handle(room.Event{Kind: room.Message, Sender: "bob", Nick: "bob", Text: "good! vin-bot, you?", Mention: true})
 	if !h.step() {
@@ -172,6 +173,27 @@ func TestStaysOutOfConversationsNotMeantForIt(t *testing.T) {
 	}
 	if msgs := h.last(); roles(msgs) != "system,user" || !strings.HasSuffix(msgs[1].Content, "\nalice: nice") {
 		t.Errorf("messages = %+v", msgs)
+	}
+	if strings.Join(h.sent, "|") != "@alice hi" {
+		t.Errorf("sent %q", h.sent)
+	}
+}
+
+func TestLeavesMessagesAimedAtOthersOut(t *testing.T) {
+	h := newHarness("hi")
+	h.bot.online["alice"], h.bot.online["bob"], h.bot.online["bobby"] = 1, 1, 1
+	h.say(room.Message, "alice", "@Bob look at this")
+	h.say(room.Message, "alice", "↪ bob: look at this · lol")
+	if h.step() {
+		t.Fatal("asked the model about messages for bob")
+	}
+	h.say(room.Message, "alice", "@bobby hi")
+	h.say(room.Message, "alice", "@bob ask vin-bot")
+	h.say(room.Message, "alice", "what's chat?")
+	h.step()
+	want := "alice (to bob): @Bob look at this\nalice (to bob): ↪ bob: look at this · lol\nalice (to bobby): @bobby hi\nalice: @bob ask vin-bot\nalice: what's chat?"
+	if got := h.last()[1].Content; got != want {
+		t.Errorf("messages = %q", got)
 	}
 	if strings.Join(h.sent, "|") != "@alice hi" {
 		t.Errorf("sent %q", h.sent)
@@ -520,17 +542,46 @@ func TestTrimTo(t *testing.T) {
 }
 
 func TestSchemaHasAFieldPerPerson(t *testing.T) {
-	var s struct {
-		Properties           map[string]map[string]any `json:"properties"`
-		Required             []string                  `json:"required"`
-		AdditionalProperties bool                      `json:"additionalProperties"`
+	type field struct {
+		Const     string `json:"const"`
+		MinLength int    `json:"minLength"`
+		MaxLength int    `json:"maxLength"`
 	}
-	if err := json.Unmarshal(replySchema([]string{"bob smith", `quote"y`}), &s); err != nil {
+	type branch struct {
+		Properties map[string]field `json:"properties"`
+		Required   []string         `json:"required"`
+	}
+	var s struct {
+		Properties map[string]struct {
+			branch
+			AnyOf []branch `json:"anyOf"`
+		} `json:"properties"`
+		Required             []string `json:"required"`
+		AdditionalProperties bool     `json:"additionalProperties"`
+	}
+	raw := replySchema([]string{"bob smith", `quote"y`}, map[string]bool{"bob smith": true})
+	if err := json.Unmarshal(raw, &s); err != nil {
 		t.Fatal(err)
 	}
-	if len(s.Properties) != 2 || s.Properties[`quote"y`]["maxLength"] != float64(replyChars) ||
-		strings.Join(s.Required, "|") != `bob smith|quote"y` || s.AdditionalProperties {
-		t.Errorf("schema = %+v", s)
+	if len(s.Properties) != 2 || strings.Join(s.Required, "|") != `bob smith|quote"y` || s.AdditionalProperties {
+		t.Errorf("schema = %s", raw)
+	}
+	greet := s.Properties["bob smith"].branch
+	if greet.Properties["talking_to"].Const != "just joined" || greet.Properties["reply"].MinLength != 1 ||
+		strings.Join(greet.Required, "|") != "why|talking_to|reply" {
+		t.Errorf("a newcomer may go ungreeted: %s", raw)
+	}
+	limits := map[string]string{}
+	for _, b := range s.Properties[`quote"y`].AnyOf {
+		r := b.Properties["reply"]
+		limits[b.Properties["talking_to"].Const] = fmt.Sprintf("%d-%d", r.MinLength, r.MaxLength)
+	}
+	want := map[string]string{"you": fmt.Sprintf("1-%d", replyChars), "someone else": "0-0", "everyone": fmt.Sprintf("0-%d", replyChars)}
+	if fmt.Sprint(limits) != fmt.Sprint(want) {
+		t.Errorf("reply lengths by talking_to = %v, want %v", limits, want)
+	}
+	if w, k, r := strings.Index(string(raw), `"why"`), strings.Index(string(raw), `"talking_to"`), strings.Index(string(raw), `"reply"`); w > k || k > r {
+		t.Error("why, then talking_to, then reply: the model works out who it's for before writing")
 	}
 }
 

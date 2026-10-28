@@ -35,8 +35,8 @@ class Handler(BaseHTTPRequestHandler):
         if schema:
             replies = {}
             for nick in schema["required"]:
-                said = [l for l in lines if l.startswith(nick + ": ") or l == f"[{nick} joined]"]
-                replies[nick] = heard(" / ".join(said) or "nothing")
+                said = [l for l in lines if l.startswith((nick + ": ", nick + " [", nick + " (", f"[{nick} "))]
+                replies[nick] = {"why": "mock", "talking_to": "you", "reply": heard(" / ".join(said) or "nothing")}
             content = json.dumps(replies)
         else:
             content = heard(lines[-1])
