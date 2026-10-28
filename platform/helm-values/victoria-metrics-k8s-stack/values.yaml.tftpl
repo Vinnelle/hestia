@@ -215,6 +215,8 @@ grafana:
       memory: 2Gi
   sidecar:
     image:
+      registry: quay.io
+      repository: kiwigrid/k8s-sidecar
       tag: 2.14.1
     resources:
       requests:

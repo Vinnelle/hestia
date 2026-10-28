@@ -146,7 +146,7 @@ func (r *run) cluster() Cluster {
 	}
 	c.PodIssues = head(c.PodIssues)
 
-	for _, smp := range byValue(r.vec(s, `sum by (namespace, pod) (increase(kube_pod_container_status_restarts_total[$W])) >= 1`)) {
+	for _, smp := range byValue(r.vec(s, `sum by (namespace, pod) (increase((max by (namespace, pod, container) (kube_pod_container_status_restarts_total))[$W:1m])) >= 1`)) {
 		c.Restarts = append(c.Restarts, Restart{Namespace: smp.Labels["namespace"], Pod: smp.Labels["pod"], Count: int(math.Round(smp.Value))})
 	}
 	c.Restarts = head(c.Restarts)

@@ -29,14 +29,8 @@ loki:
     reporting_enabled: false
 
 sidecar:
-  image:
-    repository: quay.io/kiwigrid/k8s-sidecar
-    tag: 2.14.1
-  resources:
-    requests:
-      memory: 96Mi
-    limits:
-      memory: 256Mi
+  rules:
+    enabled: false
 
 singleBinary:
   replicas: 1
