@@ -244,6 +244,41 @@ func (b *Bot) aimedAt(ev room.Event) string {
 	return target
 }
 
+var thirdPerson = []string{"is", "isn't", "isnt", "was", "wasn't", "has", "hasn't", "keeps", "needs", "seems", "doesn't", "doesnt", "sucks", "should", "shouldn't", "will", "won't", "can't", "cant"}
+
+func (b *Bot) about(text string) bool {
+	lower := strings.ToLower(text)
+	if strings.HasSuffix(strings.TrimSpace(lower), "?") {
+		return false
+	}
+	nick := strings.ToLower(b.Nick)
+	for i := 0; ; {
+		j := strings.Index(lower[i:], nick)
+		if j < 0 {
+			return false
+		}
+		start, end := i+j, i+j+len(nick)
+		i = end
+		if r, _ := utf8.DecodeLastRuneInString(lower[:start]); unicode.IsLetter(r) || unicode.IsDigit(r) {
+			continue
+		}
+		rest := lower[end:]
+		for _, s := range []string{"'s", "’s", "s"} {
+			if p, ok := strings.CutPrefix(rest, s); ok {
+				if r, _ := utf8.DecodeRuneInString(p); !unicode.IsLetter(r) && !unicode.IsDigit(r) {
+					return true
+				}
+			}
+		}
+		if word, ok := strings.CutPrefix(rest, " "); ok {
+			word, _, _ = strings.Cut(word, " ")
+			if slices.Contains(thirdPerson, strings.Trim(word, ".,!")) {
+				return true
+			}
+		}
+	}
+}
+
 func (b *Bot) identify(name string) {
 	if b.Verify == nil || name == "" || len(name) > 64 || strings.IndexFunc(name, unicode.IsControl) >= 0 {
 		return
@@ -356,6 +391,7 @@ func (b *Bot) heard(c *conversation, ev room.Event, now time.Time) {
 	t := turn{role: "user", text: ev.Text, nick: ev.Nick, from: ev.Sender, key: b.keyOf(ev.Sender, ev.Nick), mention: ev.Mention, trigger: trigger}
 	if c.peer == "" && !ev.Mention {
 		t.target = b.aimedAt(ev)
+		t.about = t.target == "" && b.about(ev.Text)
 	}
 	c.add(t, 0)
 	c.heard = now
@@ -505,7 +541,7 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 		tokens = 64 + (whyTokens+replyTokens)*len(to)
 		system += "\n\nSince your last turn, " + strings.Join(to, ", ") + " spoke or joined. Each has a field named after them, filled in order. " +
 			"why: a few words on who they were talking to and how you can tell (who spoke just before them, whether they named or answered you or someone else, " +
-			"whether they talk to you or about you). " +
+			"whether they talk to you or about you, as " + b.Nick + "'s, she, her or it). " +
 			`talking_to: "you", "someone else" (another person, or about you rather than to you) or "everyone" (the room in general); ` +
 			`it's "just joined" for someone who just joined. ` +
 			`reply: your answer for "you", empty for "someone else", for "everyone" only when you can really help and nobody else has, ` +
@@ -720,6 +756,7 @@ type turn struct {
 	from    string
 	key     string
 	target  string
+	about   bool
 	mention bool
 	join    bool
 	trigger bool
@@ -740,6 +777,8 @@ func (t turn) line() string {
 		who += " (to you)"
 	} else if t.target != "" {
 		who += " (to " + t.target + ")"
+	} else if t.about {
+		who += " (about you)"
 	}
 	return who + ": " + t.text
 }

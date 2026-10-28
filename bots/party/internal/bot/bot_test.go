@@ -200,6 +200,28 @@ func TestLeavesMessagesAimedAtOthersOut(t *testing.T) {
 	}
 }
 
+func TestMarksTalkAboutItself(t *testing.T) {
+	b := &Bot{Nick: "Gemma"}
+	for text, want := range map[string]bool{
+		"I am going to have to improve Gemmas ability":   true,
+		"gemma's replies are so cute":                    true,
+		"Gemma is doing a poor job of that":              true,
+		"lol gemma keeps butting in":                     true,
+		"Introduce yourself Gemma":                       false,
+		"Gemma, what's chat?":                            false,
+		"Gemma is that true?":                            false,
+		"hey Gemma can you help":                         false,
+		"Gemmas":                                         true,
+		"MyGemmas thing is broken":                       false,
+		"thanks gemma! you're the best":                  false,
+		"It is supposed to understand who is talking to": false,
+	} {
+		if got := b.about(text); got != want {
+			t.Errorf("about(%q) = %v, want %v", text, got, want)
+		}
+	}
+}
+
 const finlayKey = "26012dc11ca1699110df4d6168f42a7a"
 
 func (h *harness) answerVerify(name, fp string, proven bool) {
