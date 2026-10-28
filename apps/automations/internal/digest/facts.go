@@ -124,15 +124,16 @@ type Changes struct {
 type ImageVulns struct {
 	Image    string `json:"image"`
 	Critical int    `json:"critical"`
+	High     int    `json:"high"`
 }
 
 type Security struct {
-	Critical     int          `json:"critical"`
-	High         int          `json:"high"`
-	PrevCritical int          `json:"previous_critical"`
-	PrevHigh     int          `json:"previous_high"`
+	Critical     int          `json:"critical_all_images"`
+	High         int          `json:"high_all_images"`
+	PrevCritical int          `json:"previous_critical_all_images"`
+	PrevHigh     int          `json:"previous_high_all_images"`
 	Known        bool         `json:"previous_known"`
-	Worst        []ImageVulns `json:"worst_images"`
+	Worst        []ImageVulns `json:"images_with_critical"`
 }
 
 type Certificate struct {

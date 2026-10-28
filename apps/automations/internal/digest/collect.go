@@ -122,6 +122,8 @@ func (r *run) cluster() Cluster {
 		PodsRunning: int(r.one(s, `sum(kube_pod_status_phase{phase="Running"})`)),
 		PodsTotal:   int(r.one(s, `sum(kube_pod_status_phase{phase=~"Running|Pending|Unknown|Failed"})`)),
 	}
+	c.CPU.Peak = max(c.CPU.Peak, c.CPU.Used)
+	c.Memory.Peak = max(c.Memory.Peak, c.Memory.Used)
 	if info := r.vec(s, `kube_node_info`); len(info) > 0 {
 		c.Talos = strings.TrimSuffix(strings.TrimPrefix(info[0].Labels["os_image"], "Talos ("), ")")
 		c.Kubernetes = info[0].Labels["kubelet_version"]
@@ -237,12 +239,19 @@ func (r *run) security(prev Snapshot) Security {
 			sec.High = int(smp.Value)
 		}
 	}
-	for _, smp := range byValue(r.vec(s, `topk(3, max by (image_repository, image_tag) (trivy_image_vulnerabilities{severity="Critical"}) > 0)`)) {
+	name := func(smp prom.Sample) string {
 		image := smp.Labels["image_repository"]
 		if tag := smp.Labels["image_tag"]; tag != "" {
 			image += ":" + tag
 		}
-		sec.Worst = append(sec.Worst, ImageVulns{Image: image, Critical: int(smp.Value)})
+		return image
+	}
+	high := map[string]int{}
+	for _, smp := range r.vec(s, `max by (image_repository, image_tag) (trivy_image_vulnerabilities{severity="High"})`) {
+		high[name(smp)] = int(smp.Value)
+	}
+	for _, smp := range byValue(r.vec(s, `topk(3, max by (image_repository, image_tag) (trivy_image_vulnerabilities{severity="Critical"}) > 0)`)) {
+		sec.Worst = append(sec.Worst, ImageVulns{Image: name(smp), Critical: int(smp.Value), High: high[name(smp)]})
 	}
 	return sec
 }

@@ -377,7 +377,7 @@ func Build(f Facts, s Summary, checks []Concern, loc *time.Location, adminURL st
 	}
 	gpu := ""
 	if a.GPU != "" {
-		gpu = " on an " + a.GPU
+		gpu = " on " + a.GPU
 	}
 	v.Footer = fmt.Sprintf("Collected on hestia, summarised by %s%s. Window %s → %s.", model, gpu, from.Format("Mon 15:04"), to.Format("Mon 15:04 MST"))
 	return v
