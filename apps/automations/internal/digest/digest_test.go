@@ -242,13 +242,14 @@ func TestRunSendsOnceAndMovesTheWindow(t *testing.T) {
 		From:     "hestia <digest@vinnel.cloud>",
 		To:       []string{"me@example.org"},
 		Location: time.UTC,
+		Job:      "digest-29877120",
 		Now:      func() time.Time { return now },
 	}
 	if err := d.Run(context.Background()); err != nil {
 		t.Fatalf("Run: %v", err)
 	}
 
-	if mail.Key != "digest-2026-10-26" || mail.To[0] != "me@example.org" || mail.Subject != "hestia · Mon 26 Oct · Needs attention" {
+	if mail.Key != "digest-29877120" || mail.To[0] != "me@example.org" || mail.Subject != "hestia · Mon 26 Oct · Needs attention" {
 		t.Fatalf("mail = %+v", mail)
 	}
 	for _, want := range []string{"feat: x", "1 image pin by CI", "llama.cpp:b1", "was 2 critical"} {

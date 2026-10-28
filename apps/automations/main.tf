@@ -486,6 +486,15 @@ resource "kubernetes_cron_job_v1" "digest" {
               }
 
               env {
+                name = "JOB_NAME"
+                value_from {
+                  field_ref {
+                    field_path = "metadata.labels['batch.kubernetes.io/job-name']"
+                  }
+                }
+              }
+
+              env {
                 name  = "VICTORIA_METRICS_URL"
                 value = "http://vmsingle-vm.${var.observability_namespace}.svc.cluster.local:8428"
               }

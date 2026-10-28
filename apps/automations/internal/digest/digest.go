@@ -18,6 +18,7 @@ type Digest struct {
 	To        []string
 	Location  *time.Location
 	AdminURL  string
+	Job       string
 	Now       func() time.Time
 }
 
@@ -49,7 +50,10 @@ func (d *Digest) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	key := "digest-" + to.In(d.Location).Format("2006-01-02")
+	key := d.Job
+	if key == "" {
+		key = "digest-" + to.In(d.Location).Format("2006-01-02")
+	}
 	id, err := d.Mailer.Send(ctx, Email{
 		From:    d.From,
 		To:      d.To,

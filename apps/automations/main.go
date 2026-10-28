@@ -214,6 +214,7 @@ func runDigest(args []string) {
 		To:       strings.Split(os.Getenv("DIGEST_TO"), ","),
 		Location: location(),
 		AdminURL: env("ADMIN_URL", "https://admin.vinnel.cloud"),
+		Job:      os.Getenv("JOB_NAME"),
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer cancel()
