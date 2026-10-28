@@ -16,6 +16,7 @@ variables:
       - "shell"
       - "automations"
       - "party"
+      - "party_redeploy"
       - "relay_image"
       - "ci_runner"
       - "ci_runner_scan"

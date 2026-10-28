@@ -39,6 +39,8 @@ sync_pre:
       optional: true
     - job: party_build
       optional: true
+    - job: party_deploy
+      optional: true
     - job: relay_image
       optional: true
     - job: love_release

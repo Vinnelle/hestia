@@ -63,6 +63,8 @@ func newHarness(reply string) *harness {
 		Send:   func(line string) error { h.sent = append(h.sent, line); return nil },
 		Now:    func() time.Time { return h.now },
 	}
+	h.bot.init()
+	h.now = h.now.Add(alreadyHere)
 	return h
 }
 
@@ -84,13 +86,19 @@ func (h *harness) leave(label string, online int) {
 }
 
 func (h *harness) step() bool {
-	h.bot.next(context.Background(), h.results)
-	if !h.bot.busy {
-		return false
+	for range 10 {
+		wait := h.bot.next(context.Background(), h.results)
+		if h.bot.busy {
+			h.bot.finish(<-h.results)
+			h.now = h.now.Add(spacing)
+			return true
+		}
+		if wait <= 0 || wait > maxHold {
+			return false
+		}
+		h.now = h.now.Add(wait)
 	}
-	h.bot.finish(<-h.results)
-	h.now = h.now.Add(spacing)
-	return true
+	return false
 }
 
 func (h *harness) last() []llm.Message {
@@ -144,6 +152,7 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 func TestReplyGoesBeforeMessagesThatArrivedWhileThinking(t *testing.T) {
 	h := newHarness("answer")
 	h.say(room.Message, "alice", "one")
+	h.now = h.now.Add(settle)
 	h.bot.next(context.Background(), h.results)
 	h.say(room.Message, "bob", "two")
 	h.bot.finish(<-h.results)
@@ -167,6 +176,7 @@ func TestAsksChatWhoIsHereFirst(t *testing.T) {
 	h.bot.room.turns = nil
 	h.say(room.Message, "alice", "hi")
 	h.say(room.Message, "bob", "yo")
+	h.now = h.now.Add(settle)
 	h.bot.next(context.Background(), h.results)
 	if asks != 1 || h.bot.busy {
 		t.Fatalf("asked %d times, busy %v: should ask for :peers and wait", asks, h.bot.busy)
@@ -194,6 +204,7 @@ func TestDoesntWaitForeverForPeers(t *testing.T) {
 	h := newHarness("hi")
 	h.bot.Peers = func() error { return nil }
 	h.say(room.Message, "alice", "hi")
+	h.now = h.now.Add(settle)
 	if wait := h.bot.next(context.Background(), h.results); wait != peersWait || h.bot.busy {
 		t.Fatalf("wait %s busy %v", wait, h.bot.busy)
 	}
@@ -226,15 +237,15 @@ func TestGreetsOnlyThoseStillHere(t *testing.T) {
 
 func TestOneSenderCantKeepItBusy(t *testing.T) {
 	h := newHarness("ok")
-	replies := 0
-	for range burst + 1 {
+	for range burst {
 		h.say(room.Message, "spammer", "again")
-		if h.step() {
-			replies++
-		}
 	}
-	if replies != burst {
-		t.Errorf("%d replies to %d quick messages, want %d", replies, burst+1, burst)
+	if !h.step() || len(h.sent) != 1 {
+		t.Fatalf("%d replies to a quick burst, want 1", len(h.sent))
+	}
+	h.say(room.Message, "spammer", "and again")
+	if h.step() {
+		t.Error("replied past the burst")
 	}
 	h.now = h.now.Add(refill)
 	h.say(room.Message, "spammer", "later")
@@ -244,6 +255,63 @@ func TestOneSenderCantKeepItBusy(t *testing.T) {
 	h.say(room.Message, "someone else", "hi")
 	if !h.step() {
 		t.Error("another sender was held back too")
+	}
+}
+
+func TestWaitsForAQuietMoment(t *testing.T) {
+	h := newHarness("hi")
+	h.say(room.Message, "alice", "hello")
+	if wait := h.bot.next(context.Background(), h.results); wait != settle || h.bot.busy {
+		t.Fatalf("wait %s busy %v", wait, h.bot.busy)
+	}
+	for _, nick := range []string{"bob", "carol", "dave", "erin"} {
+		h.now = h.now.Add(2 * time.Second)
+		h.say(room.Message, nick, "hi")
+		if h.bot.next(context.Background(), h.results); h.bot.busy {
+			t.Fatalf("started answering before %s's message settled", nick)
+		}
+	}
+	if wait := h.bot.next(context.Background(), h.results); wait != maxHold-8*time.Second {
+		t.Errorf("wait %s: the first message should wait at most %s", wait, maxHold)
+	}
+	if !h.step() || len(h.sent) != 5 {
+		t.Errorf("sent %q", h.sent)
+	}
+}
+
+func TestANewcomerWhoSpeaksGetsOneReply(t *testing.T) {
+	h := newHarness("welcome, and hi")
+	h.join("finlay", 2)
+	if wait := h.bot.next(context.Background(), h.results); wait != joinGrace || h.bot.busy {
+		t.Fatalf("wait %s busy %v: should give a newcomer time to speak", wait, h.bot.busy)
+	}
+	h.now = h.now.Add(4 * time.Second)
+	h.say(room.Message, "finlay", "Hello!")
+	if !h.step() || strings.Join(h.sent, "|") != "@finlay welcome, and hi" {
+		t.Fatalf("sent %q", h.sent)
+	}
+	if last := h.last()[1].Content; last != "[finlay joined]\nfinlay: Hello!" {
+		t.Errorf("last turn = %q", last)
+	}
+	if h.step() {
+		t.Error("replied twice")
+	}
+}
+
+func TestDoesntGreetWhoWasAlreadyHere(t *testing.T) {
+	h := newHarness("hi")
+	h.bot.started = h.now
+	h.join("finlay", 2)
+	if h.step() {
+		t.Error("greeted someone who was there before the bot")
+	}
+	h.say(room.Message, "finlay", "Hello!")
+	if !h.step() || len(h.sent) != 1 {
+		t.Fatalf("sent %q", h.sent)
+	}
+	msgs := h.last()
+	if msgs[1].Content != "finlay: Hello!" || !strings.Contains(msgs[0].Content, "besides you: finlay.") {
+		t.Errorf("messages = %+v", msgs)
 	}
 }
 

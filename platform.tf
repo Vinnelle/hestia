@@ -91,6 +91,7 @@ module "platform_ci" {
   deploy_namespaces = toset([
     module.vin_moe.namespace,
     module.vinnel_cloud.namespace,
+    module.party.namespace,
   ])
   cluster_name           = var.cluster_name
   node_ip                = var.node_ip

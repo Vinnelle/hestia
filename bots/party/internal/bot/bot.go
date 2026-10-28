@@ -35,8 +35,12 @@ const (
 	staleAfter     = 3 * time.Minute
 	spacing        = 2 * time.Second
 	peersWait      = 5 * time.Second
+	settle         = 3 * time.Second
+	joinGrace      = 10 * time.Second
+	maxHold        = 10 * time.Second
+	alreadyHere    = 2 * time.Minute
 	firstBackoff   = 5 * time.Second
-	maxBackoff     = 2 * time.Minute
+	maxBackoff     = 30 * time.Second
 	defaultTimeout = 2 * time.Minute
 )
 
@@ -50,6 +54,7 @@ type Bot struct {
 	Now     func() time.Time
 	Timeout time.Duration
 
+	started   time.Time
 	room      conversation
 	direct    map[string]*conversation
 	queue     []*conversation
@@ -114,14 +119,14 @@ func (b *Bot) Handle(ev room.Event) {
 		b.heard(b.dm(ev.Sender), ev.Nick, ev.Nick+": "+ev.Text, now)
 	case room.Join:
 		b.online[ev.Nick]++
-		if b.online[ev.Nick] > 1 {
+		if b.online[ev.Nick] > 1 || now.Sub(b.started) < alreadyHere {
 			return
 		}
 		greet := b.greets(ev.Nick, now)
 		b.room.add(turn{role: "user", text: "[" + ev.Nick + " joined]", nick: ev.Nick, join: true, trigger: greet}, 0)
-		if greet {
+		if greet && !b.room.pending {
 			b.room.heard = now
-			b.mark(&b.room)
+			b.mark(&b.room, now.Add(joinGrace), now)
 		}
 	case room.Leave:
 		if n := b.online[ev.Nick]; n > 1 {
@@ -152,6 +157,7 @@ func (b *Bot) Handle(ev room.Event) {
 
 func (b *Bot) init() {
 	if b.direct == nil {
+		b.started = b.now()
 		b.direct = map[string]*conversation{}
 		b.senders = map[string]*bucket{}
 		b.greeted = map[string]time.Time{}
@@ -208,11 +214,18 @@ func (b *Bot) heard(c *conversation, nick, text string, now time.Time) {
 	c.add(turn{role: "user", text: text, nick: nick, trigger: trigger}, 0)
 	c.heard = now
 	if trigger {
-		b.mark(c)
+		b.mark(c, now.Add(settle), now)
 	}
 }
 
-func (b *Bot) mark(c *conversation) {
+func (b *Bot) mark(c *conversation, due, now time.Time) {
+	if !c.pending {
+		c.first = now
+	}
+	c.due = due
+	if limit := c.first.Add(maxHold); c.due.After(limit) {
+		c.due = limit
+	}
 	c.pending = true
 	if c.queued || (c.peer != "" && len(b.queue) >= maxQueued) {
 		return
@@ -285,8 +298,12 @@ func (b *Bot) next(ctx context.Context, results chan<- result) time.Duration {
 		if wait := b.readyAt.Sub(now); wait > 0 {
 			return wait
 		}
-		c := b.queue[0]
-		b.queue = b.queue[1:]
+		i, wait := b.due(now)
+		if i < 0 {
+			return wait
+		}
+		c := b.queue[i]
+		b.queue = append(b.queue[:i], b.queue[i+1:]...)
 		c.queued = false
 		if !c.pending {
 			continue
@@ -307,6 +324,20 @@ func (b *Bot) next(ctx context.Context, results chan<- result) time.Duration {
 		b.start(ctx, c, results)
 	}
 	return 0
+}
+
+func (b *Bot) due(now time.Time) (int, time.Duration) {
+	var wait time.Duration
+	for i, c := range b.queue {
+		left := c.due.Sub(now)
+		if !c.pending || left <= 0 {
+			return i, 0
+		}
+		if wait == 0 || left < wait {
+			wait = left
+		}
+	}
+	return -1, wait
 }
 
 func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result) {
@@ -395,7 +426,7 @@ func (b *Bot) finish(r result) {
 		wait := min(firstBackoff<<min(b.failures-1, 5), maxBackoff)
 		b.readyAt = now.Add(wait)
 		b.logf("no reply to %s: %v; next try in %s", r.conv.where(), r.err, wait)
-		b.mark(r.conv)
+		b.mark(r.conv, now, now)
 		return
 	}
 	b.failures = 0
@@ -497,6 +528,8 @@ type conversation struct {
 	pending bool
 	queued  bool
 	heard   time.Time
+	first   time.Time
+	due     time.Time
 }
 
 func (c *conversation) where() string {
