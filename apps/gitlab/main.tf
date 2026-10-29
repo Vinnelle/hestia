@@ -439,7 +439,7 @@ resource "kubernetes_deployment_v1" "gitlab_ssh" {
 
         container {
           name  = "ssh"
-          image = "nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e"
+          image = "nginxinc/nginx-unprivileged:1.31-alpine-slim@sha256:a8cb0f33d51fa107c96fd2bd3a71aaf564ec131e9d2bdf8700944f0ed8b170d7"
 
           security_context {
             allow_privilege_escalation = false

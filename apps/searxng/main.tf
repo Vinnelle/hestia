@@ -72,7 +72,7 @@ resource "kubernetes_deployment_v1" "searxng" {
 
         container {
           name  = "searxng"
-          image = "searxng/searxng:2026.9.16-f725cc793"
+          image = "searxng/searxng:2026.10.29-cff884f98"
 
           port {
             name           = "http"
