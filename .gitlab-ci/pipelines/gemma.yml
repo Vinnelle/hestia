@@ -1,0 +1,46 @@
+.gemma_changes: &gemma_changes
+  - "hestia/bots/gemma/**/*"
+  - ".gitlab-ci.yml"
+  - ".gitlab-ci/pipelines/gemma.yml"
+  - ".gitlab-ci/pipelines/sites.yml"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+  - ".gitlab-ci/scripts/site-deploy.sh"
+
+gemma_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *gemma_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "gemma"'
+  variables:
+    SITE_CONTEXT: hestia/bots/gemma
+    SITE_DOCKERFILE: hestia/bots/gemma
+    SITE_IMAGE: gemma/gemma
+    SITE_DEPLOYMENT: gemma
+
+gemma_deploy:
+  extends: .site_deploy
+  needs:
+    - gemma_build
+    - job: lint
+      optional: true
+    - job: go
+      optional: true
+    - job: secrets_scan
+      optional: true
+    - job: terraform_plan_apply
+      optional: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *gemma_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "gemma"'
+  script:
+    - sh .gitlab-ci/scripts/site-deploy.sh gemma --namespace bots
+
+gemma_redeploy:
+  extends: .site_deploy
+  rules:
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "gemma_redeploy"'
+  script:
+    - kubectl rollout restart deployment/gemma -n bots
+    - kubectl rollout status deployment/gemma -n bots

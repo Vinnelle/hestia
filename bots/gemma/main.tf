@@ -2,7 +2,22 @@ locals {
   knowledge = file("${path.module}/knowledge.md")
 }
 
-resource "kubernetes_namespace_v1" "party" {
+moved {
+  from = kubernetes_namespace_v1.party
+  to   = kubernetes_namespace_v1.bots
+}
+
+moved {
+  from = kubernetes_secret_v1.party
+  to   = kubernetes_secret_v1.gemma
+}
+
+moved {
+  from = kubernetes_deployment_v1.party
+  to   = kubernetes_deployment_v1.gemma
+}
+
+resource "kubernetes_namespace_v1" "bots" {
   metadata {
     name = "bots"
   }
@@ -11,7 +26,7 @@ resource "kubernetes_namespace_v1" "party" {
 resource "kubernetes_secret_v1" "registry_dockerconfig" {
   metadata {
     name      = "registry-dockerconfig"
-    namespace = kubernetes_namespace_v1.party.metadata[0].name
+    namespace = kubernetes_namespace_v1.bots.metadata[0].name
   }
   type = "kubernetes.io/dockerconfigjson"
   data = {
@@ -28,10 +43,10 @@ resource "random_id" "machine_id" {
   byte_length = 16
 }
 
-resource "kubernetes_secret_v1" "party" {
+resource "kubernetes_secret_v1" "gemma" {
   metadata {
-    name      = "party"
-    namespace = kubernetes_namespace_v1.party.metadata[0].name
+    name      = "gemma"
+    namespace = kubernetes_namespace_v1.bots.metadata[0].name
   }
 
   data = {
@@ -44,7 +59,7 @@ resource "kubernetes_secret_v1" "party" {
 resource "kubernetes_config_map_v1" "knowledge" {
   metadata {
     name      = "knowledge"
-    namespace = kubernetes_namespace_v1.party.metadata[0].name
+    namespace = kubernetes_namespace_v1.bots.metadata[0].name
   }
 
   data = {
@@ -52,12 +67,32 @@ resource "kubernetes_config_map_v1" "knowledge" {
   }
 }
 
-resource "kubernetes_deployment_v1" "party" {
+resource "kubernetes_persistent_volume_claim_v1" "notes" {
   metadata {
-    name      = "party"
-    namespace = kubernetes_namespace_v1.party.metadata[0].name
+    name      = "gemma-notes"
+    namespace = kubernetes_namespace_v1.bots.metadata[0].name
+  }
+  spec {
+    access_modes = ["ReadWriteOnce"]
+    resources {
+      requests = {
+        storage = "16Mi"
+      }
+    }
+  }
+  wait_until_bound = false
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "kubernetes_deployment_v1" "gemma" {
+  metadata {
+    name      = "gemma"
+    namespace = kubernetes_namespace_v1.bots.metadata[0].name
     labels = {
-      app = "party"
+      app = "gemma"
     }
   }
 
@@ -70,14 +105,14 @@ resource "kubernetes_deployment_v1" "party" {
 
     selector {
       match_labels = {
-        app = "party"
+        app = "gemma"
       }
     }
 
     template {
       metadata {
         labels = {
-          app = "party"
+          app = "gemma"
         }
         annotations = {
           "checksum/knowledge" = sha256(local.knowledge)
@@ -97,13 +132,14 @@ resource "kubernetes_deployment_v1" "party" {
           run_as_non_root = true
           run_as_user     = 10001
           run_as_group    = 10001
+          fs_group        = 10001
           seccomp_profile {
             type = "RuntimeDefault"
           }
         }
 
         container {
-          name  = "party"
+          name  = "gemma"
           image = var.image
 
           security_context {
@@ -139,7 +175,7 @@ resource "kubernetes_deployment_v1" "party" {
             name = "CHAT_SIGN_PASSWORD"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret_v1.party.metadata[0].name
+                name = kubernetes_secret_v1.gemma.metadata[0].name
                 key  = "CHAT_SIGN_PASSWORD"
               }
             }
@@ -159,7 +195,7 @@ resource "kubernetes_deployment_v1" "party" {
             name = "LLM_API_KEY"
             value_from {
               secret_key_ref {
-                name = kubernetes_secret_v1.party.metadata[0].name
+                name = kubernetes_secret_v1.gemma.metadata[0].name
                 key  = "LLM_API_KEY"
               }
             }
@@ -167,7 +203,17 @@ resource "kubernetes_deployment_v1" "party" {
 
           env {
             name  = "KNOWLEDGE_FILE"
-            value = "/etc/party/knowledge.md"
+            value = "/etc/gemma/knowledge.md"
+          }
+
+          env {
+            name  = "SEARCH_URL"
+            value = var.search_url
+          }
+
+          env {
+            name  = "NOTES_FILE"
+            value = "/var/lib/gemma/notes.json"
           }
 
           resources {
@@ -183,7 +229,7 @@ resource "kubernetes_deployment_v1" "party" {
 
           volume_mount {
             name       = "home"
-            mount_path = "/home/party"
+            mount_path = "/home/gemma"
           }
 
           volume_mount {
@@ -197,8 +243,13 @@ resource "kubernetes_deployment_v1" "party" {
           }
 
           volume_mount {
+            name       = "notes"
+            mount_path = "/var/lib/gemma"
+          }
+
+          volume_mount {
             name       = "knowledge"
-            mount_path = "/etc/party"
+            mount_path = "/etc/gemma"
             read_only  = true
           }
 
@@ -232,6 +283,13 @@ resource "kubernetes_deployment_v1" "party" {
         }
 
         volume {
+          name = "notes"
+          persistent_volume_claim {
+            claim_name = kubernetes_persistent_volume_claim_v1.notes.metadata[0].name
+          }
+        }
+
+        volume {
           name = "knowledge"
           config_map {
             name = kubernetes_config_map_v1.knowledge.metadata[0].name
@@ -241,7 +299,7 @@ resource "kubernetes_deployment_v1" "party" {
         volume {
           name = "machine-id"
           secret {
-            secret_name = kubernetes_secret_v1.party.metadata[0].name
+            secret_name = kubernetes_secret_v1.gemma.metadata[0].name
             items {
               key  = "machine-id"
               path = "machine-id"

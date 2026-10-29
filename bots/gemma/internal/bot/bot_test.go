@@ -9,14 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"party/internal/llm"
-	"party/internal/room"
+	"gemma/internal/llm"
+	"gemma/internal/room"
 )
 
 type fakeLLM struct {
 	reply   string
 	raw     string
 	err     error
+	plans   []string
 	seen    [][]llm.Message
 	schemas []json.RawMessage
 }
@@ -24,6 +25,14 @@ type fakeLLM struct {
 func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, error) {
 	f.seen = append(f.seen, messages)
 	f.schemas = append(f.schemas, schema)
+	if strings.Join(required(schema), ",") == "need,tools" {
+		if len(f.plans) == 0 {
+			return `{"need":"nothing","tools":[]}`, nil
+		}
+		plan := f.plans[0]
+		f.plans = f.plans[1:]
+		return plan, nil
+	}
 	if f.err != nil || f.raw != "" || schema == nil {
 		if f.raw != "" {
 			return f.raw, f.err
@@ -59,7 +68,7 @@ func newHarness(reply string) *harness {
 	h := &harness{llm: &fakeLLM{reply: reply}, now: time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC), results: make(chan result, 1)}
 	h.bot = &Bot{
 		Nick:   "vin-bot",
-		Prompt: Prompt("vin-bot", "Finlay wrote chat."),
+		Prompt: Prompt("vin-bot", "Finlay wrote chat.", ""),
 		LLM:    h.llm,
 		Send:   func(line string) error { h.sent = append(h.sent, line); return nil },
 		Now:    func() time.Time { return h.now },

@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"party/internal/llm"
-	"party/internal/room"
+	"gemma/internal/llm"
+	"gemma/internal/room"
 )
 
 type loggingLLM struct{ inner Asker }
@@ -53,7 +53,7 @@ func TestProbeScreenshot(t *testing.T) {
 	knowledge, _ := os.ReadFile("../../knowledge.md")
 	h := newHarness("")
 	h.bot.Nick = "Gemma"
-	h.bot.Prompt = Prompt("Gemma", string(knowledge))
+	h.bot.Prompt = Prompt("Gemma", string(knowledge), "")
 	h.bot.Timeout = 10 * time.Minute
 	h.bot.LLM = loggingLLM{&llm.Client{BaseURL: "http://127.0.0.1:8782/v1", Model: "gemma-4-12b-it", Temperature: 0.7, HTTP: &http.Client{Timeout: 10 * time.Minute}}}
 	h.bot.online["finlay"] = 1

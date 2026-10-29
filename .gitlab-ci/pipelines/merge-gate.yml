@@ -37,9 +37,9 @@ sync_pre:
       optional: true
     - job: automations_build
       optional: true
-    - job: party_build
+    - job: gemma_build
       optional: true
-    - job: party_deploy
+    - job: gemma_deploy
       optional: true
     - job: relay_image
       optional: true

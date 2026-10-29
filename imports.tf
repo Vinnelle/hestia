@@ -15,3 +15,8 @@ moved {
   from = module.observability_signoz.cloudflare_dns_record.signoz_vinnel_cloud
   to   = module.observability_grafana.cloudflare_dns_record.grafana_vinnel_cloud
 }
+
+moved {
+  from = module.party
+  to   = module.gemma
+}

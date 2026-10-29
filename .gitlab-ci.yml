@@ -15,8 +15,8 @@ variables:
       - "vinnel_cloud"
       - "shell"
       - "automations"
-      - "party"
-      - "party_redeploy"
+      - "gemma"
+      - "gemma_redeploy"
       - "relay_image"
       - "ci_runner"
       - "ci_runner_scan"
@@ -58,6 +58,6 @@ include:
   - local: '.gitlab-ci/pipelines/love.yml'
   - local: '.gitlab-ci/pipelines/sites.yml'
   - local: '.gitlab-ci/pipelines/automations.yml'
-  - local: '.gitlab-ci/pipelines/party.yml'
+  - local: '.gitlab-ci/pipelines/gemma.yml'
   - local: '.gitlab-ci/pipelines/relay.yml'
   - local: '.gitlab-ci/pipelines/changelog.yml'

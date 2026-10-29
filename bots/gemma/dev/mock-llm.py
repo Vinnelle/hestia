@@ -32,11 +32,23 @@ class Handler(BaseHTTPRequestHandler):
         def heard(line):
             return (":quit\n" if "inject" in line else "") + f"(mock) I heard {line}"
 
-        if schema:
+        if schema and schema["required"] == ["need", "tools"]:
+            print("  asked which tools to use", flush=True)
+            said = "\n".join(lines).split("\n\n[", 1)[0].lower()
+            calls = []
+            if "[tool results" not in request["messages"][-1]["content"]:
+                if "time" in said:
+                    calls.append({"tool": "time", "zone": "Europe/London"})
+                if "note" in said:
+                    calls.append({"tool": "note", "text": "someone asked me to note something"})
+            content = json.dumps({"need": "mock", "tools": calls})
+        elif schema:
             replies = {}
             for nick in schema["required"]:
                 said = [l for l in lines if l.startswith((nick + ": ", nick + " [", nick + " (", f"[{nick} "))]
-                replies[nick] = {"why": "mock", "talking_to": "you", "reply": heard(" / ".join(said) or "nothing")}
+                found = [l[2:] for l in lines if l.startswith("- ")]
+                reply = heard(" / ".join(said) or "nothing") + (f" and found {' / '.join(found)}" if found else "")
+                replies[nick] = {"why": "mock", "talking_to": "you", "reply": reply}
             content = json.dumps(replies)
         else:
             content = heard(lines[-1])

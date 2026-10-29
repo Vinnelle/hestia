@@ -20,6 +20,7 @@ locals {
   network_policy_ingress_from = {
     automations    = ["forge"]
     llm            = ["automations", "bots"]
+    searxng        = ["bots"]
     storage        = ["files", "forge"]
     "vinnel-cloud" = ["vin-moe"]
   }
@@ -47,8 +48,11 @@ locals {
 
   network_policy_egress_to = {
     automations = [{ namespace = "llm", ports = [8080] }]
-    bots        = [{ namespace = "llm", ports = [8080] }]
-    files       = [{ namespace = "storage", ports = [8333] }]
+    bots = [
+      { namespace = "llm", ports = [8080] },
+      { namespace = "searxng", ports = [8080] },
+    ]
+    files = [{ namespace = "storage", ports = [8333] }]
     forge = [
       { namespace = "storage", ports = [8333] },
       { namespace = "automations", ports = [8080] },

@@ -28,13 +28,18 @@ resource "kubernetes_secret_v1" "searxng" {
   }
 }
 
-locals {
-  deployment_enabled = false
+resource "kubernetes_config_map_v1" "settings" {
+  metadata {
+    name      = "searxng-settings"
+    namespace = kubernetes_namespace_v1.searxng.metadata[0].name
+  }
+
+  data = {
+    "settings.yml" = file("${path.module}/settings.yml")
+  }
 }
 
 resource "kubernetes_deployment_v1" "searxng" {
-  count = local.deployment_enabled ? 1 : 0
-
   metadata {
     name      = "searxng"
     namespace = kubernetes_namespace_v1.searxng.metadata[0].name
@@ -56,6 +61,9 @@ resource "kubernetes_deployment_v1" "searxng" {
       metadata {
         labels = {
           app = "searxng"
+        }
+        annotations = {
+          "checksum/settings" = sha256(kubernetes_config_map_v1.settings.data["settings.yml"])
         }
       }
 
@@ -102,6 +110,13 @@ resource "kubernetes_deployment_v1" "searxng" {
             mount_path = "/etc/searxng"
           }
 
+          volume_mount {
+            name       = "settings"
+            mount_path = "/etc/searxng/settings.yml"
+            sub_path   = "settings.yml"
+            read_only  = true
+          }
+
           readiness_probe {
             http_get {
               path = "/healthz"
@@ -126,13 +141,19 @@ resource "kubernetes_deployment_v1" "searxng" {
           name = "config"
           empty_dir {}
         }
+
+        volume {
+          name = "settings"
+          config_map {
+            name = kubernetes_config_map_v1.settings.metadata[0].name
+          }
+        }
       }
     }
   }
 }
 
 module "vpa" {
-  count  = local.deployment_enabled ? 1 : 0
   source = "../../platform/vpa/resource"
 
   depends_on = [kubernetes_deployment_v1.searxng]
@@ -140,7 +161,7 @@ module "vpa" {
   name        = "searxng"
   namespace   = kubernetes_namespace_v1.searxng.metadata[0].name
   target_kind = "Deployment"
-  target_name = try(kubernetes_deployment_v1.searxng[0].metadata[0].name, "searxng")
+  target_name = kubernetes_deployment_v1.searxng.metadata[0].name
   update_mode = "Auto"
   container_policies = [
     { container_name = "searxng", min_memory = "128Mi", max_memory = "512Mi" },

@@ -9,7 +9,8 @@
   - "hestia/identity/identity-images.json"
   - "hestia/bots/bot-images.json"
   - "hestia/platform/relay/image/**/*"
-  - "hestia/bots/party/knowledge.md"
+  - "hestia/bots/gemma/knowledge.md"
+  - "hestia/apps/searxng/settings.yml"
   - "hestia/apps/automations/**/*"
   - "hestia/sites/vinnel-cloud/admin/**/*"
   - "secrets.sops.json"
@@ -89,7 +90,7 @@ terraform_plan_apply:
       optional: true
     - job: automations_build
       optional: true
-    - job: party_build
+    - job: gemma_build
       optional: true
     - job: relay_image
       optional: true

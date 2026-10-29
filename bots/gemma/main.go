@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -13,9 +14,10 @@ import (
 	"syscall"
 	"time"
 
-	"party/internal/bot"
-	"party/internal/llm"
-	"party/internal/room"
+	"gemma/internal/bot"
+	"gemma/internal/llm"
+	"gemma/internal/room"
+	"gemma/internal/tools"
 )
 
 const (
@@ -87,7 +89,7 @@ func run(ctx context.Context) error {
 		return fmt.Errorf("missing %s", strings.Join(missing, ", "))
 	}
 	nick := env("CHAT_NICK", "Gemma")
-	knowledge, err := os.ReadFile(env("KNOWLEDGE_FILE", "/etc/party/knowledge.md"))
+	knowledge, err := os.ReadFile(env("KNOWLEDGE_FILE", "/etc/gemma/knowledge.md"))
 	if err != nil {
 		return err
 	}
@@ -112,6 +114,11 @@ func run(ctx context.Context) error {
 		}
 	}
 
+	box, err := toolbox(viaTor)
+	if err != nil {
+		return err
+	}
+
 	chat, stdin, events, err := startChat(ctx, nick, viaTor)
 	if err != nil {
 		return err
@@ -120,7 +127,7 @@ func run(ctx context.Context) error {
 
 	b := &bot.Bot{
 		Nick:   nick,
-		Prompt: bot.Prompt(nick, string(knowledge)),
+		Prompt: bot.Prompt(nick, string(knowledge), box.Describe()),
 		LLM: &llm.Client{
 			BaseURL:     os.Getenv("LLM_BASE_URL"),
 			Model:       os.Getenv("LLM_MODEL"),
@@ -139,6 +146,7 @@ func run(ctx context.Context) error {
 			_, err := io.WriteString(stdin, ":verify "+name+"\n")
 			return err
 		},
+		Tools: box,
 		Owner: strings.ToLower(strings.ReplaceAll(os.Getenv("OWNER_FINGERPRINT"), " ", "")),
 		Logf:  log.Printf,
 	}
@@ -161,6 +169,31 @@ func run(ctx context.Context) error {
 	case err := <-botDone:
 		return fmt.Errorf("the bot stopped: %v", err)
 	}
+}
+
+func toolbox(viaTor bool) (*tools.Toolbox, error) {
+	box := &tools.Toolbox{}
+	on := []string{"time", "calculate", "notes"}
+	if u := os.Getenv("SEARCH_URL"); u != "" {
+		box.Search = &tools.Searcher{BaseURL: u, HTTP: &http.Client{Timeout: time.Minute}}
+		on = append(on, "search")
+	}
+	if viaTor {
+		box.Read = tools.TorReader(socksPort)
+		on = append(on, "reading pages over Tor")
+	}
+	path := os.Getenv("NOTES_FILE")
+	notes, err := tools.OpenNotebook(path, log.Printf)
+	if err != nil {
+		return nil, fmt.Errorf("opening the notebook: %w", err)
+	}
+	box.Notes = notes
+	where := "in memory only"
+	if path != "" {
+		where = path
+	}
+	log.Printf("tools: %s; %d notes, kept %s", strings.Join(on, ", "), len(notes.Notes()), where)
+	return box, nil
 }
 
 func startTor(path, data string) (*process, <-chan struct{}, error) {
@@ -205,7 +238,7 @@ func startTor(path, data string) (*process, <-chan struct{}, error) {
 }
 
 func startChat(ctx context.Context, nick string, viaTor bool) (*process, io.WriteCloser, <-chan room.Event, error) {
-	home := env("CHAT_HOME", "/home/party")
+	home := env("CHAT_HOME", "/home/gemma")
 	args := []string{"--simple", "--session", env("CHAT_SESSION", "vin-moe-party"), "--nick", nick, "--verify-optional"}
 	if colour := os.Getenv("CHAT_COLOUR"); colour != "" {
 		args = append(args, "--colour", colour)

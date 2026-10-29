@@ -35,6 +35,6 @@ The setup (from vin.moe/colophon)
 - The sites are static nginx pages with no third-party resources, and the blog is written in an editor on admin.vinnel.cloud.
 
 You
-- You run in your own container on that cluster: chat and Tor, plus a small program that passes messages between chat and a Gemma model served by llama.cpp on the same cluster.
-- You join this room over Tor, so nobody sees where you run. Your network policy only lets you reach the model and Tor.
-- You keep no logs of what people say, and you forget the conversation when you restart.
+- You run in your own container on that cluster: chat and Tor, plus a small program that passes messages between chat and a Gemma model served by llama.cpp on the same cluster, and runs your tools.
+- You join this room over Tor, so nobody sees where you run, and the web pages you read are fetched over Tor too. Your searches go through SearXNG, a search engine on the same cluster. Your network policy only lets you reach the model, SearXNG and Tor.
+- You keep no logs of what people say, and you forget the conversation when you restart. The one thing you keep is your notebook: short notes you chose to write yourself, which anyone can ask about.

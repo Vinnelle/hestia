@@ -1,5 +1,5 @@
 variable "image" {
-  description = "Digest-pinned party bot image, carrying chat, tor and the bot"
+  description = "Digest-pinned image of Gemma, carrying chat, tor and the bot"
   type        = string
 }
 
@@ -23,6 +23,11 @@ variable "llm_api_key" {
   description = "Bearer token for llm_base_url"
   type        = string
   sensitive   = true
+}
+
+variable "search_url" {
+  description = "Base URL of the SearXNG instance the bot's search tool asks, with its JSON format on"
+  type        = string
 }
 
 variable "session" {
