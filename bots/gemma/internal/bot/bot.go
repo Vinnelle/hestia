@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -17,7 +18,7 @@ import (
 )
 
 type Asker interface {
-	Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, error)
+	Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, llm.Usage, error)
 }
 
 const (
@@ -51,6 +52,8 @@ const (
 	toolBudget     = 75 * time.Second
 	planTokens     = 384
 	foundChars     = 12000
+	keepEvery      = 30 * time.Second
+	logChars       = 200
 )
 
 type Bot struct {
@@ -61,11 +64,13 @@ type Bot struct {
 	Peers   func() error
 	Verify  func(name string) error
 	Tools   *tools.Toolbox
+	History *History
 	Owner   string
 	Logf    func(format string, args ...any)
 	Now     func() time.Time
 	Timeout time.Duration
 
+	keptSeq   uint64
 	keys      map[string]string
 	aliases   map[string]string
 	counted   int
@@ -105,15 +110,25 @@ type result struct {
 	reply  string
 	err    error
 	took   time.Duration
+	use    llm.Usage
 	used   []string
 }
 
 type roomReply struct {
+	Why       string `json:"why"`
 	TalkingTo string `json:"talking_to"`
 	Reply     string `json:"reply"`
 }
 
 func (b *Bot) Run(ctx context.Context, events <-chan room.Event) error {
+	b.restore()
+	var tick <-chan time.Time
+	if b.History != nil {
+		t := time.NewTicker(keepEvery)
+		defer t.Stop()
+		tick = t.C
+	}
+	defer b.keep()
 	results := make(chan result, 1)
 	for {
 		var wake <-chan time.Time
@@ -130,13 +145,75 @@ func (b *Bot) Run(ctx context.Context, events <-chan room.Event) error {
 			b.Handle(ev)
 		case r := <-results:
 			b.finish(r)
+		case <-tick:
+			b.keep()
 		case <-wake:
 		}
 	}
 }
 
+func (b *Bot) restore() {
+	b.init()
+	if b.History == nil {
+		return
+	}
+	k, err := b.History.load()
+	if err != nil {
+		b.logf("history: %v", err)
+		return
+	}
+	if k == nil {
+		return
+	}
+	if k.Aliases != nil {
+		b.aliases, b.counted = k.Aliases, k.Counted
+	}
+	for _, t := range k.Turns {
+		if t.Role != "user" && t.Role != "assistant" {
+			continue
+		}
+		b.room.add(turn{role: t.Role, text: t.Text, nick: t.Nick, from: t.From, key: t.Key, target: t.Target,
+			about: t.About, mention: t.Mention, join: t.Join, kept: true}, 0)
+	}
+	if len(b.room.turns) == 0 {
+		return
+	}
+	since := k.Saved.UTC().Format("2 Jan 15:04 MST")
+	b.room.add(turn{role: "user", text: "[you restarted; the lines above are from before " + since + "]"}, 0)
+	b.room.done = b.room.seq
+	b.logf("history: %d lines of the room from before %s", len(b.room.turns)-1, since)
+}
+
+func (b *Bot) keep() {
+	if b.History == nil || b.room.seq == b.keptSeq {
+		return
+	}
+	b.pin(&b.room)
+	k := &kept{Saved: b.now(), Aliases: b.aliases, Counted: b.counted}
+	for _, t := range b.room.turns {
+		k.Turns = append(k.Turns, keptTurn{Role: t.role, Text: t.text, Nick: t.nick, From: t.from, Key: t.key,
+			Target: t.target, About: t.about, Mention: t.mention, Join: t.join})
+	}
+	if err := b.History.save(k); err != nil {
+		b.logf("couldn't keep the history: %v", err)
+		return
+	}
+	b.keptSeq = b.room.seq
+}
+
+func (b *Bot) rejoined() {
+	b.started = b.now()
+	clear(b.online)
+	clear(b.keys)
+	b.roster, b.asking, b.checking = nil, nil, nil
+}
+
 func (b *Bot) Handle(ev room.Event) {
 	b.init()
+	if ev.Kind == room.Banner {
+		b.rejoined()
+		return
+	}
 	if b.roster != nil && ev.Kind != room.PeersEntry {
 		b.listedNow()
 	}
@@ -155,16 +232,31 @@ func (b *Bot) Handle(ev room.Event) {
 		delete(b.keys, ev.Sender)
 		delete(b.keys, ev.Nick)
 		b.identify(ev.Sender)
-		if b.online[ev.Nick] > 1 || now.Sub(b.started) < alreadyHere {
+		if b.online[ev.Nick] > 1 {
+			b.logf("%s joined on another connection (%d online)", ev.Sender, ev.Online)
+			return
+		}
+		if now.Sub(b.started) < alreadyHere {
+			b.logf("%s is here (%d online)", ev.Sender, ev.Online)
 			return
 		}
 		greet := b.greets(ev.Nick, now)
 		b.room.add(turn{role: "user", nick: ev.Nick, from: ev.Sender, join: true, trigger: greet}, 0)
-		if greet && !b.room.pending {
+		if !greet {
+			b.logf("%s joined (%d online); greeted recently, so not again", ev.Sender, ev.Online)
+			return
+		}
+		if !b.room.pending {
 			b.room.heard = now
 			b.mark(&b.room, now.Add(joinGrace), now)
 		}
+		b.logf("%s joined (%d online); greeting %s", ev.Sender, ev.Online, b.dueIn(&b.room, now))
 	case room.Leave:
+		if ev.Nick == "" {
+			b.logf("%d online", ev.Online)
+		} else {
+			b.logf("%s left (%d online)", ev.Sender, ev.Online)
+		}
 		delete(b.keys, ev.Sender)
 		delete(b.keys, ev.Nick)
 		if n := b.online[ev.Nick]; n > 1 {
@@ -212,9 +304,11 @@ func (b *Bot) Handle(ev room.Event) {
 			}
 			b.keys[c.name] = c.key
 			b.checking = nil
+			b.logf("signing key of %s: %s", c.name, c.key)
 		}
 	case room.VerifyMiss:
 		if len(b.asking) > 0 {
+			b.logf("signing key of %s: chat couldn't pick out that peer", b.asking[0])
 			b.asking = b.asking[1:]
 		}
 	}
@@ -370,11 +464,21 @@ func (b *Bot) listedNow() {
 	for nick := range b.online {
 		if b.roster[nick] == 0 {
 			b.gone(nick)
+			b.logf("%s isn't in chat's list, so counted as gone", nick)
 		}
 	}
 	b.online = b.roster
 	b.roster = nil
 	b.listed = true
+	names := slices.Sorted(maps.Keys(b.online))
+	if len(names) == 0 {
+		b.logf("chat lists nobody else here")
+		return
+	}
+	if len(names) > maxListed {
+		names = append(names[:maxListed], fmt.Sprintf("and %d more", len(names)-maxListed))
+	}
+	b.logf("chat lists %d here: %s", len(b.online), strings.Join(names, ", "))
 }
 
 func (b *Bot) greets(nick string, now time.Time) bool {
@@ -402,9 +506,27 @@ func (b *Bot) heard(c *conversation, ev room.Event, now time.Time) {
 	}
 	c.add(t, 0)
 	c.heard = now
-	if trigger {
-		b.mark(c, now.Add(settle), now)
+	what := "heard " + t.who()
+	if c.peer != "" {
+		what = "direct message from " + t.who()
 	}
+	if !trigger {
+		b.logf("%s; over the rate limit, so no turn for it", what)
+		return
+	}
+	b.mark(c, now.Add(settle), now)
+	b.logf("%s; next turn %s", what, b.dueIn(c, now))
+}
+
+func (b *Bot) dueIn(c *conversation, now time.Time) string {
+	if b.busy || b.waiting != nil {
+		return "after the one being taken"
+	}
+	due := c.due
+	if b.readyAt.After(due) {
+		due = b.readyAt
+	}
+	return "in " + max(due.Sub(now), 0).Round(100*time.Millisecond).String()
 }
 
 func (b *Bot) mark(c *conversation, due, now time.Time) {
@@ -529,12 +651,16 @@ func (b *Bot) due(now time.Time) (int, time.Duration) {
 	return -1, wait
 }
 
-func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result) {
+func (b *Bot) pin(c *conversation) {
 	for i := range c.turns {
-		if t := &c.turns[i]; t.from != "" && t.key == "" {
+		if t := &c.turns[i]; t.from != "" && t.key == "" && !t.kept {
 			t.key = b.keyOf(t.from, t.nick)
 		}
 	}
+}
+
+func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result) {
+	b.pin(c)
 	system := b.system(c)
 	var to []string
 	var joined map[string]bool
@@ -542,6 +668,7 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 	tokens := directTokens
 	if c.peer == "" {
 		if to, joined = b.addressees(c); len(to) == 0 {
+			b.logf("nobody to answer: they spoke to someone else, left, or were over the rate limit")
 			return
 		}
 		schema = replySchema(to, joined)
@@ -564,14 +691,26 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 	if timeout <= 0 {
 		timeout = defaultTimeout
 	}
+	who := "a direct message from " + c.peer
+	if c.peer == "" {
+		names := make([]string, 0, len(to))
+		for _, nick := range to {
+			if joined[nick] {
+				nick += " (just joined)"
+			}
+			names = append(names, nick)
+		}
+		who = strings.Join(names, ", ") + " in the room"
+	}
+	b.logf("turn: %s", who)
 	b.busy = true
 	go func() {
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		start := time.Now()
 		msgs, used := b.lookUp(ctx, msgs)
-		reply, err := b.LLM.Ask(ctx, msgs, schema, tokens)
-		results <- result{conv: c, after: after, to: to, joined: joined, reply: reply, err: err, took: time.Since(start), used: used}
+		reply, use, err := b.LLM.Ask(ctx, msgs, schema, tokens)
+		results <- result{conv: c, after: after, to: to, joined: joined, reply: reply, err: err, took: time.Since(start), use: use, used: used}
 	}()
 }
 
@@ -604,31 +743,40 @@ func (b *Bot) lookUp(ctx context.Context, msgs []llm.Message) ([]llm.Message, []
 			next = fmt.Sprintf(planMore, maxSteps-step)
 		}
 		ask[len(ask)-1].Content += found.String() + "\n\n" + next
-		reply, err := b.LLM.Ask(ctx, ask, schema, planTokens)
+		reply, use, err := b.LLM.Ask(ctx, ask, schema, planTokens)
 		if err != nil {
-			used = append(used, fmt.Sprintf("no tool plan (%v)", err))
+			b.logf("plan %d: %v", step+1, err)
+			used = append(used, "no tool plan")
 			break
 		}
 		plan, err := tools.ParsePlan(reply)
 		if err != nil {
-			used = append(used, fmt.Sprintf("no tool plan (%v)", err))
+			b.logf("plan %d (%s): %v", step+1, use, err)
+			used = append(used, "no tool plan")
 			break
 		}
+		need := room.Clean(plan.Need, logChars)
 		if len(plan.Tools) == 0 {
+			b.logf("plan %d (%s): %q, no tools", step+1, use, need)
 			break
 		}
+		b.logf("plan %d (%s): %q", step+1, use, need)
 		if found.Len() == 0 {
 			found.WriteString("\n\n" + foundHead)
 		}
 		for _, r := range b.Tools.Run(ctx, plan.Tools) {
 			text := r.Text
+			call, took := room.Clean(r.Call.String(), logChars), r.Took.Round(100*time.Millisecond)
 			switch {
-			case r.Err == nil:
-				used = append(used, r.Call.Tool)
-			case r.Call.Tool == "search":
-				used = append(used, fmt.Sprintf("search (failed: %v)", r.Err))
-			default:
+			case r.Err != nil:
 				used = append(used, r.Call.Tool+" (failed)")
+				b.logf("  %s: failed after %s: %s", call, took, room.Clean(r.Err.Error(), logChars))
+			case r.Call.Tool == "search" || r.Call.Tool == "read":
+				used = append(used, r.Call.Tool)
+				b.logf("  %s: %d chars in %s", call, len(text), took)
+			default:
+				used = append(used, r.Call.Tool)
+				b.logf("  %s: %s", call, room.Clean(text, logChars))
 			}
 			if r.Err != nil {
 				text = "failed: " + r.Err.Error()
@@ -745,17 +893,24 @@ func (b *Bot) finish(r result) {
 		prefix := ":msg " + r.conv.peer + " "
 		if text := room.Clean(trimSelf(r.reply, b.Nick), room.MaxLine-len(prefix)); text != "" {
 			lines, shown = append(lines, prefix+text), append(shown, text)
+			b.logf("reply (%s): %s", r.use, text)
 		}
 	} else {
+		b.logf("replies (%s)", r.use)
 		for _, nick := range r.to {
 			reply := replies[nick]
+			head := fmt.Sprintf("  %s -> %s (%q)", nick, reply.TalkingTo, room.Clean(reply.Why, logChars))
 			if strings.TrimSpace(reply.Reply) == "" || (reply.TalkingTo == "someone else" && !r.joined[nick]) {
 				quiet++
+				b.logf("%s: stays quiet", head)
 				continue
 			}
 			prefix := "@" + nick + " "
 			if text := room.Clean(trimTo(trimSelf(reply.Reply, b.Nick), nick), room.MaxLine-len(prefix)); text != "" {
 				lines, shown = append(lines, prefix+text), append(shown, prefix+text)
+				b.logf("%s: %s", head, prefix+text)
+			} else {
+				b.logf("%s: empty once cleaned", head)
 			}
 		}
 	}
@@ -860,27 +1015,33 @@ type turn struct {
 	mention bool
 	join    bool
 	trigger bool
+	kept    bool
 }
 
-func (t turn) line() string {
-	if t.from == "" {
-		return t.text
-	}
+func (t turn) who() string {
 	who := t.nick
 	if t.key != "" {
 		who += " [" + t.key + "]"
 	}
-	if t.join {
-		return "[" + who + " joined]"
-	}
-	if t.mention {
+	switch {
+	case t.mention:
 		who += " (to you)"
-	} else if t.target != "" {
+	case t.target != "":
 		who += " (to " + t.target + ")"
-	} else if t.about {
+	case t.about:
 		who += " (about you)"
 	}
-	return who + ": " + t.text
+	return who
+}
+
+func (t turn) line() string {
+	switch {
+	case t.from == "":
+		return t.text
+	case t.join:
+		return "[" + t.who() + " joined]"
+	}
+	return t.who() + ": " + t.text
 }
 
 type conversation struct {

@@ -187,6 +187,18 @@ variable "docker_hub_access_token" {
   sensitive   = true
 }
 
+variable "gemma_sign_password" {
+  description = "128-character password Gemma's chat signing identity (an AGE key) is made from, with gemma_machine_id; changing either gives her a new fingerprint. Set in secrets.sops.json."
+  type        = string
+  sensitive   = true
+}
+
+variable "gemma_machine_id" {
+  description = "Machine id (32 hex digits) mounted as /etc/machine-id in Gemma's pod, which chat makes her signing identity with. Set in secrets.sops.json."
+  type        = string
+  sensitive   = true
+}
+
 variable "alert_email" {
   description = "Address Alertmanager mails alerts to, from alerts@vinnel.cloud through Resend"
   type        = string

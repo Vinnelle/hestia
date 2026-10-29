@@ -11,4 +11,6 @@ module "gemma" {
   llm_model                 = module.llm.model
   llm_api_key               = module.llm.api_key
   search_url                = module.searxng.url
+  sign_password             = var.gemma_sign_password
+  machine_id                = var.gemma_machine_id
 }

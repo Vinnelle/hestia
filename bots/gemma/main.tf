@@ -34,13 +34,8 @@ resource "kubernetes_secret_v1" "registry_dockerconfig" {
   }
 }
 
-resource "random_password" "chat_identity" {
-  length  = 48
-  special = false
-}
-
-resource "random_id" "machine_id" {
-  byte_length = 16
+resource "random_id" "history_key" {
+  byte_length = 32
 }
 
 resource "kubernetes_secret_v1" "gemma" {
@@ -51,8 +46,9 @@ resource "kubernetes_secret_v1" "gemma" {
 
   data = {
     LLM_API_KEY        = var.llm_api_key
-    CHAT_SIGN_PASSWORD = random_password.chat_identity.result
-    "machine-id"       = "${random_id.machine_id.hex}\n"
+    CHAT_SIGN_PASSWORD = var.sign_password
+    HISTORY_KEY        = random_id.history_key.hex
+    "machine-id"       = "${var.machine_id}\n"
   }
 }
 
@@ -216,6 +212,26 @@ resource "kubernetes_deployment_v1" "gemma" {
             value = "/var/lib/gemma/notes.json"
           }
 
+          env {
+            name  = "HISTORY_FILE"
+            value = "/var/lib/gemma/history"
+          }
+
+          env {
+            name = "HISTORY_KEY"
+            value_from {
+              secret_key_ref {
+                name = kubernetes_secret_v1.gemma.metadata[0].name
+                key  = "HISTORY_KEY"
+              }
+            }
+          }
+
+          env {
+            name  = "CHAT_UPDATE_DIR"
+            value = "/opt/chat"
+          }
+
           resources {
             requests = {
               cpu    = "20m"
@@ -240,6 +256,11 @@ resource "kubernetes_deployment_v1" "gemma" {
           volume_mount {
             name       = "tor"
             mount_path = "/var/lib/tor"
+          }
+
+          volume_mount {
+            name       = "chat"
+            mount_path = "/opt/chat"
           }
 
           volume_mount {
@@ -279,6 +300,13 @@ resource "kubernetes_deployment_v1" "gemma" {
           name = "tor"
           empty_dir {
             size_limit = "256Mi"
+          }
+        }
+
+        volume {
+          name = "chat"
+          empty_dir {
+            size_limit = "64Mi"
           }
         }
 

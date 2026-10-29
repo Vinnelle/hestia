@@ -148,6 +148,7 @@ type Result struct {
 	Call Call
 	Text string
 	Err  error
+	Took time.Duration
 }
 
 func (t *Toolbox) Run(ctx context.Context, calls []Call) []Result {
@@ -158,11 +159,13 @@ func (t *Toolbox) Run(ctx context.Context, calls []Call) []Result {
 	results := make([]Result, 0, len(calls))
 	for _, c := range calls {
 		r := Result{Call: c}
+		start := time.Now()
 		if tl, ok := byName[c.Tool]; !ok {
 			r.Err = errors.New("there's no such tool")
 		} else {
 			r.Text, r.Err = tl.run(ctx, c)
 		}
+		r.Took = time.Since(start)
 		results = append(results, r)
 	}
 	return results

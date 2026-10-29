@@ -16,10 +16,10 @@ import (
 
 type loggingLLM struct{ inner Asker }
 
-func (l loggingLLM) Ask(ctx context.Context, m []llm.Message, s json.RawMessage, n int) (string, error) {
-	out, err := l.inner.Ask(ctx, m, s, n)
+func (l loggingLLM) Ask(ctx context.Context, m []llm.Message, s json.RawMessage, n int) (string, llm.Usage, error) {
+	out, use, err := l.inner.Ask(ctx, m, s, n)
 	fmt.Printf("    model: %s err=%v\n", strings.Join(strings.Fields(out), " "), err)
-	return out, err
+	return out, use, err
 }
 
 type line struct{ who, text string }

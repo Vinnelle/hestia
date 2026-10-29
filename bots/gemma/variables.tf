@@ -36,8 +36,30 @@ variable "session" {
   default     = "vin-moe-party"
 }
 
+variable "sign_password" {
+  description = "Password the bot's chat signing identity (an AGE key made without the nick) is made from, with machine_id"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = can(regex("^[A-Za-z0-9]{128,255}$", var.sign_password))
+    error_message = "sign_password must be 128-255 letters and digits."
+  }
+}
+
+variable "machine_id" {
+  description = "Machine id mounted as /etc/machine-id, which chat makes the signing identity with alongside sign_password"
+  type        = string
+  sensitive   = true
+
+  validation {
+    condition     = can(regex("^[0-9a-f]{32}$", var.machine_id))
+    error_message = "machine_id must be 32 lowercase hex digits."
+  }
+}
+
 variable "nick" {
-  description = "Nick the bot uses in chat; its signing identity is derived from this and a generated password, so changing it changes the bot's fingerprint"
+  description = "Nick the bot uses in chat; its signing identity is made without it, so changing it keeps the bot's fingerprint"
   type        = string
   default     = "Gemma"
 

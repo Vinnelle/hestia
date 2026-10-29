@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -55,8 +56,19 @@ func TestToolsRunBeforeTheReply(t *testing.T) {
 	if strings.Join(h.sent, "|") != "@alice it's 7625597484987" {
 		t.Errorf("sent %q", h.sent)
 	}
-	if len(logs) != 1 || !strings.HasSuffix(logs[0], ", after calculate, note") {
-		t.Errorf("logged %q", logs)
+	want := []string{
+		"heard alice; next turn in 3s",
+		"turn: alice in the room",
+		`plan 1 (0s): "a sum"`,
+		"calculate 3^3^3: 7625597484987",
+		`note "alice asks maths questions": saved as note 1`,
+		`plan 2 (0s): "nothing", no tools`,
+		"replies (0s)",
+		`alice -> you (""): @alice it's 7625597484987`,
+		"replied to 1 in the room in 0s, after calculate, note",
+	}
+	if strings.Join(logs, "\n") != strings.Join(want, "\n") {
+		t.Errorf("logged:\n%s", strings.Join(logs, "\n"))
 	}
 
 	h.say(room.Message, "alice", "thanks")
@@ -93,7 +105,10 @@ func TestABadPlanStillGetsAReply(t *testing.T) {
 	if strings.Join(h.sent, "|") != "@alice hi" || len(h.llm.seen) != 2 {
 		t.Fatalf("sent %q after %d asks", h.sent, len(h.llm.seen))
 	}
-	if len(logs) != 1 || !strings.Contains(logs[0], "no tool plan (the tool plan wasn't the JSON asked for") {
+	bad := func(l string) bool {
+		return strings.HasPrefix(l, "plan 1 (0s): the tool plan wasn't the JSON asked for")
+	}
+	if !slices.ContainsFunc(logs, bad) || !strings.HasSuffix(logs[len(logs)-1], ", after no tool plan") {
 		t.Errorf("logged %q", logs)
 	}
 }

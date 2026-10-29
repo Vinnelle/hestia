@@ -22,29 +22,29 @@ type fakeLLM struct {
 	schemas []json.RawMessage
 }
 
-func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, error) {
+func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, llm.Usage, error) {
 	f.seen = append(f.seen, messages)
 	f.schemas = append(f.schemas, schema)
 	if strings.Join(required(schema), ",") == "need,tools" {
 		if len(f.plans) == 0 {
-			return `{"need":"nothing","tools":[]}`, nil
+			return `{"need":"nothing","tools":[]}`, llm.Usage{}, nil
 		}
 		plan := f.plans[0]
 		f.plans = f.plans[1:]
-		return plan, nil
+		return plan, llm.Usage{}, nil
 	}
 	if f.err != nil || f.raw != "" || schema == nil {
 		if f.raw != "" {
-			return f.raw, f.err
+			return f.raw, llm.Usage{}, f.err
 		}
-		return f.reply, f.err
+		return f.reply, llm.Usage{}, f.err
 	}
 	replies := map[string]roomReply{}
 	for _, nick := range required(schema) {
 		replies[nick] = roomReply{TalkingTo: "you", Reply: f.reply}
 	}
 	out, _ := json.Marshal(replies)
-	return string(out), nil
+	return string(out), llm.Usage{}, nil
 }
 
 func required(schema json.RawMessage) []string {
