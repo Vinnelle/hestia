@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 	_ "time/tzdata"
 )
@@ -114,6 +115,8 @@ func (t *Toolbox) Describe() string {
 	return strings.TrimSpace(b.String())
 }
 
+var NeedSchema = text("need", 1, needChars).schema
+
 func (t *Toolbox) Schema() json.RawMessage {
 	var b strings.Builder
 	for i, tl := range t.list() {
@@ -129,8 +132,8 @@ func (t *Toolbox) Schema() json.RawMessage {
 		names, _ := json.Marshal(required)
 		fmt.Fprintf(&b, `},"required":%s,"additionalProperties":false}`, names)
 	}
-	return json.RawMessage(fmt.Sprintf(`{"type":"object","properties":{"need":%s,"tools":{"type":"array","maxItems":%d,"items":{"anyOf":[%s]}}},"required":["need","tools"],"additionalProperties":false}`,
-		text("need", 1, needChars).schema, MaxCalls, b.String()))
+	return json.RawMessage(fmt.Sprintf(`{"type":"object","properties":{"need":%s,"tools":{"type":"array","minItems":1,"maxItems":%d,"items":{"anyOf":[%s]}}},"required":["need","tools"],"additionalProperties":false}`,
+		NeedSchema, MaxCalls, b.String()))
 }
 
 func ParsePlan(reply string) (Plan, error) {
@@ -156,18 +159,22 @@ func (t *Toolbox) Run(ctx context.Context, calls []Call) []Result {
 	for _, tl := range t.list() {
 		byName[tl.name] = tl
 	}
-	results := make([]Result, 0, len(calls))
-	for _, c := range calls {
-		r := Result{Call: c}
-		start := time.Now()
-		if tl, ok := byName[c.Tool]; !ok {
-			r.Err = errors.New("there's no such tool")
-		} else {
-			r.Text, r.Err = tl.run(ctx, c)
-		}
-		r.Took = time.Since(start)
-		results = append(results, r)
+	results := make([]Result, len(calls))
+	var wg sync.WaitGroup
+	for i, c := range calls {
+		wg.Go(func() {
+			r := Result{Call: c}
+			start := time.Now()
+			if tl, ok := byName[c.Tool]; !ok {
+				r.Err = errors.New("there's no such tool")
+			} else {
+				r.Text, r.Err = tl.run(ctx, c)
+			}
+			r.Took = time.Since(start)
+			results[i] = r
+		})
 	}
+	wg.Wait()
 	return results
 }
 

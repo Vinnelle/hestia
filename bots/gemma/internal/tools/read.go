@@ -24,7 +24,7 @@ const (
 	maxPage      = 2 << 20
 	pageChars    = 3000
 	maxRedirects = 5
-	readTimeout  = 40 * time.Second
+	readTimeout  = 25 * time.Second
 	userAgent    = "Mozilla/5.0 (Windows NT 10.0; rv:140.0) Gecko/20100101 Firefox/140.0"
 )
 

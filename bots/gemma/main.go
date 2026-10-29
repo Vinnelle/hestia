@@ -217,6 +217,11 @@ func run(ctx context.Context) error {
 			APIKey:      os.Getenv("LLM_API_KEY"),
 			Temperature: 0.7,
 		},
+		Judge: &llm.Client{
+			BaseURL: os.Getenv("LLM_BASE_URL"),
+			Model:   os.Getenv("LLM_MODEL"),
+			APIKey:  os.Getenv("LLM_API_KEY"),
+		},
 		Send: func(line string) error {
 			return in.write(line + "\n")
 		},

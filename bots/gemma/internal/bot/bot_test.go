@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,26 +27,54 @@ type fakeLLM struct {
 func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, llm.Usage, error) {
 	f.seen = append(f.seen, messages)
 	f.schemas = append(f.schemas, schema)
-	if strings.Join(required(schema), ",") == "need,tools" {
-		if len(f.plans) == 0 {
-			return `{"need":"nothing","tools":[]}`, llm.Usage{}, nil
+	if branches := anyOf(schema); len(branches) == 2 {
+		if len(f.plans) > 0 {
+			plan := f.plans[0]
+			f.plans = f.plans[1:]
+			return plan, llm.Usage{}, nil
 		}
-		plan := f.plans[0]
-		f.plans = f.plans[1:]
-		return plan, llm.Usage{}, nil
+		schema = branches[1]
 	}
-	if f.err != nil || f.raw != "" || schema == nil {
+	if f.err != nil || f.raw != "" {
 		if f.raw != "" {
 			return f.raw, llm.Usage{}, f.err
 		}
 		return f.reply, llm.Usage{}, f.err
 	}
-	replies := map[string]roomReply{}
-	for _, nick := range required(schema) {
-		replies[nick] = roomReply{TalkingTo: "you", Reply: f.reply}
+	answer := map[string]any{"reply": f.reply}
+	if names := nicks(schema); names != nil {
+		replies := map[string]roomReply{}
+		for _, nick := range names {
+			replies[nick] = roomReply{TalkingTo: "you", Reply: f.reply}
+		}
+		answer = map[string]any{"replies": replies}
 	}
-	out, _ := json.Marshal(replies)
+	if slices.Contains(required(schema), "need") {
+		answer["need"], answer["tools"] = "nothing", []string{}
+	}
+	out, _ := json.Marshal(answer)
 	return string(out), llm.Usage{}, nil
+}
+
+func nicks(schema json.RawMessage) []string {
+	var s struct {
+		Properties struct {
+			Replies json.RawMessage `json:"replies"`
+		} `json:"properties"`
+	}
+	json.Unmarshal(schema, &s)
+	if s.Properties.Replies == nil {
+		return nil
+	}
+	return required(s.Properties.Replies)
+}
+
+func anyOf(schema json.RawMessage) []json.RawMessage {
+	var s struct {
+		AnyOf []json.RawMessage `json:"anyOf"`
+	}
+	json.Unmarshal(schema, &s)
+	return s.AnyOf
 }
 
 func required(schema json.RawMessage) []string {
@@ -134,7 +164,7 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 	if strings.Join(h.sent, "|") != "@alice hi|@bob hi" {
 		t.Fatalf("sent %q", h.sent)
 	}
-	if got := strings.Join(required(h.llm.schemas[0]), ","); got != "alice,bob" {
+	if got := strings.Join(nicks(h.llm.schemas[0]), ","); got != "alice,bob" {
 		t.Errorf("asked for replies to %s", got)
 	}
 	msgs := h.last()
@@ -151,7 +181,7 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 	if roles(msgs) != "system,user,assistant,user" || msgs[2].Content != "@alice hi\n@bob hi" {
 		t.Errorf("messages = %+v", msgs)
 	}
-	if got := strings.Join(required(h.llm.schemas[1]), ","); got != "alice" {
+	if got := strings.Join(nicks(h.llm.schemas[1]), ","); got != "alice" {
 		t.Errorf("second round answered %s, want only alice", got)
 	}
 	if h.step() {
@@ -161,7 +191,7 @@ func TestEachPersonGetsOneReplyToAllTheySaid(t *testing.T) {
 
 func TestStaysOutOfConversationsNotMeantForIt(t *testing.T) {
 	h := newHarness("hi")
-	h.llm.raw = `{"alice":{"talking_to":"someone else","reply":"butting in"},"bob":{"talking_to":"you","reply":"  "}}`
+	h.llm.raw = `{"replies":{"alice":{"talking_to":"someone else","reply":"butting in"},"bob":{"talking_to":"you","reply":"  "}}}`
 	h.say(room.Message, "alice", "how was your day bob?")
 	h.bot.Handle(room.Event{Kind: room.Message, Sender: "bob", Nick: "bob", Text: "good! vin-bot, you?", Mention: true})
 	if !h.step() {
@@ -177,7 +207,7 @@ func TestStaysOutOfConversationsNotMeantForIt(t *testing.T) {
 	h.llm.raw = ""
 	h.say(room.Message, "alice", "nice")
 	h.step()
-	if got := strings.Join(required(h.llm.schemas[1]), ","); got != "alice" {
+	if got := strings.Join(nicks(h.llm.schemas[1]), ","); got != "alice" {
 		t.Errorf("second round answered %s, want only alice", got)
 	}
 	if msgs := h.last(); roles(msgs) != "system,user" || !strings.HasSuffix(msgs[1].Content, "\nalice: nice") {
@@ -318,7 +348,7 @@ func TestReplyGoesBeforeMessagesThatArrivedWhileThinking(t *testing.T) {
 	if roles(msgs) != "system,user,assistant,user" || msgs[2].Content != "@alice answer" || msgs[3].Content != "bob: two" {
 		t.Errorf("messages = %+v", msgs)
 	}
-	if got := strings.Join(required(h.llm.schemas[1]), ","); got != "bob" {
+	if got := strings.Join(nicks(h.llm.schemas[1]), ","); got != "bob" {
 		t.Errorf("second round answered %s, want only bob", got)
 	}
 }
@@ -420,18 +450,93 @@ func TestWaitsForAQuietMoment(t *testing.T) {
 	if wait := h.bot.next(context.Background(), h.results); wait != settle || h.bot.busy {
 		t.Fatalf("wait %s busy %v", wait, h.bot.busy)
 	}
-	for _, nick := range []string{"bob", "carol", "dave", "erin"} {
-		h.now = h.now.Add(2 * time.Second)
-		h.say(room.Message, nick, "hi")
+	gap := settle - 500*time.Millisecond
+	var elapsed time.Duration
+	for i := 0; elapsed+settle <= maxHold; i++ {
+		h.now, elapsed = h.now.Add(gap), elapsed+gap
+		h.say(room.Message, fmt.Sprintf("p%d", i), "hi")
 		if h.bot.next(context.Background(), h.results); h.bot.busy {
-			t.Fatalf("started answering before %s's message settled", nick)
+			t.Fatalf("started answering before p%d's message settled", i)
 		}
 	}
-	if wait := h.bot.next(context.Background(), h.results); wait != maxHold-8*time.Second {
+	if wait := h.bot.next(context.Background(), h.results); wait != maxHold-elapsed {
 		t.Errorf("wait %s: the first message should wait at most %s", wait, maxHold)
 	}
-	if !h.step() || len(h.sent) != 5 {
+	if !h.step() || len(h.sent) != maxAddressed {
 		t.Errorf("sent %q", h.sent)
+	}
+}
+
+type fakeJudge struct {
+	mu      sync.Mutex
+	answers []string
+	seen    [][]llm.Message
+}
+
+func (f *fakeJudge) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, llm.Usage, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.seen = append(f.seen, messages)
+	next := f.answers[0]
+	f.answers = f.answers[1:]
+	if next == "" {
+		return "", llm.Usage{}, errors.New("down")
+	}
+	return `"` + next + `"`, llm.Usage{}, nil
+}
+
+func TestGuessesWhetherMoreIsComing(t *testing.T) {
+	h := newHarness("chat is a terminal chat")
+	judge := &fakeJudge{answers: []string{"more", "finished"}}
+	h.bot.Judge, h.bot.ctx, h.bot.guesses = judge, context.Background(), make(chan guess, 4)
+	wait := func() time.Duration { return h.bot.next(context.Background(), h.results) }
+
+	h.say(room.Message, "alice", "hey vin-bot")
+	if w := wait(); w != moreWait || h.bot.busy {
+		t.Fatalf("waits %s before the guess; want %s", w, moreWait)
+	}
+	h.bot.guessed(<-h.bot.guesses)
+	if w := wait(); w != moreWait || h.bot.busy {
+		t.Fatalf("waits %s after guessing more is coming; want %s", w, moreWait)
+	}
+	if got := judge.seen[0][1].Content; got != "alice: hey vin-bot\n\n[Is alice about to send more after \"hey vin-bot\", or finished?]" {
+		t.Errorf("asked %q", got)
+	}
+
+	h.now = h.now.Add(4 * time.Second)
+	h.say(room.Message, "alice", "what's chat?")
+	if w := wait(); w != moreWait || h.bot.busy {
+		t.Fatalf("waits %s after the second message; want %s again", w, moreWait)
+	}
+	h.bot.guessed(<-h.bot.guesses)
+	if wait(); !h.bot.busy {
+		t.Fatal("didn't answer as soon as alice looked done")
+	}
+	h.bot.finish(<-h.results)
+	if strings.Join(h.sent, "|") != "@alice chat is a terminal chat" || h.last()[1].Content != "alice: hey vin-bot\nalice: what's chat?" {
+		t.Errorf("sent %q for %q", h.sent, h.last()[1].Content)
+	}
+
+	judge.mu.Lock()
+	judge.answers = []string{"finished", "more", ""}
+	judge.mu.Unlock()
+	h.now = h.now.Add(time.Minute)
+	h.say(room.Message, "bob", "vin-bot is")
+	h.say(room.Message, "bob", "vin-bot is it e2e?")
+	first, second := <-h.bot.guesses, <-h.bot.guesses
+	if first.seq > second.seq {
+		first, second = second, first
+	}
+	h.bot.guessed(first)
+	if w := wait(); w != moreWait || h.bot.busy {
+		t.Errorf("an older message's guess moved the turn: waits %s", w)
+	}
+	h.bot.guessed(second)
+	h.now = h.now.Add(time.Second)
+	h.say(room.Message, "bob", "and signed?")
+	h.bot.guessed(<-h.bot.guesses)
+	if w := wait(); w != settle || h.bot.busy {
+		t.Errorf("waits %s when the guess failed; want %s", w, settle)
 	}
 }
 
@@ -534,8 +639,8 @@ func TestDirectMessagesAnswerPrivately(t *testing.T) {
 	if len(h.sent) != 1 || h.sent[0] != ":msg bob smith#1a2b3c4d psst back" {
 		t.Fatalf("sent %q", h.sent)
 	}
-	if h.llm.schemas[0] != nil {
-		t.Error("a direct reply asked for JSON")
+	if got := strings.Join(required(h.llm.schemas[0]), ","); got != "reply" {
+		t.Errorf("a direct reply asked for %q", got)
 	}
 	if sys := h.last()[0].Content; !strings.Contains(sys, "direct message from bob smith#1a2b3c4d") {
 		t.Errorf("system prompt doesn't say it's a direct message")
