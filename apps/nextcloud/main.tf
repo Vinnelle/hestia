@@ -145,7 +145,7 @@ resource "kubernetes_deployment_v1" "nextcloud" {
 
         container {
           name  = "nextcloud"
-          image = "nextcloud:35-apache"
+          image = "nextcloud:35-apache@sha256:e0b1a2af52c82c07b7a0e8e59878bd8769e704447734d5d238a836982f51b9c8"
 
           port {
             name           = "http"

@@ -31,7 +31,7 @@ resource "kubernetes_deployment_v1" "netbird_signal" {
       spec {
         container {
           name  = "signal"
-          image = "netbirdio/signal:0.81.3"
+          image = "netbirdio/signal:0.82.0"
           args  = ["--port", "80", "--log-file", "console"]
 
           port {
