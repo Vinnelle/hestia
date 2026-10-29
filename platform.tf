@@ -8,6 +8,11 @@ module "platform_core" {
     (local.vin_moe_cluster_issuer)      = var.acme_email_vin_moe
     (local.vinnel_cloud_cluster_issuer) = var.acme_email_vinnel_cloud
   }
+  ingress_nginx_image = local.images["ingress-nginx-controller"]
+  registry_pull_secret = {
+    namespace = "forge"
+    name      = "registry-dockerconfig"
+  }
 }
 
 # Relay

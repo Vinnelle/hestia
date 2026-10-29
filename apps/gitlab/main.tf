@@ -859,6 +859,15 @@ locals {
       url      = "https://gitlab.vinnel.cloud"
       token    = "${gitlab_user_runner.gaia_privileged_build.token}"
       executor = "kubernetes"
+      pre_build_script = '''
+        cgroup=$(sed -n 's|^0::||p' /proc/self/cgroup)
+        case "$cgroup" in
+          /kubepods/*)
+            printf '[worker.oci]\n  defaultCgroupParent = "%s"\n' "$(dirname "$cgroup")" > /tmp/buildkitd.toml
+            export BUILDKITD_FLAGS=--config=/tmp/buildkitd.toml
+            ;;
+        esac
+      '''
 
       [runners.kubernetes]
         namespace             = "${kubernetes_namespace_v1.forge.metadata[0].name}"

@@ -1,0 +1,28 @@
+.ingress_nginx_changes: &ingress_nginx_changes
+  - "hestia/platform/ingress-nginx/**/*"
+  - ".gitlab-ci/pipelines/ingress-nginx.yml"
+  - ".gitlab-ci/scripts/ingress-nginx-build.sh"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+ingress_nginx_build:
+  stage: build
+  tags: ["privileged-build"]
+  resource_group: ingress_nginx_build
+  timeout: 3h
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *ingress_nginx_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "ingress_nginx"'
+  image:
+    name: moby/buildkit:v${BUILDKIT_VERSION}
+    entrypoint: [""]
+  variables:
+    INGRESS_NGINX_VERSION: "controller-v1.15.12"
+    INGRESS_NGINX_COMMIT: "6ba1e706ebf765d778c485c05b2251b1739ccdb3"
+    INGRESS_NGINX_BUILD_JOBS: "2"
+  before_script:
+    - apk add --no-cache git jq
+    - mkdir -p ~/.docker
+    - printf '{"auths":{"mirror.vinnel.cloud":{"auth":"%s"},"%s":{"auth":"%s"}}}' "$(printf '%s:%s' "$REGISTRY_CACHE_USER" "$REGISTRY_CACHE_PASSWORD" | base64 -w0)" "$CI_REGISTRY" "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 -w0)" > ~/.docker/config.json
+  script:
+    - sh .gitlab-ci/scripts/ingress-nginx-build.sh

@@ -9,6 +9,92 @@ resource "kubernetes_namespace_v1" "platform" {
   }
 }
 
+data "kubernetes_secret_v1" "registry_pull" {
+  metadata {
+    name      = var.registry_pull_secret.name
+    namespace = var.registry_pull_secret.namespace
+  }
+}
+
+resource "kubernetes_secret_v1" "registry_pull" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = try(data.kubernetes_secret_v1.registry_pull.data[".dockerconfigjson"], jsonencode({ auths = {} }))
+  }
+}
+
+locals {
+  ingress_nginx_image = regex("^(?P<registry>[^/]+)/(?P<image>[^:@]+):(?P<tag>[^@]+)@(?P<digest>sha256:[0-9a-f]{64})$", var.ingress_nginx_image)
+}
+
+resource "kubernetes_job_v1" "ingress_nginx_pull" {
+  metadata {
+    name      = "ingress-nginx-pull-${substr(sha256(var.ingress_nginx_image), 0, 12)}"
+    namespace = kubernetes_namespace_v1.platform.metadata[0].name
+  }
+
+  spec {
+    backoff_limit = 2
+
+    template {
+      metadata {}
+      spec {
+        restart_policy                  = "Never"
+        automount_service_account_token = false
+
+        image_pull_secrets {
+          name = kubernetes_secret_v1.registry_pull.metadata[0].name
+        }
+
+        security_context {
+          run_as_non_root = true
+          run_as_user     = 101
+          run_as_group    = 82
+          seccomp_profile {
+            type = "RuntimeDefault"
+          }
+        }
+
+        container {
+          name    = "pull"
+          image   = var.ingress_nginx_image
+          command = ["/bin/true"]
+
+          security_context {
+            allow_privilege_escalation = false
+            read_only_root_filesystem  = true
+            run_as_non_root            = true
+            capabilities {
+              drop = ["ALL"]
+            }
+          }
+
+          resources {
+            requests = {
+              cpu    = "10m"
+              memory = "16Mi"
+            }
+            limits = {
+              memory = "16Mi"
+            }
+          }
+        }
+      }
+    }
+  }
+
+  wait_for_completion = true
+
+  timeouts {
+    create = "10m"
+    update = "10m"
+  }
+}
+
 resource "helm_release" "ingress_nginx" {
   name       = "ingress-nginx"
   repository = "https://kubernetes.github.io/ingress-nginx"
@@ -19,6 +105,32 @@ resource "helm_release" "ingress_nginx" {
   values = [
     file("${path.module}/../helm-values/ingress-nginx/values.yaml")
   ]
+
+  set = [
+    {
+      name  = "controller.image.registry"
+      value = local.ingress_nginx_image.registry
+    },
+    {
+      name  = "controller.image.image"
+      value = local.ingress_nginx_image.image
+    },
+    {
+      name  = "controller.image.tag"
+      value = local.ingress_nginx_image.tag
+      type  = "string"
+    },
+    {
+      name  = "controller.image.digest"
+      value = local.ingress_nginx_image.digest
+    },
+    {
+      name  = "imagePullSecrets[0].name"
+      value = kubernetes_secret_v1.registry_pull.metadata[0].name
+    },
+  ]
+
+  depends_on = [kubernetes_job_v1.ingress_nginx_pull]
 }
 
 resource "helm_release" "cert_manager" {
