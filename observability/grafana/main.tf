@@ -1,6 +1,18 @@
 locals {
-  namespace  = kubernetes_namespace_v1.observability.metadata[0].name
-  vm_sources = jsondecode(file("${path.module}/../../platform/helm-values/victoria-metrics-k8s-stack/sources.json"))
+  namespace     = kubernetes_namespace_v1.observability.metadata[0].name
+  vm_sources    = jsondecode(file("${path.module}/../../platform/helm-values/victoria-metrics-k8s-stack/sources.json"))
+  sidecar_image = regex("^(?P<registry>[^/]+)/(?P<repository>[^:@]+)(?::(?P<tag>[^@]+))?@sha256:(?P<sha>[0-9a-f]{64})$", var.sidecar_image)
+}
+
+resource "kubernetes_secret_v1" "registry_dockerconfig" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = local.namespace
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = var.registry_dockerconfigjson
+  }
 }
 
 resource "random_password" "grafana_oidc_client_secret" {
@@ -46,6 +58,11 @@ resource "helm_release" "victoria_metrics" {
       alert_email      = var.alert_email
       smtp_secret_name = kubernetes_secret_v1.alertmanager_smtp.metadata[0].name
       oidc_secret_name = kubernetes_secret_v1.grafana_oidc.metadata[0].name
+      pull_secret_name = kubernetes_secret_v1.registry_dockerconfig.metadata[0].name
+      sidecar_registry = local.sidecar_image.registry
+      sidecar_repo     = local.sidecar_image.repository
+      sidecar_tag      = coalesce(local.sidecar_image.tag, "latest")
+      sidecar_sha      = local.sidecar_image.sha
     }),
     yamlencode({
       defaultRules      = { sources = { for name, url in local.vm_sources.rules : name => { url = url } } }

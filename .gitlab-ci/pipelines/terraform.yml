@@ -9,10 +9,14 @@
   - "hestia/identity/identity-images.json"
   - "hestia/bots/bot-images.json"
   - "hestia/platform/platform-images.json"
+  - "hestia/observability/observability-images.json"
   - "hestia/platform/relay/image/**/*"
   - "hestia/platform/ingress-nginx/**/*"
   - ".gitlab-ci/pipelines/ingress-nginx.yml"
   - ".gitlab-ci/scripts/ingress-nginx-build.sh"
+  - "hestia/observability/grafana/k8s-sidecar/**/*"
+  - "hestia/apps/miniflux/postgres/**/*"
+  - ".gitlab-ci/pipelines/patched-images.yml"
   - "hestia/bots/gemma/knowledge.md"
   - "hestia/apps/searxng/settings.yml"
   - "hestia/apps/automations/**/*"
@@ -100,6 +104,10 @@ terraform_plan_apply:
       optional: true
     - job: ingress_nginx_build
       optional: true
+    - job: k8s_sidecar_build
+      optional: true
+    - job: miniflux_postgres_build
+      optional: true
     - job: lint
       optional: true
     - job: secrets_scan
@@ -109,10 +117,10 @@ terraform_plan_apply:
   rules:
     - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
       changes: *terraform_changes
-    - if: '$CI_PIPELINE_SOURCE == "web" && ($RUN == "terraform" || $RUN == "relay_image" || $RUN == "ingress_nginx")'
+    - if: '$CI_PIPELINE_SOURCE == "web" && ($RUN == "terraform" || $RUN == "relay_image" || $RUN == "ingress_nginx" || $RUN == "patched_images")'
   script:
     - git -C "$CI_PROJECT_DIR" fetch --depth=1 origin "$CI_COMMIT_REF_NAME"
-    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/bots/bot-images.json hestia/platform/platform-images.json hestia/platform/relay/image/image.json
+    - git -C "$CI_PROJECT_DIR" checkout FETCH_HEAD -- hestia/sites/site-images.json hestia/apps/app-images.json hestia/identity/identity-images.json hestia/bots/bot-images.json hestia/platform/platform-images.json hestia/observability/observability-images.json hestia/platform/relay/image/image.json
     - terraform fmt -check -diff -recursive
     - tflint --recursive
     - terraform init -input=false

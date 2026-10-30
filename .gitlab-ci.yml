@@ -19,6 +19,7 @@ variables:
       - "gemma_redeploy"
       - "relay_image"
       - "ingress_nginx"
+      - "patched_images"
       - "ci_runner"
       - "ci_runner_scan"
       - "love"
@@ -62,4 +63,5 @@ include:
   - local: '.gitlab-ci/pipelines/gemma.yml'
   - local: '.gitlab-ci/pipelines/relay.yml'
   - local: '.gitlab-ci/pipelines/ingress-nginx.yml'
+  - local: '.gitlab-ci/pipelines/patched-images.yml'
   - local: '.gitlab-ci/pipelines/changelog.yml'

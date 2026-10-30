@@ -1,0 +1,33 @@
+.k8s_sidecar_changes: &k8s_sidecar_changes
+  - "hestia/observability/grafana/k8s-sidecar/**/*"
+  - ".gitlab-ci/pipelines/patched-images.yml"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+.miniflux_postgres_changes: &miniflux_postgres_changes
+  - "hestia/apps/miniflux/postgres/**/*"
+  - ".gitlab-ci/pipelines/patched-images.yml"
+  - ".gitlab-ci/scripts/record-image-digest.sh"
+
+k8s_sidecar_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *k8s_sidecar_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "patched_images"'
+  variables:
+    SITE_CONTEXT: hestia/observability/grafana/k8s-sidecar
+    SITE_DOCKERFILE: hestia/observability/grafana/k8s-sidecar
+    SITE_IMAGE: k8s-sidecar/k8s-sidecar
+    SITE_DEPLOYMENT: grafana-sidecar
+
+miniflux_postgres_build:
+  extends: .site_build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "prd" && $CI_PIPELINE_SOURCE == "push"'
+      changes: *miniflux_postgres_changes
+    - if: '($CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "patched_images"'
+  variables:
+    SITE_CONTEXT: hestia/apps/miniflux/postgres
+    SITE_DOCKERFILE: hestia/apps/miniflux/postgres
+    SITE_IMAGE: miniflux/postgres
+    SITE_DEPLOYMENT: miniflux-postgres

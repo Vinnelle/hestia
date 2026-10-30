@@ -213,11 +213,15 @@ grafana:
       memory: 768Mi
     limits:
       memory: 2Gi
+  image:
+    pullSecrets:
+      - ${pull_secret_name}
   sidecar:
     image:
-      registry: quay.io
-      repository: kiwigrid/k8s-sidecar
-      tag: 2.14.1
+      registry: ${sidecar_registry}
+      repository: ${sidecar_repo}
+      tag: ${sidecar_tag}
+      sha: ${sidecar_sha}
     resources:
       requests:
         memory: 96Mi

@@ -126,6 +126,9 @@ module "miniflux" {
   relay_ip           = module.platform_relay.ipv4
   cluster_issuer     = local.vinnel_cloud_cluster_issuer
   ingress_class_name = module.platform_core.ingress_class_name
+
+  postgres_image            = local.images["miniflux-postgres"]
+  registry_dockerconfigjson = module.gitlab.registry_dockerconfigjson
 }
 
 # Nextcloud

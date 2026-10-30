@@ -12,6 +12,8 @@ module "observability_grafana" {
   admin_frame_service_annotations = local.admin_framed_service_annotations["grafana"]
   alert_email                     = var.alert_email
   resend_api_key                  = var.resend_api_key
+  sidecar_image                   = local.images["grafana-sidecar"]
+  registry_dockerconfigjson       = module.gitlab.registry_dockerconfigjson
 }
 
 # Better Stack

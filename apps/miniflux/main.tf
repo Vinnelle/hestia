@@ -53,6 +53,17 @@ resource "kubernetes_service_v1" "miniflux_postgres" {
   }
 }
 
+resource "kubernetes_secret_v1" "registry_dockerconfig" {
+  metadata {
+    name      = "registry-dockerconfig"
+    namespace = kubernetes_namespace_v1.miniflux.metadata[0].name
+  }
+  type = "kubernetes.io/dockerconfigjson"
+  data = {
+    ".dockerconfigjson" = var.registry_dockerconfigjson
+  }
+}
+
 resource "kubernetes_stateful_set_v1" "miniflux_postgres" {
   metadata {
     name      = "miniflux-postgres"
@@ -87,9 +98,13 @@ resource "kubernetes_stateful_set_v1" "miniflux_postgres" {
       spec {
         enable_service_links = false
 
+        image_pull_secrets {
+          name = kubernetes_secret_v1.registry_dockerconfig.metadata[0].name
+        }
+
         container {
           name  = "postgres"
-          image = "postgres:18-alpine"
+          image = var.postgres_image
 
           port {
             name           = "postgres"

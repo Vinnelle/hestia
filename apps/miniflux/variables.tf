@@ -17,3 +17,14 @@ variable "ingress_class_name" {
   description = "IngressClass the Miniflux ingress is served by"
   type        = string
 }
+
+variable "postgres_image" {
+  description = "Postgres image Miniflux's database runs, the patched build recorded in app-images.json"
+  type        = string
+}
+
+variable "registry_dockerconfigjson" {
+  description = "dockerconfigjson that pulls from artifacts.vinnel.cloud"
+  type        = string
+  sensitive   = true
+}

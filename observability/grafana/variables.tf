@@ -43,3 +43,19 @@ variable "resend_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "sidecar_image" {
+  description = "Grafana's k8s-sidecar image as registry/repository[:tag]@sha256:digest, the patched build recorded in observability-images.json"
+  type        = string
+
+  validation {
+    condition     = can(regex("^[^/]+/[^:@]+(:[^@]+)?@sha256:[0-9a-f]{64}$", var.sidecar_image))
+    error_message = "sidecar_image must be registry/repository[:tag]@sha256:<digest>."
+  }
+}
+
+variable "registry_dockerconfigjson" {
+  description = "dockerconfigjson that pulls from artifacts.vinnel.cloud"
+  type        = string
+  sensitive   = true
+}

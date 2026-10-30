@@ -1,0 +1,3 @@
+{
+  "grafana-sidecar": "artifacts.vinnel.cloud/vinnel-cloud/gaia/k8s-sidecar/k8s-sidecar@sha256:44421faeed692cb8afd0d7232356f95ac86999c38f9a550d7ac4b1d89ded2c10"
+}

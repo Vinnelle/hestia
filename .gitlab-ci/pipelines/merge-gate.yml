@@ -45,6 +45,10 @@ sync_pre:
       optional: true
     - job: ingress_nginx_build
       optional: true
+    - job: k8s_sidecar_build
+      optional: true
+    - job: miniflux_postgres_build
+      optional: true
     - job: love_release
       optional: true
   resource_group: sync_pre

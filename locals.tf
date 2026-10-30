@@ -111,6 +111,7 @@ locals {
     jsondecode(file("${path.module}/identity/identity-images.json")),
     jsondecode(file("${path.module}/bots/bot-images.json")),
     jsondecode(file("${path.module}/platform/platform-images.json")),
+    jsondecode(file("${path.module}/observability/observability-images.json")),
   )
 }
 
