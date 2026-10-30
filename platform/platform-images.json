@@ -1,3 +1,3 @@
 {
-  "ingress-nginx-controller": "artifacts.vinnel.cloud/vinnel-cloud/gaia/ingress-nginx/controller:v1.15.12@sha256:6f851e6ae430f8bdcdcd23f43d3a926917b05c98ef7614067fdb151dda7c25d4"
+  "ingress-nginx-controller": "artifacts.vinnel.cloud/vinnel-cloud/gaia/ingress-nginx/controller:v1.15.12@sha256:b0a27fe7a54c5a85a85beb33f65d2432c0f35eb3258d29cb1db6a9f7721519d3"
 }
