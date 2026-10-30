@@ -44,7 +44,8 @@ const (
 	spacing        = 2 * time.Second
 	peersWait      = 5 * time.Second
 	settle         = 2 * time.Second
-	joinGrace      = 10 * time.Second
+	joinGrace      = 15 * time.Second
+	crossWindow    = 20 * time.Second
 	maxHold        = 20 * time.Second
 	moreWait       = 8 * time.Second
 	guessLines     = 8
@@ -60,6 +61,8 @@ const (
 	foundChars     = 12000
 	keepEvery      = 30 * time.Second
 	logChars       = 200
+	drawEvery      = 5 * time.Minute
+	vibeWindow     = 20
 )
 
 type Bot struct {
@@ -91,6 +94,7 @@ type Bot struct {
 	queue     []*conversation
 	senders   map[string]*bucket
 	greeted   map[string]time.Time
+	welcomed  map[string]time.Time
 	online    map[string]int
 	roster    map[string]int
 	waiting   *conversation
@@ -99,6 +103,7 @@ type Bot struct {
 	busy      bool
 	readyAt   time.Time
 	failures  int
+	drew      time.Time
 }
 
 type check struct {
@@ -107,12 +112,15 @@ type check struct {
 }
 
 type guess struct {
-	conv *conversation
-	seq  uint64
-	nick string
-	more bool
-	err  error
-	took time.Duration
+	conv    *conversation
+	seq     uint64
+	nick    string
+	more    bool
+	err     error
+	took    time.Duration
+	vibe    string
+	vibeErr error
+	felt    time.Duration
 }
 
 type bucket struct {
@@ -130,6 +138,8 @@ type result struct {
 	took   time.Duration
 	use    llm.Usage
 	used   []string
+	art    []string
+	drawn  tools.Call
 }
 
 type roomReply struct {
@@ -194,7 +204,7 @@ func (b *Bot) restore() {
 			continue
 		}
 		b.room.add(turn{role: t.Role, text: t.Text, nick: t.Nick, from: t.From, key: t.Key, target: t.Target,
-			about: t.About, mention: t.Mention, join: t.Join, kept: true}, 0)
+			about: t.About, mention: t.Mention, join: t.Join, vibe: t.Vibe, kept: true}, 0)
 	}
 	if len(b.room.turns) == 0 {
 		return
@@ -213,7 +223,7 @@ func (b *Bot) keep() {
 	k := &kept{Saved: b.now(), Aliases: b.aliases, Counted: b.counted}
 	for _, t := range b.room.turns {
 		k.Turns = append(k.Turns, keptTurn{Role: t.role, Text: t.text, Nick: t.nick, From: t.from, Key: t.key,
-			Target: t.target, About: t.about, Mention: t.mention, Join: t.join})
+			Target: t.target, About: t.about, Mention: t.mention, Join: t.join, Vibe: t.vibe})
 	}
 	if err := b.History.save(k); err != nil {
 		b.logf("couldn't keep the history: %v", err)
@@ -457,6 +467,7 @@ func (b *Bot) init() {
 		b.direct = map[string]*conversation{}
 		b.senders = map[string]*bucket{}
 		b.greeted = map[string]time.Time{}
+		b.welcomed = map[string]time.Time{}
 		b.online = map[string]int{}
 		b.keys = map[string]string{}
 		b.aliases = map[string]string{}
@@ -478,6 +489,7 @@ func (b *Bot) logf(format string, args ...any) {
 
 func (b *Bot) gone(nick string) {
 	delete(b.online, nick)
+	delete(b.room.ungreeted, nick)
 	b.room.add(turn{role: "user", text: "[" + nick + " left]", nick: nick}, 0)
 }
 
@@ -525,6 +537,9 @@ func (b *Bot) heard(c *conversation, ev room.Event, now time.Time) {
 		t.target = b.aimedAt(ev)
 		t.about = t.target == "" && b.about(ev.Text)
 	}
+	if at, ok := b.welcomed[ev.Nick]; ok && c.peer == "" && now.Sub(at) < crossWindow {
+		t.crossed = true
+	}
 	c.add(t, 0)
 	c.heard = now
 	what := "heard " + t.who()
@@ -553,6 +568,22 @@ const judgeRules = `You watch a group chat and guess whether someone has finishe
 
 var guessSchema = json.RawMessage(`{"enum":["more","finished"]}`)
 
+const vibeAsk = `[Leave aside whether they're done. How does %s's last message, %q, come across? ` +
+	`"chill": friendly, neutral, or a plain question. "joking": teasing, banter, shitposting or edgy jokes not meant to hurt. ` +
+	`"salty": annoyed, bitter, passive-aggressive, whining, or snapping at someone. "hostile": insults meant to hurt, slurs, harassment or threats. ` +
+	`"glowy": sounds like a fed or a snoop: fishing for someone's real name, location, address, IP, workplace or face, trying to unmask or track someone, ` +
+	`asking people to confess to crimes or name others, or talking like a cop ("for safety reasons", "we just need to verify"). ` +
+	`Most messages are chill or joking. When unsure, it's chill.]`
+
+var (
+	vibeSchema = json.RawMessage(`{"enum":["chill","joking","salty","hostile","glowy"]}`)
+	vibes      = []string{"chill", "joking", "salty", "hostile", "glowy"}
+)
+
+func flagged(vibe string) bool {
+	return vibe == "salty" || vibe == "hostile" || vibe == "glowy"
+}
+
 func (b *Bot) recent(c *conversation) string {
 	turns := c.turns[max(0, len(c.turns)-guessLines):]
 	lines := make([]string, 0, len(turns))
@@ -574,24 +605,47 @@ func (b *Bot) recent(c *conversation) string {
 func (b *Bot) guess(c *conversation, seq uint64, nick, last, lines string) {
 	ctx, cancel := context.WithTimeout(b.ctx, moreWait)
 	defer cancel()
+	system := llm.Message{Role: "system", Content: strings.ReplaceAll(judgeRules, "NICK", strings.ToLower(b.Nick))}
+	g := guess{conv: c, seq: seq, nick: nick}
 	start := time.Now()
-	msgs := []llm.Message{
-		{Role: "system", Content: strings.ReplaceAll(judgeRules, "NICK", strings.ToLower(b.Nick))},
-		{Role: "user", Content: lines + fmt.Sprintf("\n\n[Is %s about to send more after %q, or finished?]", nick, last)},
+	out, _, err := b.Judge.Ask(ctx, []llm.Message{system, {Role: "user", Content: lines + "\n\n" + fmt.Sprintf(vibeAsk, nick, last)}}, vibeSchema, guessTokens)
+	if err == nil {
+		err = json.Unmarshal([]byte(out), &g.vibe)
 	}
-	out, _, err := b.Judge.Ask(ctx, msgs, guessSchema, guessTokens)
+	if g.vibeErr, g.felt = err, time.Since(start); err != nil || !slices.Contains(vibes, g.vibe) {
+		g.vibe = ""
+	}
+	start = time.Now()
+	msgs := []llm.Message{system, {Role: "user", Content: lines + fmt.Sprintf("\n\n[Is %s about to send more after %q, or finished?]", nick, last)}}
+	out, _, err = b.Judge.Ask(ctx, msgs, guessSchema, guessTokens)
 	var said string
 	if err == nil {
 		err = json.Unmarshal([]byte(out), &said)
 	}
+	g.more, g.err, g.took = said == "more", err, time.Since(start)
 	select {
-	case b.guesses <- guess{conv: c, seq: seq, nick: nick, more: said == "more", err: err, took: time.Since(start)}:
+	case b.guesses <- g:
 	case <-b.ctx.Done():
+	}
+}
+
+func (b *Bot) felt(g guess) {
+	if g.vibeErr != nil {
+		b.logf("couldn't read the vibe of %s's message: %v", g.nick, g.vibeErr)
+		return
+	}
+	for i := range g.conv.turns {
+		if t := &g.conv.turns[i]; t.seq == g.seq {
+			t.vibe = g.vibe
+			b.logf("%s comes across %s (%s)", g.nick, g.vibe, g.felt.Round(100*time.Millisecond))
+			return
+		}
 	}
 }
 
 func (b *Bot) guessed(g guess) {
 	c := g.conv
+	b.felt(g)
 	if !c.pending || c.latest != g.seq {
 		return
 	}
@@ -756,15 +810,15 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 	b.pin(c)
 	system := b.system(c)
 	var to []string
-	var joined map[string]bool
+	var joined, crossed map[string]bool
 	key, value := "reply", directReply
 	tokens := directTokens
 	if c.peer == "" {
-		if to, joined = b.addressees(c); len(to) == 0 {
+		if to, joined, crossed = b.addressees(c); len(to) == 0 {
 			b.logf("nobody to answer: they spoke to someone else, left, or were over the rate limit")
 			return
 		}
-		key, value = "replies", replySchema(to, joined)
+		key, value = "replies", replySchema(to, joined, crossed)
 		tokens = 64 + (whyTokens+replyTokens)*len(to)
 		system += "\n\nSince your last turn, " + strings.Join(to, ", ") + " spoke or joined. Each has a field named after them under replies, filled in order. " +
 			"why: a few words on who they were talking to and how you can tell (who spoke just before them, whether they named or answered you or someone else, " +
@@ -775,6 +829,10 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 			"and a greeting for someone who just joined, answering anything they said too. " +
 			"A reply answers everything that person said since your last reply, as a whole. " +
 			"Don't start a reply with their @nick; it's added for you."
+		if names := slices.Sorted(maps.Keys(crossed)); len(names) > 0 {
+			system += " You greeted " + strings.Join(names, ", ") + " moments before they wrote, so they likely hadn't seen your greeting yet: " +
+				"don't greet them again. Answer what they asked or said, and leave a plain hello from them with an empty reply."
+		}
 	}
 	msgs, after := c.messages(system)
 	if msgs[len(msgs)-1].Role != "user" {
@@ -797,18 +855,21 @@ func (b *Bot) start(ctx context.Context, c *conversation, results chan<- result)
 	}
 	b.logf("turn: %s", who)
 	b.busy = true
+	draw := c.peer != "" || b.drew.IsZero() || b.now().Sub(b.drew) >= drawEvery
 	go func() {
 		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		start := time.Now()
-		reply, use, used, err := b.answer(ctx, msgs, key, value, tokens)
-		results <- result{conv: c, after: after, to: to, joined: joined, reply: reply, err: err, took: time.Since(start), use: use, used: used}
+		r := b.answer(ctx, msgs, key, value, tokens, draw)
+		r.conv, r.after, r.to, r.joined, r.took = c, after, to, joined, time.Since(start)
+		results <- r
 	}()
 }
 
 const (
 	turnFirst = "[Your turn. Do you need a tool for it? Use one to look up something you don't know or that may have changed, " +
-		"to get the date or time, to work out a sum, to read a link someone shared, or to write down or cross out a note. " +
+		"to check chat's docs or a Linux manual, to get the date or time, to work out a sum, to read a link someone shared, to draw yourself, " +
+		"or to write down or cross out a note. " +
 		"Only for messages you'll answer, or for a note worth keeping. need says what you need in a few words, or \"nothing\"; " +
 		"then list at most 3 tool calls, and you'll see what they found before you answer, or list none and answer now.]"
 	turnMore = "[You can use tools again, at most %d more times, for example to read a search result or check a page. " +
@@ -818,6 +879,7 @@ const (
 )
 
 var (
+	lookups     = []string{"search", "read", "docs", "manual"}
 	directReply = json.RawMessage(fmt.Sprintf(`{"type":"string","minLength":1,"maxLength":%d}`, replyChars))
 	markup      = regexp.MustCompile(`<\|[a-z_"]+>|<[a-z_"]+\|>`)
 )
@@ -838,8 +900,7 @@ func answerSchema(key string, value json.RawMessage, need bool) json.RawMessage 
 // leave it only the answer; other tools are final, so their results go straight
 // to the answer. Results ride on the last user turn, which keeps the cached prompt
 // before them and the alternating turns Gemma's template needs.
-func (b *Bot) answer(ctx context.Context, msgs []llm.Message, key string, value json.RawMessage, tokens int) (string, llm.Usage, []string, error) {
-	var used []string
+func (b *Bot) answer(ctx context.Context, msgs []llm.Message, key string, value json.RawMessage, tokens int, draw bool) (out result) {
 	var made []tools.Call
 	var found strings.Builder
 	var offer json.RawMessage
@@ -864,13 +925,14 @@ func (b *Bot) answer(ctx context.Context, msgs []llm.Message, key string, value 
 		if tooled || found.Len() > 0 {
 			ask[len(ask)-1].Content += found.String() + "\n\n" + next
 		}
-		out, use, err := b.LLM.Ask(ctx, ask, schema, tokens)
+		reply, use, err := b.LLM.Ask(ctx, ask, schema, tokens)
+		out.reply, out.use, out.err = reply, use, err
 		if err != nil || !tooled {
-			return out, use, used, err
+			return out
 		}
-		plan, err := tools.ParsePlan(out)
+		plan, err := tools.ParsePlan(reply)
 		if err != nil || len(plan.Tools) == 0 {
-			return out, use, used, nil
+			return out
 		}
 		need := room.Clean(plan.Need, logChars)
 		calls := slices.DeleteFunc(plan.Tools, func(c tools.Call) bool { return slices.Contains(made, c) })
@@ -889,16 +951,19 @@ func (b *Bot) answer(ctx context.Context, msgs []llm.Message, key string, value 
 		}
 		for _, r := range b.Tools.Run(toolCtx, calls) {
 			text := r.Text
+			if r.Err == nil && r.Call.Tool == "draw" {
+				text = drawing(&out, r, draw)
+			}
 			call, took := room.Clean(r.Call.String(), logChars), r.Took.Round(100*time.Millisecond)
 			switch {
 			case r.Err != nil:
-				used = append(used, r.Call.Tool+" (failed)")
+				out.used = append(out.used, r.Call.Tool+" (failed)")
 				b.logf("  %s: failed after %s: %s", call, took, room.Clean(r.Err.Error(), logChars))
-			case r.Call.Tool == "search" || r.Call.Tool == "read":
-				used = append(used, r.Call.Tool)
+			case slices.Contains(lookups, r.Call.Tool):
+				out.used = append(out.used, r.Call.Tool)
 				b.logf("  %s: %d chars in %s", call, len(text), took)
 			default:
-				used = append(used, r.Call.Tool)
+				out.used = append(out.used, r.Call.Tool)
 				b.logf("  %s: %s", call, room.Clean(text, logChars))
 			}
 			if r.Err != nil {
@@ -914,6 +979,17 @@ func (b *Bot) answer(ctx context.Context, msgs []llm.Message, key string, value 
 	}
 }
 
+func drawing(out *result, r tools.Result, allowed bool) string {
+	switch {
+	case !allowed:
+		return "not drawn: you drew yourself in the last few minutes, so give the room a break"
+	case out.art != nil:
+		return "not drawn: one drawing a turn"
+	}
+	out.art, out.drawn = strings.Split(r.Text, "\n"), r.Call
+	return "drawn; it goes up on its own lines right after your reply, so don't describe it or draw with text"
+}
+
 func truncateText(s string, n int) string {
 	if len(s) <= n {
 		return s
@@ -924,9 +1000,9 @@ func truncateText(s string, n int) string {
 	return s[:n]
 }
 
-func (b *Bot) addressees(c *conversation) ([]string, map[string]bool) {
+func (b *Bot) addressees(c *conversation) ([]string, map[string]bool, map[string]bool) {
 	var to []string
-	joined := map[string]bool{}
+	joined, crossed := map[string]bool{}, map[string]bool{}
 	open := map[string]bool{}
 	for _, t := range c.turns {
 		if t.seq <= c.done || !t.trigger || (t.join && b.online[t.nick] == 0) {
@@ -936,22 +1012,26 @@ func (b *Bot) addressees(c *conversation) ([]string, map[string]bool) {
 			to = append(to, t.nick)
 			open[t.nick] = false
 		}
-		if t.join {
+		if t.join || c.ungreeted[t.nick] {
 			joined[t.nick] = true
 		}
-		if t.join || t.target == "" {
+		if t.crossed {
+			crossed[t.nick] = true
+		}
+		if t.join || t.target == "" || c.ungreeted[t.nick] {
 			open[t.nick] = true
 		}
 	}
 	to = slices.DeleteFunc(to, func(nick string) bool { return !open[nick] })
+	maps.DeleteFunc(crossed, func(nick string, _ bool) bool { return joined[nick] || !slices.Contains(to, nick) })
 	if len(to) > maxAddressed {
 		b.logf("%d people to answer at once; answering the first %d", len(to), maxAddressed)
 		to = to[:maxAddressed]
 	}
-	return to, joined
+	return to, joined, crossed
 }
 
-func replySchema(to []string, joined map[string]bool) json.RawMessage {
+func replySchema(to []string, joined, crossed map[string]bool) json.RawMessage {
 	branch := func(talkingTo string, minReply, maxReply int) string {
 		return fmt.Sprintf(`{"type":"object","properties":{"why":{"type":"string","minLength":1,"maxLength":%d},"talking_to":{"const":%q},`+
 			`"reply":{"type":"string","minLength":%d,"maxLength":%d}},"required":["why","talking_to","reply"],"additionalProperties":false}`,
@@ -966,9 +1046,12 @@ func replySchema(to []string, joined map[string]bool) json.RawMessage {
 		key, _ := json.Marshal(nick)
 		s.Write(key)
 		s.WriteByte(':')
-		if joined[nick] {
+		switch {
+		case joined[nick]:
 			s.WriteString(branch("just joined", 1, replyChars))
-		} else {
+		case crossed[nick]:
+			fmt.Fprintf(&s, `{"anyOf":[%s,%s,%s]}`, branch("you", 0, replyChars), branch("someone else", 0, 0), branch("everyone", 0, replyChars))
+		default:
 			fmt.Fprintf(&s, `{"anyOf":[%s,%s,%s]}`, branch("you", 1, replyChars), branch("someone else", 0, 0), branch("everyone", 0, replyChars))
 		}
 	}
@@ -1011,8 +1094,8 @@ func (b *Bot) finish(r result) {
 	if len(r.used) > 0 {
 		after = ", after " + strings.Join(r.used, ", ")
 	}
-	var lines, shown []string
-	quiet := 0
+	var lines, shown, welcomed []string
+	quiet, held := 0, 0
 	if r.conv.peer != "" {
 		prefix := ":msg " + r.conv.peer + " "
 		if text := room.Clean(trimSelf(answer.Reply, b.Nick), room.MaxLine-len(prefix)); text != "" {
@@ -1024,6 +1107,12 @@ func (b *Bot) finish(r result) {
 		for _, nick := range r.to {
 			reply := replies[nick]
 			head := fmt.Sprintf("  %s -> %s (%q)", nick, reply.TalkingTo, room.Clean(reply.Why, logChars))
+			if r.joined[nick] && r.conv.spokeSince(nick, r.after) {
+				held++
+				r.conv.ungreet(nick)
+				b.logf("%s: said more while being greeted, so the greeting waits to answer that too", head)
+				continue
+			}
 			if strings.TrimSpace(reply.Reply) == "" || (reply.TalkingTo == "someone else" && !r.joined[nick]) {
 				quiet++
 				b.logf("%s: stays quiet", head)
@@ -1032,6 +1121,9 @@ func (b *Bot) finish(r result) {
 			prefix := "@" + nick + " "
 			if text := room.Clean(trimTo(trimSelf(reply.Reply, b.Nick), nick), room.MaxLine-len(prefix)); text != "" {
 				lines, shown = append(lines, prefix+text), append(shown, prefix+text)
+				if r.joined[nick] {
+					welcomed = append(welcomed, nick)
+				}
 				b.logf("%s: %s", head, prefix+text)
 			} else {
 				b.logf("%s: empty once cleaned", head)
@@ -1039,6 +1131,9 @@ func (b *Bot) finish(r result) {
 		}
 	}
 	if len(lines) == 0 {
+		if held > 0 {
+			return
+		}
 		if quiet == len(r.to) && quiet > 0 {
 			b.logf("stayed out of the room's conversation%s", after)
 		} else {
@@ -1057,12 +1152,85 @@ func (b *Bot) finish(r result) {
 	if sent == 0 {
 		return
 	}
+	b.welcome(r.conv, welcomed, now)
 	r.conv.add(turn{role: "assistant", text: strings.Join(shown[:sent], "\n")}, r.after)
+	if sent == len(lines) && len(r.art) > 0 {
+		b.post(r, now)
+	}
 	if r.conv.peer != "" {
 		b.logf("replied to a direct message in %s%s", r.took.Round(100*time.Millisecond), after)
 	} else {
 		b.logf("replied to %d in the room in %s%s", sent, r.took.Round(100*time.Millisecond), after)
 	}
+}
+
+func (b *Bot) welcome(c *conversation, nicks []string, now time.Time) {
+	maps.DeleteFunc(b.welcomed, func(_ string, at time.Time) bool { return now.Sub(at) >= crossWindow })
+	for _, nick := range nicks {
+		b.welcomed[nick] = now
+		delete(c.ungreeted, nick)
+	}
+}
+
+func (b *Bot) post(r result, now time.Time) {
+	prefix := ""
+	if r.conv.peer != "" {
+		prefix = ":msg " + r.conv.peer + " "
+	}
+	for _, line := range r.art {
+		if line = indent(line); line == "" || strings.HasPrefix(line, ":") || len(prefix)+len(line) > room.MaxLine {
+			continue
+		}
+		if err := b.Send(prefix + line); err != nil {
+			b.logf("couldn't hand the drawing to chat: %v", err)
+			return
+		}
+	}
+	if r.conv.peer == "" {
+		b.drew = now
+	}
+	what := strings.TrimPrefix(r.drawn.String(), "draw ")
+	r.conv.add(turn{role: "user", text: "[you drew yourself: " + what + "]"}, r.conv.seq)
+	b.logf("drew %s in %d lines", room.Clean(what, logChars), len(r.art))
+}
+
+func indent(line string) string {
+	line = strings.TrimRight(line, " ")
+	trimmed := strings.TrimLeft(line, " ")
+	return strings.Repeat("\u00a0", len(line)-len(trimmed)) + trimmed
+}
+
+func (b *Bot) vibeCheck(c *conversation) string {
+	counts := map[string]int{}
+	who := map[string][]string{}
+	n := 0
+	for i := len(c.turns) - 1; i >= 0 && n < vibeWindow; i-- {
+		t := c.turns[i]
+		if t.vibe == "" {
+			continue
+		}
+		n++
+		counts[t.vibe]++
+		if flagged(t.vibe) && !slices.Contains(who[t.vibe], t.nick) {
+			who[t.vibe] = append(who[t.vibe], t.nick)
+		}
+	}
+	if n == 0 {
+		return ""
+	}
+	var parts []string
+	for _, v := range vibes {
+		if counts[v] == 0 {
+			continue
+		}
+		part := fmt.Sprintf("%d %s", counts[v], v)
+		if len(who[v]) > 0 {
+			part += " (" + strings.Join(who[v], ", ") + ")"
+		}
+		parts = append(parts, part)
+	}
+	salt := min(10, (10*counts["salty"]+20*counts["hostile"]+n/2)/n)
+	return fmt.Sprintf("\n\nVibe check of the last %d messages, from a quick read of each: %s. Salt level %d/10.", n, strings.Join(parts, ", "), salt)
 }
 
 func (b *Bot) system(c *conversation) string {
@@ -1100,7 +1268,7 @@ func (b *Bot) system(c *conversation) string {
 	if b.Owner != "" {
 		s += ownerHere(owner)
 	}
-	return s
+	return s + b.vibeCheck(c)
 }
 
 func trimSelf(reply, nick string) string {
@@ -1140,6 +1308,8 @@ type turn struct {
 	join    bool
 	trigger bool
 	kept    bool
+	vibe    string
+	crossed bool
 }
 
 func (t turn) who() string {
@@ -1155,6 +1325,9 @@ func (t turn) who() string {
 	case t.about:
 		who += " (about you)"
 	}
+	if flagged(t.vibe) {
+		who += " (sounds " + t.vibe + ")"
+	}
 	return who
 }
 
@@ -1169,17 +1342,18 @@ func (t turn) line() string {
 }
 
 type conversation struct {
-	peer    string
-	turns   []turn
-	size    int
-	seq     uint64
-	done    uint64
-	latest  uint64
-	pending bool
-	queued  bool
-	heard   time.Time
-	first   time.Time
-	due     time.Time
+	peer      string
+	ungreeted map[string]bool
+	turns     []turn
+	size      int
+	seq       uint64
+	done      uint64
+	latest    uint64
+	pending   bool
+	queued    bool
+	heard     time.Time
+	first     time.Time
+	due       time.Time
 }
 
 func (c *conversation) where() string {
@@ -1187,6 +1361,19 @@ func (c *conversation) where() string {
 		return "the room"
 	}
 	return "a direct message"
+}
+
+func (c *conversation) spokeSince(nick string, after uint64) bool {
+	return slices.ContainsFunc(c.turns, func(t turn) bool {
+		return t.seq > after && t.nick == nick && t.from != "" && !t.join && t.trigger
+	})
+}
+
+func (c *conversation) ungreet(nick string) {
+	if c.ungreeted == nil {
+		c.ungreeted = map[string]bool{}
+	}
+	c.ungreeted[nick] = true
 }
 
 func (c *conversation) add(t turn, after uint64) {

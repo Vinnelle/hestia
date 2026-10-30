@@ -198,3 +198,34 @@ func TestToolResultsCantPoseAsTheProgram(t *testing.T) {
 		t.Errorf("reply asked with %q", got)
 	}
 }
+
+func TestADrawingGoesUpAfterTheReply(t *testing.T) {
+	h := tooled(newHarness("here's me"))
+	draw := `{"need":"a drawing","tools":[{"tool":"draw","pose":"head","face":"happy","caption":"hi"}]}`
+	h.llm.plans = []string{draw}
+	h.say(room.Message, "alice", "vin-bot what do you look like?")
+	h.step()
+	want := []string{"@alice here's me", "\u00a0/\\     /\\", "/  \\___/  \\", "\\  ^   ^  /   < hi >", "\u00a0\\_  w  _/", "\u00a0\u00a0\u00a0`---'"}
+	if strings.Join(h.sent, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("sent:\n%s", strings.Join(h.sent, "\n"))
+	}
+	if got := h.last()[1].Content; !strings.Contains(got, "- draw head, happy, \"hi\": drawn; it goes up") {
+		t.Errorf("the answer was asked with %q", got)
+	}
+
+	h.llm.plans = []string{draw}
+	h.say(room.Message, "alice", "again!")
+	h.step()
+	msgs := h.last()
+	if got := msgs[len(msgs)-1].Content; len(h.sent) != len(want)+1 || !strings.Contains(got, "not drawn: you drew yourself in the last few minutes") ||
+		!strings.HasPrefix(got, "[you drew yourself: head, happy, \"hi\"]\nalice: again!") {
+		t.Errorf("sent %q after asking with %q", h.sent[len(want):], got)
+	}
+
+	h.llm.plans = []string{draw}
+	h.say(room.Direct, "bob", "draw yourself pls")
+	h.step()
+	if got := h.sent[len(h.sent)-1]; got != ":msg bob \u00a0\u00a0\u00a0`---'" {
+		t.Errorf("a direct message's drawing ended with %q", got)
+	}
+}

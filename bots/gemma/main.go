@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -205,6 +206,7 @@ func run(ctx context.Context) error {
 		log.Printf("couldn't update chat: %v", err)
 		firstUpdate = updateRetry
 	}
+	go loadDocs(ctx, box.Docs, chatPath)
 
 	events := make(chan room.Event, 64)
 	in := &input{}
@@ -276,6 +278,7 @@ func run(ctx context.Context) error {
 		case err := <-botDone:
 			return fmt.Errorf("the bot stopped: %v", err)
 		case <-installed:
+			go loadDocs(ctx, box.Docs, chatPath)
 			log.Print("rejoining the room with the new chat")
 			in.use(nil)
 			select {
@@ -285,6 +288,29 @@ func run(ctx context.Context) error {
 			chat.stop(chatGrace)
 		}
 	}
+}
+
+var releaseVersion = regexp.MustCompile(`^chat (\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)\b`)
+
+func loadDocs(ctx context.Context, docs *tools.Docs, chatPath string) {
+	if docs == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(ctx, updateWait)
+	defer cancel()
+	version, err := chatVersion(ctx, chatPath)
+	m := releaseVersion.FindStringSubmatch(version)
+	if err != nil || m == nil {
+		log.Printf("chat docs: couldn't tell which chat this is (%q, %v)", version, err)
+		return
+	}
+	start := time.Now()
+	n, err := docs.Load(ctx, "v"+m[1])
+	if err != nil {
+		log.Printf("chat docs: couldn't load v%s over Tor; trying again when she looks something up: %v", m[1], err)
+		return
+	}
+	log.Printf("chat docs: %d sections of v%s in %s", n, m[1], time.Since(start).Round(100*time.Millisecond))
 }
 
 func history() (*bot.History, error) {
@@ -422,7 +448,8 @@ func toolbox(viaTor bool) (*tools.Toolbox, error) {
 	}
 	if viaTor {
 		box.Read = tools.TorReader(socksPort)
-		on = append(on, "reading pages over Tor")
+		box.Docs = &tools.Docs{Reader: box.Read}
+		on = append(on, "reading pages, chat's docs and manuals over Tor")
 	}
 	path := os.Getenv("NOTES_FILE")
 	notes, err := tools.OpenNotebook(path, log.Printf)

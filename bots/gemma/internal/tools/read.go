@@ -105,49 +105,15 @@ func (r *Reader) Read(ctx context.Context, link, find string) (string, error) {
 	if err := checkURL(u); err != nil {
 		return "", err
 	}
-	ctx, cancel := context.WithTimeout(ctx, readTimeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	got, err := r.get(ctx, u, "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5")
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Accept", "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.5")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
-	resp, err := r.HTTP.Do(req)
-	if err != nil {
-		err = withoutURL(err)
-		var ne net.Error
-		if errors.As(err, &ne) && ne.Timeout() || errors.Is(err, context.DeadlineExceeded) {
-			return "", errors.New("the page took too long to load over Tor")
-		}
-		return "", fmt.Errorf("couldn't load the page over Tor: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		hint := ""
-		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusServiceUnavailable {
-			hint = " (some sites block Tor)"
-		}
-		return "", fmt.Errorf("the site said %s%s", resp.Status, hint)
-	}
-	kind, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
-	textual := strings.HasPrefix(kind, "text/") || kind == "application/json" || strings.HasSuffix(kind, "+xml") || strings.HasSuffix(kind, "/xml")
-	if kind != "" && !textual {
-		return "", fmt.Errorf("it's %s, not a page with text to read", kind)
-	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxPage))
-	if err != nil {
-		return "", fmt.Errorf("the page stopped loading: %w", withoutURL(err))
-	}
-	if kind == "" && !utf8.Valid(body[:min(len(body), 512)]) {
-		return "", errors.New("it isn't a page with text to read")
-	}
 	var title, text string
-	if kind == "" || kind == "text/html" || kind == "application/xhtml+xml" {
-		title, text = pageText(string(body))
+	if got.kind == "" || got.kind == "text/html" || got.kind == "application/xhtml+xml" {
+		title, text = pageText(got.body)
 	} else {
-		text = strings.ToValidUTF8(string(body), "")
+		text = got.body
 	}
 	text = excerpt(text, find, pageChars)
 	if text == "" {
@@ -157,11 +123,73 @@ func (r *Reader) Read(ctx context.Context, link, find string) (string, error) {
 	if title != "" {
 		fmt.Fprintf(&b, "%s\n", flatten(title, 200))
 	}
-	if final := resp.Request.URL.String(); final != u.String() {
-		fmt.Fprintf(&b, "(redirected to <%s>)\n", final)
+	if got.final != u.String() {
+		fmt.Fprintf(&b, "(redirected to <%s>)\n", got.final)
 	}
 	b.WriteString(text)
 	return b.String(), nil
+}
+
+type fetched struct {
+	kind  string
+	body  string
+	final string
+}
+
+type statusError struct {
+	code   int
+	status string
+}
+
+func (e *statusError) Error() string {
+	hint := ""
+	if e.code == http.StatusForbidden || e.code == http.StatusTooManyRequests || e.code == http.StatusServiceUnavailable {
+		hint = " (some sites block Tor)"
+	}
+	return fmt.Sprintf("the site said %s%s", e.status, hint)
+}
+
+func notFound(err error) bool {
+	s, ok := errors.AsType[*statusError](err)
+	return ok && s.code == http.StatusNotFound
+}
+
+func (r *Reader) get(ctx context.Context, u *url.URL, accept string) (fetched, error) {
+	ctx, cancel := context.WithTimeout(ctx, readTimeout)
+	defer cancel()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return fetched{}, err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", accept)
+	req.Header.Set("Accept-Language", "en-US,en;q=0.5")
+	resp, err := r.HTTP.Do(req)
+	if err != nil {
+		err = withoutURL(err)
+		var ne net.Error
+		if errors.As(err, &ne) && ne.Timeout() || errors.Is(err, context.DeadlineExceeded) {
+			return fetched{}, errors.New("the page took too long to load over Tor")
+		}
+		return fetched{}, fmt.Errorf("couldn't load the page over Tor: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fetched{}, &statusError{resp.StatusCode, resp.Status}
+	}
+	kind, _, _ := mime.ParseMediaType(resp.Header.Get("Content-Type"))
+	textual := strings.HasPrefix(kind, "text/") || kind == "application/json" || strings.HasSuffix(kind, "+xml") || strings.HasSuffix(kind, "/xml")
+	if kind != "" && !textual {
+		return fetched{}, fmt.Errorf("it's %s, not a page with text to read", kind)
+	}
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxPage))
+	if err != nil {
+		return fetched{}, fmt.Errorf("the page stopped loading: %w", withoutURL(err))
+	}
+	if kind == "" && !utf8.Valid(body[:min(len(body), 512)]) {
+		return fetched{}, errors.New("it isn't a page with text to read")
+	}
+	return fetched{kind: kind, body: strings.ToValidUTF8(string(body), ""), final: resp.Request.URL.String()}, nil
 }
 
 var skipped = map[atom.Atom]bool{

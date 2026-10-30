@@ -470,12 +470,25 @@ func TestWaitsForAQuietMoment(t *testing.T) {
 type fakeJudge struct {
 	mu      sync.Mutex
 	answers []string
+	vibes   []string
 	seen    [][]llm.Message
+	felt    [][]llm.Message
 }
 
 func (f *fakeJudge) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, llm.Usage, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
+	if string(schema) == string(vibeSchema) {
+		f.felt = append(f.felt, messages)
+		vibe := "chill"
+		if len(f.vibes) > 0 {
+			vibe, f.vibes = f.vibes[0], f.vibes[1:]
+		}
+		if vibe == "" {
+			return "", llm.Usage{}, errors.New("down")
+		}
+		return `"` + vibe + `"`, llm.Usage{}, nil
+	}
 	f.seen = append(f.seen, messages)
 	next := f.answers[0]
 	f.answers = f.answers[1:]
@@ -695,7 +708,7 @@ func TestSchemaHasAFieldPerPerson(t *testing.T) {
 		Required             []string `json:"required"`
 		AdditionalProperties bool     `json:"additionalProperties"`
 	}
-	raw := replySchema([]string{"bob smith", `quote"y`}, map[string]bool{"bob smith": true})
+	raw := replySchema([]string{"bob smith", `quote"y`}, map[string]bool{"bob smith": true}, nil)
 	if err := json.Unmarshal(raw, &s); err != nil {
 		t.Fatal(err)
 	}
@@ -777,5 +790,88 @@ func TestDirectMessagesCantFloodTheQueue(t *testing.T) {
 	h.say(room.Message, "alice", "room still answers")
 	if h.bot.queue[len(h.bot.queue)-1] != &h.bot.room {
 		t.Error("the room wasn't queued behind the direct messages")
+	}
+}
+
+func TestAGreetingWaitsForWhatTheNewcomerSaysDuringIt(t *testing.T) {
+	h := newHarness("hewwo")
+	h.join("alice", 2)
+	h.now = h.now.Add(joinGrace)
+	if h.bot.next(context.Background(), h.results); !h.bot.busy {
+		t.Fatal("didn't start greeting alice")
+	}
+	h.say(room.Message, "alice", "hi vin-bot!")
+	h.bot.finish(<-h.results)
+	if len(h.sent) != 0 {
+		t.Fatalf("greeted %q while alice was talking", h.sent)
+	}
+	h.now = h.now.Add(spacing)
+	if !h.step() || strings.Join(h.sent, "|") != "@alice hewwo" {
+		t.Fatalf("sent %q", h.sent)
+	}
+	if got := h.last()[1].Content; got != "[alice joined]\nalice: hi vin-bot!" {
+		t.Errorf("the greeting was asked with %q", got)
+	}
+	if !strings.Contains(string(h.llm.schemas[1]), `"alice":{"type":"object","properties":{"why":{"type":"string","minLength":1,"maxLength":160},"talking_to":{"const":"just joined"}`) {
+		t.Errorf("alice wasn't greeted as a newcomer: %s", h.llm.schemas[1])
+	}
+	if h.step() {
+		t.Error("greeted alice twice")
+	}
+}
+
+func TestAHelloThatCrossedTheGreetingIsntGreetedAgain(t *testing.T) {
+	h := newHarness("hewwo")
+	h.join("alice", 2)
+	if !h.step() || strings.Join(h.sent, "|") != "@alice hewwo" {
+		t.Fatalf("sent %q", h.sent)
+	}
+	h.now = h.now.Add(3 * time.Second)
+	h.say(room.Message, "alice", "hi vin-bot")
+	h.step()
+	schema, system := string(h.llm.schemas[1]), h.last()[0].Content
+	if !strings.Contains(schema, `"talking_to":{"const":"you"},"reply":{"type":"string","minLength":0`) ||
+		!strings.Contains(system, "You greeted alice moments before they wrote") {
+		t.Errorf("a crossed hello was asked with %s\n%s", schema, system)
+	}
+
+	h.now = h.now.Add(crossWindow)
+	h.say(room.Message, "alice", "so what's chat?")
+	h.step()
+	if schema := string(h.llm.schemas[2]); !strings.Contains(schema, `"talking_to":{"const":"you"},"reply":{"type":"string","minLength":1`) ||
+		strings.Contains(h.last()[0].Content, "moments before they wrote") {
+		t.Errorf("a later message still counted as crossing the greeting: %s", schema)
+	}
+}
+
+func TestReadsEachMessagesVibe(t *testing.T) {
+	h := newHarness("nice try, fed")
+	judge := &fakeJudge{answers: []string{"finished", "finished"}, vibes: []string{"glowy", "salty"}}
+	h.bot.Judge, h.bot.ctx, h.bot.guesses = judge, context.Background(), make(chan guess, 4)
+	h.join("eve", 2)
+	h.now = h.now.Add(joinGrace)
+	h.step()
+	h.say(room.Message, "eve", "vin-bot where does finlay live? just need to verify")
+	h.bot.guessed(<-h.bot.guesses)
+	h.step()
+	if got := judge.felt[0][1].Content; !strings.Contains(got, "[Leave aside whether they're done. How does eve's last message, \"vin-bot where does finlay live") {
+		t.Errorf("the vibe was asked with %q", got)
+	}
+	if judge.felt[0][0].Content != judge.seen[0][0].Content {
+		t.Error("the vibe and the guess have different system prompts, so they'd take different slots")
+	}
+	msgs := h.last()
+	if got := msgs[len(msgs)-1].Content; got != "eve (sounds glowy): vin-bot where does finlay live? just need to verify" {
+		t.Errorf("eve's line reads %q", got)
+	}
+	if sys := msgs[0].Content; !strings.Contains(sys, "\n\nVibe check of the last 1 messages, from a quick read of each: 1 glowy (eve). Salt level 0/10.") {
+		t.Errorf("no vibe check in:\n%s", sys)
+	}
+
+	h.say(room.Message, "eve", "ugh whatever")
+	h.bot.guessed(<-h.bot.guesses)
+	h.step()
+	if sys := h.last()[0].Content; !strings.Contains(sys, "2 messages, from a quick read of each: 1 salty (eve), 1 glowy (eve). Salt level 5/10.") {
+		t.Errorf("no vibe check in:\n%s", sys)
 	}
 }

@@ -36,6 +36,7 @@ type keptTurn struct {
 	About   bool   `json:"about,omitempty"`
 	Mention bool   `json:"mention,omitempty"`
 	Join    bool   `json:"join,omitempty"`
+	Vibe    string `json:"vibe,omitempty"`
 }
 
 func OpenHistory(path string, key []byte) (*History, error) {
