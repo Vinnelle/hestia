@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"regexp"
-	"sort"
 	"strings"
 	"sync"
 )
@@ -122,31 +121,22 @@ func passages(text, find string, limit int) string {
 	if len(words) == 0 {
 		return truncate(text, limit)
 	}
-	scores := make([]int, len(paras))
-	order := make([]int, 0, len(paras))
+	heads := make([]string, len(paras))
 	for i, p := range paras {
-		if scores[i] = score(p, "", words); scores[i] > 0 {
-			order = append(order, i)
-		}
+		heads[i], _, _ = strings.Cut(p, "\n")
 	}
+	order := rank(paras, heads, words)
 	if len(order) == 0 {
 		return truncate("(nothing in it mentions "+find+"; it starts:)\n"+text, limit/2)
 	}
-	sort.SliceStable(order, func(a, b int) bool { return scores[order[a]] > scores[order[b]] })
-	taken := map[int]bool{}
+	var picked []string
 	size := 0
 	for _, i := range order {
 		if size >= limit {
 			break
 		}
-		taken[i] = true
+		picked = append(picked, paras[i])
 		size += len(paras[i]) + 2
-	}
-	var picked []string
-	for i, p := range paras {
-		if taken[i] {
-			picked = append(picked, p)
-		}
 	}
 	return truncate(strings.Join(picked, "\n\n"), limit)
 }

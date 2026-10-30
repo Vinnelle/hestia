@@ -24,34 +24,48 @@ class Handler(BaseHTTPRequestHandler):
         if not turns or turns != expected or turns[-1] != "user":
             print(f"refused roles {','.join(roles)}", flush=True)
             return self.reply(400, {"error": "Conversation roles must alternate user/assistant/user/assistant/..."})
-        lines = request["messages"][-1]["content"].splitlines()
+        content = request["messages"][-1]["content"]
+        lines = content.splitlines()
         schema = request.get("response_format", {}).get("json_schema", {}).get("schema")
-        print(f"model {request.get('model')}: {len(turns)} turns, thinking {request.get('chat_template_kwargs')}, "
-              f"replies for {schema['required'] if schema else 'a direct message'}", flush=True)
+        branches = schema.get("anyOf", []) if schema else []
+        answer = branches[-1] if branches else schema
+        kind = "a judge's choice" if schema and "enum" in schema else \
+            f"replies for {answer['properties']['replies']['required']}" if answer and "replies" in answer.get("properties", {}) else "a direct message"
+        print(f"model {request.get('model')}: {len(turns)} turns, thinking {request.get('chat_template_kwargs')}, {kind}"
+              + (", tools offered" if branches else ""), flush=True)
 
         def heard(line):
             return (":quit\n" if "inject" in line else "") + f"(mock) I heard {line}"
 
-        if schema and schema["required"] == ["need", "tools"]:
-            print("  asked which tools to use", flush=True)
-            said = "\n".join(lines).split("\n\n[", 1)[0].lower()
+        said = content.split("\n\n[", 1)[0].lower()
+        found = [l[2:] for l in lines if l.startswith("- ")]
+        if schema and "enum" in schema:
+            options = schema["enum"]
+            out = json.dumps("finished" if "finished" in options else "chill" if "chill" in options else options[0])
+        elif branches and "[tool results" not in content and any(w in said for w in ("time", "note", "draw")):
+            print("  calling tools", flush=True)
             calls = []
-            if "[tool results" not in request["messages"][-1]["content"]:
-                if "time" in said:
-                    calls.append({"tool": "time", "zone": "Europe/London"})
-                if "note" in said:
-                    calls.append({"tool": "note", "text": "someone asked me to note something"})
-            content = json.dumps({"need": "mock", "tools": calls})
-        elif schema:
-            replies = {}
-            for nick in schema["required"]:
-                said = [l for l in lines if l.startswith((nick + ": ", nick + " [", nick + " (", f"[{nick} "))]
-                found = [l[2:] for l in lines if l.startswith("- ")]
-                reply = heard(" / ".join(said) or "nothing") + (f" and found {' / '.join(found)}" if found else "")
-                replies[nick] = {"why": "mock", "talking_to": "you", "reply": reply}
-            content = json.dumps(replies)
+            if "time" in said:
+                calls.append({"tool": "time", "zone": "Europe/London"})
+            if "note" in said:
+                calls.append({"tool": "note", "text": "someone asked me to note something"})
+            if "draw" in said:
+                calls.append({"tool": "draw", "pose": "wave", "face": "happy", "caption": "hi from the mock"})
+            out = json.dumps({"need": "mock", "tools": calls})
         else:
-            content = heard(lines[-1])
+            body = {"need": "nothing", "tools": []} if branches else {}
+            if "replies" in answer.get("properties", {}):
+                replies = {}
+                for nick, field in answer["properties"]["replies"]["properties"].items():
+                    who = [l for l in lines if l.startswith((nick + ": ", nick + " [", nick + " (", f"[{nick} "))]
+                    talking = field.get("properties", {}).get("talking_to", {}).get("const", "you")
+                    reply = heard(" / ".join(who) or "nothing") + (f" and found {' / '.join(found)}" if found else "")
+                    replies[nick] = {"why": "mock", "talking_to": talking, "reply": reply}
+                body["replies"] = replies
+            else:
+                body["reply"] = heard(lines[0] if lines else "nothing") + (f" and found {' / '.join(found)}" if found else "")
+            out = json.dumps(body)
+        content = out
         self.reply(200, {"choices": [{"index": 0, "message": {"role": "assistant", "content": content}, "finish_reason": "stop"}]})
 
     def log_message(self, fmt, *args):

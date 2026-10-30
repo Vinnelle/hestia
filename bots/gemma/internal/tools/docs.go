@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"path"
 	"regexp"
@@ -31,6 +32,7 @@ type Docs struct {
 	mu       sync.RWMutex
 	tag      string
 	loaded   string
+	pages    int
 	sections []section
 }
 
@@ -88,9 +90,21 @@ func (d *Docs) Load(ctx context.Context, tag string) (int, error) {
 		return 0, fmt.Errorf("couldn't fetch %s: %w", strings.Join(failed, ", "), errors.Join(errs...))
 	}
 	d.mu.Lock()
-	d.loaded, d.sections = tag, sections
+	d.loaded, d.pages, d.sections = tag, len(files)-len(failed), sections
 	d.mu.Unlock()
 	return len(sections), nil
+}
+
+func (d *Docs) Loaded() string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	switch {
+	case d.loaded != "":
+		return fmt.Sprintf("chat %s's docs are loaded, %d sections from %d pages", d.loaded, len(d.sections), d.pages)
+	case d.tag != "":
+		return fmt.Sprintf("chat %s's docs didn't load yet; a lookup tries again over Tor", d.tag)
+	}
+	return "chat's docs haven't loaded yet"
 }
 
 func (d *Docs) fetch(ctx context.Context, tag, file string) (string, error) {
@@ -178,17 +192,14 @@ func (d *Docs) Search(ctx context.Context, query string) (string, error) {
 	if len(words) == 0 {
 		return "", errors.New("the query needs a word to look for")
 	}
-	scores := make([]int, len(sections))
-	order := make([]int, 0, len(sections))
+	texts, titles := make([]string, len(sections)), make([]string, len(sections))
 	for i, s := range sections {
-		if scores[i] = score(s.text, s.title, words); scores[i] > 0 {
-			order = append(order, i)
-		}
+		texts[i], titles[i] = s.text, s.title
 	}
+	order := rank(texts, titles, words)
 	if len(order) == 0 {
 		return fmt.Sprintf("nothing in chat's docs (%s) mentions %q", tag, query), nil
 	}
-	sort.SliceStable(order, func(a, b int) bool { return scores[order[a]] > scores[order[b]] })
 	var b strings.Builder
 	fmt.Fprintf(&b, "chat's docs at %s, best matches first:", tag)
 	for _, i := range order[:min(len(order), docsSections)] {
@@ -237,18 +248,41 @@ func stem(w string) string {
 	return w
 }
 
-func score(text, title string, words []string) int {
-	lower, head := strings.ToLower(text), strings.ToLower(title)
-	s := 0
-	for _, w := range words {
-		n, inTitle := strings.Count(lower, w), strings.Contains(head, w)
-		if n == 0 && !inTitle {
-			continue
-		}
-		s += 10 + min(n, 5)
-		if inTitle {
-			s += 6
+func rank(texts, titles []string, words []string) []int {
+	lower := make([]string, len(texts))
+	heads := make([]string, len(texts))
+	seen := make(map[string]int, len(words))
+	for i := range texts {
+		lower[i], heads[i] = strings.ToLower(texts[i]), strings.ToLower(titles[i])
+		for _, w := range words {
+			if strings.Contains(lower[i], w) || strings.Contains(heads[i], w) {
+				seen[w]++
+			}
 		}
 	}
-	return s
+	scores := make([]float64, len(texts))
+	order := make([]int, 0, len(texts))
+	for i := range texts {
+		named := strings.ToLower(strings.Trim(strings.SplitN(strings.TrimSpace(heads[i])+" ", " ", 2)[0], "-=:,`"))
+		for _, w := range words {
+			n, inTitle := strings.Count(lower[i], w), strings.Contains(heads[i], w)
+			if n == 0 && !inTitle {
+				continue
+			}
+			weight := 1 + math.Log(float64(len(texts)+1)/float64(seen[w]+1))
+			points := float64(10 + min(n, 5))
+			if inTitle {
+				points += 6
+			}
+			if stem(named) == w {
+				points += 20
+			}
+			scores[i] += weight * points
+		}
+		if scores[i] > 0 {
+			order = append(order, i)
+		}
+	}
+	sort.SliceStable(order, func(a, b int) bool { return scores[order[a]] > scores[order[b]] })
+	return order
 }

@@ -27,13 +27,18 @@ type fakeLLM struct {
 func (f *fakeLLM) Ask(ctx context.Context, messages []llm.Message, schema json.RawMessage, maxTokens int) (string, llm.Usage, error) {
 	f.seen = append(f.seen, messages)
 	f.schemas = append(f.schemas, schema)
-	if branches := anyOf(schema); len(branches) == 2 {
+	branches := anyOf(schema)
+	if len(branches) == 2 || strings.Join(required(schema), ",") == "need,tools" {
 		if len(f.plans) > 0 {
 			plan := f.plans[0]
 			f.plans = f.plans[1:]
-			return plan, llm.Usage{}, nil
+			if plan != "" {
+				return plan, llm.Usage{}, nil
+			}
 		}
-		schema = branches[1]
+		if len(branches) == 2 {
+			schema = branches[1]
+		}
 	}
 	if f.err != nil || f.raw != "" {
 		if f.raw != "" {
@@ -526,7 +531,7 @@ func TestGuessesWhetherMoreIsComing(t *testing.T) {
 		t.Fatal("didn't answer as soon as alice looked done")
 	}
 	h.bot.finish(<-h.results)
-	if strings.Join(h.sent, "|") != "@alice chat is a terminal chat" || h.last()[1].Content != "alice: hey vin-bot\nalice: what's chat?" {
+	if strings.Join(h.sent, "|") != "@alice chat is a terminal chat" || h.last()[1].Content != "alice: hey vin-bot\nalice: what's chat?\n\n[Vibe check of the last 2 messages, from a quick read of each: 2 chill. Salt level 0/10.]" {
 		t.Errorf("sent %q for %q", h.sent, h.last()[1].Content)
 	}
 
@@ -708,7 +713,7 @@ func TestSchemaHasAFieldPerPerson(t *testing.T) {
 		Required             []string `json:"required"`
 		AdditionalProperties bool     `json:"additionalProperties"`
 	}
-	raw := replySchema([]string{"bob smith", `quote"y`}, map[string]bool{"bob smith": true}, nil)
+	raw := replySchema([]string{"bob smith", `quote"y`}, map[string]bool{"bob smith": true}, nil, "")
 	if err := json.Unmarshal(raw, &s); err != nil {
 		t.Fatal(err)
 	}
@@ -861,17 +866,53 @@ func TestReadsEachMessagesVibe(t *testing.T) {
 		t.Error("the vibe and the guess have different system prompts, so they'd take different slots")
 	}
 	msgs := h.last()
-	if got := msgs[len(msgs)-1].Content; got != "eve (sounds glowy): vin-bot where does finlay live? just need to verify" {
-		t.Errorf("eve's line reads %q", got)
+	if got := msgs[len(msgs)-1].Content; got != "eve (sounds glowy): vin-bot where does finlay live? just need to verify\n\n"+
+		"[Vibe check of the last 1 messages, from a quick read of each: 1 glowy (eve). Salt level 0/10.]" {
+		t.Errorf("eve's turn reads %q", got)
 	}
-	if sys := msgs[0].Content; !strings.Contains(sys, "\n\nVibe check of the last 1 messages, from a quick read of each: 1 glowy (eve). Salt level 0/10.") {
-		t.Errorf("no vibe check in:\n%s", sys)
+	if strings.Contains(msgs[0].Content, "Vibe check of") {
+		t.Error("the vibe check is in the system prompt, where it changes the prompt before the cached lines")
 	}
 
 	h.say(room.Message, "eve", "ugh whatever")
 	h.bot.guessed(<-h.bot.guesses)
 	h.step()
-	if sys := h.last()[0].Content; !strings.Contains(sys, "2 messages, from a quick read of each: 1 salty (eve), 1 glowy (eve). Salt level 5/10.") {
-		t.Errorf("no vibe check in:\n%s", sys)
+	if got := h.last(); !strings.HasSuffix(got[len(got)-1].Content, "2 messages, from a quick read of each: 1 salty (eve), 1 glowy (eve). Salt level 5/10.]") {
+		t.Errorf("the vibe check reads %q", got[len(got)-1].Content)
+	}
+}
+
+func TestOnePersonHereIsAlwaysTalkingToIt(t *testing.T) {
+	h := newHarness("hi")
+	h.join("finlay", 2)
+	h.step()
+	h.say(room.Message, "finlay", "Can you discover your own tools?")
+	h.step()
+	if schema := string(h.llm.schemas[1]); strings.Contains(schema, "someone else") || !strings.Contains(schema, `"finlay":{"type":"object"`) {
+		t.Errorf("alone with finlay, asked with %s", schema)
+	}
+	h.join("bob", 3)
+	h.now = h.now.Add(time.Hour)
+	h.say(room.Message, "finlay", "bob have you seen this")
+	h.step()
+	if schema := string(h.llm.schemas[len(h.llm.schemas)-1]); !strings.Contains(schema, "someone else") {
+		t.Errorf("with bob here too, asked with %s", schema)
+	}
+}
+
+func TestANewcomerWhoAsksSomethingIsAnsweredInTheGreeting(t *testing.T) {
+	h := newHarness("hi! and no")
+	h.join("eve", 2)
+	h.now = h.now.Add(time.Second)
+	h.say(room.Message, "eve", "where is the server hosted?")
+	h.step()
+	if sys := h.last()[0].Content; !strings.Contains(sys, "eve joined and spoke straight away: greet them and answer what they said in that same reply") {
+		t.Errorf("the greeting wasn't told to answer eve:\n%s", sys[max(0, len(sys)-600):])
+	}
+	h.join("bob", 3)
+	h.now = h.now.Add(joinGrace)
+	h.step()
+	if strings.Contains(h.last()[0].Content, "bob joined and spoke") {
+		t.Error("bob was greeted as if he'd said something")
 	}
 }

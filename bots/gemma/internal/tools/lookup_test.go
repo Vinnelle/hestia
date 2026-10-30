@@ -160,3 +160,45 @@ func TestToolboxOffersLookupsAndDrawing(t *testing.T) {
 		t.Errorf("a toolbox without Tor describes:\n%s", got)
 	}
 }
+
+func TestAbilities(t *testing.T) {
+	notes, _ := OpenNotebook("", nil)
+	reader := &Reader{HTTP: &http.Client{Transport: docsSite()}}
+	box := &Toolbox{Read: reader, Docs: &Docs{Reader: reader}, Notes: notes}
+	if !strings.Contains(string(box.Schema()), `"about":{"enum":["all","read","docs","manual","time","calculate","draw","note","forget","abilities"]}`) {
+		t.Errorf("abilities can't be asked about every tool: %s", box.Schema())
+	}
+	if got, _ := box.abilities("docs"); !strings.HasSuffix(got, "Now: chat's docs haven't loaded yet.") {
+		t.Errorf("before loading, docs reads %q", got)
+	}
+	box.Docs.Load(context.Background(), "v0.5.4")
+	all, err := box.abilities("all")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"- read (url, find): Opens a public http or https page over Tor",
+		"Now: chat v0.5.4's docs are loaded, 6 sections from 4 pages.",
+		"- manual (page, find): Fetches, over Tor, the tldr-pages examples",
+		"Poses: sit, wave, head, sign (sign holds up a sign with the caption on it). Faces: happy, uwu, excited, curious, sleepy, wink, sus.",
+		"- note (text): Writes a note in your notebook, which lasts across restarts: up to 30 notes of 200 characters, numbered for good. You see the whole notebook every turn. Now: 0 of 30 notes used.",
+		"- abilities (about): Tells you what your tools can do",
+	} {
+		if !strings.Contains(all, want) {
+			t.Errorf("abilities lacks %q:\n%s", want, all)
+		}
+	}
+	if strings.Contains(all, "- search") {
+		t.Error("abilities describes search, which this toolbox doesn't have")
+	}
+	one, _ := box.abilities("draw")
+	if strings.Count(one, "\n") != 0 || !strings.HasPrefix(one, "- draw (pose, face, caption): Draws you") {
+		t.Errorf("abilities of draw = %q", one)
+	}
+	if _, err := box.abilities("teleport"); err == nil {
+		t.Error("described a tool that doesn't exist")
+	}
+	if got := box.Run(context.Background(), []Call{{Tool: "abilities", About: "time"}})[0]; got.Err != nil || !strings.HasPrefix(got.Text, "- time (zone): The current date") || got.Call.String() != "abilities of time" {
+		t.Errorf("running abilities gave %q, %v", got.Text, got.Err)
+	}
+}

@@ -229,3 +229,136 @@ func TestADrawingGoesUpAfterTheReply(t *testing.T) {
 		t.Errorf("a direct message's drawing ended with %q", got)
 	}
 }
+
+func TestAnAnswerThatPromisesIsAskedAgain(t *testing.T) {
+	for _, c := range []struct{ reply, said string }{
+		{"let me fix that right now with the proper pose! x3", "let me fix"},
+		{"on it, bestie! here's the requested pose! x3", "on it"},
+		{"*wags tail* here's the requested pose! x3", "here's the requested pose"},
+		{"one sec, checking the docs", "one sec"},
+		{"okie dokie! *tail wags* checking out my own capabilities now... i'm quite the multi-tasker", "checking out my own capabilities now"},
+		{"okie doki! *wags tail* i'll start by making a note of what my main abilities are", "i'll start by"},
+		{"on it, bestie! *wags tail* here i am! >w<", "on it"},
+		{`here's me x3 /\_/\ ( o.o ) /\_/\`, "text art"},
+		{`u got it, bestie! *wags tail* here's a little something for u! x3 /\_/ ( •_•) ⟵ i'm a cool fox / > / \_/`, "text art"},
+	} {
+		h := tooled(newHarness(c.reply))
+		h.llm.plans = []string{"", `{"need":"to draw","tools":[{"tool":"draw","pose":"sit","face":"happy","caption":""}]}`}
+		var logs []string
+		h.bot.Logf = func(f string, a ...any) { logs = append(logs, fmt.Sprintf(f, a...)) }
+		h.say(room.Message, "finlay", "vin-bot draw yourself")
+		h.step()
+		if len(h.llm.seen) != 3 || anyOf(h.llm.schemas[1]) != nil || strings.Join(required(h.llm.schemas[1]), ",") != "need,tools" {
+			t.Errorf("%q: asked %d times, the second with %s", c.reply, len(h.llm.seen), h.llm.schemas[min(1, len(h.llm.schemas)-1)])
+			continue
+		}
+		if strings.Contains(string(h.llm.schemas[1]), `"abilities"`) {
+			t.Errorf("%q: the forced step offers abilities, which only describes", c.reply)
+		}
+		if got := h.llm.seen[1][1].Content; !strings.Contains(got, "\n\n[You started to answer with") || !strings.HasSuffix(got, "]\n\n"+toolsNow) {
+			t.Errorf("%q: asked again with %q", c.reply, got)
+		}
+		if !strings.Contains(strings.Join(logs, "\n"), fmt.Sprintf("has %q with no tool behind it", c.said)) {
+			t.Errorf("%q: logged\n%s", c.reply, strings.Join(logs, "\n"))
+		}
+		if len(h.sent) != 8 || h.sent[0] != "@finlay "+dropArt(c.reply) {
+			t.Errorf("%q: sent %q", c.reply, h.sent)
+		}
+	}
+
+	for _, fine := range []string{"i'm gonna hit 'em with that spicy fox sass! x3", "i'll roast any fed who shows up", "let me know if u need anything"} {
+		h := tooled(newHarness(fine))
+		h.say(room.Message, "finlay", "vin-bot hi")
+		h.step()
+		if len(h.llm.seen) != 1 {
+			t.Errorf("%q was asked again", fine)
+		}
+	}
+
+	h := tooled(newHarness("here's the drawing!"))
+	h.llm.plans = []string{`{"need":"a drawing","tools":[{"tool":"draw","pose":"sit","face":"happy","caption":""}]}`}
+	h.say(room.Message, "finlay", "vin-bot draw yourself")
+	h.step()
+	if len(h.llm.seen) != 2 || strings.Contains(h.last()[1].Content, "[You started to answer with") {
+		t.Errorf("a claim after the tool ran was questioned: %q", h.last()[1].Content)
+	}
+}
+
+func TestToolCallsRunEvenWhenNeedSaysNothing(t *testing.T) {
+	h := tooled(newHarness("here i am"))
+	h.llm.plans = []string{`{"need":"nothing","tools":[{"tool":"draw","pose":"wave","face":"happy","caption":"Rawr!"}]}`}
+	h.say(room.Message, "finlay", "vin-bot draw yourself waving")
+	h.step()
+	if len(h.sent) < 2 || h.sent[0] != "@finlay here i am" || !strings.Contains(strings.Join(h.sent, "\n"), "< Rawr! >") {
+		t.Errorf("sent %q", h.sent)
+	}
+}
+
+func TestTextArtIsDropped(t *testing.T) {
+	for in, want := range map[string]string{
+		`u got it, bestie! *wags tail* here's a little something for u! x3 /\_/ ( •_•) ⟵ i'm a cool fox / > / \_/`: "u got it, bestie! *wags tail* here's a little something for u! x3 i'm a cool fox",
+		"rsync -a src/ dst/ and cd / && ls": "rsync -a src/ dst/ and cd / && ls",
+		`¯\_(ツ)_/¯ idk :3 >w< (╯°□°)╯︵ ┻━┻`: `¯\_(ツ)_/¯ idk :3 >w< (╯°□°)╯︵ ┻━┻`,
+		"see https://example.com/a/b/c ok":  "see https://example.com/a/b/c ok",
+	} {
+		if got := dropArt(in); got != want {
+			t.Errorf("dropArt(%q) = %q", in, got)
+		}
+	}
+}
+
+func TestADrawingGoesUpWithoutAReply(t *testing.T) {
+	h := tooled(newHarness(" "))
+	h.llm.plans = []string{`{"need":"draw","tools":[{"tool":"draw","pose":"wave","face":"happy","caption":"rawr!"}]}`}
+	h.say(room.Message, "finlay", "Draw something")
+	h.say(room.Message, "bob", "nice")
+	h.step()
+	if len(h.sent) != 7 || !strings.Contains(h.sent[2], "< rawr! >") {
+		t.Fatalf("sent %q", h.sent)
+	}
+	if h.bot.drew.IsZero() {
+		t.Error("the drawing didn't start the room's wait for the next one")
+	}
+	turns := h.bot.room.turns
+	if got := turns[len(turns)-1].text; got != `[you drew yourself: wave, happy, "rawr!"]` || turns[len(turns)-2].text != "nice" {
+		t.Errorf("the room's history ends with %q", got)
+	}
+}
+
+func TestAbilitiesSayWhenSheCanDrawAndLeadToATool(t *testing.T) {
+	h := tooled(newHarness("i can draw, look things up and keep notes"))
+	h.llm.plans = []string{`{"need":"draw","tools":[{"tool":"draw","pose":"sit","face":"happy","caption":""}]}`}
+	h.say(room.Message, "finlay", "vin-bot draw")
+	h.step()
+	h.now = h.now.Add(time.Minute)
+	asked := len(h.llm.seen)
+	h.say(room.Message, "finlay", "vin-bot what can you do?")
+	h.step()
+	if len(h.llm.seen) != asked+1 || anyOf(h.llm.schemas[asked]) == nil {
+		t.Fatalf("asked %d times about her tools, last with %s", len(h.llm.seen)-asked, h.llm.schemas[len(h.llm.schemas)-1])
+	}
+	got := h.last()[len(h.last())-1].Content
+	for _, want := range []string{"finlay: vin-bot what can you do?\n\n[tool results", "\n- abilities: - time (zone): The current date", "\n  - draw (pose, face, caption): Draws you",
+		"\n  - You drew in the room a moment ago, so you can't draw here for another 4 minutes.", "[You can use tools again, at most 3 more times"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("a question about her tools was asked without %q:\n%s", want, got)
+		}
+	}
+	h.say(room.Message, "finlay", "vin-bot what's up?")
+	h.step()
+	if got := h.last()[len(h.last())-1].Content; strings.Contains(got, "[tool results") {
+		t.Errorf("looked at her tools for a plain message: %q", got)
+	}
+
+	h = tooled(newHarness("let me draw for u"))
+	h.llm.plans = []string{`{"need":"what i can do","tools":[{"tool":"abilities","about":"draw"}]}`, "",
+		`{"need":"draw","tools":[{"tool":"draw","pose":"wave","face":"happy","caption":"hi"}]}`}
+	h.say(room.Message, "finlay", "vin-bot can you draw?")
+	h.step()
+	if got := h.llm.seen[1][len(h.llm.seen[1])-1].Content; !strings.Contains(got, "- You can draw right now.") {
+		t.Errorf("abilities didn't say drawing is ready: %q", got)
+	}
+	if len(h.llm.seen) != 4 || len(h.sent) != 8 || !strings.Contains(h.sent[3], "< hi >") {
+		t.Errorf("a promise after abilities wasn't followed through: %d asks, sent %q", len(h.llm.seen), h.sent)
+	}
+}
