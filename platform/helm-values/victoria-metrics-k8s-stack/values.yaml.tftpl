@@ -208,6 +208,8 @@ defaultDatasources:
 
 grafana:
   fullnameOverride: grafana
+  deploymentStrategy:
+    type: Recreate
   resources:
     requests:
       memory: 768Mi
