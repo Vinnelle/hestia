@@ -2,7 +2,6 @@
   - "hestia/platform/ingress-nginx/**/*"
   - ".gitlab-ci/pipelines/ingress-nginx.yml"
   - ".gitlab-ci/scripts/ingress-nginx-build.sh"
-  - ".gitlab-ci/scripts/record-image-digest.sh"
 
 ingress_nginx_build:
   stage: build

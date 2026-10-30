@@ -26,7 +26,7 @@ data "talos_machine_configuration" "controlplane" {
   machine_secrets  = talos_machine_secrets.this.machine_secrets
 
   talos_version      = "v1.13.9"
-  kubernetes_version = "v1.37.1"
+  kubernetes_version = "v1.37.2"
 
   config_patches = [
     file("${path.module}/talos/controlplane-patch.yaml"),
