@@ -199,7 +199,7 @@ module "miniflux_postgres_vpa" {
   target_name = kubernetes_stateful_set_v1.miniflux_postgres.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "postgres", min_memory = "128Mi", max_memory = "512Mi" },
+    { container_name = "postgres", min_memory = "64Mi", max_memory = "512Mi" },
   ]
 }
 

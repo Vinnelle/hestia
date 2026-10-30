@@ -348,7 +348,7 @@ module "nextcloud_vpa" {
   target_name = kubernetes_deployment_v1.nextcloud.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "nextcloud", min_memory = "256Mi", max_memory = "2Gi" },
+    { container_name = "nextcloud", min_memory = "128Mi", max_memory = "2Gi" },
   ]
 }
 

@@ -60,11 +60,15 @@ locals {
     "nginx['listen_https'] = false",
     "nginx['proxy_set_headers'] = { 'X-Forwarded-Proto' => 'https', 'X-Forwarded-Ssl' => 'on' }",
     "gitlab_rails['monitoring_whitelist'] = ['127.0.0.0/8', '10.244.0.0/16']",
-    "puma['worker_processes'] = 4",
-    "puma['per_worker_max_memory_mb'] = 1400",
-    "sidekiq['max_concurrency'] = 10",
-    "postgresql['shared_buffers'] = '2GB'",
-    "postgresql['effective_cache_size'] = '6GB'",
+    "puma['worker_processes'] = 0",
+    "sidekiq['max_concurrency'] = 5",
+    "postgresql['shared_buffers'] = '128MB'",
+    "postgresql['effective_cache_size'] = '512MB'",
+    "prometheus_monitoring['enable'] = false",
+    "gitlab_kas['enable'] = false",
+    "nginx['worker_processes'] = 2",
+    "gitlab_rails['env'] = { 'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000' }",
+    "gitaly['env'] = { 'MALLOC_CONF' => 'dirty_decay_ms:1000,muzzy_decay_ms:1000' }",
   ])
 
   gitlab_config_hash = sha256(join("", [
@@ -233,11 +237,11 @@ resource "kubernetes_deployment_v1" "gitlab" {
           resources {
             requests = {
               cpu    = "2000m"
-              memory = "7Gi"
+              memory = "3Gi"
             }
             limits = {
               cpu    = "4000m"
-              memory = "10Gi"
+              memory = "8Gi"
             }
           }
 
@@ -333,7 +337,7 @@ module "gitlab_vpa" {
   target_name = kubernetes_deployment_v1.gitlab.metadata[0].name
   update_mode = "Initial"
   container_policies = [
-    { container_name = "gitlab", min_memory = "4Gi", max_memory = "7Gi" },
+    { container_name = "gitlab", min_memory = "2Gi", max_memory = "4Gi" },
   ]
 }
 
@@ -742,7 +746,7 @@ locals {
         image                 = "alpine:3.24"
         image_pull_secrets    = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
         host_aliases          = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
-        memory_request        = "256Mi"
+        memory_request        = "64Mi"
         memory_limit          = "3Gi"
         helper_memory_request = "32Mi"
         helper_memory_limit   = "768Mi"
@@ -876,7 +880,7 @@ locals {
         image_pull_secrets    = ["${kubernetes_secret_v1.registry_dockerconfig_gitlab.metadata[0].name}"]
         host_aliases          = [{ ip = "${var.node_ip}", hostnames = ["registry.vinnel.cloud", "gitlab.vinnel.cloud", "artifacts.vinnel.cloud", "mirror.vinnel.cloud"] }]
         privileged            = true
-        memory_request        = "256Mi"
+        memory_request        = "64Mi"
         memory_limit          = "3Gi"
         helper_memory_request = "32Mi"
         helper_memory_limit   = "768Mi"

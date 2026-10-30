@@ -132,7 +132,7 @@ resource "kubernetes_deployment_v1" "registry_cache" {
           resources {
             requests = {
               cpu    = "50m"
-              memory = "128Mi"
+              memory = "64Mi"
             }
             limits = {
               cpu    = "1000m"

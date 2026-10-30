@@ -23,8 +23,12 @@ resource "helm_release" "vpa" {
   values = [
     yamlencode({
       recommender = {
-        enabled   = true
-        extraArgs = { "pod-recommendation-min-memory-mb" = 32 }
+        enabled = true
+        extraArgs = {
+          "pod-recommendation-min-memory-mb" = 32
+          "target-memory-percentile"         = 0.5
+          "recommendation-margin-fraction"   = 0.1
+        }
         resources = { requests = { memory = "64Mi" }, limits = { memory = "512Mi" } }
       }
       updater = {
