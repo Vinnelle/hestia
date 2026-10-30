@@ -88,7 +88,7 @@ resource "helm_release" "otel_collector" {
   name       = "otel-collector"
   repository = "https://open-telemetry.github.io/opentelemetry-helm-charts"
   chart      = "opentelemetry-collector"
-  version    = "0.177.0"
+  version    = "0.178.0"
   namespace  = local.namespace
 
   values = [
