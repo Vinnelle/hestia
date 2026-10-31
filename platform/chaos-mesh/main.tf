@@ -8,7 +8,7 @@ resource "helm_release" "chaos_mesh" {
   name       = "chaos-mesh"
   repository = "https://charts.chaos-mesh.org"
   chart      = "chaos-mesh"
-  version    = "2.8.6"
+  version    = "2.8.7"
   namespace  = var.namespace
 
   values = [
