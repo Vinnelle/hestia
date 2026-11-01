@@ -23,7 +23,7 @@
 #
 #   1. Pick the release file that fits this computer.
 #   2. Download it, with SHA256SUMS and SHA256SUMS.minisig, from the latest
-#      release on https://github.com/Vinnelle/chat/releases (for the beta,
+#      release on https://github.com/chat-labs/chat/releases (for the beta,
 #      the newest release, betas included) into a new temporary folder that
 #      only you can read.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
@@ -70,8 +70,8 @@ session=
 
 # Where releases come from, and the public half of chat's release key. Only
 # the public half is here: it can check signatures, but it can't make them.
-repo=https://github.com/Vinnelle/chat
-api=https://api.github.com/repos/Vinnelle/chat
+repo=https://github.com/chat-labs/chat
+api=https://api.github.com/repos/chat-labs/chat
 minisign_pub=RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB
 # The release key's backup, kept offline apart from it. A release is only
 # signed with this one if the release key is lost or stolen, and then its

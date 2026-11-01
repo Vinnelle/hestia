@@ -22,7 +22,7 @@
 #   1. Check that this is 64-bit Windows, which the release build needs.
 #   2. Download chat-windows-x86_64.exe, with SHA256SUMS and
 #      SHA256SUMS.minisig, from the latest release on
-#      https://github.com/Vinnelle/chat/releases (for the beta, the newest
+#      https://github.com/chat-labs/chat/releases (for the beta, the newest
 #      release, betas included) into a new folder inside your temporary
 #      folder.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
@@ -75,8 +75,8 @@
     # Where releases come from, and the public half of chat's release key.
     # Only the public half is here: it can check signatures, but it can't
     # make them.
-    $repo = 'https://github.com/Vinnelle/chat'
-    $api = 'https://api.github.com/repos/Vinnelle/chat'
+    $repo = 'https://github.com/chat-labs/chat'
+    $api = 'https://api.github.com/repos/chat-labs/chat'
     $minisignPub = 'RWSR+ZdG2DibcI2waaAukeezQJcX5D5BcYHmZ2lOzLVATd2FnlS7YEZB'
     # The release key's backup, kept offline apart from it. A release is
     # only signed with this one if the release key is lost or stolen, and
