@@ -24,7 +24,7 @@ module "vin_moe_site" {
 
   site_slug   = "vin-moe"
   domain      = "vin.moe"
-  extra_hosts = ["blog.vin.moe", "chat.vin.moe"]
+  extra_hosts = ["blog.vin.moe", "chat.vin.moe", "invite.chat.vin.moe"]
   zone_id     = var.zone_id
   relay_ip    = var.relay_ip
 
@@ -42,4 +42,42 @@ module "vin_moe_site" {
   memory_limit   = "64Mi"
 
   vpa_update_mode = "Auto"
+}
+
+resource "kubernetes_ingress_v1" "chat_invite" {
+  metadata {
+    name      = "vin-moe-chat-invite"
+    namespace = kubernetes_namespace_v1.vin_moe.metadata[0].name
+    annotations = {
+      "nginx.ingress.kubernetes.io/enable-access-log"    = "false"
+      "nginx.ingress.kubernetes.io/enable-opentelemetry" = "false"
+    }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+
+    tls {
+      hosts       = ["chat.vin.moe"]
+      secret_name = "vin-moe-tls"
+    }
+
+    rule {
+      host = "chat.vin.moe"
+      http {
+        path {
+          path      = "/invite/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = module.vin_moe_site.service_name
+              port {
+                number = 80
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

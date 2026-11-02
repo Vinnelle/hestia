@@ -266,7 +266,7 @@ func TestMarksTalkAboutItself(t *testing.T) {
 	}
 }
 
-const finlayKey = "26012dc11ca1699110df4d6168f42a7a"
+const finlayKey = "fde33b8a9eb26180b2df84d69922a96c"
 
 func (h *harness) answerVerify(name, fp string, proven bool) {
 	h.bot.Handle(room.Event{Kind: room.VerifyCode, Sender: name, Nick: nickOf(name)})

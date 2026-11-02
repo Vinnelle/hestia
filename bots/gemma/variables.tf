@@ -72,7 +72,7 @@ variable "nick" {
 variable "owner_fingerprint" {
   description = "Finlay's chat signing identity fingerprint, as :verify shows it; the bot tells the model which messages it signed"
   type        = string
-  default     = "2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a"
+  default     = "fde3 3b8a 9eb2 6180 b2df 84d6 9922 a96c"
 
   validation {
     condition     = can(regex("^[0-9a-f]{4}( [0-9a-f]{4}){7}$", var.owner_fingerprint))

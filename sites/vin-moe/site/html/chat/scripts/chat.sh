@@ -13,6 +13,11 @@
 # To join vin-moe-party, the vin.moe group chat, as chat starts, use
 # https://chat.vin.moe/party instead (or /beta/party for the beta).
 #
+# An invite from https://invite.chat.vin.moe is a link like
+# https://chat.vin.moe/invite/43bkbbf8x2qm. It serves this same script with
+# the session and password lines below filled in, so chat joins that
+# session as it starts.
+#
 # This script downloads the latest release of chat from GitHub, checks that
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for root, and changes no
@@ -62,11 +67,13 @@ set -eu
 # beta, which runs the newest release, betas included.
 channel=stable
 
-# The session chat joins as it starts, if any. https://chat.vin.moe/party
-# (and /beta/party) is this same script with the line below set to
-# vin-moe-party, the vin.moe group chat. Its password is blank, so anyone
-# who knows the name can join it and read along.
+# The session chat joins as it starts, if any, and its password.
+# https://chat.vin.moe/party (and /beta/party) is this same script with the
+# session line set to vin-moe-party, the vin.moe group chat. Its password is
+# blank, so anyone who knows the name can join it and read along. An invite
+# link sets both lines.
 session=
+password=
 
 # Where releases come from, and the public half of chat's release key. Only
 # the public half is here: it can check signatures, but it can't make them.
@@ -243,11 +250,14 @@ main() {
     mv "$dir/$asset" "$dir/$bin"
     chmod 700 "$dir/$bin"
     # With a session to join, chat gets --session first, so an option of
-    # your own can still change it, and a blank CHAT_PASSWORD, which it uses
-    # instead of asking for the session's password.
+    # your own can still change it, and the password in CHAT_PASSWORD, which
+    # it uses instead of asking for it. chat takes CHAT_PASSWORD out of its
+    # own environment as it starts, and blanks its command line, so neither
+    # shows up in ps.
     if [ -n "$session" ]; then
         set -- --session "$session" "$@"
-        export CHAT_PASSWORD=
+        CHAT_PASSWORD=$password
+        export CHAT_PASSWORD
     fi
     say "signature and checksum match. Starting chat, which is deleted again when it exits"
     "$dir/$bin" "$@" </dev/tty

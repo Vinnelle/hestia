@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="google" content="notranslate">
+<title>invite | chat</title>
+<meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0c0c0d" media="(prefers-color-scheme: dark)">
+<script src="/js/theme-init.js"></script>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="stylesheet" href="/fonts/jetbrains-mono.css">
+<link rel="stylesheet" href="/css/style.css">
+<script src="/js/theme.js" defer></script>
+<script src="/js/invite.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">skip to content</a>
+
+<div class="bar">
+  <a class="brand" href="https://vin.moe/"><span class="chip">vin.moe</span></a>
+  <nav class="bar-nav" aria-label="Site">
+    <a class="tab" href="https://chat.vin.moe/">chat</a>
+    <a class="tab" href="https://github.com/chat-labs/chat">source</a>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="theme-toggle" role="group" aria-label="Theme">
+      <button class="theme-opt" type="button" data-theme-choice="dark" aria-pressed="false">dark</button>
+      <span class="sep" aria-hidden="true">/</span>
+      <button class="theme-opt" type="button" data-theme-choice="light" aria-pressed="false">light</button>
+    </span>
+  </nav>
+</div>
+
+<main id="main" class="page invite">
+  <header class="launch">
+    <h1>invite</h1>
+    <p class="sub" id="sub-make">Make a link that starts chat in a private session. Send it to the people you want there, and they're in as chat starts.</p>
+    <p class="sub" id="sub-join" hidden>You've been invited to a chat session. Run one of these in a terminal, and chat starts in it.</p>
+  </header>
+
+  <noscript><p class="no-release">This page makes the session in your browser, so it needs JavaScript. Without it, start chat with <code>curl -fsSL https://chat.vin.moe | sh</code> and press Ctrl+N for a new session.</p></noscript>
+
+  <div class="cmds" id="invite" hidden>
+    <form class="fields" id="own" autocomplete="off">
+      <label for="own-id">session id</label>
+      <input id="own-id" name="chat-invite-id" type="text" maxlength="64" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+      <label for="own-password">password</label>
+      <input id="own-password" name="chat-invite-secret" type="text" maxlength="255" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+      <p class="field-note" id="own-note" aria-live="polite"></p>
+      <button class="btn" type="button" id="regenerate">Generate random invite</button>
+    </form>
+
+    <div class="out" id="out">
+      <p class="cmd-label">In bash, zsh or fish, on Linux or macOS</p>
+      <div class="cmd">
+        <code id="cmd-sh"></code>
+        <button class="copy" type="button" id="copy-sh" aria-label="Copy the Linux and macOS command">
+          <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        </button>
+      </div>
+      <p class="cmd-label">In PowerShell, on Windows</p>
+      <div class="cmd ps">
+        <code id="cmd-ps"></code>
+        <button class="copy" type="button" id="copy-ps" aria-label="Copy the PowerShell command">
+          <svg class="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          <svg class="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <svg class="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
+        </button>
+      </div>
+      <dl class="secrets" id="secrets">
+        <div><dt>session id</dt><dd><code id="secret-id"></code></dd></div>
+        <div><dt>password</dt><dd><code id="secret-password"></code></dd></div>
+      </dl>
+      <p class="party-note">Already in chat? Press Ctrl+J and enter the session id, then the password.</p>
+      <p class="party-note" id="make-own" hidden><a href="/">Make an invite of your own</a></p>
+    </div>
+  </div>
+
+  <section class="after">
+    <h2>keeping it private</h2>
+    <ul class="list">
+      <li><span>The link is the invite: the session id and password are worked out from its code, so anyone with the link can join the session and read along. Send it only over something private, and only to the people you mean. When they join, compare verify codes with them (<code>:verify NICK</code>) over something else, a call or in person.</span></li>
+      <li><span>A random code is made here, in your browser, with its secure random numbers. One of your own is your session id and password, encoded, not encrypted. This page can't reach any server, and leaving it wipes the code.</span></li>
+      <li><span>Nothing is stored. There's no list of invites to look up or find: the server works out the session from the code each time the runner is downloaded, puts it into the same script as <a href="https://chat.vin.moe/">chat.vin.moe</a>, and forgets it. Invite links are left out of every access log and trace, and are never cached.</span></li>
+      <li><span>Opened in a browser, or by a chat app making a preview, the link comes here, with the code after the #, which browsers never send to a server. The code is then taken out of the address bar.</span></li>
+      <li><span>The command starts with a space, which keeps it out of your history in fish, in bash with <code>HISTCONTROL=ignorespace</code> (the default on Debian and Ubuntu) and in zsh with <code>setopt HIST_IGNORE_SPACE</code>. PowerShell keeps it in its history.</span></li>
+      <li><span>A copied command stays on your clipboard, and in any clipboard history, until something else replaces it.</span></li>
+    </ul>
+  </section>
+</main>
+<footer>
+  <nav class="foot-nav" aria-label="Source">
+    <a href="https://github.com/Vinnelle/vin.moe">Site source</a>
+    <a href="https://github.com/Vinnelle/hestia">Infra source</a>
+  </nav>
+</footer>
+</body>
+</html>

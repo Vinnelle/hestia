@@ -45,5 +45,6 @@ COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
 COPY conf/nginx-main.conf /etc/nginx/nginx.conf
 COPY conf/nginx.conf /etc/nginx/conf.d/default.conf
 COPY conf/blog-proxy.inc /etc/nginx/conf.d/blog-proxy.inc
+COPY conf/invite.js /etc/nginx/njs/invite.js
 COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080

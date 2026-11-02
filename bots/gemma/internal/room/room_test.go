@@ -38,8 +38,8 @@ func TestParse(t *testing.T) {
 		{"[12:00] * online: vin-bot: (you), and:", Event{Kind: Console}},
 		{"[12:00] * sandbox: on - from now on chat can only write", Event{Kind: Console}},
 		{"[12:00] * finlay: verify code able acid also apex (in hex 0a1b 2c3d) - not compared yet", Event{Kind: VerifyCode, Sender: "finlay", Nick: "finlay"}},
-		{"[12:00] * finlay#6125e90b: signing identity fingerprint 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a (verified)", Event{Kind: Fingerprint, Sender: "finlay#6125e90b", Nick: "finlay", Text: "26012dc11ca1699110df4d6168f42a7a"}},
-		{"[12:00] * finlay: signing identity fingerprint 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a (⚠ signature invalid)", Event{Kind: BadSignature, Sender: "finlay", Text: "26012dc11ca1699110df4d6168f42a7a"}},
+		{"[12:00] * finlay#6125e90b: signing identity fingerprint fde3 3b8a 9eb2 6180 b2df 84d6 9922 a96c (verified)", Event{Kind: Fingerprint, Sender: "finlay#6125e90b", Nick: "finlay", Text: "fde33b8a9eb26180b2df84d69922a96c"}},
+		{"[12:00] * finlay: signing identity fingerprint fde3 3b8a 9eb2 6180 b2df 84d6 9922 a96c (⚠ signature invalid)", Event{Kind: BadSignature, Sender: "finlay", Text: "fde33b8a9eb26180b2df84d69922a96c"}},
 		{"[12:00] * read the code out to them over another channel (in person, a call); if theirs is the same, :verify finlay ok - if not, :verify finlay no", Event{Kind: VerifyEnd}},
 		{"[12:00] * no online peer named 'finlay'", Event{Kind: VerifyMiss}},
 		{"[12:00] * more than one peer is called finlay - add the #id :peers shows (:verify finlay#1a2b...)", Event{Kind: VerifyMiss}},
@@ -75,7 +75,7 @@ func TestCleanNeverStartsACommand(t *testing.T) {
 }
 
 func TestCleanMakesOneSafeLine(t *testing.T) {
-	out := Clean("hello\r\nworld\x00 ‮evil done\xff", MaxLine)
+	out := Clean("hello\r\nworld\x00 \u202eevil\u2028done\xff", MaxLine)
 	if out != "hello world evil done" {
 		t.Errorf("Clean = %q", out)
 	}

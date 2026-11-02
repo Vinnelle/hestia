@@ -11,6 +11,11 @@
 # To join vin-moe-party, the vin.moe group chat, as chat starts, use
 # https://chat.vin.moe/party instead (or /beta/party for the beta).
 #
+# An invite from https://invite.chat.vin.moe is a link like
+# https://chat.vin.moe/invite/43bkbbf8x2qm. It serves this same script with
+# the session and password lines below filled in, so chat joins that
+# session as it starts.
+#
 # This script downloads the latest release of chat from GitHub, checks that
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for administrator rights, and
@@ -66,11 +71,13 @@
     # to beta, which runs the newest release, betas included.
     $channel = 'stable'
 
-    # The session chat joins as it starts, if any. https://chat.vin.moe/party
-    # (and /beta/party) is this same script with the line below set to
-    # vin-moe-party, the vin.moe group chat. Its password is blank, so
-    # anyone who knows the name can join it and read along.
+    # The session chat joins as it starts, if any, and its password.
+    # https://chat.vin.moe/party (and /beta/party) is this same script with
+    # the session line set to vin-moe-party, the vin.moe group chat. Its
+    # password is blank, so anyone who knows the name can join it and read
+    # along. An invite link sets both lines.
     $session = ''
+    $password = ''
 
     # Where releases come from, and the public half of chat's release key.
     # Only the public half is here: it can check signatures, but it can't
@@ -84,7 +91,7 @@
     $minisignBackupPub = 'RWSBLoedJe9qDz41AqUhdHq4AySS9e7sB3bnIe1lEAi1mQkN25aD5JCv'
     $site = 'https://chat.vin.moe'
     if ($channel -eq 'beta') { $site += '/beta' }
-    if ($session) { $site += '/party' }
+    if ($session -eq 'vin-moe-party') { $site += '/party' }
 
     # Print a status line on stderr.
     function Say([string] $text) {
@@ -401,20 +408,25 @@ namespace ChatRunner
             return
         }
         # With a session to join, chat gets --session first, so an argument
-        # of your own can still change it, and a blank CHAT_PASSWORD, which
-        # it uses instead of asking for the session's password. PowerShell
+        # of your own can still change it, and the password in
+        # CHAT_PASSWORD, which it uses instead of asking for it. PowerShell
         # deletes a variable set to '', so it's set with Windows' own
         # SetEnvironmentVariable instead. "irm | iex" runs in your own
         # PowerShell, so the variable is put back as it was once chat exits.
         if (-not ('ChatRunner.Env' -as [type])) {
             Add-Type -Namespace ChatRunner -Name Env -MemberDefinition '[DllImport("kernel32.dll", CharSet = CharSet.Unicode)] public static extern bool SetEnvironmentVariable(string name, string value);'
         }
-        $password = $env:CHAT_PASSWORD
-        [void][ChatRunner.Env]::SetEnvironmentVariable('CHAT_PASSWORD', '')
+        $savedPassword = $env:CHAT_PASSWORD
+        [void][ChatRunner.Env]::SetEnvironmentVariable('CHAT_PASSWORD', $password)
+        $password = $null
         try {
             & $exe --session $session @args
         } finally {
-            $env:CHAT_PASSWORD = $password
+            if ($null -eq $savedPassword) {
+                Remove-Item Env:CHAT_PASSWORD -ErrorAction SilentlyContinue
+            } else {
+                $env:CHAT_PASSWORD = $savedPassword
+            }
         }
     } finally {
         Remove-Item -Recurse -Force $dir -ErrorAction SilentlyContinue

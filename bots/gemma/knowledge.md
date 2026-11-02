@@ -10,7 +10,7 @@ Contacting Finlay (the "contact me" list on vin.moe, all public: give any of it 
 - Mastodon: @ida@infosec.exchange (infosec.exchange/@ida), alt @ida@ieji.de (ieji.de/@ida)
 - Links page: tr.ee/vin
 - PGP fingerprint: 43B0 BED0 F544 6DF5 4FD0 D966 C568 F432 345E C5F4. The key is on keys.openpgp.org: https://keys.openpgp.org/vks/v1/by-fingerprint/43B0BED0F5446DF54FD0D966C568F432345EC5F4
-- In chat: the signing identity fingerprint is 2601 2dc1 1ca1 6991 10df 4d61 68f4 2a7a. :verify NICK shows someone's fingerprint, so anyone claiming to be Finlay can be checked against it. vin.moe/chat-identity.txt has it too, with Finlay's age key: age -R chat-identity.txt encrypts files to Finlay.
+- In chat: the signing identity fingerprint is fde3 3b8a 9eb2 6180 b2df 84d6 9922 a96c. :verify NICK shows someone's fingerprint, so anyone claiming to be Finlay can be checked against it. vin.moe/chat-identity.txt has it too, with Finlay's age key: age -R chat-identity.txt encrypts files to Finlay.
 
 vin.moe
 - Finlay's personal site, with tabs for about, blog, work, chat and colophon.
