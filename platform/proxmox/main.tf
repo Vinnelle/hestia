@@ -58,6 +58,15 @@ resource "proxmox_virtual_environment_firewall_rules" "host" {
   rule {
     type    = "in"
     action  = "ACCEPT"
+    source  = var.netbird_cidr
+    proto   = "tcp"
+    dport   = "8006"
+    comment = "Proxmox VE web UI and API from NetBird peers, at pve.vinnel.cloud; NetBird's own policy narrows it to User Devices"
+  }
+
+  rule {
+    type    = "in"
+    action  = "ACCEPT"
     source  = var.lan_cidr
     proto   = "tcp"
     dport   = "8007"
@@ -212,4 +221,23 @@ resource "proxmox_backup_job" "hestia" {
     keep-daily  = "7"
     keep-weekly = "4"
   }
+}
+
+resource "proxmox_acme_dns_plugin" "cloudflare" {
+  plugin = "cloudflare"
+  api    = "cf"
+  data = {
+    CF_Token   = var.cloudflare_api_token
+    CF_Zone_ID = var.zone_id
+  }
+}
+
+resource "proxmox_acme_certificate" "pve" {
+  node_name = var.node_name
+  account   = "default"
+
+  domains = [{
+    domain = "pve.vinnel.cloud"
+    plugin = proxmox_acme_dns_plugin.cloudflare.plugin
+  }]
 }

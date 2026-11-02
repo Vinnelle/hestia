@@ -64,6 +64,34 @@ resource "netbird_group" "iot" {
   peers      = data.netbird_peers.tv_1.ids
 }
 
+data "netbird_peer" "pve" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "pve"
+}
+
+resource "netbird_group" "proxmox" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "Proxmox"
+  peers      = [data.netbird_peer.pve.id]
+}
+
+resource "netbird_policy" "devices_to_pve" {
+  depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
+  name       = "devices-to-pve"
+  enabled    = true
+
+  rule {
+    name          = "devices-to-pve"
+    description   = "Proxmox VE web UI and API, at pve.vinnel.cloud through AdGuard's rewrite"
+    action        = "accept"
+    bidirectional = false
+    protocol      = "tcp"
+    ports         = ["8006"]
+    sources       = [netbird_group.devices.id]
+    destinations  = [netbird_group.proxmox.id]
+  }
+}
+
 resource "netbird_policy" "devices_dns_udp_to_services" {
   depends_on = [cloudflare_dns_record.proxy_vinnel_cloud]
   name       = "devices-dns-udp-to-services"

@@ -8,6 +8,22 @@ variable "lan_cidr" {
   type        = string
 }
 
+variable "netbird_cidr" {
+  description = "NetBird peer address range; the host's firewall admits the Proxmox VE web UI from it too"
+  type        = string
+}
+
+variable "zone_id" {
+  description = "Cloudflare zone ID for vinnel.cloud, where Proxmox's ACME DNS plugin writes the DNS-01 challenge for pve.vinnel.cloud"
+  type        = string
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token Proxmox's ACME DNS plugin edits the vinnel.cloud zone with"
+  type        = string
+  sensitive   = true
+}
+
 variable "talos_iso_url" {
   description = "Talos Image Factory Secure Boot ISO for the node's schematic and version"
   type        = string

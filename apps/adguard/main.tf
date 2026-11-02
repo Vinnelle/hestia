@@ -21,7 +21,9 @@ resource "cloudflare_dns_record" "adguard_admin_vinnel_cloud" {
 locals {
   adguard_ordinals = toset(["0", "1"])
 
-  adguard_config_template_yaml = templatefile("${path.module}/AdGuardHome.yaml.tftpl", {})
+  adguard_config_template_yaml = templatefile("${path.module}/AdGuardHome.yaml.tftpl", {
+    pve_ip = var.pve_ip
+  })
   adguard_config_template_hash = sha256(local.adguard_config_template_yaml)
 }
 

@@ -30,6 +30,7 @@ module "platform_proxmox" {
 
   node_name        = var.proxmox_node
   lan_cidr         = var.lan_cidr
+  netbird_cidr     = module.proxy_netbird.network_range
   talos_iso_url    = "https://factory.talos.dev/image/${talos_image_factory_schematic.this.id}/${local.talos_version}/metal-amd64-secureboot.iso"
   talos_version    = local.talos_version
   talos_iso_sha256 = local.talos_iso_sha256
@@ -38,6 +39,9 @@ module "platform_proxmox" {
   pbs_fingerprint  = var.pbs_fingerprint
 
   pbs_encryption_key = var.pbs_encryption_key
+
+  zone_id              = module.platform_core.zone_id_vinnel_cloud
+  cloudflare_api_token = var.cloudflare_api_token
 }
 
 # VPA

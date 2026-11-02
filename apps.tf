@@ -11,6 +11,7 @@ module "adguard" {
   ingress_class_name              = module.platform_core.ingress_class_name
   admin_frame_service_annotations = local.admin_framed_service_annotations["adguard"]
   devices_group_id                = module.proxy_netbird.devices_group_id
+  pve_ip                          = module.proxy_netbird.pve_ip
 }
 
 # Admin

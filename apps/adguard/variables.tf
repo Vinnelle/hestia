@@ -27,3 +27,8 @@ variable "devices_group_id" {
   description = "NetBird group ID the AdGuard nameservers are served to"
   type        = string
 }
+
+variable "pve_ip" {
+  description = "NetBird address of the Proxmox host; AdGuard rewrites pve.vinnel.cloud to it, so only peers reach the host and everyone else gets the public redirect"
+  type        = string
+}

@@ -29,6 +29,11 @@
   "id": 15
   "name": "AdGuard DNS filter (Adult)"
   "url": "https://adguardteam.github.io/HostlistsRegistry/assets/filter_15.txt"
+"filtering":
+  "rewrites":
+  - "answer": "${pve_ip}"
+    "domain": "pve.vinnel.cloud"
+    "enabled": true
 "http":
   "address": "0.0.0.0:3000"
 "schema_version": 29
