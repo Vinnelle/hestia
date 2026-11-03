@@ -17,10 +17,10 @@ Check out the colophon for a description of how everything is set up! I had a lo
 I do still need to get more RAM for the server, as well as a better CPU I think, shame its so expensive right now.
 
 I also updated my admin panel that I use to manage my services in one place:
-![image](https://blog.vin.moe/media/image-7b4a1b81.png)
+![image](https://blog.vin.moe/media/image-a2525527.png)
 
 Its also where I write these blogs lol:
-![image](https://blog.vin.moe/media/image-bf5a355a.png)
+![image](https://blog.vin.moe/media/image-3d098088.png)
 
 I hope you like it, I do.
 
