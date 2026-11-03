@@ -35,16 +35,18 @@ COPY --from=images /avatar.webp .
 
 RUN sh /build/fetch-fonts.sh fonts && sh /build/embed-runner.sh && sh /build/build.sh
 RUN cp css/style.*.css css/post.css && cp fonts/jetbrains-mono.*.css fonts/post.css
+RUN chmod -R a+rX /app
 
 FROM mirror.vinnel.cloud/nginxinc/nginx-unprivileged:1.31-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 USER root
-RUN apk --no-cache upgrade && rm /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh
+RUN apk --no-cache upgrade && rm /docker-entrypoint.d/10-listen-on-ipv6-by-default.sh \
+ && install -d -m 0755 /etc/nginx/njs
 USER nginx
 COPY --from=brotli-builder /ngx_http_brotli_filter_module.so /etc/nginx/modules/
 COPY --from=brotli-builder /ngx_http_brotli_static_module.so /etc/nginx/modules/
-COPY conf/nginx-main.conf /etc/nginx/nginx.conf
-COPY conf/nginx.conf /etc/nginx/conf.d/default.conf
-COPY conf/blog-proxy.inc /etc/nginx/conf.d/blog-proxy.inc
-COPY conf/invite.js /etc/nginx/njs/invite.js
+COPY --chmod=0644 conf/nginx-main.conf /etc/nginx/nginx.conf
+COPY --chmod=0644 conf/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --chmod=0644 conf/blog-proxy.inc /etc/nginx/conf.d/blog-proxy.inc
+COPY --chmod=0644 conf/invite.js /etc/nginx/njs/invite.js
 COPY --from=asset-build /app/ /usr/share/nginx/html/
 EXPOSE 8080
