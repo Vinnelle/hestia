@@ -237,7 +237,7 @@ resource "kubernetes_deployment_v1" "miniflux" {
 
         container {
           name  = "miniflux"
-          image = "miniflux/miniflux:2.3.4"
+          image = "miniflux/miniflux:2.3.5"
 
           port {
             name           = "http"
