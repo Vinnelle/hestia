@@ -134,7 +134,7 @@ resource "kubernetes_stateful_set_v1" "adguard" {
 
         container {
           name  = "adguard"
-          image = "adguard/adguardhome:v0.107.79"
+          image = "adguard/adguardhome:v0.107.80"
 
           port {
             name           = "http"
