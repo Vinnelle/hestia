@@ -145,7 +145,7 @@ resource "kubernetes_deployment_v1" "nextcloud" {
 
         container {
           name  = "nextcloud"
-          image = "nextcloud:35-apache@sha256:e0b1a2af52c82c07b7a0e8e59878bd8769e704447734d5d238a836982f51b9c8"
+          image = "nextcloud:35-apache@sha256:d88929dc8386420b8963f86cabb667fdaf733eef9dcf8fc98e226801a32c023c"
 
           port {
             name           = "http"
@@ -450,7 +450,7 @@ resource "kubernetes_job_v1" "nextcloud_import" {
 
         container {
           name    = "import"
-          image   = "rclone/rclone:1.75.2"
+          image   = "rclone/rclone:1.76.0"
           command = ["sh", "-c", local.nextcloud_import_sh]
 
           env {

@@ -1,4 +1,4 @@
-FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS images
+FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a AS images
 RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools fontconfig
 COPY shared/images/ .
 COPY site/src/images/ .
@@ -20,7 +20,7 @@ RUN git clone --recurse-submodules https://github.com/google/ngx_brotli /tmp/ngx
  && cp objs/ngx_http_brotli_filter_module.so /ngx_http_brotli_filter_module.so \
  && cp objs/ngx_http_brotli_static_module.so /ngx_http_brotli_static_module.so
 
-FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS asset-build
+FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 

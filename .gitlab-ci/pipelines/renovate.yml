@@ -4,7 +4,7 @@ renovate:
   resource_group: renovate
   rules:
     - if: '($CI_PIPELINE_SOURCE == "schedule" || $CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api") && $RUN == "renovate"'
-  image: renovate/renovate:44.196.0@sha256:8b150e4be3bfef61edeecf08e2602a6179075d5572fd977e0d347539b50aaf7c
+  image: renovate/renovate:44.222.0@sha256:a8cb8222b49d15da701436954b7463427d535eae2203b294655c9a29675c47d1
   variables:
     RENOVATE_PLATFORM: gitlab
     RENOVATE_ENDPOINT: https://gitlab.vinnel.cloud/api/v4

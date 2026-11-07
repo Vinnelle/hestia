@@ -798,7 +798,7 @@ resource "kubernetes_deployment_v1" "gitlab_runner" {
 
         container {
           name  = "gitlab-runner"
-          image = "gitlab/gitlab-runner:v19.5.2@sha256:6d4cdfe23443fa5463bffa65cba9074a4517f68784756b69bcc362ca86f3d4c6"
+          image = "gitlab/gitlab-runner:v19.5.3@sha256:ffe21f021468d4aa1e56f05316d88597c23bf4818840e8edaa858131fabd7991"
 
           resources {
             requests = {
@@ -932,7 +932,7 @@ resource "kubernetes_deployment_v1" "gitlab_runner_privileged" {
 
         container {
           name  = "gitlab-runner"
-          image = "gitlab/gitlab-runner:v19.5.2@sha256:6d4cdfe23443fa5463bffa65cba9074a4517f68784756b69bcc362ca86f3d4c6"
+          image = "gitlab/gitlab-runner:v19.5.3@sha256:ffe21f021468d4aa1e56f05316d88597c23bf4818840e8edaa858131fabd7991"
 
           resources {
             requests = {

@@ -90,7 +90,7 @@ resource "kubernetes_deployment_v1" "llm" {
 
         init_container {
           name    = "fetch-model"
-          image   = "docker.io/library/alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a"
+          image   = "docker.io/library/alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a"
           command = ["sh", "-c", file("${path.module}/fetch-model.sh")]
 
           security_context {
@@ -136,7 +136,7 @@ resource "kubernetes_deployment_v1" "llm" {
 
         container {
           name  = "llama-server"
-          image = "ghcr.io/ggml-org/llama.cpp:server-cuda-b11804@sha256:490d8cd8000203a3ab8fdfce14ef931e2aa85affd4dd4447bcc75f299f00fd9a"
+          image = "ghcr.io/ggml-org/llama.cpp:server-cuda-b12182@sha256:77e84a5d6d885c07afbda0ae2fe48f4943f5181c8c8fe3b2e4231e8a1498bb24"
           args = [
             "--model", "/models/${local.model.file}",
             "--alias", local.model.alias,

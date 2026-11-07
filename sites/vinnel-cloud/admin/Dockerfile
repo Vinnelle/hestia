@@ -1,9 +1,9 @@
-FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS images
+FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a AS images
 RUN apk add --no-cache imagemagick librsvg rsvg-convert libwebp-tools
 COPY shared/images/ .
 RUN rsvg-convert -w 64 -h 64 favicon.svg | magick png:- favicon.webp
 
-FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:40cd011b55415bc894e45b02fdd5a5dfde056921b7d23a64c74f80497af48797 AS asset-build
+FROM mirror.vinnel.cloud/library/node:26-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS asset-build
 RUN apk add --no-cache brotli gzip curl
 RUN npm install -g clean-css-cli terser html-minifier-terser
 
@@ -21,7 +21,7 @@ RUN cd /editor && node test.mjs && node build.mjs /app/assets/js/editor.js
 RUN sh /build/fetch-fonts.sh assets/fonts && sh /build/build.sh \
  && find . \( -name '*.gz' -o -name '*.br' \) -delete
 
-FROM mirror.vinnel.cloud/library/golang:1.27-alpine@sha256:b8c9b82affbbb82a020bbcf998dad2ba9516944ac7e883524642a481a9505e9c AS build
+FROM mirror.vinnel.cloud/library/golang:1.27-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS build
 WORKDIR /app
 
 COPY admin/go.mod admin/go.sum ./
@@ -32,7 +32,7 @@ COPY admin/internal/ ./internal/
 COPY --from=asset-build /app/ ./html/
 RUN CGO_ENABLED=0 go build -o /admin .
 
-FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
+FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a
 RUN apk add --no-cache ca-certificates && adduser -D -u 10001 app
 COPY --from=build /admin /usr/local/bin/admin
 USER 10001
