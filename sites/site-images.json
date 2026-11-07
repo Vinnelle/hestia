@@ -1,4 +1,4 @@
 {
-  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:f5bb3132a4fabf08675a1073ad313cb9f84f6a7f2309ae89abd905ceaf8ab3e8",
-  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:5d9e8ffcd46549a57a0d530af6f1a3c36f751f29cd90d0dc262b67e4a0237505"
+  "vin-moe-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vin-moe/site@sha256:cc0f5bed1f22ba234b8708f853da23d47f5669b2d7b30c2fbed05a8aed297bbb",
+  "vinnel-cloud-site": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/site@sha256:86d8ca0f7a584dfc2c6bd83f8b3c49fb26344db41943a4f17fa0e62949f5b499"
 }
