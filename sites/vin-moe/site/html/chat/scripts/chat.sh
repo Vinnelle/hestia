@@ -22,7 +22,7 @@
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for root, and changes no
 # settings. The only files it leaves behind are ones chat itself writes, and
-# chat writes nothing unless you ask it to (:install).
+# chat writes nothing unless you ask it to (/install).
 #
 # It takes five steps:
 #
@@ -32,11 +32,11 @@
 #      the newest release, betas included) into a new temporary folder that
 #      only you can read.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
-#      key in minisign_pub below (the same key as minisign.pub in the chat
-#      repository), or with its backup, minisign_backup_pub (the same as
-#      minisign-backup.pub there). Releases are signed offline, never on
-#      GitHub, so even someone who took over the GitHub account couldn't pass
-#      this check.
+#      key in minisign_pub below (the same key as keys/minisign.pub in the
+#      chat repository), or with its backup, minisign_backup_pub (the same
+#      as keys/minisign-backup.pub there). Releases are signed offline,
+#      never on GitHub, so even someone who took over the GitHub account
+#      couldn't pass this check.
 #   4. Check the downloaded program against its SHA-256 in SHA256SUMS.
 #   5. Run chat, and delete the temporary folder when it exits.
 #

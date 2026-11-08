@@ -20,7 +20,7 @@
 # it was signed with chat's release key, runs it, and deletes it again when
 # chat exits. It installs nothing, never asks for administrator rights, and
 # changes no settings. The only files it leaves behind are ones chat itself
-# writes, and chat writes nothing unless you ask it to (:install).
+# writes, and chat writes nothing unless you ask it to (/install).
 #
 # It takes five steps:
 #
@@ -31,9 +31,9 @@
 #      release, betas included) into a new folder inside your temporary
 #      folder.
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
-#      key in $minisignPub below (the same key as minisign.pub in the chat
-#      repository), or with its backup, $minisignBackupPub (the same as
-#      minisign-backup.pub there). Releases are signed offline, never on
+#      key in $minisignPub below (the same key as keys/minisign.pub in the
+#      chat repository), or with its backup, $minisignBackupPub (the same as
+#      keys/minisign-backup.pub there). Releases are signed offline, never on
 #      GitHub, so even someone who took over the GitHub account couldn't pass
 #      this check.
 #      Windows has no built-in way to check this kind of signature, so the

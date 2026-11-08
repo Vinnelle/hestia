@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <title>chat | vin.moe</title>
-<meta name="description" content="chat is a private group chat for the terminal: no server, no accounts, and nothing left behind. End-to-end encrypted with post-quantum keys, over the BitTorrent DHT, Nostr relays or Tor.">
+<meta name="description" content="chat is a private group chat for the terminal: no server, no accounts, and nothing left behind. End-to-end encrypted with post-quantum keys, through Tor by default, or directly over the BitTorrent DHT.">
 <link rel="canonical" href="https://chat.vin.moe/">
 <link rel="alternate" type="application/atom+xml" title="vin.moe blog" href="https://vin.moe/feed.xml">
 <meta name="theme-color" content="#faf8f5" media="(prefers-color-scheme: light)">
@@ -50,7 +50,7 @@
   <header class="launch">
     <h1>chat</h1>
     <p class="pitch">Private group chat for the terminal.</p>
-    <p class="sub">No server, no accounts, and nothing left behind. Share a session id and a password, and everyone with both is in.</p>
+    <p class="sub">No server, no accounts, and nothing left behind. Share a room's id and password, and everyone with both is in.</p>
     <div class="cmds">
       <div class="picks">
         <div class="os-tabs" role="group" aria-label="Operating system">
@@ -137,7 +137,7 @@
         </div>
       </div>
       <p class="party-note party-on">chat joins vin-moe-party, the vin.moe group chat, as it starts. Its password is blank, so anyone can read along.</p>
-      <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.5.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
+      <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.6.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
     </div>
     <p class="cmd-note">I know some of you guys hate curl installs, <a href="#runner">so see what the script runs.</a></p>
     <p class="actions">
@@ -184,7 +184,7 @@
               <li><span class="f">21:05</span><span><b class="alice">alice</b><span class="f"> (you)</span></span><span>both match on my end</span></li>
               <li><b class="y">21:05</b><b class="bob">bob</b><b><span class="y">@alice</span> want the photos from saturday?</b></li>
               <li><span class="f">21:06</span><span><b class="alice">alice</b><span class="f"> (you)</span></span><span>go on then</span></li>
-              <li><span class="f">21:06</span><b class="bob">bob</b><span>offers photos.zip (3.0 MB) - :download 1 to save it</span></li>
+              <li><span class="f">21:06</span><b class="bob">bob</b><span>offers photos.zip (3.0 MB) as file 1 · /download 1 saves it</span></li>
               <li><span class="f">21:07</span><b class="carol">carol</b><span>this is so much nicer than the group chat</span></li>
             </ol>
             <div class="tui-input"><b class="g">❯</b> see you all thursday<span class="tui-caret"></span><span class="tui-count f">20/250</span></div>
@@ -202,7 +202,7 @@
     <ul class="features">
       <li>
         <h3>No server in the middle</h3>
-        <p>Peers find each other over the BitTorrent DHT and talk directly. There's no account to make and no server keeping your messages.</p>
+        <p>Peers meet over Tor onion services, or directly over the BitTorrent DHT. There's no account to make and no server keeping your messages.</p>
       </li>
       <li>
         <h3>Post-quantum encryption</h3>
@@ -214,7 +214,7 @@
       </li>
       <li>
         <h3>Tor, built in</h3>
-        <p>One setting sends everything through onion services instead, and Tor and DHT members can still share a room.</p>
+        <p>Everything goes through onion services by default, so nobody learns your IP address, peers included. Tor comes inside chat, with nothing to install. <code class="nowrap">--direct</code> is faster, and Tor and direct members can still share a room.</p>
       </li>
       <li>
         <h3>Quiet on the wire</h3>
@@ -240,8 +240,8 @@
     <p class="statement">A room is an id and a password. That's the whole sign-up.</p>
     <ol class="steps">
       <li>
-        <h3>Start a session</h3>
-        <p>Press Ctrl+N. chat makes up a session id and asks you for a password.</p>
+        <h3>Start a room</h3>
+        <p>Press Ctrl+N. chat makes up a room id and a random password, or you type your own.</p>
       </li>
       <li>
         <h3>Share both</h3>
@@ -260,14 +260,14 @@
       <dt>Key agreement</dt><dd>X25519 and ML-KEM-768, together</dd>
       <dt>Encryption</dt><dd>XChaCha20-Poly1305, with a new key for every message</dd>
       <dt>Identity</dt><dd>Optional Ed25519 signing keys, as AGE or PGP</dd>
-      <dt>Finding peers</dt><dd>BitTorrent DHT over IPv4 and IPv6, and LAN broadcast</dd>
+      <dt>Finding peers</dt><dd>On Tor, onion services and Nostr relays; directly, the BitTorrent DHT over IPv4 and IPv6, and LAN broadcast</dd>
       <dt>Getting through</dt><dd>Router port mapping (PCP, NAT-PMP, UPnP), then Nostr relays</dd>
-      <dt>Anonymity</dt><dd>Tor onion services, through a running tor or chat's own</dd>
+      <dt>Anonymity</dt><dd>Tor onion services, by default: Arti built in, a running tor, or chat's own</dd>
       <dt>On the wire</dt><dd>1004-byte packets, one every 1.5 to 1.9 seconds per peer</dd>
       <dt>Saved settings</dt><dd>Sealed with Argon2id and XChaCha20-Poly1305, and can also need the device's TPM, a FIDO2 key or an authenticator code</dd>
       <dt>Updates</dt><dd>Signed offline with minisign, and checked before they install</dd>
       <dt>Platforms</dt><dd>Linux and Windows on x86_64, and macOS 11 and later on Apple silicon and Intel</dd>
-      <dt>Built with</dt><dd>C, with libsodium, liboqs, Mbed TLS and libsecp256k1 linked in statically</dd>
+      <dt>Built with</dt><dd>Rust, with libsodium, AWS-LC, libsecp256k1, rustls and Arti compiled in</dd>
       <dt>Licence</dt><dd>GPL-3.0</dd>
     </dl>
     <p class="after">The full design, and what each part can and can't hide, is in the <a href="https://github.com/chat-labs/chat#readme">README</a>.</p>
@@ -277,7 +277,7 @@
     <h2>questions</h2>
     <details name="faq">
       <summary>Has it been audited?</summary>
-      <p>No. It's built on well-reviewed libraries, libsodium and liboqs, but chat itself hasn't been independently audited.</p>
+      <p>No. It's built on well-reviewed libraries, libsodium and AWS-LC, but chat itself hasn't been independently audited.</p>
     </details>
     <details name="faq">
       <summary>Does it keep my messages?</summary>
@@ -285,7 +285,7 @@
     </details>
     <details name="faq">
       <summary>Who can see that I'm using it?</summary>
-      <p>Your network sees your peers' addresses and a steady stream of same-size packets, which someone determined could recognise as chat. In Tor mode it only sees Tor. To anyone outside the room, the packets themselves are random bytes.</p>
+      <p>On Tor, the default, your network only sees Tor. With <code class="nowrap">--direct</code>, it sees your peers' addresses and a steady stream of same-size packets, which someone determined could recognise as chat. To anyone outside the room, the packets themselves are random bytes.</p>
     </details>
     <details name="faq">
       <summary>What if someone else gets the id and password?</summary>
@@ -297,7 +297,7 @@
     </details>
     <details name="faq">
       <summary>Does it run on macOS or phones?</summary>
-      <p>macOS, yes, from 0.5.0, on Apple silicon and Intel Macs with macOS 11 or later. Locking a save to the device, security keys and desktop notifications don't work there yet. Phones, no.</p>
+      <p>macOS, yes, from 0.6.0, on Apple silicon and Intel Macs with macOS 11 or later. Locking a save to the device, security keys and desktop notifications don't work there yet. Phones, no.</p>
     </details>
   </section>
 
@@ -320,7 +320,7 @@
       <button class="os-tab" type="button" data-party-toggle aria-pressed="false">join vin-moe-party</button>
     </div>
 
-    <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.5.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
+    <p class="no-release ch-stable">There's no stable release for macOS yet. macOS builds start with 0.6.0, and until that's out, they're in the <button class="link-btn" type="button" data-channel-choice="beta">beta</button>.</p>
 
     <div class="os-unix">
       <div class="cmds">
@@ -357,7 +357,7 @@
           </button>
         </div>
       </div>
-      <p class="muted">Paste it into bash, zsh, fish or any other shell. It pipes into sh, so the shell you type it in doesn't matter, and it works from Git Bash on Windows too. It needs curl, and minisign or OpenSSL 3 to check the release signature. Options for chat go after <code class="nowrap">sh -s --</code>, as in <code class="nowrap">sh -s -- --routing tor</code>.</p>
+      <p class="muted">Paste it into bash, zsh, fish or any other shell. It pipes into sh, so the shell you type it in doesn't matter, and it works from Git Bash on Windows too. It needs curl, and minisign or OpenSSL 3 to check the release signature. Options for chat go after <code class="nowrap">sh -s --</code>, as in <code class="nowrap">sh -s -- --direct</code>.</p>
       <p class="muted os-macos">On a Mac, get minisign first, with <code class="nowrap">brew install minisign</code>: the openssl that comes with macOS can't check the signature. chat runs on Apple silicon and Intel Macs with macOS 11 or later. Locking a save to the device, security keys and desktop notifications don't work there yet.</p>
 
       <h3>the script</h3>
