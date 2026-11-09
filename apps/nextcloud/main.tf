@@ -77,14 +77,10 @@ resource "kubernetes_secret_v1" "nextcloud_secrets" {
     namespace = kubernetes_namespace_v1.files.metadata[0].name
   }
   data = {
-    "admin-password"       = random_password.nextcloud_admin_password.result
-    "oidc-client-secret"   = random_password.nextcloud_oidc_client_secret.result
-    "s3-access-key"        = var.seaweedfs_s3_access_key
-    "s3-secret-key"        = var.seaweedfs_s3_secret_key
-    "import-s3-endpoint"   = var.import_s3_endpoint
-    "import-s3-bucket"     = var.import_s3_bucket
-    "import-s3-access-key" = var.import_s3_access_key
-    "import-s3-secret-key" = var.import_s3_secret_key
+    "admin-password"     = random_password.nextcloud_admin_password.result
+    "oidc-client-secret" = random_password.nextcloud_oidc_client_secret.result
+    "s3-access-key"      = var.seaweedfs_s3_access_key
+    "s3-secret-key"      = var.seaweedfs_s3_secret_key
   }
 }
 
@@ -406,118 +402,6 @@ resource "kubernetes_ingress_v1" "cloud_vinnel_cloud" {
       }
     }
   }
-}
-
-locals {
-  nextcloud_import_sh = <<-EOT
-    set -eu
-    cat > /tmp/rclone.conf <<CONF
-    [import-src]
-    type = s3
-    provider = Mega
-    access_key_id = $IMPORT_ACCESS_KEY
-    secret_access_key = $IMPORT_SECRET_KEY
-    endpoint = https://$IMPORT_ENDPOINT
-    force_path_style = true
-    no_check_bucket = true
-
-    [nextcloud-dst]
-    type = webdav
-    url = $NEXTCLOUD_URL
-    vendor = nextcloud
-    user = $NEXTCLOUD_USER
-    pass = $(rclone obscure "$NEXTCLOUD_PASS")
-    CONF
-    rclone copy import-src:$IMPORT_BUCKET/nextcloud-import nextcloud-dst:/import --config /tmp/rclone.conf --transfers 4 --checkers 8
-  EOT
-}
-
-resource "kubernetes_job_v1" "nextcloud_import" {
-  depends_on = [kubernetes_ingress_v1.cloud_api_vinnel_cloud]
-
-  metadata {
-    name      = "nextcloud-import"
-    namespace = kubernetes_namespace_v1.files.metadata[0].name
-  }
-
-  spec {
-    backoff_limit = 0
-
-    template {
-      metadata {}
-      spec {
-        restart_policy = "Never"
-
-        container {
-          name    = "import"
-          image   = "rclone/rclone:1.76.0"
-          command = ["sh", "-c", local.nextcloud_import_sh]
-
-          env {
-            name = "IMPORT_ENDPOINT"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "import-s3-endpoint"
-              }
-            }
-          }
-
-          env {
-            name = "IMPORT_BUCKET"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "import-s3-bucket"
-              }
-            }
-          }
-
-          env {
-            name = "IMPORT_ACCESS_KEY"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "import-s3-access-key"
-              }
-            }
-          }
-
-          env {
-            name = "IMPORT_SECRET_KEY"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "import-s3-secret-key"
-              }
-            }
-          }
-
-          env {
-            name  = "NEXTCLOUD_URL"
-            value = "https://cloud.vinnel.cloud/remote.php/dav/files/ida"
-          }
-
-          env {
-            name  = "NEXTCLOUD_USER"
-            value = "ida"
-          }
-
-          env {
-            name = "NEXTCLOUD_PASS"
-            value_from {
-              secret_key_ref {
-                name = kubernetes_secret_v1.nextcloud_secrets.metadata[0].name
-                key  = "admin-password"
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  wait_for_completion = false
 }
 
 resource "kubernetes_ingress_v1" "cloud_api_vinnel_cloud" {

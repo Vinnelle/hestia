@@ -82,18 +82,6 @@ variable "mega_s4_secret_key" {
   sensitive   = true
 }
 
-variable "mega_import_access_key" {
-  description = "Access key of the MEGA S4 user the Nextcloud import job reads hestia-import with; it holds only S3ObjectReadAccess. Set in secrets.sops.json."
-  type        = string
-  sensitive   = true
-}
-
-variable "mega_import_secret_key" {
-  description = "Secret key of that MEGA S4 user. Set in secrets.sops.json."
-  type        = string
-  sensitive   = true
-}
-
 variable "infomaniak_auth_url" {
   description = "Keystone endpoint of Infomaniak Public Cloud, the same for every region"
   type        = string

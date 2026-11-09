@@ -147,6 +147,10 @@ alertmanager:
         - receiver: blackhole
           matchers:
             - severity=~"info|none"
+        - receiver: email
+          matchers:
+            - alertgroup="trivy"
+          repeat_interval: 168h
     inhibit_rules:
       - source_matchers:
           - severity="critical"

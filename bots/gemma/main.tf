@@ -239,7 +239,7 @@ resource "kubernetes_deployment_v1" "gemma" {
             }
             limits = {
               cpu    = "1"
-              memory = "1Gi"
+              memory = "1536Mi"
             }
           }
 

@@ -144,10 +144,6 @@ module "nextcloud" {
   cluster_issuer                  = local.vinnel_cloud_cluster_issuer
   ingress_class_name              = module.platform_core.ingress_class_name
   admin_frame_service_annotations = local.admin_framed_service_annotations["cloud"]
-  import_s3_endpoint              = module.platform_backup.s3_endpoint
-  import_s3_bucket                = module.platform_backup.import_bucket
-  import_s3_access_key            = var.mega_import_access_key
-  import_s3_secret_key            = var.mega_import_secret_key
   seaweedfs_s3_access_key         = module.seaweedfs.s3_access_key
   seaweedfs_s3_secret_key         = module.seaweedfs.s3_secret_key
 }

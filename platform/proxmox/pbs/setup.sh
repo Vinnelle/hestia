@@ -82,7 +82,19 @@ else
     --username resend --password "$RESEND_API_KEY" --from-address alerts@vinnel.cloud \
     --author 'Proxmox Backup Server' --mailto "$ALERT_EMAIL"
 fi
-pbm notification matcher update default-matcher --target resend
+pbm notification matcher update default-matcher --target resend \
+  --match-severity warning --match-severity error --match-severity unknown
+
+echo "==> Proxmox VE's failure mail through Resend too"
+if pvesh get /cluster/notifications/endpoints/smtp --output-format json | grep -q '"name":"resend"'; then
+  pvesh set /cluster/notifications/endpoints/smtp/resend --password "$RESEND_API_KEY" --mailto "$ALERT_EMAIL"
+else
+  pvesh create /cluster/notifications/endpoints/smtp --name resend --server smtp.resend.com --port 587 \
+    --mode starttls --username resend --password "$RESEND_API_KEY" --from-address alerts@vinnel.cloud \
+    --author 'Proxmox VE' --mailto "$ALERT_EMAIL"
+fi
+pvesh set /cluster/notifications/matchers/default-matcher --target resend \
+  --match-severity warning --match-severity error --match-severity unknown
 
 echo "==> backup-only login for Proxmox VE"
 if ! listed '"userid":"pve@pbs"' user list; then

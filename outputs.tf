@@ -34,13 +34,8 @@ output "pbs_bucket" {
   value       = module.platform_backup.bucket
 }
 
-output "import_bucket" {
-  description = "MEGA S4 bucket the Nextcloud import reads nextcloud-import/ from"
-  value       = module.platform_backup.import_bucket
-}
-
 output "mega_s3_endpoint" {
-  description = "MEGA S4 endpoint for Proxmox Backup Server's S3 client and the import"
+  description = "MEGA S4 endpoint for Proxmox Backup Server's S3 client"
   value       = module.platform_backup.s3_endpoint
 }
 
