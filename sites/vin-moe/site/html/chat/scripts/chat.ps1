@@ -33,9 +33,9 @@
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
 #      key in $minisignPub below (the same key as keys/minisign.pub in the
 #      chat repository), or with its backup, $minisignBackupPub (the same as
-#      keys/minisign-backup.pub there). Releases are signed offline, never on
-#      GitHub, so even someone who took over the GitHub account couldn't pass
-#      this check.
+#      keys/minisign-backup.pub there). A release is signed only once one of
+#      chat's admins has approved it, so a file changed or swapped on the
+#      releases page after that can't pass this check.
 #      Windows has no built-in way to check this kind of signature, so the
 #      check is written out in full further down, in C#.
 #   4. Check the downloaded program against its SHA-256 in SHA256SUMS.
@@ -117,12 +117,13 @@
     try {
         # /releases/latest/download/<name> always points at the latest
         # release. GitHub never counts a beta as the latest release, so the
-        # beta asks GitHub's API for the newest release of all instead, and
-        # downloads from that release's tag. Anything that doesn't look like a
-        # version tag is refused.
+        # beta asks GitHub's API for the newest releases instead, and
+        # downloads from the first of chat's: chat-core's, tagged
+        # chat-core-v..., are there too, with nothing to run. Anything that
+        # doesn't look like a version tag is refused.
         if ($channel -eq 'beta') {
-            $releases = Invoke-RestMethod -UseBasicParsing "$api/releases?per_page=1"
-            $tag = ($releases | Select-Object -First 1).tag_name
+            $releases = Invoke-RestMethod -UseBasicParsing "$api/releases?per_page=20"
+            $tag = @(@($releases).tag_name -match '^v[0-9]')[0]
             if ("$tag" -notmatch '^v[0-9]') {
                 Say "couldn't find the newest release at $repo/releases"
                 return

@@ -488,10 +488,8 @@ ol.topics h3::before {
 :root[data-channel="beta"] .os-tab[data-channel-choice="beta"],
 :root[data-party="on"] .os-tab[data-party-toggle] { color: var(--on-accent); background: var(--accent); }
 :root:not([data-os]) .picks,
-:root:not([data-os="macos"]) .no-release,
 :root[data-os="linux"] :is(.os-macos, .os-windows),
 :root[data-os="macos"] :is(.os-linux, .os-windows),
-:root[data-os="macos"]:not([data-channel="beta"]) .os-unix,
 :root[data-os="windows"] :is(.os-linux, .os-macos, .os-unix),
 :root:not([data-channel="beta"]) .ch-beta,
 :root[data-channel="beta"] .ch-stable,
@@ -508,19 +506,6 @@ ol.topics h3::before {
   border: 1px dashed var(--border-strong);
   border-radius: 2px;
 }
-.link-btn {
-  font: inherit;
-  padding: 0;
-  color: var(--accent);
-  background: none;
-  border: 0;
-  cursor: pointer;
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--accent-line);
-}
-.link-btn:hover { color: var(--accent-strong); text-decoration-color: currentColor; }
 .cmd {
   display: flex;
   align-items: center;
@@ -732,7 +717,6 @@ ol.topics h3::before {
 
 .get .cmds { max-width: none; margin: 0 0 1.2rem; }
 .get .picks { margin: 2rem 0 1rem; }
-.get .no-release { margin: 0 0 1.2rem; }
 .launch .picks { justify-content: center; }
 .launch .cmd-label { text-align: center; }
 .get h3 { margin: 2.4rem 0 0.6rem; font-size: 0.95rem; font-weight: 700; color: var(--fg-strong); }

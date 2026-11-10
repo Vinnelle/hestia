@@ -34,9 +34,9 @@
 #   3. Check that SHA256SUMS is signed with chat's release key, the public
 #      key in minisign_pub below (the same key as keys/minisign.pub in the
 #      chat repository), or with its backup, minisign_backup_pub (the same
-#      as keys/minisign-backup.pub there). Releases are signed offline,
-#      never on GitHub, so even someone who took over the GitHub account
-#      couldn't pass this check.
+#      as keys/minisign-backup.pub there). A release is signed only once
+#      one of chat's admins has approved it, so a file changed or swapped
+#      on the releases page after that can't pass this check.
 #   4. Check the downloaded program against its SHA-256 in SHA256SUMS.
 #   5. Run chat, and delete the temporary folder when it exits.
 #
@@ -208,12 +208,13 @@ main() {
     # Find the release. GitHub redirects /releases/latest to
     # /releases/tag/<version>, and the version is the last part of that
     # address. GitHub never counts a beta as the latest release, so the beta
-    # asks GitHub's API for the newest release of all instead, and reads the
-    # version from its "tag_name". Anything that doesn't look like a version
-    # tag is refused.
+    # asks GitHub's API for the newest releases instead, and reads the
+    # version from the first "tag_name" that's chat's: chat-core's releases,
+    # tagged chat-core-v..., are there too, with nothing to run. Anything that
+    # doesn't look like a version tag is refused.
     if [ "$channel" = beta ]; then
-        tag=$(get "$api/releases?per_page=1" | tr ',' '\n' |
-            sed -n 's/^[[:space:]{]*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+        tag=$(get "$api/releases?per_page=20" | tr ',' '\n' |
+            sed -n 's/^[[:space:]{]*"tag_name":[[:space:]]*"\(v[0-9][^"]*\)".*/\1/p' | head -n 1)
     else
         tag=$(get -I -o /dev/null -w '%{url_effective}' "$repo/releases/latest")
         tag=${tag##*/}
