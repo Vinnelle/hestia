@@ -57,12 +57,21 @@ set -- --endpoint "$MEGA_ENDPOINT" --region "$MEGA_REGION" --path-style true \
 if [ -n "$PROVIDER_QUIRKS" ]; then
   set -- "$@" --provider-quirks "$PROVIDER_QUIRKS"
 fi
+if listed '"id":"mega-check"' s3 endpoint list; then
+  pbm s3 endpoint remove mega-check
+fi
+pbm s3 endpoint create mega-check "$@"
+if ! pbm s3 check mega-check "$BUCKET"; then
+  pbm s3 endpoint remove mega-check
+  echo "the pbs key in host.sops.json can't reach $BUCKET; the endpoint mega is unchanged" >&2
+  exit 1
+fi
+pbm s3 endpoint remove mega-check
 if listed '"id":"mega"' s3 endpoint list; then
   pbm s3 endpoint update mega "$@"
 else
   pbm s3 endpoint create mega "$@"
 fi
-pbm s3 check mega "$BUCKET"
 
 echo "==> datastore mega in bucket $BUCKET"
 if ! listed '"name":"mega"' datastore list; then
