@@ -33,7 +33,7 @@ module "vin_moe_site" {
   namespace            = kubernetes_namespace_v1.vin_moe.metadata[0].name
   registry_secret_name = kubernetes_secret_v1.registry_dockerconfig_vin_moe.metadata[0].name
   image                = var.images["vin-moe-site"]
-  replicas             = 2
+  replicas             = 3
   port_name            = "http"
 
   cpu_request    = "50m"
