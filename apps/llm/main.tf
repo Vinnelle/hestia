@@ -90,7 +90,7 @@ resource "kubernetes_deployment_v1" "llm" {
 
         init_container {
           name    = "fetch-model"
-          image   = "docker.io/library/alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a"
+          image   = "docker.io/library/alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf"
           command = ["sh", "-c", file("${path.module}/fetch-model.sh")]
 
           security_context {

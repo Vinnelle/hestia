@@ -12,7 +12,7 @@ COPY *.go ./
 COPY internal/ ./internal/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags=-s -o /gemma .
 
-FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:3f4d6b32e26703c6082839234f43769d5046b3ac7c910033911d1e71d8cd630a
+FROM mirror.vinnel.cloud/library/alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf
 
 RUN apk add --no-cache tor curl \
     && adduser -D -u 10001 gemma
