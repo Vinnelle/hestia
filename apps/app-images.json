@@ -1,6 +1,6 @@
 {
   "automations": "artifacts.vinnel.cloud/vinnel-cloud/gaia/automations/automations@sha256:10fc981d170c1a72df62c2ef3b4676c9da8cf0bc5fbd9e9ccc33a8300c9163bc",
-  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:06335e77a60daa0046e617f779df6d835510354a173d7a35b560d9eaa89e8a2f",
-  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:b3851a93e594d47e9a25cc81e949a271742c7ae283471e967101416435703bc2",
+  "vinnel-cloud-admin": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/admin@sha256:67bc9b56ac374ae33c9a3f3b3d2a0e7b7fded2848ef36a90e60f2e94e05fc752",
+  "vinnel-cloud-shell": "artifacts.vinnel.cloud/vinnel-cloud/gaia/vinnel-cloud/shell@sha256:93367c6cfa71f56c555ecaae318649a66e127d1947afb89ebc9c34af0fa78063",
   "miniflux-postgres": "artifacts.vinnel.cloud/vinnel-cloud/gaia/miniflux/postgres@sha256:506ff77ba1ff432bc5273b83af62bfe31f8b501a6128bb6bd2973af109bc6304"
 }
