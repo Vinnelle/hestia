@@ -58,10 +58,9 @@
 # rather than exit to stop early, because exit would close the window that
 # ran "irm | iex".
 & {
-    # Stop at the first error, skip Invoke-WebRequest's progress bar (it
-    # makes Windows PowerShell 5.1 download very slowly, so Download below
-    # draws its own), and allow TLS 1.2, which GitHub requires and Windows
-    # PowerShell 5.1 doesn't always enable.
+    # Stop at the first error, skip the download progress bar (it makes
+    # Windows PowerShell 5.1 download very slowly), and allow TLS 1.2, which
+    # GitHub requires and Windows PowerShell 5.1 doesn't always enable.
     $ErrorActionPreference = 'Stop'
     $ProgressPreference = 'SilentlyContinue'
     [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
@@ -97,40 +96,6 @@
     # Print a status line on stderr.
     function Say([string] $text) {
         [Console]::Error.WriteLine("chat: $text")
-    }
-
-    # Download a file with a progress bar. Invoke-WebRequest redraws its bar
-    # for every few kilobytes, which is what makes it slow in Windows
-    # PowerShell 5.1, so this copies the download a block at a time and
-    # redraws the bar only when the percentage changes.
-    function Download([string] $url, [string] $path) {
-        $ProgressPreference = 'Continue'
-        $activity = 'Downloading ' + (Split-Path -Leaf $path)
-        $response = [Net.WebRequest]::Create($url).GetResponse()
-        $out = $null
-        try {
-            $body = $response.GetResponseStream()
-            $out = [IO.File]::Create($path)
-            $total = $response.ContentLength
-            $buffer = New-Object byte[] 65536
-            $done = 0
-            $shown = -1
-            while (($read = $body.Read($buffer, 0, $buffer.Length)) -gt 0) {
-                $out.Write($buffer, 0, $read)
-                $done += $read
-                # Without a Content-Length there's no percentage to show.
-                if ($total -le 0) { continue }
-                $percent = [int][Math]::Floor(100 * $done / $total)
-                if ($percent -ne $shown) {
-                    Write-Progress -Activity $activity -Status ('{0:N1} of {1:N1} MB' -f ($done / 1MB), ($total / 1MB)) -PercentComplete $percent
-                    $shown = $percent
-                }
-            }
-        } finally {
-            if ($out) { $out.Dispose() }
-            $response.Dispose()
-            Write-Progress -Activity $activity -Completed
-        }
     }
 
     # Step 1: this script is for 64-bit Windows. $IsLinux and $IsMacOS only
@@ -169,8 +134,7 @@
             Say 'downloading the latest release'
             $from = "$repo/releases/latest/download"
         }
-        Download "$from/$asset" (Join-Path $dir $asset)
-        foreach ($file in 'SHA256SUMS', 'SHA256SUMS.minisig') {
+        foreach ($file in $asset, 'SHA256SUMS', 'SHA256SUMS.minisig') {
             Invoke-WebRequest -UseBasicParsing "$from/$file" -OutFile (Join-Path $dir $file)
         }
 
