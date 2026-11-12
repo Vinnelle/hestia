@@ -224,10 +224,15 @@ main() {
         *) die "couldn't find the latest release at $repo/releases" ;;
     esac
 
+    # Show a progress bar while the program downloads, if there's a terminal
+    # to draw it on. get is silent, so --no-silent turns the bar back on.
+    progress=
+    [ -t 2 ] && progress='--no-silent --progress-bar'
     # A release that came out before chat had a build for this computer
     # doesn't have the file. On stable, the beta might.
     say "downloading $tag"
-    if ! get -o "$dir/$asset" "$repo/releases/download/$tag/$asset"; then
+    # $progress is left unquoted on purpose, so it splits into its two options.
+    if ! get $progress -o "$dir/$asset" "$repo/releases/download/$tag/$asset"; then
         [ "$channel" = beta ] && die "couldn't download $asset from $tag"
         die "couldn't download $asset from $tag. If it has none yet, the beta might: curl -fsSL https://chat.vin.moe/beta | sh"
     fi
