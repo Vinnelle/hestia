@@ -16,8 +16,8 @@ ingress_nginx_build:
     name: moby/buildkit:v${BUILDKIT_VERSION}
     entrypoint: [""]
   variables:
-    INGRESS_NGINX_VERSION: "controller-v1.15.12"
-    INGRESS_NGINX_COMMIT: "6ba1e706ebf765d778c485c05b2251b1739ccdb3"
+    INGRESS_NGINX_VERSION: "controller-v1.15.13"
+    INGRESS_NGINX_COMMIT: "db1aad31bb72bb1683c40576c13c740881da68c4"
     INGRESS_NGINX_BUILD_JOBS: "2"
   before_script:
     - apk add --no-cache git jq
