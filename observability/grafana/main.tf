@@ -75,7 +75,7 @@ resource "helm_release" "loki" {
   name       = "loki"
   repository = "https://grafana.github.io/helm-charts"
   chart      = "loki"
-  version    = "7.5.0"
+  version    = "7.6.0"
   namespace  = local.namespace
   timeout    = 600
 
